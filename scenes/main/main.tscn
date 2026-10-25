@@ -1,7 +1,14 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://scenes/main/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://scenes/items/pickup.tscn" id="4_pickup"]
+[ext_resource type="Resource" path="res://scenes/items/data/energy_drink.tres" id="5_energy_drink"]
+[ext_resource type="Resource" path="res://scenes/items/data/credchip.tres" id="6_credchip"]
+[ext_resource type="Resource" path="res://scenes/items/data/data_shard.tres" id="7_data_shard"]
+[ext_resource type="Resource" path="res://scenes/items/data/stim_pack.tres" id="8_stim_pack"]
+[ext_resource type="Resource" path="res://scenes/items/data/mono_blade.tres" id="9_mono_blade"]
+[ext_resource type="Resource" path="res://scenes/items/data/emp_grenade.tres" id="10_emp_grenade"]
 [ext_resource type="PackedScene" path="res://scenes/pause/pause_menu.tscn" id="3_pause"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
@@ -66,5 +73,42 @@ size = Vector3(3, 0.3, 8)
 material = SubResource("StandardMaterial3D_ramp")
 
 [node name="Player" parent="." instance=ExtResource("2_player")]
+
+[node name="Pickups" type="Node3D" parent="."]
+
+[node name="MonoBlade" parent="Pickups" instance=ExtResource("4_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -3)
+item = ExtResource("9_mono_blade")
+count = 1
+
+[node name="EnergyDrink" parent="Pickups" instance=ExtResource("4_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.5, -4)
+item = ExtResource("5_energy_drink")
+count = 3
+
+[node name="Credchips" parent="Pickups" instance=ExtResource("4_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.5, -4)
+item = ExtResource("6_credchip")
+count = 25
+
+[node name="DataShard" parent="Pickups" instance=ExtResource("4_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 2, -6)
+item = ExtResource("7_data_shard")
+count = 5
+
+[node name="StimPack" parent="Pickups" instance=ExtResource("4_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 2.5, -10)
+item = ExtResource("8_stim_pack")
+count = 2
+
+[node name="EmpGrenade" parent="Pickups" instance=ExtResource("4_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.5, 6)
+item = ExtResource("10_emp_grenade")
+count = 2
+
+[node name="Credchips2" parent="Pickups" instance=ExtResource("4_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.5, 2)
+item = ExtResource("6_credchip")
+count = 80
 
 [node name="PauseMenu" parent="." instance=ExtResource("3_pause")]

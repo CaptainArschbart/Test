@@ -64,6 +64,16 @@ scenes/
     player.tscn               CharacterBody3D, First Person
     player.gd                 class_name Player, uid://3ek5xjcrt0uw
     player.gd.uid
+  inventory/
+    inventory.gd              class_name Inventory (Daten + Logik, Kind des Players)
+    inventory_slot.gd         class_name InventorySlot (ein Slot, zeichnet sich selbst, Drag & Drop)
+    inventory_ui.tscn         CanvasLayer: Fadenkreuz, Hotbar, Inventar-Fenster (Kind des Players)
+    inventory_ui.gd
+  items/
+    item_data.gd              class_name ItemData (Resource)
+    pickup.tscn               Area3D, Item in der Welt
+    pickup.gd                 class_name ItemPickup
+    data/*.tres               6 Beispiel-Items (ItemData)
 assets/
   audio/.gitkeep              leer
   materials/.gitkeep          leer
@@ -71,7 +81,7 @@ assets/
   textures/.gitkeep           leer
 ```
 
-`.godot/` ist per `.gitignore` ausgeschlossen. Außer `default_bus_layout.tres` und `scenes/ui/cyber_theme.tres` gibt es keine `.tres`-Dateien, keine Export-Presets, keine Audio-Dateien. Einziger Autoload: `Settings`.
+`.godot/` ist per `.gitignore` ausgeschlossen. `.tres`-Dateien: `default_bus_layout.tres`, `scenes/ui/cyber_theme.tres` und die Items unter `scenes/items/data/`. Keine Export-Presets, keine Audio-Dateien. Einziger Autoload: `Settings`.
 
 Konvention aus `README.md`: eine Szene und ihr Skript liegen im selben Ordner unter `scenes/<name>/`. `autoload/settings.gd` ist die Ausnahme (Autoload ohne eigene Szene), `scenes/ui/` hält nur das gemeinsame Theme. `default_bus_layout.tres` liegt im Projektstamm, weil Godot genau diesen Pfad als Standard für das Bus-Layout lädt (`audio/buses/default_bus_layout`, in `project.godot` nicht überschrieben).
 
@@ -91,9 +101,9 @@ Konvention aus `README.md`: eine Szene und ihr Skript liegen im selben Ordner un
 | Autoloads | `Settings` → `res://autoload/settings.gd` |
 | `[animation]` | `compatibility/default_parent_skeleton_in_mesh_instance_3d=true` |
 
-### Input Map (nur diese acht Aktionen sind im Projekt definiert)
+### Input Map (nur diese 19 Aktionen sind im Projekt definiert)
 
-Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Keine Maus- und keine Joypad-Events. Die Tabelle zeigt die Standardbelegung aus `project.godot`. Der Spieler kann alle acht in den **Optionen** (Reiter Steuerung) neu belegen, im Hauptmenü ebenso wie im Pausemenü, denn beide zeigen dieselbe Szene. `Settings` ersetzt beim Start und nach *Übernehmen* das Tastatur-Event der Aktion in der `InputMap`.
+Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Keine Maus- und keine Joypad-Events. Die Tabelle zeigt die Standardbelegung aus `project.godot`. Der Spieler kann alle 19 in den **Optionen** (Reiter Steuerung, Liste in `Settings.REBINDABLE_ACTIONS`) neu belegen, im Hauptmenü ebenso wie im Pausemenü, denn beide zeigen dieselbe Szene. `Settings` ersetzt beim Start und nach *Übernehmen* das Tastatur-Event der Aktion in der `InputMap`.
 
 | Aktion | Taste | physical_keycode | Verwendung |
 |---|---|---|---|
@@ -105,11 +115,15 @@ Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Kei
 | `sprint` | Shift | 4194325 (`KEY_SHIFT`) | `player.gd`, gehalten (im Noclip: schneller fliegen) |
 | `noclip` | V | 86 | `player.gd`, schaltet Noclip um |
 | `noclip_down` | Strg | 4194326 (`KEY_CTRL`) | `player.gd`, im Noclip runter (hoch = `jump`) |
+| `inventory` | Tab | 4194306 (`KEY_TAB`) | `inventory_ui.gd` (`_input`), öffnet/schließt das Inventar |
+| `drop_item` | Q | 81 | `player.gd`, wirft 1 Stück aus dem gewählten Hotbar-Slot |
+| `hotbar_1` … `hotbar_9` | 1 … 9 | 49 … 57 | `player.gd`, wählt den Hotbar-Slot |
 
 ### Tasten außerhalb der Input Map
 
 | Taste | Ort | Wirkung |
 |---|---|---|
+| Esc (`ui_cancel`) | Spielwelt, Inventar offen | `inventory_ui.gd` (`_input`, läuft vor `_unhandled_input`) schließt das Inventar, fängt die Maus und markiert das Event. Das Pausemenü öffnet sich erst beim nächsten Esc. |
 | Esc (`ui_cancel`) | Spielwelt, Menü zu | `pause_menu.gd` öffnet das Pausemenü (siehe Abschnitt 5). Das Event wird als verarbeitet markiert. |
 | Esc (`ui_cancel`) | Pausemenü, Optionen offen | Ruft `options.request_back()`, genau wie der Knopf *Zurück*: läuft eine Tastenbelegung, bricht Esc nur diese ab (`options_menu.gd` fängt die Taste in `_input`). Sonst bei offenen Änderungen erst Warnung, beim zweiten Mal verwerfen, sonst zurück zur Hauptseite. Das Spiel bleibt pausiert. |
 | Esc (`ui_cancel`) | Pausemenü, Hauptseite | Fortsetzen (schließt, fängt die Maus ein). |
@@ -117,9 +131,11 @@ Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Kei
 | F11 (`KEY_F11`) | `testmap.gd` und `main.gd` (Spiel läuft) | `Settings.toggle_fullscreen()`: schaltet das Fenster, `save_settings()` sofort. |
 | F11 (`KEY_F11`) | `pause_menu.gd` (Menü offen) | Dasselbe. Nötig, weil `testmap.gd` und `main.gd` bei angehaltenem Baum keine Eingaben bekommen. |
 | F11 (`KEY_F11`) | `main_menu.gd` | Dasselbe. |
+| Mausklick | Spielwelt | `player.gd`: jeder gedrückte `InputEventMouseButton` setzt `MOUSE_MODE_CAPTURED`, falls die Maus frei war (nicht bei offenem Inventar; z. B. nach Alt-Tab). Esc gibt die Maus im Player **nicht** mehr frei, das macht das Pausemenü. |
+| Mausrad | Spielwelt | Nur bei gefangener Maus: runter = nächster, hoch = vorheriger Hotbar-Slot (läuft im Kreis). Fest im Code (`player.gd`), nicht belegbar, weil `Settings` nur Tastatur-Events kennt. |
+| Rechtsklick / Ziehen | Inventar offen | Rechtsklick auf Slot = Hotbar ↔ Rucksack; Ziehen = verschieben/tauschen/stapeln; auf den dunklen Hintergrund ziehen = ganzen Stapel wegwerfen. |
 
 Bei offenen Optionen zieht `options_menu.gd` die Vollbild-Checkbox und den Entwurf selbst nach, sobald `Settings.changed` kommt. Der Host muss dafür nichts tun.
-| Mausklick | Spielwelt | `player.gd`: jeder gedrückte `InputEventMouseButton` setzt `MOUSE_MODE_CAPTURED`, falls die Maus frei war (z. B. nach Alt-Tab). Esc gibt die Maus im Player **nicht** mehr frei, das macht das Pausemenü. |
 
 `ui_cancel` ist der Engine-Default (Esc, Joypad-B). Im Projekt nicht überschrieben.
 
@@ -139,6 +155,8 @@ Menüs (Haupt- und Pausemenü) definieren keine eigenen UI-Aktionen. Godots `ui_
 | 2 | `player` | `Player.collision_layer = 2` |
 
 `Player.collision_mask` ist nicht gesetzt und bleibt auf dem Godot-Default `1` (nur `world`). Layer 3–32 sind unbenannt. Schwerkraft steht nicht in `project.godot`. `Player.gravity` liest `physics/3d/default_gravity` (Engine-Default 9.8).
+
+`ItemPickup` (Area3D): `collision_layer = 0`, `collision_mask = 2` (findet nur den Player). Die Flugbahn fallengelassener Items prüft per Raycast gegen Layer 1.
 
 ---
 
@@ -269,7 +287,7 @@ Options (VBoxContainer)                    separation 12
 │   ├── AUDIO         %MasterSlider / %MasterValue, %MusicSlider / %MusicValue,
 │   │                 %SfxSlider / %SfxValue (je 0–100, Schritt 5)
 │   └── STEUERUNG     %SensitivitySlider (0.1–3.0, Schritt 0.05) / %SensitivityValue,
-│                     %InvertYCheck, KeyHint, %KeyGrid (4 Spalten, 8 Aktionen = 16 Zellen aus `Settings.REBINDABLE_ACTIONS`, Knöpfe im Code erzeugt)
+│                     %InvertYCheck, KeyHint, KeyScroll (ScrollContainer, Mindesthöhe 240) → %KeyGrid (4 Spalten, 19 Aktionen = 38 Zellen aus `Settings.REBINDABLE_ACTIONS`, Knöpfe im Code erzeugt)
 ├── ActionRow         %ApplyButton "ÜBERNEHMEN" (nur aktiv bei Änderungen),
 │                     %DefaultsButton "STANDARD", %BackButton "ZURÜCK"
 └── %StatusLabel
@@ -289,8 +307,11 @@ Main (Node3D)
 │   ├── BoxLarge (CSGBox3D)            4×2×4, Position (-5, 1, -10)
 │   └── Ramp (CSGBox3D)                3×0.3×8, etwa 20° um X, Position (8, 0.6, 2)
 ├── Player                             Instanz player.tscn, Transform nicht überschrieben
+├── Pickups (Node3D)                   7 Instanzen pickup.tscn mit Item + Anzahl (Klinge, Drinks, Credchips …)
 └── PauseMenu                          Instanz pause_menu.tscn, als letztes Kind
 ```
+
+Fallengelassene Items hängt `Player.drop_item` an den Parent des Players (hier `Main`).
 
 Environment: `background_mode = 2` (Sky), `ambient_light_source = 3` (Sky), `reflected_light_source = 2` (Sky), `tonemap_mode = 2` (ACES), SSAO und Glow an. Boden `Color(0.32, 0.45, 0.3)`, Kisten `Color(0.55, 0.6, 0.68)`, Rampe `Color(0.7, 0.62, 0.45)`. Alle vier CSG-Knoten haben `use_collision = true`. `BoxSmall` ragt mit der Default-Höhe in den Boden. CSG ist Platzhalter-Geometrie.
 
@@ -349,11 +370,42 @@ Die Szene wurde mit einem Python-Generator erzeugt, ist aber eine normale `.tscn
 Player                                 collision_layer = 2, collision_mask = 1 (Default)
 ├── CollisionShape3D                   Capsule radius 0.4, height 1.8, Offset Y 0.9
 ├── Body (MeshInstance3D)              gleiche Kapsel, Farbe (0.85, 0.45, 0.2), Schatten an
-└── Head (Node3D)                      Offset Y 1.6
-    └── Camera3D                       current = true, fov = 80
+├── Head (Node3D)                      Offset Y 1.6
+│   └── Camera3D                       current = true, fov = 80
+├── Inventory (Node)                   inventory.gd, 9 Hotbar- + 27 Rucksack-Slots
+└── InventoryUI                        Instanz inventory_ui.tscn (HUD)
 ```
 
-Kein Knoten hat `unique_name_in_owner`. Zugriffe: `$Head`, `$Head/Camera3D`.
+Kein Knoten hat `unique_name_in_owner`. Zugriffe: `$Head`, `$Head/Camera3D`, `$Inventory`. HUD und Inventar hängen am Player, damit jede Map, die `player.tscn` instanziert, beides automatisch hat.
+
+### `scenes/inventory/inventory_ui.tscn` — Wurzel `InventoryUI` (`CanvasLayer`)
+
+```text
+InventoryUI (CanvasLayer)              inventory_ui.gd, player = get_parent()
+├── Crosshair (CenterContainer)        4×4-Punkt in Cyan
+├── HotbarArea (VBoxContainer)         unten mittig
+│   ├── %ItemName                      Name des gewählten Items, blendet nach 1,5 s aus
+│   └── %Hotbar                        9 InventorySlot (nicht klickbar), im Code erzeugt
+├── %Feed (VBoxContainer)              unten links, "+3 Credchip"-Meldungen
+└── %InventoryOverlay (ColorRect)      dunkler Vollbild-Hintergrund, Drop hier = wegwerfen
+    └── Center/Panel/Layout
+        ├── %InfoName / %InfoDescription   Hilfe oder Name/Beschreibung des Items unter der Maus
+        ├── %BackpackGrid              27 Slots, 9 Spalten
+        └── %PanelHotbar               9 Slots (dieselben Hotbar-Daten, hier klickbar)
+```
+
+Alle Mouse-Filter außer Slots, Overlay und Panel sind `IGNORE`. Farben wie im Menü (Cyan `0,0.95,1`, Magenta `1,0.1,0.75`), Panel-Style kopiert aus `main_menu.tscn`.
+
+### `scenes/items/pickup.tscn` — Wurzel `Pickup` (`Area3D`, `class_name ItemPickup`)
+
+```text
+Pickup                                 Exports: item (ItemData), count, hover_height 0.5
+├── CollisionShape3D                   Kugel r = 0.7
+└── Visual (Node3D)                    dreht sich und wippt (_process)
+    ├── Mesh                           Würfel 0.28, übers Eck gedreht, leuchtendes Material in item.color (im Code)
+    ├── Glow (OmniLight3D)             Reichweite 2.5, Farbe item.color
+    └── Label (Label3D)                Billboard, Name ×Anzahl, sichtbar bis 7 m
+```
 
 ---
 
@@ -456,6 +508,29 @@ Keine davon ist in der `.tscn` überschrieben.
 
 Keine `signal`-Deklaration. Yaw dreht den Body, Pitch nur `Head`. Wirksame Empfindlichkeit ist `mouse_sensitivity * Settings.mouse_sensitivity`; `Settings.invert_y` dreht die Pitch-Richtung um. Mausbewegung wirkt nur bei `MOUSE_MODE_CAPTURED`. Der frühere Zweig, der bei `ui_cancel` die Maus freigab, ist entfernt. Unter `respawn_height` ruft `_physics_process` `respawn()` auf. Im Noclip springt `_physics_process` nach dem Umschalten direkt in `_noclip_move`: keine Schwerkraft, kein `move_and_slide`, Bewegung in Kamera-Blickrichtung (auch Pitch) plus `jump`/`noclip_down` vertikal, `global_position += velocity * delta`. Kein Respawn im Noclip. Die Anzeige ist ein `CanvasLayer` „NoclipHud“ mit `Label`, erzeugt in `_ready` (nicht in `player.tscn`). Bewegung: `Input.get_vector("move_left", "move_right", "move_forward", "move_back")`, in `transform.basis` gedreht, horizontal per `lerpf`. In der Luft ist die Beschleunigung `acceleration * air_control`. Bei pausiertem Baum laufen weder Physik noch Eingabe des Players, auch das Umschalten von Noclip (`is_action_just_pressed("noclip")` steht in `_physics_process`) geht im Pausemenü nicht.
 
+Neu: `input_locked` (setzt das Inventar-Fenster; blockiert Umschauen, Laufen, Springen, Hotbar-Tasten), `inventory` (`@onready $Inventory`), `drop_item(index, amount)` (wirft Items als `ItemPickup` vor die Kamera, mit Raycast gegen Wände) und `_handle_hotbar_input` (Zahlentasten, Mausrad, `drop_item`).
+
+### `scenes/inventory/inventory.gd` (`class_name Inventory`)
+
+- Slots 0–8 = Hotbar (`HOTBAR_SIZE`), ab 9 = Rucksack (`backpack_size`, Export, Standard 27). Intern zwei Arrays `_items` (ItemData oder null) und `_counts`.
+- Signale: `changed`, `selected_changed(index)`, `item_added(item, amount)`.
+- `add_item(item, amount)` füllt erst passende Stapel, dann freie Slots, Hotbar zuerst; gibt den Rest zurück, der nicht passte.
+- `remove_at`, `move(from, to)` (gleiche Items stapeln, sonst tauschen), `quick_move(index)`, `select`, `select_next`, `get_selected_item`.
+- Export `starting_items` (leer): Items, die beim Start in die Hotbar kommen.
+- Keine Speicherung: das Inventar ist beim Szenenstart leer. Items haben noch keine Wirkung (kein Benutzen, kein Ausrüsten).
+
+### `scenes/inventory/inventory_slot.gd` (`class_name InventorySlot`)
+
+Control 64×64, zeichnet Hintergrund, Neon-Rahmen (gewählt/Hover = Magenta), Slot-Nummer, Icon (oder Raute mit `glyph`) und Anzahl in `_draw`. Drag & Drop über `_get_drag_data`/`_can_drop_data`/`_drop_data` mit Daten `{"type": "inventory_slot", "index": i}`. Rechtsklick = `quick_move`. Signal `hovered(index)` (-1 beim Verlassen).
+
+### `scenes/items/item_data.gd` (`class_name ItemData`, Resource)
+
+Felder `id` (Vergleich über `is_same`), `display_name`, `description`, `icon` (optional), `glyph`, `color`, `max_stack`. Beispiele in `scenes/items/data/`: `energy_drink` (16), `credchip` (99), `data_shard` (32), `stim_pack` (8), `mono_blade` (1), `emp_grenade` (4). Neues Item = neue `.tres` mit Skript `item_data.gd` anlegen, dann ein `pickup.tscn` damit in eine Map setzen.
+
+### `scenes/items/pickup.gd` (`class_name ItemPickup`)
+
+Sammelt sich selbst ein, sobald der Player in der Area steht (jeden Physik-Frame, damit es nach Platz im Inventar erneut versucht). `throw(velocity, delay)` für weggeworfene Items: einfache Flugbahn mit Raycasts, landet `hover_height` über dem Boden, `delay` Sekunden nicht aufsammelbar.
+
 ---
 
 ## 7. 🔌 Abhängigkeiten
@@ -504,6 +579,10 @@ main.tscn (nicht mehr vom Menü geladen, nur per F6)
         └── pause_menu.gd ── Settings.toggle_fullscreen, options.open / request_back / closed,
                              SceneTree.paused, Input.mouse_mode, ui_cancel,
                              Zurück ──► scenes/menu/main_menu.tscn
+
+Inventar/Items (aus PR #5): player.gd zusätzlich ── Input Map: drop_item, hotbar_1 … hotbar_9, $Inventory (inventory.gd),
+  preload scenes/items/pickup.tscn; Kind InventoryUI ── inventory_ui.gd ── InventorySlot, Input Map: inventory.
+main.tscn und testmap.tscn haben zusätzlich Pickups ── pickup.tscn ── pickup.gd, scenes/items/data/*.tres.
 ```
 
 ---
@@ -512,10 +591,11 @@ main.tscn (nicht mehr vom Menü geladen, nur per F6)
 
 - Ordner `scenes/interactive/` und Szene `interactive_box.tscn`
 - Weitere Autoloads außer `Settings`; eigene Signale außer `Settings.changed`
-- Spielziel, Gegner, Items, Spielstand
+- Spielziel, Gegner, Spielstand
+- Items benutzen/ausrüsten, Item in der Hand, Speichern des Inventars
 - Bestätigungsabfrage bei *Zurück zum Hauptmenü* und *Spiel beenden*
 - Live-Vorschau in den Optionen: Änderungen wirken erst nach *Übernehmen* (Hauptmenü und Pausemenü gleich). Das Pausemenü hatte kurz eine Live-Vorschau, siehe Eintrag 7
-- Gamepad-Events an `move_*`, `jump`, `sprint`
+- Gamepad-Events an `move_*`, `jump`, `sprint` (auch das Neubelegen im Menü kennt nur Tastatur)
 - Audio-Dateien und `AudioStreamPlayer`; die Busse `Music` und `SFX` sind leer
 - Dateien unter `assets/` außer `.gitkeep`
 
