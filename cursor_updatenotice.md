@@ -145,3 +145,21 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Git: Commit auf `main`, nur `git push origin main`.
 - Korrektur im selben Arbeitsgang: Hook hat `git push origin main; git fetch …` als Remote `main;` gelesen und den Push blockiert. `rstrip(";,&|")` ergänzt.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-25 · Hotbar, Inventar und Hotkeys verknüpft · Cursor (für EnScapeZ) · main
+- Auftrag: Nach dem Stand auf `main` Hotbar, Inventar und die Tasten in den Settings aufeinander abstimmen und fehlerfrei machen. Claudes Notice nur lesen.
+- Gelesen: `claude_updatenotice.md` (PR #5, #10). Hotbar/Inventar hängen am Player (`inventory_ui.tscn`, kein `scenes/ui/hotbar.tscn`). 19 Aktionen in `Settings.REBINDABLE_ACTIONS`, Liste in `options_menu.tscn` unter `KeyScroll` (Mindesthöhe 240). Esc schließt zuerst das Inventar, Pause liegt auf CanvasLayer 10.
+- Geändert:
+  - `scenes/player/player.gd`: `hotbar_1`…`hotbar_9` und `drop_item` gelten auch bei offenem Inventar. Umschauen und Mausfang bleiben gesperrt. Tastenwiederholung (Echo) wird ignoriert, damit gehaltenes Q nicht den Stapel leert.
+  - `scenes/inventory/inventory_ui.gd`: Tab-Echo schaltet das Fenster nicht doppelt. Bei `paused` keine Inventar-Eingabe. Slots erst nach `Inventory.ready`. Drop außerhalb des Fensters mit geprüftem Index.
+  - `scenes/inventory/inventory_slot.gd`: Slot-Beschriftung ist die belegte Taste aus `Settings.key_bindings` (`hotbar_N`), neu gezeichnet bei `Settings.changed`. HUD und Inventar-Hotbar zeigen dieselbe Beschriftung.
+  - `scenes/inventory/inventory.gd`: `has_index`. `get_item` / `get_count` / `remove_at` / `move` / `quick_move` bei ungültigem Index ohne Absturz.
+  - `scenes/inventory/inventory_ui.tscn`: `layer = 2` (über dem Noclip-HUD auf Layer 1, unter dem Pausemenü auf Layer 10). `load_steps` bleibt 3.
+  - `scenes/pause/pause_menu.gd`: Esc-Echo ignoriert, damit nach dem Schließen des Inventars nicht sofort die Pause aufgeht.
+- Nicht geändert: `claude_updatenotice.md`, `AI_HANDOVER.md`, `project.godot` (Input Map `hotbar_1`…`hotbar_9` = Tasten 1–9, `inventory` = Tab, `drop_item` = Q war schon da), `autoload/settings.gd`.
+- Getestet (Godot 4.7.2 stable, headless, isoliertes APPDATA):
+  - Nach Neustart des Klassen-Caches (lokal `.godot/global_script_class_cache.cfg` hatte nur `Player`; Datei ist gitignored): `testmap.tscn --quit-after 2` nur die Versionszeile, keine `ERROR`/`SCRIPT ERROR`.
+  - Temporäre Szene `hotbar_sync_runner` (nicht committet, danach gelöscht): `CHECKS 79 FAILS 0`. Darin Testmap und `main.tscn`: 9 HUD-Slots, 9 Panel-Slots, 27 Rucksack, Layer 2/10, Auswahl per `hotbar_2`/`hotbar_4` auch bei offenem Inventar, Tab-Echo lässt offen, ein Drop, Drop-Echo ändert die Menge nicht, Quick-Move Hotbar↔Rucksack, Esc schließt nur das Inventar, Esc-Echo öffnet nicht die Pause, zweites Esc pausiert, Tab und Hotbar während Pause wirkungslos, `hotbar_1` auf Z belegt wählt Slot 0 und beide Leisten zeigen `Z`, Options-`%KeyGrid` hat 38 Zellen (19 Aktionen × 2) inklusive Inventar, Wegwerfen, Slot 1 und Slot 9.
+- Nicht getestet: Fensterlauf, Mausrad, Controller, Drag mit echter Maus. Echte `settings.cfg` nicht angefasst (APPDATA war isoliert).
+- Git: Commit auf `main`, `git push origin main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`

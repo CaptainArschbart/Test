@@ -17,6 +17,7 @@ shadow_color = Color(0, 0.95, 1, 0.25)
 shadow_size = 16
 
 [node name="InventoryUI" type="CanvasLayer"]
+layer = 2
 script = ExtResource("1_ui")
 
 [node name="Crosshair" type="CenterContainer" parent="."]

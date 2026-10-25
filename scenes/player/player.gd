@@ -5,7 +5,8 @@ extends CharacterBody3D
 ## Escape öffnet das Pausemenü (PauseMenu in testmap.tscn und main.tscn), das auch die
 ## Maus freigibt und wieder einfängt. Ist das Inventar offen, schließt Escape zuerst das.
 ## Ein Klick ins Fenster fängt eine freie Maus ebenfalls ein, etwa nach Alt-Tab.
-## Zahlentasten und Mausrad wählen den Hotbar-Slot, "drop_item" wirft ein Stück davon weg.
+## Zahlentasten (belegbar als hotbar_1…9) und Mausrad wählen den Hotbar-Slot,
+## "drop_item" wirft ein Stück davon weg. Beides gilt auch bei offenem Inventar.
 ## "noclip" schaltet den Flugmodus um: durch Wände fliegen in Blickrichtung,
 ## "jump" hoch, "noclip_down" runter, "sprint" schneller.
 
@@ -56,9 +57,14 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if input_locked:
+	# Echo würde beim Halten von "drop_item" den ganzen Stapel leeren.
+	if event.is_echo():
 		return
+	# Hotbar und Wegwerfen auch bei offenem Inventar. Umschauen und Mausfang nicht.
 	if _handle_hotbar_input(event):
+		get_viewport().set_input_as_handled()
+		return
+	if input_locked:
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		# Grundwert aus dem Inspector mal Faktor aus dem Optionsmenü.
@@ -130,7 +136,7 @@ func drop_item(index: int, amount := 1) -> void:
 
 ## Zahlentasten, Mausrad und Wegwerfen. Gibt true zurück, wenn das Event verbraucht wurde.
 func _handle_hotbar_input(event: InputEvent) -> bool:
-	for i in Inventory.HOTBAR_SIZE:
+	for i: int in Inventory.HOTBAR_SIZE:
 		if event.is_action_pressed("hotbar_%d" % (i + 1)):
 			inventory.select(i)
 			return true

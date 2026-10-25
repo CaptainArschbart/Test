@@ -41,6 +41,9 @@ func _exit_tree() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Echo würde nach dem Schließen des Inventars sofort die Pause öffnen.
+	if event.is_echo():
+		return
 	if event.is_action_pressed("ui_cancel"):
 		if not visible:
 			open()

@@ -37,6 +37,8 @@ func setup(p_inventory: Inventory, p_index: int, p_show_number: bool, p_interact
 	mouse_filter = Control.MOUSE_FILTER_STOP if interactive else Control.MOUSE_FILTER_IGNORE
 	inventory.changed.connect(queue_redraw)
 	inventory.selected_changed.connect(func(_i: int) -> void: queue_redraw())
+	if show_number and not Settings.changed.is_connected(queue_redraw):
+		Settings.changed.connect(queue_redraw)
 
 
 func _ready() -> void:
@@ -60,7 +62,9 @@ func _draw() -> void:
 
 	var font := get_theme_default_font()
 	if show_number:
-		draw_string(font, Vector2(5, 15), str(index + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 12,
+		var key_text := _bound_key_label()
+		var key_size := 12 if key_text.length() <= 2 else 10
+		draw_string(font, Vector2(4, 14), key_text, HORIZONTAL_ALIGNMENT_LEFT, size.x - 8.0, key_size,
 			MAGENTA if selected else Color(CYAN, 0.7))
 	if item == null:
 		return
@@ -110,7 +114,10 @@ func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 
 
 func _drop_data(_at_position: Vector2, data: Variant) -> void:
-	inventory.move(data.index, index)
+	var from := int((data as Dictionary).get("index", -1))
+	if from < 0:
+		return
+	inventory.move(from, index)
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -119,6 +126,15 @@ func _gui_input(event: InputEvent) -> void:
 		inventory.quick_move(index)
 		hovered.emit(index)
 		accept_event()
+
+
+## Angezeigte Taste aus der Input Map (Settings), nicht die feste Ziffer 1–9.
+func _bound_key_label() -> String:
+	var action := "hotbar_%d" % (index + 1)
+	var code: int = int(Settings.key_bindings.get(action, KEY_NONE))
+	if code == KEY_NONE:
+		return str(index + 1)
+	return Settings.key_name(code)
 
 
 func _item() -> ItemData:

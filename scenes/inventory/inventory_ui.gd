@@ -23,15 +23,12 @@ var _name_tween: Tween
 
 
 func _ready() -> void:
-	# Player._ready (und damit player.inventory) läuft erst nach diesem _ready.
-	inventory = player.get_node(^"Inventory")
-
-	for i in Inventory.HOTBAR_SIZE:
-		_add_slot(hotbar, i, true, false)
-		_add_slot(panel_hotbar, i, true, true)
-	for i in range(Inventory.HOTBAR_SIZE, inventory.get_size()):
-		_add_slot(backpack_grid, i, false, true)
-	backpack_grid.columns = Inventory.HOTBAR_SIZE
+	inventory = player.get_node(^"Inventory") as Inventory
+	# Slots erst, wenn die Daten da sind. Inventory steht in player.tscn vor diesem HUD;
+	# ist die Reihenfolge einmal anders, warten wir auf ready statt leere Arrays zu lesen.
+	if not inventory.is_node_ready():
+		await inventory.ready
+	_build_slots()
 
 	# Ablegen neben dem Fenster (auf dem abgedunkelten Hintergrund) wirft das Item weg.
 	overlay.set_drag_forwarding(Callable(), _can_drop_outside, _drop_outside)
@@ -45,12 +42,25 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# Echo würde Tab auf- und wieder zuklappen. Bei Pause bleibt das Inventar zu
+	# (dieses HUD erbt den Prozessmodus und läuft im angehaltenen Baum nicht).
+	if event.is_echo() or get_tree().paused:
+		return
 	if event.is_action_pressed("inventory"):
 		_set_open(not overlay.visible)
 		get_viewport().set_input_as_handled()
 	elif overlay.visible and event.is_action_pressed("ui_cancel"):
 		_set_open(false)
 		get_viewport().set_input_as_handled()
+
+
+func _build_slots() -> void:
+	for i: int in Inventory.HOTBAR_SIZE:
+		_add_slot(hotbar, i, true, false)
+		_add_slot(panel_hotbar, i, true, true)
+	for i: int in range(Inventory.HOTBAR_SIZE, inventory.get_size()):
+		_add_slot(backpack_grid, i, false, true)
+	backpack_grid.columns = Inventory.HOTBAR_SIZE
 
 
 func _set_open(open: bool) -> void:
@@ -110,4 +120,7 @@ func _can_drop_outside(_at_position: Vector2, data: Variant) -> bool:
 
 
 func _drop_outside(_at_position: Vector2, data: Variant) -> void:
-	player.drop_item(data.index, inventory.get_count(data.index))
+	var from := int((data as Dictionary).get("index", -1))
+	if from < 0:
+		return
+	player.drop_item(from, inventory.get_count(from))

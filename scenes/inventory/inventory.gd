@@ -36,16 +36,24 @@ func get_size() -> int:
 	return _items.size()
 
 
+func has_index(index: int) -> bool:
+	return index >= 0 and index < _items.size()
+
+
 func get_item(index: int) -> ItemData:
+	if not has_index(index):
+		return null
 	return _items[index]
 
 
 func get_count(index: int) -> int:
+	if not has_index(index):
+		return 0
 	return _counts[index]
 
 
 func get_selected_item() -> ItemData:
-	return _items[selected]
+	return get_item(selected)
 
 
 func is_hotbar(index: int) -> bool:
@@ -67,7 +75,7 @@ func add_item(item: ItemData, amount := 1, notify := true) -> int:
 
 ## Nimmt bis zu `amount` aus einem Slot. Gibt die tatsächlich entnommene Menge zurück.
 func remove_at(index: int, amount := 1) -> int:
-	if _items[index] == null:
+	if not has_index(index) or _items[index] == null:
 		return 0
 	var removed := mini(amount, _counts[index])
 	_counts[index] -= removed
@@ -79,6 +87,8 @@ func remove_at(index: int, amount := 1) -> int:
 
 ## Drag & Drop: gleiche stapelbare Items werden zusammengelegt, sonst getauscht.
 func move(from: int, to: int) -> void:
+	if not has_index(from) or not has_index(to):
+		return
 	var item := _items[from]
 	if from == to or item == null:
 		return
@@ -102,6 +112,8 @@ func move(from: int, to: int) -> void:
 
 ## Rechtsklick: Hotbar → Rucksack bzw. Rucksack → Hotbar, so viel wie passt.
 func quick_move(index: int) -> void:
+	if not has_index(index):
+		return
 	var item := _items[index]
 	if item == null:
 		return
