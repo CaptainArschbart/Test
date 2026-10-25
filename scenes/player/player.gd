@@ -252,6 +252,7 @@ func _create_noclip_label() -> void:
 	add_child(layer)
 	_noclip_label = Label.new()
 	_noclip_label.text = "NOCLIP"
+	_noclip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_noclip_label.position = Vector2(24.0, 20.0)
 	_noclip_label.add_theme_font_size_override("font_size", 22)
 	_noclip_label.add_theme_color_override("font_color", Color(0.0, 1.0, 0.95))

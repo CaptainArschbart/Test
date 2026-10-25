@@ -234,3 +234,21 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: Klang aus den Lautsprechern, ob der Titelwechsel im langen Fenster hörbar ist. Echte `settings.cfg` nicht angefasst.
 - Git: Commit auf `main`, `git push origin main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-25 · 2K/4K: Mausfilter und 3D-Puffer · Cursor (für EnScapeZ) · main
+- Auftrag: Das Spiel friert bei 2K/4K ein und der Spieler kommt nicht mehr vom Fleck. Full HD läuft. Ursache suchen in Stretch, Vollflächen-UI mit Mausfilter und der Fenstergröße, ohne den MainLoop in einer Resize-Schleife zu fangen.
+- Entscheidung: Stretch `canvas_items` + `aspect` `expand` stand nach `git pull origin main` schon auf `main` (Commit `346420a`, PR #13, „Menüs skalieren mit der Auflösung“). `project.godot` bleibt in diesem Commit unangetastet. Die UI rechnet damit weiter in 1280×720 und wird gleichmäßig hochskaliert. Zusätzlich: Flächen, die niemand anklickt, bekommen `mouse_filter = 2` (`IGNORE`). Der 3D-Puffer wird auf eine lange Kante von 1920 px begrenzt, damit 4K mit MSAA nicht einen nativen 4K-Framebuffer aufmacht. Der Reglerwert bleibt darunter erhalten (50 % auf 4K bleibt 0,25). Fenstergröße 0 teilt nicht. `size_changed` schreibt weder Fenstergröße noch Fenstermodus, merkt sich die letzte Größe und bricht ab, wenn der Aufruf schon läuft.
+- Geändert:
+  - `autoload/settings.gd`: `RENDER_LONG_EDGE` 1920, `scale_for_window`, `_apply_3d_scale`. `apply()` setzt darüber `viewport.scaling_3d_scale`. `Window`-`size_changed` am Root hängt einmal in `_ready`.
+  - `scenes/pause/pause_menu.tscn`: `Root`, `Dim`, `Center`, `Title`, `Hint`, `Spacer` auf `mouse_filter = 2`. Knöpfe und das Options-Panel bleiben `Stop`.
+  - `scenes/inventory/inventory_ui.tscn`: `%InventoryOverlay` und `%ItemName` auf `mouse_filter = 2`. Overlay startet unsichtbar.
+  - `scenes/inventory/inventory_ui.gd`: offen `MOUSE_FILTER_STOP` (Ablegen neben dem Fenster), zu `MOUSE_FILTER_IGNORE`.
+  - `scenes/menu/main_menu.tscn`: `Background` war schon `Ignore`. Dazu `Margin`, `Layout`, `TitleBox`, `Title`, `Subtitle`, `Gap`, `MainButtons`, `Footer`. Claudes mittiges Optionsfenster (`anchor_top/bottom = 0.5`, Offsets −312 / 276) bleibt. Die Menü-Wurzel bleibt `Stop`, das ist die Menü-Szene selbst.
+  - `scenes/player/player.gd`: das NOCLIP-Label setzt `MOUSE_FILTER_IGNORE`.
+- Nicht geändert: `claude_updatenotice.md`, `project.godot` (Stretch kam mit dem Pull). Keine neue Input-Aktion. HUD-Leisten und Hotbar hatten `Ignore` schon.
+- Zusammengeführt: Vor dem Ändern war `origin/main` bei `6496afe`. Danach lag `105da31` (PR #13) auf dem Remote und betraf `project.godot` und `scenes/menu/main_menu.tscn`. Lokale Änderungen gestasht, Fast-forward, Stash zurück. `main_menu.tscn` automatisch vereint: Mausfilter und die zentrierte Optionsfläche. `project.godot` war danach identisch mit dem Remote, kein eigener Diff.
+- Getestet (Godot 4.7.2 stable, headless, isoliertes APPDATA): temporäre Szene `display_runner` (danach gelöscht) `CHECKS 14 FAILS 0`. Darin Stretch `canvas_items`/`expand`, Skala 1920×1080 = 1, 2560×1440 = 1920/2560, 3840×2160 = 0,5, 0×0 = Reglerwert, kleinerer Regler auf 4K bleibt, Pause-Root und Dim `Ignore` und unsichtbar, Overlay zu und `Ignore`, Menü-Rand `Ignore`, Optionsfenster `anchor_top` 0,5, `size_changed`-Handler 40-mal ohne Hänger. `testmap.tscn --quit-after 2`: nur die Versionszeile, kein `SCRIPT ERROR` / `Parse Error`.
+- Bekannt beim Beenden: weiter `ERROR: 1 resources still in use at exit` (Musik-Stream, siehe Eintrag darüber). Kein neuer Skriptfehler.
+- Nicht getestet: echtes 2K- oder 4K-Fenster, Vollbild auf einem solchen Monitor, ob die Bewegung dort wieder läuft. Echte `settings.cfg` nicht angefasst.
+- Git: Commit auf `main`, `git push origin main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`

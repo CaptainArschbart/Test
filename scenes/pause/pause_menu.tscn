@@ -17,6 +17,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 theme = ExtResource("2_theme")
 
 [node name="Dim" type="ColorRect" parent="Root"]
@@ -26,6 +27,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 color = Color(0.01, 0, 0.04, 0.75)
 
 [node name="Center" type="CenterContainer" parent="Root"]
@@ -35,6 +37,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 
 [node name="Panel" type="PanelContainer" parent="Root/Center"]
 custom_minimum_size = Vector2(780, 0)
@@ -50,12 +53,14 @@ theme_override_constants/separation = 14
 
 [node name="Title" type="Label" parent="Root/Center/Panel/Pages/MainPage"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.1, 0.75, 1)
 theme_override_font_sizes/font_size = 44
 text = "> PAUSE"
 
 [node name="Hint" type="Label" parent="Root/Center/Panel/Pages/MainPage"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_colors/font_color = Color(0, 0.95, 1, 0.6)
 theme_override_font_sizes/font_size = 16
 text = "// SPIEL ANGEHALTEN  //  ESC = FORTSETZEN  //  F11 = VOLLBILD"
@@ -63,6 +68,7 @@ text = "// SPIEL ANGEHALTEN  //  ESC = FORTSETZEN  //  F11 = VOLLBILD"
 [node name="Spacer" type="Control" parent="Root/Center/Panel/Pages/MainPage"]
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
+mouse_filter = 2
 
 [node name="ResumeButton" type="Button" parent="Root/Center/Panel/Pages/MainPage"]
 unique_name_in_owner = true

@@ -128,6 +128,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 theme_override_constants/margin_left = 110
 theme_override_constants/margin_top = 40
 theme_override_constants/margin_right = 96
@@ -135,6 +136,7 @@ theme_override_constants/margin_bottom = 40
 
 [node name="Layout" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
+mouse_filter = 2
 size_flags_horizontal = 0
 theme_override_constants/separation = 0
 alignment = 1
@@ -142,17 +144,20 @@ alignment = 1
 [node name="TitleBox" type="VBoxContainer" parent="Margin/Layout"]
 unique_name_in_owner = true
 layout_mode = 2
+mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Title" type="Label" parent="Margin/Layout/TitleBox"]
 unique_name_in_owner = true
 layout_mode = 2
+mouse_filter = 2
 text = "NEON DISTRICT"
 label_settings = SubResource("LabelSettings_title")
 
 [node name="Subtitle" type="Label" parent="Margin/Layout/TitleBox"]
 unique_name_in_owner = true
 layout_mode = 2
+mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.25, 0.8, 0.9)
 theme_override_font_sizes/font_size = 22
 text = "// SYSTEM ONLINE_"
@@ -160,11 +165,13 @@ text = "// SYSTEM ONLINE_"
 [node name="Gap" type="Control" parent="Margin/Layout"]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
+mouse_filter = 2
 
 [node name="MainButtons" type="VBoxContainer" parent="Margin/Layout"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(480, 0)
 layout_mode = 2
+mouse_filter = 2
 size_flags_horizontal = 0
 theme = SubResource("Theme_menu_buttons")
 theme_override_constants/separation = 16
@@ -201,6 +208,7 @@ alignment = 0
 
 [node name="Footer" type="Label" parent="."]
 layout_mode = 1
+mouse_filter = 2
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0

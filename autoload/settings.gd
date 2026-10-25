@@ -19,6 +19,9 @@ const SFX_BUS := "SFX"
 
 ## Kleinste einstellbare 3D-Auflösung (Faktor auf die Fenstergröße).
 const RENDER_SCALE_MIN := 0.5
+## 3D wird höchstens auf diese Kantenlänge gerendert. Darüber würde ein 2K-/4K-Puffer
+## den Frame so lang machen, dass die Steuerung stehen bleibt.
+const RENDER_LONG_EDGE := 1920
 
 ## Aktionen aus der Input Map, die im Menü neu belegt werden können (Aktion → Anzeigename).
 const REBINDABLE_ACTIONS := {
@@ -62,6 +65,8 @@ var invert_y := false
 var key_bindings := {}
 
 var _default_bindings := {}
+var _applied_window_size := Vector2i(-1, -1)
+var _applying_scale := false
 
 
 func _ready() -> void:
@@ -71,6 +76,9 @@ func _ready() -> void:
 	key_bindings = _default_bindings.duplicate()
 	load_settings()
 	apply()
+	var root := get_tree().root
+	if not root.size_changed.is_connected(_on_root_size_changed):
+		root.size_changed.connect(_on_root_size_changed)
 
 
 ## Aktuelle Werte als Dictionary (zum Bearbeiten im Menü).
@@ -137,7 +145,7 @@ func apply() -> void:
 
 	var viewport := get_viewport()
 	viewport.msaa_3d = msaa as Viewport.MSAA
-	viewport.scaling_3d_scale = render_scale
+	_apply_3d_scale()
 
 	_apply_bus(MASTER_BUS, master_volume)
 	_apply_bus(MUSIC_BUS, music_volume)
@@ -200,6 +208,40 @@ func save_settings() -> void:
 	for action: String in key_bindings:
 		config.set_value("keys", action, key_bindings[action])
 	config.save(PATH)
+
+
+## Faktor fürs 3D-Bild. Unter oder bei 1920 px bleibt der Reglerwert. Darüber wird
+## auf etwa Full HD begrenzt. Fenstergröße 0 (noch kein Fenster) teilt nicht.
+static func scale_for_window(scale: float, window_size: Vector2i) -> float:
+	var longest := maxi(window_size.x, window_size.y)
+	if longest <= RENDER_LONG_EDGE:
+		return scale
+	return minf(scale, float(RENDER_LONG_EDGE) / float(longest))
+
+
+func _on_root_size_changed() -> void:
+	if _applying_scale:
+		return
+	var size := DisplayServer.window_get_size()
+	if size.x <= 0 or size.y <= 0 or size == _applied_window_size:
+		return
+	_applied_window_size = size
+	_apply_3d_scale()
+
+
+func _apply_3d_scale() -> void:
+	var viewport := get_viewport()
+	if viewport == null:
+		return
+	var size := DisplayServer.window_get_size()
+	var scale := scale_for_window(render_scale, size)
+	if is_equal_approx(viewport.scaling_3d_scale, scale):
+		_applied_window_size = size
+		return
+	_applying_scale = true
+	viewport.scaling_3d_scale = scale
+	_applying_scale = false
+	_applied_window_size = size
 
 
 ## Stellt einen Bus sofort, ohne zu speichern. Der Musik-Regler nutzt das für "Music".

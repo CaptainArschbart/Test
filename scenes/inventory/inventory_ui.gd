@@ -72,6 +72,8 @@ func _build_slots() -> void:
 
 func _set_open(open: bool) -> void:
 	overlay.visible = open
+	# Geschlossen darf die volle Fläche keine Maus fangen, auch nicht bei 2K/4K.
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP if open else Control.MOUSE_FILTER_IGNORE
 	hotbar.visible = not open
 	player.input_locked = open
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if open else Input.MOUSE_MODE_CAPTURED
