@@ -1,8 +1,15 @@
-[gd_scene load_steps=27 format=3]
+[gd_scene load_steps=34 format=3]
 
 [ext_resource type="Script" path="res://scenes/testmap/testmap.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
 [ext_resource type="Shader" path="res://scenes/testmap/building_facade.gdshader" id="3_facade"]
+[ext_resource type="PackedScene" path="res://scenes/items/pickup.tscn" id="90_pickup"]
+[ext_resource type="Resource" path="res://scenes/items/data/energy_drink.tres" id="91_energy_drink"]
+[ext_resource type="Resource" path="res://scenes/items/data/credchip.tres" id="92_credchip"]
+[ext_resource type="Resource" path="res://scenes/items/data/data_shard.tres" id="93_data_shard"]
+[ext_resource type="Resource" path="res://scenes/items/data/stim_pack.tres" id="94_stim_pack"]
+[ext_resource type="Resource" path="res://scenes/items/data/mono_blade.tres" id="95_mono_blade"]
+[ext_resource type="Resource" path="res://scenes/items/data/emp_grenade.tres" id="96_emp_grenade"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_asphalt"]
 albedo_color = Color(0.09, 0.09, 0.12, 1)
@@ -2671,3 +2678,43 @@ shape = SubResource("Shape_wall1")
 
 [node name="Player" parent="." instance=ExtResource("2_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 42)
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Street" instance=ExtResource("90_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("92_credchip")
+count = 25
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Street2" instance=ExtResource("90_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("91_energy_drink")
+count = 3
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Plaza" instance=ExtResource("90_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("95_mono_blade")
+count = 1
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Plaza3" instance=ExtResource("90_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("93_data_shard")
+count = 5
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Plaza5" instance=ExtResource("90_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("96_emp_grenade")
+count = 2
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Plaza7" instance=ExtResource("90_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("94_stim_pack")
+count = 2
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_StairTop" instance=ExtResource("90_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("92_credchip")
+count = 50
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_RampTop" instance=ExtResource("90_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("93_data_shard")
+count = 3

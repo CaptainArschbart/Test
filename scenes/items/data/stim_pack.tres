@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scenes/items/item_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+id = "stim_pack"
+display_name = "Stim-Injektor"
+description = "Flickt dich für ein paar Minuten zusammen. Nebenwirkungen: ja."
+glyph = "+"
+color = Color(0.3, 1, 0.45, 1)
+max_stack = 8

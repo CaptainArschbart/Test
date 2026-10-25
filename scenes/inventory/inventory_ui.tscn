@@ -1,0 +1,141 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/inventory/inventory_ui.gd" id="1_ui"]
+
+[sub_resource type="StyleBoxFlat" id="Style_panel"]
+content_margin_left = 28.0
+content_margin_top = 20.0
+content_margin_right = 28.0
+content_margin_bottom = 24.0
+bg_color = Color(0.03, 0, 0.08, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.95, 1, 0.9)
+shadow_color = Color(0, 0.95, 1, 0.25)
+shadow_size = 16
+
+[node name="InventoryUI" type="CanvasLayer"]
+script = ExtResource("1_ui")
+
+[node name="Crosshair" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Dot" type="ColorRect" parent="Crosshair"]
+custom_minimum_size = Vector2(4, 4)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0, 0.95, 1, 0.8)
+
+[node name="HotbarArea" type="VBoxContainer" parent="."]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -120.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 2
+
+[node name="ItemName" type="Label" parent="HotbarArea"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.1, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+
+[node name="Hotbar" type="HBoxContainer" parent="HotbarArea"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="Feed" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -300.0
+offset_right = 424.0
+offset_bottom = -140.0
+grow_vertical = 0
+mouse_filter = 2
+alignment = 2
+
+[node name="InventoryOverlay" type="ColorRect" parent="."]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.02, 0, 0.06, 0.6)
+
+[node name="Center" type="CenterContainer" parent="InventoryOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Panel" type="PanelContainer" parent="InventoryOverlay/Center"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("Style_panel")
+
+[node name="Layout" type="VBoxContainer" parent="InventoryOverlay/Center/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="InfoName" type="Label" parent="InventoryOverlay/Center/Panel/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.1, 0.75, 1)
+theme_override_font_sizes/font_size = 28
+text = "> INVENTAR"
+
+[node name="InfoDescription" type="Label" parent="InventoryOverlay/Center/Panel/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.95, 1, 0.7)
+theme_override_font_sizes/font_size = 15
+autowrap_mode = 3
+
+[node name="BackpackLabel" type="Label" parent="InventoryOverlay/Center/Panel/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.9, 1, 0.8)
+theme_override_font_sizes/font_size = 14
+text = "// RUCKSACK"
+
+[node name="BackpackGrid" type="GridContainer" parent="InventoryOverlay/Center/Panel/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+columns = 9
+
+[node name="HotbarLabel" type="Label" parent="InventoryOverlay/Center/Panel/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.9, 1, 0.8)
+theme_override_font_sizes/font_size = 14
+text = "// HOTBAR"
+
+[node name="PanelHotbar" type="HBoxContainer" parent="InventoryOverlay/Center/Panel/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6

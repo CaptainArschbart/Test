@@ -394,9 +394,15 @@ theme_override_font_sizes/font_size = 16
 text = "TASTENBELEGUNG  //  Feld anklicken, neue Taste drücken (Esc = abbrechen)"
 autowrap_mode = 3
 
-[node name="KeyGrid" type="GridContainer" parent="OptionsPanel/Options/Tabs/STEUERUNG"]
+[node name="KeyScroll" type="ScrollContainer" parent="OptionsPanel/Options/Tabs/STEUERUNG"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="KeyGrid" type="GridContainer" parent="OptionsPanel/Options/Tabs/STEUERUNG/KeyScroll"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/h_separation = 16
 theme_override_constants/v_separation = 6
 columns = 4
