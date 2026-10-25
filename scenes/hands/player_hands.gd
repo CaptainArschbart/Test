@@ -81,7 +81,7 @@ const POSE_GRIP_RIGHT := {
 	"rot": Vector3(15.0, 8.0, -92.0),
 	"curl": [[48.0, 58.0, 26.0], [80.0, 82.0, 40.0], [84.0, 84.0, 42.0], [86.0, 84.0, 44.0]],
 	"spread": 0.0,
-	"thumb": Vector3(-38.0, 12.0, 0.0),
+	"thumb": Vector3(-52.0, 10.0, 0.0),
 	"thumb_curl": [14.0, 10.0],
 }
 ## Linke Hand umfasst die rechte von links (Daumen nach vorn an der Waffe).
@@ -90,7 +90,7 @@ const POSE_GRIP_LEFT := {
 	"rot": Vector3(28.0, -14.0, 80.0),
 	"curl": [[58.0, 62.0, 30.0], [62.0, 66.0, 32.0], [66.0, 70.0, 34.0], [70.0, 72.0, 34.0]],
 	"spread": 0.0,
-	"thumb": Vector3(-24.0, 8.0, 0.0),
+	"thumb": Vector3(-40.0, 6.0, 0.0),
 	"thumb_curl": [6.0, 4.0],
 }
 ## Linke Hand unten am Griff (Magazin).
@@ -170,8 +170,8 @@ func apply_motion(delta: float, horizontal_speed: float, sprinting: bool) -> voi
 	_time += delta * frequency
 	var wave := sin(_time)
 	var sway := sin(_time * 0.5)
-	var look := _look_offset
-	position = _base_position + Vector3(sway * amplitude_x - look.x * 0.5, wave * amplitude_y + look.y * 0.5 - _land_dip, 0.0)
+	var look := _look_offset * motion_scale
+	position = _base_position + Vector3(sway * amplitude_x - look.x * 0.5, wave * amplitude_y + look.y * 0.5 - _land_dip * motion_scale, 0.0)
 	rotation = _base_rotation + Vector3(wave * amplitude_y * 2.0 + look.y * 1.5, look.x * 1.5, sway * amplitude_x * 1.5 + look.x * 0.8)
 
 
