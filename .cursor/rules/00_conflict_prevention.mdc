@@ -1,0 +1,60 @@
+---
+description: Striktes Regelwerk zur Vermeidung und Behebung von Git- und Code-Konflikten
+globs: **/*
+alwaysApply: true
+---
+
+# 🛡️ Anti-Conflict & Handover Guidelines
+
+An diesem Projekt arbeiten mehrere Personen und KI-Systeme (Cursor, Claude, Menschen)
+parallel auf eigenen Branches. Diese Regel verhindert Merge-Konflikte und sagt, wie
+vorhandene Konflikte verlustfrei gelöst werden. Sie ergänzt `ai-handover.mdc`
+(Protokollpflicht). Bei Widerspruch gilt: Die Reihenfolge im Änderungsprotokoll
+bestimmt `ai-handover.mdc` (neuester Eintrag oben), alles andere diese Regel.
+
+## 1. Abgleich vor jeder Dateiänderung (Pre-flight Check)
+- Bevor du eine Datei änderst, prüfe immer ihren aktuellen Inhalt im Repo sowie den neuesten Stand der `AI_HANDOVER.md`.
+- Falls Änderungen an shared Files (wie `AI_HANDOVER.md`, `README.md`, `project.godot` oder gemeinsamen Autoloads) anstehen, füge deine Änderungen additiv an (z. B. neue Abschnitte/Einträge ergänzen), statt bestehende Abschnitte komplett zu überschreiben.
+- „Neuester Stand“ heißt der Stand auf dem Remote, nicht nur der lokale: `git fetch`, dann
+  `git log HEAD..origin/<basis-branch> --oneline` und `git diff HEAD...origin/<basis-branch> --stat`.
+  Hat das Remote Dateien geändert, die du anfassen willst, **erst** `origin/<basis-branch>`
+  in den Arbeitsbranch mergen (nicht rebasen, nicht force-pushen), **dann** ändern.
+- Vor dem Commit `git status` und `git diff --stat` prüfen: Nur Dateien committen, die zur
+  Aufgabe gehören. Vom Godot-Editor selbst erzeugte Änderungen (z. B. Feature-Tag in
+  `project.godot`, Import-Optionen in `*.import`) nicht unbemerkt mitnehmen.
+
+## 2. Vermeidung von Git-Konflikten bei Szenen und Skripten
+- **Kapselung:** Erstelle für neue Features immer eigene Ordner unter `scenes/<feature_name>/` mit eigenen Unterdateien, um Überschneidungen mit anderen Branches zu verhindern.
+- **Node-Referenzen:** Verwende für dynamische Zugriffe auf Nodes Unique Names (`%Name`) oder `@export`-Referenzen statt langer fester Pfade (`$A/B/C`, `get_node("../X")`), damit Umbauten der Szenenstruktur in anderen Branches deine Skripte nicht stillschweigend brechen. Szenen und Skripte lädt man über `const X := preload("res://…")`, nie über zusammengebaute Strings oder absolute Rechnerpfade.
+- **Gemeinsame Szenen schmal anfassen:** In bestehenden Szenen und Skripten, an denen andere arbeiten (`scenes/main/`, `scenes/menu/`, `scenes/player/`), nur das Nötigste ändern: neue Teilszene instanziieren, Signal verbinden, fertig. Die Logik gehört in den eigenen Feature-Ordner. Ein größerer Umbau einer fremden Datei braucht einen ausdrücklichen Auftrag und im Handover-Eintrag den Vermerk „Merge-Risiko“ mit Dateiliste.
+- **Keine Kosmetik-Diffs:** Keine Dateien nur umformatieren, umsortieren, umbenennen oder verschieben. In `.tscn`/`.tres` keine Sub-Resource-IDs oder Knotenreihenfolgen ändern, wenn es nicht zur Aufgabe gehört. Szenen, die du nicht ändern wolltest, nicht im Editor speichern.
+- **Neue Dateien statt Umbau:** Zusätzliche Einstellungen, Menüpunkte oder Systeme als eigene Datei/Szene anlegen und an einer Stelle einhängen, nicht in eine bestehende große Datei einflechten.
+
+## 3. Gemeinsame Dateien
+- **`project.godot`:** Nur Schlüssel hinzufügen oder gezielt ändern, nie Abschnitte umsortieren oder neu schreiben. Neue Autoloads und Input-Aktionen unten im jeweiligen Abschnitt anfügen. Nach jedem Editor-Lauf `git diff project.godot` prüfen.
+- **`AI_HANDOVER.md`:** Eigenen Eintrag anlegen, fremde Einträge nicht ändern (Ausnahme: dokumentierte Korrektur). In den Ist-Stand-Abschnitten nur die Zeilen anfassen, die sich wirklich geändert haben, keine Abschnitte neu umbrechen oder neu schreiben. Die Zeile „Letztes Update“ ändert jeder, deshalb ist sie ein Konfliktmagnet: Beim Lösen gewinnt der Eintrag mit der höheren Nummer.
+- **`README.md`:** Nur die betroffenen Aufzählungspunkte ändern.
+- **Autoloads (`autoload/`):** Bestehende Felder und Signaturen nicht umbenennen oder entfernen, nur ergänzen. Rückwärtskompatibel bleiben, weil andere Branches sie benutzen.
+- **`.uid`-Dateien** gehören zusammen mit ihrem Skript/Shader/Resource ins Repository. Nicht löschen, nicht neu erzeugen, wenn sie schon existieren.
+
+## 4. Branches
+- Pro Aufgabe ein eigener, kurzlebiger Branch mit Präfix `cursor/` (z. B. `cursor/pause-menu-shared-options`). Ein Branch lebt Stunden, nicht Wochen.
+- Vor jedem Push `git fetch` und `origin/<basis-branch>` einmergen (siehe Abschnitt 1), damit Konflikte lokal gelöst werden, nicht im Pull Request.
+- Niemals `git push --force`, `git reset --hard` auf geteilten Ständen oder History-Umschreiben.
+
+## 5. Konflikte beheben (automatisch, aber ohne Verlust)
+Gilt bei `git merge`/`git pull` mit Konflikten oder wenn Konfliktmarker (`<<<<<<<`, `=======`, `>>>>>>>`) im Projekt stehen.
+
+1. **Überblick:** `git status`, `git diff --name-only --diff-filter=U`. Für jede Datei **beide** Seiten lesen (`git show :2:<datei>` = unser Stand, `git show :3:<datei>` = fremder Stand, `git show :1:<datei>` = gemeinsame Basis) und verstehen, was jede Seite wollte.
+2. **Verboten:** `git checkout --ours/--theirs` für ganze Dateien, `git merge -X ours/-X theirs`, `git reset --hard`, Konfliktmarker einfach löschen, eine Seite ohne Rückfrage verwerfen.
+3. **Lösen nach Dateityp, immer beide Seiten behalten:**
+   - **Markdown (`AI_HANDOVER.md`, `README.md`):** Beide Einträge und beide Textänderungen behalten. Haben beide Seiten dieselbe Eintragsnummer vergeben, bekommt der eigene Eintrag die nächste freie Nummer, und das steht im Eintrag. Ist-Stand-Abschnitte so zusammenführen, dass sie den echten Dateistand beider Seiten beschreiben (gegen die Dateien prüfen, nicht raten).
+   - **`.tscn` / `.tres`:** Knoten, `ext_resource`- und `sub_resource`-Einträge beider Seiten behalten. IDs müssen eindeutig sein (bei Kollision eine umbenennen und alle Verweise nachziehen), `load_steps` = Anzahl ext + sub + 1, `parent`-Pfade müssen existieren, keine doppelten Knotennamen unter einem Elternknoten.
+   - **`project.godot`:** Vereinigung der Schlüssel. Autoloads und Input-Aktionen beider Seiten behalten, Feature-Tag auf die neuere Godot-Version.
+   - **`.gd`:** Beide Funktionalitäten zusammenführen, keine doppelten `func`, `signal`, `const`, `var`. Alles, was die andere Seite neu aufruft, muss weiter existieren.
+   - **`*.import`, `.godot/`:** Editor-Erzeugnisse. Fremden Stand nehmen, Godot erzeugt neu.
+4. **Widersprüche nicht raten:** Wollen beide Seiten dieselbe Stelle unvereinbar verschieden (z. B. zwei Werte für dieselbe Einstellung, zwei Umbauten derselben Funktion), mit `AskQuestion` beide Varianten nennen und den Nutzer entscheiden lassen.
+5. **Prüfen, bevor committet wird:**
+   - Keine Marker mehr: `rg "^(<<<<<<<|=======|>>>>>>>)" --glob "!*.md"` ohne Treffer (in `.md` nur echte Marker am Zeilenanfang prüfen).
+   - Projekt startet headless ohne Skript- oder Parse-Fehler (Test-Rezept: `AI_HANDOVER.md`, Abschnitt 10), bei Szenenkonflikten zusätzlich die betroffene Szene laden.
+6. **Dokumentieren:** Merge-Commit mit Nachricht, die Dateien und Vorgehen nennt. Im Handover-Eintrag unter „Git“: welche Dateien kollidierten, was von welcher Seite übernommen wurde, was umnummeriert oder angepasst wurde und was nicht geprüft werden konnte.

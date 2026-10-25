@@ -1,0 +1,43 @@
+---
+description: Jede Änderung am Projekt wird ausführlich in AI_HANDOVER.md protokolliert
+alwaysApply: true
+---
+
+# AI_HANDOVER.md pflegen
+
+An diesem Godot-Projekt arbeiten mehrere Personen und KI-Systeme. `AI_HANDOVER.md`
+im Projektstamm ist die gemeinsame Übergabe. Der Nutzer will, dass dort **immer
+ausdrücklich und ausführlich** steht, was gemacht wurde. Sprache: Deutsch.
+
+## Nach jeder Aufgabe, die etwas im Projekt ändert
+
+Vor der Schlussantwort, im selben Arbeitsgang:
+
+1. Neuen Eintrag **ganz oben** im Abschnitt "Änderungsprotokoll" anlegen (Nummer
+   hochzählen, Datum, kurzer Titel).
+2. Die Ist-Stand-Abschnitte (Struktur, project.godot, Szenen, Skripte, Abhängigkeiten,
+   "Nicht vorhanden", Teststand) auf den neuen Stand bringen. Nichts Veraltetes stehen lassen.
+3. "Letztes Update" in der Kopfzeile setzen.
+4. In der Schlussantwort sagen, dass die Übergabe aktualisiert wurde.
+
+Reine Fragen und Analysen ohne Änderung brauchen keinen Eintrag. Git-Aktionen
+(Commit, Merge, Konfliktlösung, Push) gehören in den Eintrag der Aufgabe, zu der sie gehören.
+
+## Was ein Eintrag enthält
+
+- **Auftrag:** was der Nutzer wollte, in einem Satz.
+- **Neu / Geändert / Gelöscht:** jede Datei mit Pfad und was genau sich darin geändert hat.
+- **Entscheidungen und Gründe:** warum so und nicht anders, auch verworfene Wege.
+- **Getestet:** womit und mit welchem Ergebnis (Zahlen, nicht "funktioniert").
+- **Nicht getestet:** ausdrücklich, mit Grund.
+- **Git:** Commits, Merges, Konflikte, abgelehnte Pushes.
+- **Offen:** Bekanntes, Lücken, nächste sinnvolle Schritte.
+
+## Regeln
+
+- Nur Tatsachen. Nichts beschreiben, was nicht geprüft oder geschrieben wurde.
+- Nicht Erledigtes oder Fehlgeschlagenes steht ehrlich drin, nicht nur der Erfolg.
+- Zahlen aus der echten Ausgabe übernehmen, nicht aus dem Gedächtnis.
+- Gab es eine Korrektur an früheren Aussagen, steht sie im Eintrag.
+- Beispiel für "Geändert": `autoload/settings.gd`: neues Feld `msaa` (int, Standard 2),
+  `apply()` setzt den Fenstermodus nur noch bei echter Änderung.
