@@ -17,6 +17,17 @@ const REBINDABLE_ACTIONS := {
 	"move_right": "Rechts",
 	"jump": "Springen",
 	"sprint": "Sprinten",
+	"inventory": "Inventar",
+	"drop_item": "Wegwerfen",
+	"hotbar_1": "Slot 1",
+	"hotbar_2": "Slot 2",
+	"hotbar_3": "Slot 3",
+	"hotbar_4": "Slot 4",
+	"hotbar_5": "Slot 5",
+	"hotbar_6": "Slot 6",
+	"hotbar_7": "Slot 7",
+	"hotbar_8": "Slot 8",
+	"hotbar_9": "Slot 9",
 }
 
 var fullscreen := false

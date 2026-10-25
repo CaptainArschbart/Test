@@ -3,6 +3,7 @@ extends CharacterBody3D
 ## Spielfigur: WASD-Bewegung, Sprint, Sprung und Maus-Kamera (First Person).
 ##
 ## Escape gibt die Maus frei, ein Klick ins Fenster fängt sie wieder ein.
+## Zahlentasten und Mausrad wählen den Hotbar-Slot, "drop_item" wirft ein Stück davon weg.
 
 @export_group("Bewegung")
 @export var walk_speed := 5.0
@@ -21,12 +22,17 @@ extends CharacterBody3D
 ## Fällt der Spieler unter diese Höhe, wird er zum Startpunkt zurückgesetzt.
 @export var respawn_height := -30.0
 
+const PICKUP_SCENE := preload("res://scenes/items/pickup.tscn")
+
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+## Wird vom Inventar-Fenster gesetzt: keine Bewegung, kein Umschauen.
+var input_locked := false
 
 var _spawn_transform: Transform3D
 
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
+@onready var inventory: Inventory = $Inventory
 
 
 func _ready() -> void:
@@ -35,6 +41,10 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if input_locked:
+		return
+	if _handle_hotbar_input(event):
+		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		# Grundwert aus dem Inspector mal Faktor aus dem Optionsmenü.
 		var sensitivity := mouse_sensitivity * Settings.mouse_sensitivity
@@ -53,10 +63,12 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 
-	if Input.is_action_just_pressed("jump") and is_on_floor():
+	if Input.is_action_just_pressed("jump") and is_on_floor() and not input_locked:
 		velocity.y = jump_velocity
 
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	if input_locked:
+		input_dir = Vector2.ZERO
 	var direction := (transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
 	var speed := sprint_speed if Input.is_action_pressed("sprint") else walk_speed
 	var accel := acceleration if is_on_floor() else acceleration * air_control
@@ -74,3 +86,44 @@ func _physics_process(delta: float) -> void:
 func respawn() -> void:
 	global_transform = _spawn_transform
 	velocity = Vector3.ZERO
+
+
+## Wirft `amount` Stück aus einem Inventar-Slot vor den Spieler.
+func drop_item(index: int, amount := 1) -> void:
+	var item := inventory.get_item(index)
+	if item == null or amount <= 0:
+		return
+	var removed := inventory.remove_at(index, amount)
+	var forward := -camera.global_basis.z
+	var spawn := camera.global_position + forward * 0.8
+	# Nicht in eine Wand direkt vor dem Spieler werfen.
+	var query := PhysicsRayQueryParameters3D.create(camera.global_position, spawn, 1)
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if hit:
+		spawn = hit.position - forward * 0.3
+	var pickup: ItemPickup = PICKUP_SCENE.instantiate()
+	pickup.item = item
+	pickup.count = removed
+	get_parent().add_child(pickup)
+	pickup.global_position = spawn
+	pickup.throw(forward * 4.0 + Vector3.UP * 1.5 + Vector3(velocity.x, 0.0, velocity.z))
+
+
+## Zahlentasten, Mausrad und Wegwerfen. Gibt true zurück, wenn das Event verbraucht wurde.
+func _handle_hotbar_input(event: InputEvent) -> bool:
+	for i in Inventory.HOTBAR_SIZE:
+		if event.is_action_pressed("hotbar_%d" % (i + 1)):
+			inventory.select(i)
+			return true
+	if event.is_action_pressed("drop_item"):
+		drop_item(inventory.selected)
+		return true
+	if event is InputEventMouseButton and event.pressed \
+			and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			inventory.select_next(1)
+			return true
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			inventory.select_next(-1)
+			return true
+	return false
