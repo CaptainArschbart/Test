@@ -212,3 +212,25 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: Fensterbild auf den Treppen, ob die Platzhalter im Lautsprecher gut klingen, Controller. Echte `settings.cfg` nicht angefasst.
 - Git: Commit auf `main`, `git push origin main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-25 · Hintergrundmusik aus sounds/ · Cursor (für EnScapeZ) · main
+- Auftrag: Die MP3s im Ordner `sounds` als Hintergrundmusik auf dem Bus „Music“ abspielen und den Musik-Regler in den Optionen in Echtzeit darauf wirken lassen.
+- Entscheidung: Autoload `AudioManager` nach `Settings`. Alle `*.mp3` in `res://sounds` werden alphabetisch geladen und nacheinander gespielt. Am Ende der Liste beginnt der erste Titel wieder. Das Import-Flag `loop` bleibt `false`, sonst würde `finished` nicht kommen und nur der erste Titel laufen. Die Liste selbst wiederholt sich. Der Spieler hängt am Bus `Music`. Pause stoppt die Musik nicht (`PROCESS_MODE_ALWAYS`). Der Regler speichert weiter erst bei „Übernehmen“; während des Ziehens stellt `Settings.preview_bus` den Bus sofort über `AudioServer.set_bus_volume_db`. Zweimal „Zurück“ stellt die gespeicherte Lautstärke wieder her.
+- Neu:
+  - `autoload/audio_manager.gd` und `autoload/audio_manager.gd.uid`.
+  - `sounds/MC MIMMON.mp3`
+  - `sounds/Mimom Mc.mp3`
+  - `sounds/Mimon Baraka  Bing Bao Ming Mao.mp3` (zwei Leerzeichen zwischen Baraka und Bing)
+  - `sounds/YE-HH.mp3`
+  - dazu die vier `.import`-Dateien (`loop=false`).
+- Geändert:
+  - `project.godot`: Autoload `AudioManager` hinter `Settings`.
+  - `autoload/settings.gd`: `preview_bus(bus_name, percent)` setzt die Bus-Lautstärke, ohne zu speichern.
+  - `scenes/options/options_menu.gd`: Musik-Regler ruft `preview_bus` für `Music` auf. „Standard“ ebenfalls. Schließen der Seite setzt den Bus auf `Settings.music_volume`.
+- Reihenfolge beim Start: `res://sounds/MC MIMMON.mp3`, dann `res://sounds/Mimom Mc.mp3`, dann `res://sounds/Mimon Baraka  Bing Bao Ming Mao.mp3`, dann `res://sounds/YE-HH.mp3`.
+- Nicht geändert: `claude_updatenotice.md`. Keine neue Input-Aktion.
+- Getestet (Godot 4.7.2 stable, headless, isoliertes APPDATA): temporäre Szene `music_runner` (danach gelöscht) `CHECKS 16 FAILS 0`. Vier Pfade in dieser Reihenfolge, erster Titel läuft, Bus ist `Music`, Import-`loop` ist aus. `preview_bus` bei 50 % liegt auf `linear_to_db(0.5)`, bei 0 ist der Bus stumm, bei 100 % auf 0 dB. Der Regler auf 40 setzt denselben Bus; zweimal Zurück stellt den vorherigen Wert wieder her.
+- Bekannt beim Beenden: Godot 4.7.2 meldet `ERROR: 1 resources still in use at exit` (`AudioStreamPlaybackMP3` für die laufende Datei), auch nachdem der Player gestoppt und der Stream geleert wurde. Kein `SCRIPT ERROR`. Das passiert beim Schließen, nicht während des Abspielens.
+- Nicht getestet: Klang aus den Lautsprechern, ob der Titelwechsel im langen Fenster hörbar ist. Echte `settings.cfg` nicht angefasst.
+- Git: Commit auf `main`, `git push origin main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`

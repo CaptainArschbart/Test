@@ -202,6 +202,11 @@ func save_settings() -> void:
 	config.save(PATH)
 
 
+## Stellt einen Bus sofort, ohne zu speichern. Der Musik-Regler nutzt das für "Music".
+func preview_bus(bus_name: String, percent: float) -> void:
+	_apply_bus(bus_name, percent)
+
+
 ## Lautstärke in Prozent auf einen Bus anwenden. Fehlt der Bus, passiert nichts.
 func _apply_bus(bus_name: String, percent: float) -> void:
 	var bus := AudioServer.get_bus_index(bus_name)

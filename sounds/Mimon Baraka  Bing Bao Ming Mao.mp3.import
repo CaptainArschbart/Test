@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://c7oqvt4wrwbeh"
+path="res://.godot/imported/Mimon Baraka  Bing Bao Ming Mao.mp3-d250ece72e2e0e4bbf02aa3d897c0272.mp3str"
+
+[deps]
+
+source_file="res://sounds/Mimon Baraka  Bing Bao Ming Mao.mp3"
+dest_files=["res://.godot/imported/Mimon Baraka  Bing Bao Ming Mao.mp3-d250ece72e2e0e4bbf02aa3d897c0272.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

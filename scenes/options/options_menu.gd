@@ -4,6 +4,8 @@ extends VBoxContainer
 ##
 ## Die Seite bearbeitet eine Kopie der Einstellungen (_draft). Erst "Übernehmen"
 ## schreibt sie über Settings.apply_values() ins Spiel und nach user://settings.cfg.
+## Der Musik-Regler stellt den Bus "Music" sofort lauter oder leiser. Verwerfen stellt
+## die gespeicherte Lautstärke wieder her.
 ## "Standard" lädt die Standardwerte in den Entwurf. "Zurück" (oder Esc, das ruft der
 ## Host über request_back() auf) verlässt die Seite. Steht noch Nicht-Übernommenes im
 ## Entwurf, braucht es dafür eine zweite Bestätigung.
@@ -62,7 +64,7 @@ func _ready() -> void:
 	msaa_option.item_selected.connect(_on_msaa_selected)
 	render_scale_slider.value_changed.connect(_on_render_scale_changed)
 	master_slider.value_changed.connect(_set_draft.bind("master_volume"))
-	music_slider.value_changed.connect(_set_draft.bind("music_volume"))
+	music_slider.value_changed.connect(_on_music_slider_changed)
 	sfx_slider.value_changed.connect(_set_draft.bind("sfx_volume"))
 	sensitivity_slider.value_changed.connect(_set_draft.bind("mouse_sensitivity"))
 	invert_y_check.toggled.connect(_set_draft.bind("invert_y"))
@@ -121,6 +123,7 @@ func request_back() -> void:
 
 
 func _close() -> void:
+	Settings.preview_bus(Settings.MUSIC_BUS, Settings.music_volume)
 	_rebinding_action = ""
 	_draft = {}
 	hide()
@@ -140,6 +143,12 @@ func _on_defaults_pressed() -> void:
 	_draft = Settings.get_defaults()
 	_refresh_options()
 	_update_dirty()
+	Settings.preview_bus(Settings.MUSIC_BUS, float(_draft.music_volume))
+
+
+func _on_music_slider_changed(percent: float) -> void:
+	_set_draft(percent, "music_volume")
+	Settings.preview_bus(Settings.MUSIC_BUS, percent)
 
 
 func _on_settings_changed() -> void:
