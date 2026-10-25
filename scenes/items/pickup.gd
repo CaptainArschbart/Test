@@ -1,7 +1,8 @@
 class_name ItemPickup
 extends Area3D
-## Item in der Welt. Leuchtet, dreht sich und wird automatisch aufgesammelt,
-## sobald der Spieler hineinläuft (Rest bleibt liegen, wenn das Inventar voll ist).
+## Item in der Welt. Leuchtet und dreht sich. Der Spieler hebt es mit "interact" (E) auf,
+## wenn er es anschaut (Layer interact, siehe ItemUser). Passt nicht alles ins Inventar,
+## bleibt der Rest liegen.
 ##
 ## Fallengelassene Items fliegen per throw() ein Stück und landen auf dem Boden.
 ## Waffen (WeaponData mit view_scene) zeigen ihr Modell statt des Würfels.
@@ -13,7 +14,7 @@ extends Area3D
 
 var _velocity := Vector3.ZERO
 var _falling := false
-## Sekunden, bis das Item aufgesammelt werden kann (nach dem Wegwerfen).
+## Sekunden, bis das Item aufgehoben werden kann (nach dem Wegwerfen).
 var _pickup_delay := 0.0
 var _time := randf() * TAU
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
@@ -58,20 +59,27 @@ func _physics_process(delta: float) -> void:
 		_fall(delta)
 	if _pickup_delay > 0.0:
 		_pickup_delay -= delta
+
+
+## Text für die Einblendung unter dem Fadenkreuz. Leer = gerade nicht benutzbar.
+func get_interact_text(_player: Player) -> String:
+	if _pickup_delay > 0.0 or is_queued_for_deletion():
+		return ""
+	return "Aufheben: " + label.text
+
+
+## Wird von ItemUser bei "interact" aufgerufen.
+func interact(player: Player) -> void:
+	if _pickup_delay > 0.0 or is_queued_for_deletion():
 		return
-	for body in get_overlapping_bodies():
-		if body is Player:
-			_give_to(body)
-			return
-
-
-func _give_to(player: Player) -> void:
 	var left := player.inventory.add_item(item, count)
 	if left == 0:
 		queue_free()
 	elif left != count:
 		count = left
 		_update_label()
+	else:
+		player.item_user.show_message("Inventar voll")
 
 
 func _fall(delta: float) -> void:

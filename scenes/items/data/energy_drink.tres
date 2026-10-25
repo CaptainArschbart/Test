@@ -1,12 +1,17 @@
-[gd_resource type="Resource" script_class="ItemData" format=3]
+[gd_resource type="Resource" script_class="ConsumableData" format=3]
 
-[ext_resource type="Script" path="res://scenes/items/item_data.gd" id="1_item"]
+[ext_resource type="Script" path="res://scenes/items/consumable_data.gd" id="1_item"]
 
 [resource]
 script = ExtResource("1_item")
 id = "energy_drink"
 display_name = "NeoCola Overdrive"
-description = "Koffein, Taurin und etwas, das leuchtet. Nicht nach Mitternacht trinken."
+description = "Koffein, Taurin und etwas, das leuchtet. Füllt Ausdauer und Durst, kurz schneller laufen. Rechtsklick trinkt."
 glyph = "NC"
 color = Color(1, 0.55, 0.1, 1)
 max_stack = 16
+stamina = 100.0
+water = 30.0
+speed_multiplier = 1.3
+boost_duration = 15.0
+use_verb = "getrunken"

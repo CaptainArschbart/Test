@@ -1,4 +1,4 @@
-[gd_scene load_steps=39 format=3]
+[gd_scene load_steps=41 format=3]
 
 [ext_resource type="Script" path="res://scenes/testmap/testmap.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
@@ -13,6 +13,8 @@
 [ext_resource type="Resource" path="res://scenes/items/data/emp_grenade.tres" id="96_emp_grenade"]
 [ext_resource type="Texture2D" path="res://pictures/maxresdefault.jpg" id="97_poster"]
 [ext_resource type="PackedScene" path="res://scenes/testmap/shooting_range.tscn" id="98_shooting_range"]
+[ext_resource type="Script" path="res://scenes/interact/vending_machine.gd" id="99_vending"]
+[ext_resource type="Resource" path="res://scenes/items/data/noodles.tres" id="100_noodles"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_poster"]
 albedo_texture = ExtResource("97_poster")
@@ -2740,6 +2742,27 @@ count = 50
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
 item = ExtResource("93_data_shard")
 count = 3
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Plaza2" instance=ExtResource("90_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("100_noodles")
+count = 2
+
+[node name="Vending" type="Node3D" parent="."]
+
+[node name="ColaMachine" type="StaticBody3D" parent="Vending"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -11.2, 0.2, 34)
+script = ExtResource("99_vending")
+product = ExtResource("91_energy_drink")
+price = 2
+currency = ExtResource("92_credchip")
+
+[node name="NoodleMachine" type="StaticBody3D" parent="Vending"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -11.2, 0.2, 35.6)
+script = ExtResource("99_vending")
+product = ExtResource("100_noodles")
+price = 3
+currency = ExtResource("92_credchip")
 
 [node name="ShootingRange" parent="." instance=ExtResource("98_shooting_range")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, 5)

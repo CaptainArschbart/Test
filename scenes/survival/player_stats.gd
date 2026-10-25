@@ -45,6 +45,8 @@ var thirst: float = 100.0
 var _sprinting := false
 var _regen_delay := 0.0
 var _dead := false
+var _speed_multiplier := 1.0
+var _boost_left := 0.0
 
 
 func _ready() -> void:
@@ -68,6 +70,10 @@ func advance(delta: float) -> void:
 func deplete_stats(delta: float) -> void:
 	if _dead or delta <= 0.0:
 		return
+	if _boost_left > 0.0:
+		_boost_left = maxf(_boost_left - delta, 0.0)
+		if _boost_left == 0.0:
+			_speed_multiplier = 1.0
 	var hunger_loss := maxf(hunger_drain_rate, 0.0) * delta
 	var thirst_loss := maxf(thirst_drain_rate, 0.0) * delta
 	_add(STAT_HUNGER, -hunger_loss)
@@ -123,10 +129,37 @@ func drink(amount: float) -> void:
 	_add(STAT_THIRST, absf(amount))
 
 
+## Ausdauer auffüllen (positiv) oder abziehen (negativ).
+func add_stamina(amount: float) -> void:
+	if _dead:
+		return
+	_add(STAT_STAMINA, amount)
+
+
+## Schneller laufen für `duration` Sekunden. Ein neuer Boost ersetzt den alten.
+func boost_speed(multiplier: float, duration: float) -> void:
+	if _dead or duration <= 0.0:
+		return
+	_speed_multiplier = maxf(multiplier, 0.1)
+	_boost_left = duration
+
+
+## Faktor auf die Laufgeschwindigkeit (1 = kein Boost).
+func get_speed_multiplier() -> float:
+	return _speed_multiplier
+
+
+## Restzeit des Boosts in Sekunden.
+func get_boost_left() -> float:
+	return _boost_left
+
+
 func restore_all() -> void:
 	_dead = false
 	_sprinting = false
 	_regen_delay = 0.0
+	_speed_multiplier = 1.0
+	_boost_left = 0.0
 	hp = max_hp
 	stamina = max_stamina
 	hunger = max_hunger
