@@ -1,138 +1,226 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scenes/survival/survival_hud.gd" id="1_hud"]
+[ext_resource type="Shader" path="res://scenes/survival/hud_bar.gdshader" id="2_shader"]
+
+[sub_resource type="StyleBoxFlat" id="Style_frame"]
+bg_color = Color(0.012, 0.004, 0.04, 0.78)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.95, 1, 0.9)
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_right = 0
+corner_radius_bottom_left = 0
+corner_detail = 1
+shadow_color = Color(0, 0.95, 1, 0.4)
+shadow_size = 12
+shadow_offset = Vector2(0, 0)
+anti_aliasing = false
 
 [sub_resource type="StyleBoxFlat" id="Style_bg"]
-bg_color = Color(0.02, 0, 0.06, 0.78)
+bg_color = Color(0.02, 0.008, 0.05, 0.92)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0, 0.95, 1, 0.45)
+border_color = Color(0.55, 0.95, 1, 0.4)
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_right = 0
+corner_radius_bottom_left = 0
+corner_detail = 1
+skew = Vector2(0.55, 0)
+anti_aliasing = false
 
 [sub_resource type="StyleBoxFlat" id="Style_hp"]
-bg_color = Color(1, 0.1, 0.75, 1)
+bg_color = Color(0, 0.95, 1, 1)
+corner_detail = 1
+skew = Vector2(0.55, 0)
+shadow_color = Color(0, 0.95, 1, 0.85)
+shadow_size = 7
+shadow_offset = Vector2(0, 0)
+anti_aliasing = false
 
 [sub_resource type="StyleBoxFlat" id="Style_stamina"]
-bg_color = Color(0, 0.95, 1, 1)
+bg_color = Color(0.93, 1, 0.12, 1)
+corner_detail = 1
+skew = Vector2(0.55, 0)
+shadow_color = Color(0.93, 1, 0.12, 0.75)
+shadow_size = 7
+shadow_offset = Vector2(0, 0)
+anti_aliasing = false
 
 [sub_resource type="StyleBoxFlat" id="Style_hunger"]
-bg_color = Color(1, 0.62, 0.12, 1)
+bg_color = Color(1, 0.42, 0.02, 1)
+corner_detail = 1
+skew = Vector2(0.55, 0)
+shadow_color = Color(1, 0.42, 0.02, 0.75)
+shadow_size = 7
+shadow_offset = Vector2(0, 0)
+anti_aliasing = false
 
 [sub_resource type="StyleBoxFlat" id="Style_thirst"]
-bg_color = Color(0.25, 0.55, 1, 1)
+bg_color = Color(1, 0.08, 0.38, 1)
+corner_detail = 1
+skew = Vector2(0.55, 0)
+shadow_color = Color(1, 0.08, 0.38, 0.8)
+shadow_size = 7
+shadow_offset = Vector2(0, 0)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="Mat_ticks"]
+shader = ExtResource("2_shader")
+shader_parameter/segments = 8.0
 
 [node name="SurvivalHud" type="CanvasLayer"]
 layer = 2
 script = ExtResource("1_hud")
 
-[node name="Bars" type="VBoxContainer" parent="."]
-offset_left = 24.0
-offset_top = 56.0
-offset_right = 268.0
-offset_bottom = 200.0
+[node name="Frame" type="Panel" parent="."]
+offset_left = 16.0
+offset_top = 40.0
+offset_right = 308.0
+offset_bottom = 188.0
 mouse_filter = 2
-theme_override_constants/separation = 6
+theme_override_styles/panel = SubResource("Style_frame")
 
-[node name="HPRow" type="HBoxContainer" parent="Bars"]
+[node name="Accent" type="ColorRect" parent="Frame"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 4.0
+offset_bottom = 148.0
+mouse_filter = 2
+color = Color(1, 0.1, 0.75, 1)
+
+[node name="Header" type="Label" parent="Frame"]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 6.0
+offset_right = 280.0
+offset_bottom = 26.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0, 0.95, 1, 1)
+theme_override_colors/font_outline_color = Color(1, 0.1, 0.75, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 13
+text = "VITALS"
+
+[node name="Bars" type="VBoxContainer" parent="Frame"]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 30.0
+offset_right = 284.0
+offset_bottom = 142.0
+mouse_filter = 2
+theme_override_constants/separation = 5
+
+[node name="HPRow" type="HBoxContainer" parent="Frame/Bars"]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 8
 
-[node name="HPLabel" type="Label" parent="Bars/HPRow"]
+[node name="HPLabel" type="Label" parent="Frame/Bars/HPRow"]
 custom_minimum_size = Vector2(88, 0)
 layout_mode = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(1, 0.1, 0.75, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 13
 text = "HP"
 
-[node name="HPBar" type="ProgressBar" parent="Bars/HPRow"]
+[node name="HPBar" type="ProgressBar" parent="Frame/Bars/HPRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(148, 16)
+custom_minimum_size = Vector2(156, 14)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_styles/background = SubResource("Style_bg")
 theme_override_styles/fill = SubResource("Style_hp")
+material = SubResource("Mat_ticks")
 max_value = 100.0
 step = 0.0
 value = 100.0
 show_percentage = false
 
-[node name="StaminaRow" type="HBoxContainer" parent="Bars"]
+[node name="StaminaRow" type="HBoxContainer" parent="Frame/Bars"]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 8
 
-[node name="StaminaLabel" type="Label" parent="Bars/StaminaRow"]
+[node name="StaminaLabel" type="Label" parent="Frame/Bars/StaminaRow"]
 custom_minimum_size = Vector2(88, 0)
 layout_mode = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(0, 0.95, 1, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.93, 1, 0.12, 1)
+theme_override_font_sizes/font_size = 13
 text = "AUSDAUER"
 
-[node name="StaminaBar" type="ProgressBar" parent="Bars/StaminaRow"]
+[node name="StaminaBar" type="ProgressBar" parent="Frame/Bars/StaminaRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(148, 16)
+custom_minimum_size = Vector2(156, 14)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_styles/background = SubResource("Style_bg")
 theme_override_styles/fill = SubResource("Style_stamina")
+material = SubResource("Mat_ticks")
 max_value = 100.0
 step = 0.0
 value = 100.0
 show_percentage = false
 
-[node name="HungerRow" type="HBoxContainer" parent="Bars"]
+[node name="HungerRow" type="HBoxContainer" parent="Frame/Bars"]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 8
 
-[node name="HungerLabel" type="Label" parent="Bars/HungerRow"]
+[node name="HungerLabel" type="Label" parent="Frame/Bars/HungerRow"]
 custom_minimum_size = Vector2(88, 0)
 layout_mode = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(1, 0.62, 0.12, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 0.42, 0.02, 1)
+theme_override_font_sizes/font_size = 13
 text = "HUNGER"
 
-[node name="HungerBar" type="ProgressBar" parent="Bars/HungerRow"]
+[node name="HungerBar" type="ProgressBar" parent="Frame/Bars/HungerRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(148, 16)
+custom_minimum_size = Vector2(156, 14)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_styles/background = SubResource("Style_bg")
 theme_override_styles/fill = SubResource("Style_hunger")
+material = SubResource("Mat_ticks")
 max_value = 100.0
 step = 0.0
 value = 100.0
 show_percentage = false
 
-[node name="DurstRow" type="HBoxContainer" parent="Bars"]
+[node name="DurstRow" type="HBoxContainer" parent="Frame/Bars"]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 8
 
-[node name="DurstLabel" type="Label" parent="Bars/DurstRow"]
+[node name="DurstLabel" type="Label" parent="Frame/Bars/DurstRow"]
 custom_minimum_size = Vector2(88, 0)
 layout_mode = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(0.25, 0.55, 1, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 0.08, 0.38, 1)
+theme_override_font_sizes/font_size = 13
 text = "DURST"
 
-[node name="DurstBar" type="ProgressBar" parent="Bars/DurstRow"]
+[node name="DurstBar" type="ProgressBar" parent="Frame/Bars/DurstRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(148, 16)
+custom_minimum_size = Vector2(156, 14)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_styles/background = SubResource("Style_bg")
 theme_override_styles/fill = SubResource("Style_thirst")
+material = SubResource("Mat_ticks")
 max_value = 100.0
 step = 0.0
 value = 100.0

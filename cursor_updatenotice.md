@@ -252,3 +252,20 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: echtes 2K- oder 4K-Fenster, Vollbild auf einem solchen Monitor, ob die Bewegung dort wieder läuft. Echte `settings.cfg` nicht angefasst.
 - Git: Commit auf `main`, `git push origin main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-25 · Cyberpunk-HUD und Hunger/Durst · Cursor (für EnScapeZ) · main
+- Auftrag: Die vier Überlebensleisten sollen cyberpunk aussehen, und Hunger sowie Durst sollen mit der Zeit sinken, mit Strafe bei 0.
+- Entscheidung: `PlayerStats` bleibt ein Kind des Players, kein Autoload. Im Hauptmenü gibt es den Knoten nicht, bei Pause steht der Baum. Die Abnahme lief schon in `_process(delta)` (Hunger 0,35/s, Durst 0,55/s, bei 0 kein Ausdauer-Nachschub, HP −4/s bei Hunger 0 und −6/s bei Durst 0, Klammer 0…Maximum). Die Raten heißen jetzt `hunger_drain_rate` und `thirst_drain_rate`, die Werte sind dieselben. Neu ist der Name `deplete_stats(delta)`. `advance` ruft dieselbe Funktion, damit alte Aufrufe bleiben. Eine negative Rate zählt als 0. Das HUD bleibt eine feste Fläche in der 1280×720-Basis (Rahmen 16,40 bis 308,188), der Stretch skaliert sie auf 2K/4K mit. Keine Vollbild-Anker.
+- Neu:
+  - `scenes/survival/hud_bar.gdshader` und `hud_bar.gdshader.uid`. Acht senkrechte Ticks und ein heller oberer Rand auf der schon gezeichneten Leiste. `segments` ist mindestens 1, keine Teilung durch 0, keine Schleife über die Auflösung.
+- Geändert:
+  - `scenes/survival/player_stats.gd`: Exporte `hunger_drain_rate` / `thirst_drain_rate`, Funktion `deplete_stats`.
+  - `scenes/survival/survival_hud.tscn`: `load_steps` 7 → 10 (2 ext + 7 sub + 1). Rahmen `Frame` (Cyan-Rand, Schatten), Magenta-Streifen `Accent`, Überschrift `VITALS`. Leisten schräg (`skew` 0,55), Ecken 0, Glow über `shadow_size` 7. Farben: HP Cyan, Ausdauer Neon-Gelb, Hunger Orange, Durst Rot. Shader auf allen vier Leisten. `mouse_filter = 2`. Namen `%HPBar` `%StaminaBar` `%HungerBar` `%DurstBar` bleiben.
+  - `scenes/survival/survival_hud.gd`: unter der Schwelle wird die Leiste warm, bei 0 blinkt sie. Blink taktet über `Time.get_ticks_msec()`, nicht über aufsummiertes `delta`. `max_value` 0 wird zu 1, der Wert bleibt in 0…Maximum.
+- Node-Struktur: `SurvivalHud/Frame/Accent`, `SurvivalHud/Frame/Header`, `SurvivalHud/Frame/Bars/…`. Keine neue Input-Aktion.
+- Nicht geändert: `claude_updatenotice.md`, `project.godot`, `scenes/player/player.tscn`. Ordner `pictures/` (ein jpg) bleibt unangetastet.
+- Getestet (Godot 4.7.2 stable, headless, isoliertes APPDATA): temporäre Szene `hud_runner` (danach gelöscht) `CHECKS 20 FAILS 0`. 2 s bei Hunger 10 landen auf 9,3. `delta` 0 und negativ ändern nichts. Essen über 100 bleibt bei 100. Negative Rate senkt nicht. Hunger und Durst 0: HP 80 → 70 in 1 s, Ausdauer bleibt 40, beide Bedürfnisse bleiben 0. Mit vollen Bedürfnissen steigt Ausdauer 40 → 55 in 1 s. HUD: Rahmen klein, Maus `Ignore`, HP-Füllung Cyan mit Schatten, Schräge 0,55, Shader-Material, Gelb/Orange/Rot, Text `VITALS`. `testmap.tscn --quit-after 2`: nur die Versionszeile, kein `SCRIPT ERROR` / `Parse Error`.
+- Bekannt beim Beenden: weiter `ERROR: 1 resources still in use at exit` (Musik-Stream). Kein neuer Skriptfehler.
+- Nicht getestet: Fensterbild der Leisten, Blinken mit dem Auge, 2K/4K-Screenshot. Echte `settings.cfg` nicht angefasst.
+- Git: davor `git pull origin main` (Fast-forward `eea10d5..74d97c5`, Optionen-Audio, keine gemeinsamen Dateien). Commit auf `main`, `git push origin main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`

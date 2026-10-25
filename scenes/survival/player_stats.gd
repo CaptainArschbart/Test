@@ -21,9 +21,9 @@ const STAT_THIRST := "thirst"
 @export var max_hunger: float = 100.0
 @export var max_thirst: float = 100.0
 
-## Verlust pro Sekunde, solange der Spieler lebt.
-@export var hunger_per_second: float = 0.35
-@export var thirst_per_second: float = 0.55
+## Abnahme pro Sekunde, solange der Spieler lebt. Werte bleiben in 0…Maximum.
+@export var hunger_drain_rate: float = 0.35
+@export var thirst_drain_rate: float = 0.55
 ## Sprint-Verbrauch und Erholung pro Sekunde.
 @export var stamina_drain_per_second: float = 20.0
 @export var stamina_regen_per_second: float = 15.0
@@ -55,15 +55,23 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	advance(delta)
+	deplete_stats(delta)
 
 
 ## Eine Zeitscheibe. Tests rufen das direkt auf.
 func advance(delta: float) -> void:
+	deplete_stats(delta)
+
+
+## Hunger und Durst sinken mit der Zeit. Bei 0 gibt es keinen Ausdauer-Nachschub,
+## und HP fallen. `delta` kommt aus `_process`, damit es nicht an die Bildrate hängt.
+func deplete_stats(delta: float) -> void:
 	if _dead or delta <= 0.0:
 		return
-	_add(STAT_HUNGER, -hunger_per_second * delta)
-	_add(STAT_THIRST, -thirst_per_second * delta)
+	var hunger_loss := maxf(hunger_drain_rate, 0.0) * delta
+	var thirst_loss := maxf(thirst_drain_rate, 0.0) * delta
+	_add(STAT_HUNGER, -hunger_loss)
+	_add(STAT_THIRST, -thirst_loss)
 	if _sprinting:
 		_add(STAT_STAMINA, -stamina_drain_per_second * delta)
 		if stamina <= 0.0:
