@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scenes/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scenes/inventory/inventory.gd" id="2_inventory"]
@@ -6,6 +6,11 @@
 [ext_resource type="Script" path="res://scenes/survival/player_stats.gd" id="4_stats"]
 [ext_resource type="PackedScene" path="res://scenes/survival/survival_hud.tscn" id="5_hud"]
 [ext_resource type="PackedScene" path="res://scenes/hands/player_hands.tscn" id="6_hands"]
+[ext_resource type="AudioStream" path="res://assets/audio/footstep_01.wav" id="7_fs1"]
+[ext_resource type="AudioStream" path="res://assets/audio/footstep_02.wav" id="8_fs2"]
+[ext_resource type="AudioStream" path="res://assets/audio/footstep_03.wav" id="9_fs3"]
+[ext_resource type="AudioStream" path="res://assets/audio/land_01.wav" id="10_land1"]
+[ext_resource type="AudioStream" path="res://assets/audio/land_02.wav" id="11_land2"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.4
@@ -22,6 +27,8 @@ height = 1.8
 [node name="Player" type="CharacterBody3D"]
 collision_layer = 2
 script = ExtResource("1_player")
+footstep_sounds = Array[AudioStream]([ExtResource("7_fs1"), ExtResource("8_fs2"), ExtResource("9_fs3")])
+land_sounds = Array[AudioStream]([ExtResource("10_land1"), ExtResource("11_land2")])
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
@@ -52,3 +59,15 @@ script = ExtResource("4_stats")
 [node name="InventoryUI" parent="." instance=ExtResource("3_hud")]
 
 [node name="SurvivalHud" parent="." instance=ExtResource("5_hud")]
+
+[node name="Footsteps" type="AudioStreamPlayer3D" parent="."]
+unique_name_in_owner = true
+bus = &"SFX"
+unit_size = 12.0
+max_distance = 24.0
+
+[node name="LandImpact" type="AudioStreamPlayer3D" parent="."]
+unique_name_in_owner = true
+bus = &"SFX"
+unit_size = 12.0
+max_distance = 24.0

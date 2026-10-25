@@ -195,3 +195,20 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: Fensterbild (ob die Hände das Fadenkreuz frei lassen), Maus-Nicken im Fenster. Echte `settings.cfg` nicht angefasst.
 - Git: Commit auf `main`, `git push origin main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-25 · Stufensteigen und Schrittgeräusche · Cursor (für EnScapeZ) · main
+- Auftrag: Der Spieler soll über Stufen laufen, ohne hängen zu bleiben, und Geräusche für Gehen, Sprint und harten Aufprall bekommen.
+- Entscheidung: Die Kapsel bleibt die einzige Kollision. Ein Kasten am Boden würde an Kanten stärker hängen. Vor `move_and_slide` tastet ein Strahl nach vorn unten eine flache Trittfläche ab (Normale unter 22°). Die Kapsel wird nur angehoben, wenn sie danach wirklich höher steht. Sonst wird der Schritt verworfen, damit sie nicht durch die Stufe rutscht. `max_step_height` 0,45 m: die Teststufen 0,15 / 0,25 / 0,35 m gehen, 0,50 m bleibt eine Kante. `floor_max_angle` 46°: die 40°-Rampe ist Boden, die 50°-Rampe (Schild „zu steil“) nicht. `max_slides` 8. `floor_snap_length` 0,45 m, damit der Abstieg an Stufen bis 0,45 m am Boden bleibt. Keine neuen Input-Aktionen.
+- Neu:
+  - `assets/audio/footstep_01.wav`, `footstep_02.wav`, `footstep_03.wav`: kurze Platzhalter-Schritte.
+  - `assets/audio/land_01.wav`, `land_02.wav`: kurze Platzhalter-Aufpralle.
+  - Dazu die fünf `.import`-Dateien.
+- Geändert:
+  - `scenes/player/player.gd`: Stufen, Schritttakt und Aufprall. Gehen alle 0,46 s bei voller Gehgeschwindigkeit, Lautstärke −2 dB. Sprint alle 0,30 s, +2,5 dB, Tonhöhe 1,12. Langsamer wird der Abstand länger. Aufprall ab 6,5 m/s Fall (etwa 2 m). Ein normaler Sprung löst keinen Aufprall aus. Läuft ein Schritt schon, wird er gestoppt, bevor der nächste startet.
+  - `scenes/player/player.tscn`: `load_steps` 10 → 15 (11 ext + 3 sub + 1). Neue Knoten `%Footsteps` und `%LandImpact` (`AudioStreamPlayer3D`, Bus `SFX`, `unit_size` 12). `footstep_sounds` und `land_sounds` zeigen auf die WAVs.
+- Node-Struktur: `%Footsteps`, `%LandImpact` direkt unter `Player`. Keine neue Input-Map.
+- Nicht geändert: `claude_updatenotice.md`, `AI_HANDOVER.md`, `project.godot`.
+- Getestet (Godot 4.7.2 stable, headless, isoliertes APPDATA): temporäre Szene `motion_runner` (danach gelöscht) `CHECKS 25 FAILS 0`. Darin: Sprung bleibt höher als 0,6 m und spielt keinen Aufprall, Gehen setzt einen Schritt-Stream mit Tonhöhe unter 1,08 und Lautstärke unter 0 dB, Sprint Tonhöhe mindestens 1,05 und Lautstärke über 1 dB, Stufen 0,15 / 0,25 / 0,35 m werden erklommen, 0,50 m und eine 1,2-m-Wand blocken, 40°-Rampe steigt, 50°-Rampe nicht, Fall aus 3,5 m spielt den Aufprall. Testmap: Höchstwert der 0,15-m-Treppe über 0,75 m, der 0,35-m-Treppe über 1,6 m, die 0,50-m-Treppe blockt. `testmap.tscn` und `main.tscn --quit-after 2`: nur die Versionszeile, kein `ERROR` / `SCRIPT ERROR`.
+- Nicht getestet: Fensterbild auf den Treppen, ob die Platzhalter im Lautsprecher gut klingen, Controller. Echte `settings.cfg` nicht angefasst.
+- Git: Commit auf `main`, `git push origin main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
