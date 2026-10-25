@@ -111,3 +111,10 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
   - `.cursor/rules/ai-handover.mdc`: wieder auf `cursor_updatenotice.md` gestellt (die alte AI_HANDOVER-Version war nach dem Main-Merge wieder da) plus Pflicht add/commit/push.
 - Getestet: Hook-Skript mit `python` 3.14 vorhanden. Marker-Check und Commit folgen in demselben Arbeitsgang.
 - Git: dieser Eintrag wird mit `git add cursor_updatenotice.md` in denselben Commit gepackt und danach gepusht.
+
+### 2026-10-25 · Notice sofort auf GitHub, 100 % immer mit hoch · Cursor (für EnScapeZ) · dieser Arbeitsgang
+- Auftrag: `cursor_updatenotice.md` sofort ins GitHub-Projekt laden und für immer merken, dass sie ganz wichtig ist und 100 % jedes Mal mit hochgeladen wird.
+- Was: Datei lag schon auf `origin/cursor/pause-menu-shared-options` (`b36b447`). Zusätzliche dauerhafte Regel `.cursor/rules/02_cursor_notice_always_upload.mdc` (`alwaysApply: true`). Persistente Merkdateien im Cursor-Agent-Store (persönlich + diese Session).
+- Neu: `.cursor/rules/02_cursor_notice_always_upload.mdc`.
+- Git: dieser Eintrag + die neue Regel werden sofort committet und gepusht. Auf `origin/main` liegt die Notice noch nicht (nur auf diesem Branch).
+- Link nach dem Push: `https://github.com/CaptainArschbart/Test/blob/cursor/pause-menu-shared-options/cursor_updatenotice.md`

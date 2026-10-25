@@ -1,0 +1,16 @@
+---
+description: cursor_updatenotice.md muss 100 Prozent bei jedem Commit und jedem Push mit hoch
+alwaysApply: true
+---
+
+# cursor_updatenotice.md — 100 % immer mit hochladen
+
+Wunsch von EnScapeZ, 2026-10-25, **keine Ausnahme**.
+
+- `cursor_updatenotice.md` im Projektstamm ist **ganz wichtig**.
+- Bei **jeder** Änderung am Projekt: Notice unten aktualisieren.
+- Bei **jedem** `git commit`: `git add cursor_updatenotice.md` gehört dazu.
+- Bei **jedem** `git push`: die aktuelle Notice muss schon committed sein und **mit** auf GitHub.
+- Nie pushen, während die Datei ungetrackt, geändert oder nicht im Commit ist.
+- „Später hochladen“, „nur Code pushen“, „Notice lassen wir weg“ ist verboten.
+- Gilt für immer, in jeder Session, auf jedem Branch dieses Projekts.
