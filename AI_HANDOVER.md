@@ -3,11 +3,11 @@
 > **Engine:** Godot 4.7 (Feature-Tag `4.7`, Renderer Forward Plus). Getestet mit 4.7.2 stable.  
 > **Projekt-Typ:** 3D Game (Grundgerüst: Cyberpunk-Hauptmenü, First-Person-Testwelt, Pausemenü, gemeinsame Optionen)  
 > **Projektname:** Godot 3D Base  
-> **Letztes Update:** 2026-10-25 (Eintrag 8: Regel gegen Merge-Konflikte `00_conflict_prevention.mdc`)  
+> **Letztes Update:** 2026-10-25 (Eintrag 9: `origin/main` gemergt, Konflikte gelöst, Pausemenü auch in der Testmap)  
 > **Hauptszene:** `res://scenes/menu/main_menu.tscn`  
 > **Sprache:** GDScript (Standard-Godot, nicht .NET / C#)
 
-Dieses Dokument ist der Ist-Stand des Repos. Es beschreibt nur, was in `project.godot`, den Szenen und den Skripten steht. Abschnitt 9 sagt, was getestet wurde und was nicht. Abschnitt 10 ist das Test-Rezept. **Abschnitt 11 ist das Änderungsprotokoll**: was wann gemacht wurde, welche Datei wie geändert wurde und warum (neuester Eintrag zuerst).
+Dieses Dokument ist der Ist-Stand des Repos. Es beschreibt nur, was in `project.godot`, den Szenen und den Skripten steht. Abschnitt 9 sagt, was getestet wurde und was nicht. Abschnitt 10 ist das Test-Rezept. **Abschnitt 11 ist das Änderungsprotokoll**: was wann gemacht wurde, welche Datei wie geändert wurde und warum (neuester Eintrag zuerst). **Abschnitt 12 ist der kurze Arbeitslog** der anderen Beteiligten (neuester Eintrag unten).
 
 **Pflege-Regel:** Wer hier etwas ändert, trägt es im selben Arbeitsgang ausführlich in Abschnitt 11 ein und zieht die Ist-Stand-Abschnitte nach. Die Regel steht in `.cursor/rules/ai-handover.mdc` (`alwaysApply: true`). Wie man Merge-Konflikte vermeidet und löst, steht in `.cursor/rules/00_conflict_prevention.mdc` (`alwaysApply: true`).
 
@@ -48,9 +48,15 @@ scenes/
     crt_overlay.gdshader      uid://cveheluq50cmp
     crt_overlay.gdshader.uid
   main/
-    main.tscn                 Spielwelt, wird von Start geladen, enthält PauseMenu
+    main.tscn                 alte einfache Testwelt (nur noch per F6), enthält PauseMenu
     main.gd                   uid://npu706i2yy2e
     main.gd.uid
+  testmap/
+    testmap.tscn              Testmap "Neon District", wird von Start geladen, enthält PauseMenu
+    testmap.gd                F11, sonst leer
+    testmap.gd.uid
+    building_facade.gdshader  Fassade mit Fensterraster in Weltkoordinaten
+    building_facade.gdshader.uid
   pause/
     pause_menu.tscn           CanvasLayer, Pausemenü, bindet options_menu.tscn ein
     pause_menu.gd             (noch ohne .uid, siehe Abschnitt 9)
@@ -106,8 +112,8 @@ Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Kei
 | Esc (`ui_cancel`) | Pausemenü, Optionen offen | Ruft `options.request_back()`, genau wie der Knopf *Zurück*: läuft eine Tastenbelegung, bricht Esc nur diese ab (`options_menu.gd` fängt die Taste in `_input`). Sonst bei offenen Änderungen erst Warnung, beim zweiten Mal verwerfen, sonst zurück zur Hauptseite. Das Spiel bleibt pausiert. |
 | Esc (`ui_cancel`) | Pausemenü, Hauptseite | Fortsetzen (schließt, fängt die Maus ein). |
 | Esc | Hauptmenü | Dasselbe `options.request_back()`, solange die Optionen offen sind. Sonst keine Wirkung. |
-| F11 (`KEY_F11`) | `main.gd` (Spiel läuft) | `Settings.toggle_fullscreen()`: schaltet das Fenster, `save_settings()` sofort. |
-| F11 (`KEY_F11`) | `pause_menu.gd` (Menü offen) | Dasselbe. Nötig, weil `main.gd` bei angehaltenem Baum keine Eingaben bekommt. |
+| F11 (`KEY_F11`) | `testmap.gd` und `main.gd` (Spiel läuft) | `Settings.toggle_fullscreen()`: schaltet das Fenster, `save_settings()` sofort. |
+| F11 (`KEY_F11`) | `pause_menu.gd` (Menü offen) | Dasselbe. Nötig, weil `testmap.gd` und `main.gd` bei angehaltenem Baum keine Eingaben bekommen. |
 | F11 (`KEY_F11`) | `main_menu.gd` | Dasselbe. |
 
 Bei offenen Optionen zieht `options_menu.gd` die Vollbild-Checkbox und den Entwurf selbst nach, sobald `Settings.changed` kommt. Der Host muss dafür nichts tun.
@@ -161,7 +167,7 @@ Menüs (Haupt- und Pausemenü) definieren keine eigenen UI-Aktionen. Godots `ui_
 
 ### user://settings.cfg
 
-Gelesen und geschrieben vom Autoload `Settings`. Er lädt die Datei in `_ready`, also vor jeder Szene, und wendet alles an. Auch ein direkter Start von `main.tscn` (F6) bekommt so die gespeicherten Werte. Fehlt die Datei, gelten die Standardwerte.
+Gelesen und geschrieben vom Autoload `Settings`. Er lädt die Datei in `_ready`, also vor jeder Szene, und wendet alles an. Auch ein direkter Start einer Spielszene (`testmap.tscn` oder `main.tscn`, F6) bekommt so die gespeicherten Werte. Fehlt die Datei, gelten die Standardwerte.
 
 | Schlüssel | Standard | Wirkung |
 |---|---|---|
@@ -197,7 +203,7 @@ F5
         ├─ Glitch-Stärke 1.0 für 0,5 s (CRT-Shader-Uniform "glitch")
         ├─ Fade (ColorRect $Fade) Alpha 0 → 1 in 0,45 s  (schwarzer Bildschirm)
         └─ get_tree().change_scene_to_file(game_scene)
-             Default: res://scenes/main/main.tscn
+             Default: res://scenes/testmap/testmap.tscn
               └─ Player._ready setzt MOUSE_MODE_CAPTURED
                    Spiel läuft, Maus gefangen
                    │
@@ -308,6 +314,33 @@ PauseMenu (CanvasLayer)
 
 Die Optionen im Pausemenü sind genau die Szene aus dem Hauptmenü, kein eigener Nachbau.
 
+### `scenes/testmap/testmap.tscn` — Wurzel `Testmap` (`Node3D`, Skript `testmap.gd`)
+
+Nacht-Cyberpunk-Map, etwa x −53…53, z −89…51 (unsichtbare Wände unter `Bounds`). Alles ist CSG mit `use_collision = true` auf Layer 1 (`world`); reine Deko (Leuchtstreifen, Gitter, Schilder) hat keine Kollision. Spawn bei (0, 0, 42), Blick nach −Z.
+
+```text
+Testmap (Node3D)
+├── WorldEnvironment        Nachthimmel, Ambient-Farbe, ACES, SSR, SSAO, Glow, Nebel
+├── Moon (DirectionalLight3D)  schwach bläulich, Schatten an
+├── Street                  Asphalt (ganze Map), Gehwege mit 0,2 m Bordstein, Laternen, Spawn-Ring
+├── Buildings               Häuserzeilen, Kulisse rundum (Material Fassaden-Shader), Leuchtreklamen
+├── ZoneWest                Treppen (Stufen 0,15/0,25/0,35/0,50 m), Rampen 15/30/40/50° (2,5 m hoch),
+│                           Tunnel (Decke 2,6/1,95/1,7 m), Messwand 1–6 m
+├── ZoneEast                Sprunghöhe 0,5–1,5 m, Weitsprung-Lücken 2–6 m, Parkour-Turm (je +0,9 m) auf Dach 7,2 m
+├── Plaza                   offene Fläche z −30…−88, Leuchtgitter, Holo-Säule, Kisten, Mauern, Brücke 3,3 m
+├── Pickups
+│   └── SpawnPoints         16 Marker3D, Gruppe "item_spawn", je mit leuchtendem Pad (MeshInstance3D)
+├── Bounds                  4 StaticBody3D-Wände, unsichtbar
+├── Player                  Instanz player.tscn, Position (0, 0.05, 42)
+└── PauseMenu               Instanz pause_menu.tscn, als letztes Kind (siehe Eintrag 9)
+```
+
+Zusätzlich `ZoneWest/Stairs_RampCollision`: Treppe 0,20 m, Stufen nur Optik, Kollision ist eine unsichtbare Rampe (`StaticBody3D`) über die Stufenkanten. So sind begehbare Treppen gedacht, solange der Player kein Stufensteigen kann.
+
+Gemessen mit Godot 4.5 headless und den Standardwerten des Players: Sprung erreicht etwa 1,03 m (1,0-m-Block geht, 1,25 m nicht). Rampen bis 40° gehen, 50° nicht (`floor_max_angle` 45°). Weitsprung: gehend bis 4 m, mit Sprint 6 m. Tunnel 1,95 m passt, 1,7 m blockt. Parkour-Turm ist bis aufs Dach schaffbar. Die echten Treppen (0,15–0,50 m) gehen nur mit Springen, weil der Player kein Stufensteigen hat.
+
+Die Szene wurde mit einem Python-Generator erzeugt, ist aber eine normale `.tscn` und darf im Editor bearbeitet werden. Der Generator liegt nicht im Repo.
+
 ### `scenes/player/player.tscn` — Wurzel `Player` (`CharacterBody3D`, `class_name Player`)
 
 ```text
@@ -348,7 +381,7 @@ Kein Knoten hat `unique_name_in_owner`. Zugriffe: `$Head`, `$Head/Camera3D`.
 - `_exit_tree`: war das Menü offen, wird `paused = false` gesetzt, damit die Pause nicht in die nächste Szene wandert.
 - Die früheren eigenen Handler für Vollbild, VSync, MSAA, 3D-Auflösung, Master, Musik, SFX, Sensitivität und Y-Invertierung sowie `_refresh()` sind entfernt. Das macht jetzt `options_menu.gd`.
 - Menü-Knöpfe: *Fortsetzen* → `close`, *Optionen* → `_show_options` (Hauptseite aus, `options.open()`), *Zurück zum Hauptmenü* → `_on_main_menu_pressed` (`paused = false`, `change_scene_to_file`), *Spiel beenden* → `_on_quit_pressed` (`quit`). `options.closed` ist mit `_show_main_page` verbunden (Hauptseite zeigen, Fokus auf *Optionen*).
-- Das Menü ist **kein** Autoload. Es existiert nur in `main.tscn`.
+- Das Menü ist **kein** Autoload. Es existiert nur als Instanz in den Spielszenen `testmap.tscn` (wird von *Start* geladen) und `main.tscn`. Jede neue Spielszene muss `pause_menu.tscn` selbst einbinden, sonst tut Esc dort nichts. (Genau das fehlte nach dem Merge in `testmap.tscn`, siehe Eintrag 9.)
 
 ### `scenes/menu/main_menu.gd`
 
@@ -356,7 +389,7 @@ Kein Knoten hat `unique_name_in_owner`. Zugriffe: `$Head`, `$Head/Camera3D`.
 
 | Export | Default |
 |---|---|
-| `game_scene` | `res://scenes/main/main.tscn` |
+| `game_scene` | `res://scenes/testmap/testmap.tscn` |
 | `glitch_interval_min` | `1.5` |
 | `glitch_interval_max` | `4.5` |
 | `glitch_duration` | `0.18` |
@@ -380,6 +413,16 @@ Engine-Callbacks: `_ready`, `_process`, `_unhandled_input`. Alles andere ist pri
 - `extends Node3D`, kein `class_name`. Keine Exports, keine Signale, keine Node-Pfade.
 - Einzige Methode: `_unhandled_input` für F11 → `Settings.toggle_fullscreen()`.
 - Kennt weder Player noch PauseMenü. Bei pausiertem Baum läuft die Methode nicht.
+
+### `scenes/testmap/testmap.gd`
+
+- `extends Node3D`, kein `class_name`; nur `_unhandled_input` für F11 → `Settings.toggle_fullscreen()` (wie `main.gd`)
+
+### `scenes/testmap/building_facade.gdshader`
+
+- `spatial`, rechnet Fenster aus Weltposition und Normale, darum keine UVs nötig und beliebig große Boxen möglich
+- Uniforms: `wall_color`, `glass_color`, `cell_size` (Fensterraster in m), `lit_ratio`, `emission_strength`, `first_floor_height`, drei Fensterfarben
+- In `testmap.tscn` zwei ShaderMaterials: `Mat_facade` und `Mat_facade_dense` (dichter, mehr Licht)
 
 ### `scenes/player/player.gd`
 
@@ -431,11 +474,19 @@ main_menu.tscn
   ├── theme ── scenes/ui/cyber_theme.tres
   ├── instance scenes/options/options_menu.tscn
   ├── main_menu.gd ── Settings.toggle_fullscreen, options.open / request_back / closed / glitch_requested
-  │     └── Start ──► scenes/main/main.tscn
+  │     └── Start ──► scenes/testmap/testmap.tscn
   ├── menu_background.gdshader
   └── crt_overlay.gdshader
 
-main.tscn
+testmap.tscn
+  ├── testmap.gd ── Settings.toggle_fullscreen (F11, nur wenn nicht pausiert)
+  ├── building_facade.gdshader
+  ├── instance scenes/player/player.tscn
+  │     └── player.gd ── (wie bei main.tscn)
+  └── instance scenes/pause/pause_menu.tscn
+        └── (wie bei main.tscn)
+
+main.tscn (nicht mehr vom Menü geladen, nur per F6)
   ├── main.gd ── Settings.toggle_fullscreen (F11, nur wenn nicht pausiert)
   ├── instance scenes/player/player.tscn
   │     └── player.gd ── Settings.mouse_sensitivity, Settings.invert_y,
@@ -470,10 +521,11 @@ Geprüft mit Godot 4.7.2 stable (headless und im Fenster) gegen den Stand dieses
 
 | Lauf | Ergebnis |
 |---|---|
-| `--headless` Start von Projekt, `main_menu.tscn`, `main.tscn`, `pause_menu.tscn`, `options_menu.tscn` je mit `--quit-after 5` | 5 von 5 ohne Zeile außer der Versionszeile, also keine Fehler und Warnungen |
-| `options_flow.gd` (Headless): dieselbe Prüfroutine einmal im Hauptmenü, einmal im Pausemenü, dazu Strukturvergleich und Übernahme der Werte vom Hauptmenü ins Spiel | **92 PASS, 0 FAIL**, keine `ERROR`/`SCRIPT`/`WARNING`-Zeilen |
-| `pause_flow.gd` (Headless): Skripte und Szenen laden, Esc, Pause, Spieler steht still, Fortsetzen, Zurück ins Hauptmenü | **28 PASS, 0 FAIL, 1 SKIP** (Player-Look braucht eine echte Maus, im Fensterlauf nachgeholt) |
-| `pause_gui.gd` (Fenster 1280×720, Vulkan Forward+, AMD Radeon RX 9070 XT) | Mausmodus nach Start 2 (gefangen), nach Esc 0 (frei), nach Fortsetzen 2. Look-Differenz −0,4 bei Erwartung −0,4, `ok=true` |
+| `--headless` Start von Projekt, `testmap.tscn` und `main.tscn` je mit `--quit-after 5` (**nach** dem Merge mit `origin/main`, Eintrag 9) | 3 von 3 ohne Ausgabe außer der Versionszeile, also keine Fehler und Warnungen |
+| `--headless` Start von Projekt, `main_menu.tscn`, `main.tscn`, `pause_menu.tscn` und `options_menu.tscn` je mit `--quit-after 5` | 5 von 5 ohne Ausgabe außer der Versionszeile, aber **vor** dem Merge gemessen (Eintrag 7). Nach dem Merge nur Projekt, `main.tscn` und `testmap.tscn` einzeln gestartet, die anderen drei sind über `options_flow.gd` und `pause_flow.gd` geladen worden |
+| `options_flow.gd` (Headless): dieselbe Prüfroutine einmal im Hauptmenü, einmal im Pausemenü, dazu Strukturvergleich und Übernahme der Werte vom Hauptmenü ins Spiel | **92 PASS, 0 FAIL**, keine `ERROR`/`SCRIPT`/`WARNING`-Zeilen (nach dem Merge). Der erste Lauf danach hatte **91 PASS, 1 FAIL**: Der Test erwartete nach *Start* die Szene `Main` statt `Testmap`. Der Fehler lag im Test, nach Anpassung 92/0 |
+| `pause_flow.gd` (Headless): Skripte und Szenen laden (jetzt auch `testmap.gd`/`testmap.tscn`), Esc, Pause, Spieler steht still, Fortsetzen, Zurück ins Hauptmenü, dazu Prüfung, dass `testmap.tscn` (16 `item_spawn`-Marker) und `main.tscn` je `Player` und `PauseMenu` haben | **33 PASS, 0 FAIL, 1 SKIP** (Player-Look braucht eine echte Maus, im Fensterlauf nachgeholt). *Start* lädt dabei `Testmap`, und das `PauseMenu` darin reagiert auf Esc |
+| `pause_gui.gd` gegen `testmap.tscn` (Fenster 1280×720, Vulkan Forward+, AMD Radeon RX 9070 XT) | Mausmodus nach Start 2 (gefangen), nach Esc 0 (frei), nach Fortsetzen 2. Look-Differenz −0,4 bei Erwartung −0,4, `ok=true`. Screenshots von Pausemenü und GRAFIK-Reiter über der Neon-Straße angesehen |
 | `options_gui.gd` (Fenster 1280×720): Screenshots der drei Reiter in beiden Menüs | Beide Panels 780 px breit, gleiche x-Position (250), gleicher Aufbau, per Bildvergleich bestanden (GRAFIK, AUDIO, STEUERUNG) |
 | `apply_test.gd` (Headless) | Master nach `_ready` −1,938 dB, nach `apply()` −6,02 dB (50 %), Music −12,04 dB (25 %), SFX −80 dB und stumm (0 %), `scaling_3d_scale` 0,7 |
 
@@ -531,6 +583,34 @@ Stolpersteine, die schon Zeit gekostet haben:
 ## 11. 📝 Änderungsprotokoll (neuester Eintrag zuerst)
 
 Vorlage für neue Einträge steht in `.cursor/rules/ai-handover.mdc`. Alle Einträge unten stammen vom selben Tag, 2026-10-25. Die Einträge 1 bis 5 sind aus dem Verlauf der Sitzung nachgetragen. Änderungen anderer Personen oder Systeme, die per `git pull` hereinkamen, sind nur anhand der Commit-Nachrichten und der Diffs beschrieben.
+
+### Eintrag 9 — `origin/main` in den Branch gemergt, Konflikte gelöst, Pausemenü in die Testmap
+
+- **Auftrag:** „mach das“, als Antwort auf meine Frage, ob ich `origin/main` in den Branch `cursor/pause-menu-shared-options` mergen und die Konflikte lösen soll, damit der Pull Request sauber ist. Vorgehen nach `.cursor/rules/00_conflict_prevention.mdc` (Abschnitt 5).
+- **Ausgangslage:** `git fetch` brachte `origin/main` von `6bf1f89` auf `fec1027`. Neu seit dem Merge-Base `2117c2e`: `4476473` (Arbeitslog in `AI_HANDOVER.md`, PR #4) und `7ca5e2d` „Testmap „Neon District“: Cyberpunk-Straße mit Testzonen“ (PR #6, Claude). Gegenüber `2117c2e` änderte das Remote 8 Dateien: `AI_HANDOVER.md` (+98/−5), `README.md` (+5/−3), `scenes/menu/main_menu.gd` (+1/−1: Default von `game_scene` jetzt `res://scenes/testmap/testmap.tscn`), neu `scenes/testmap/` mit `testmap.tscn` (2673 Zeilen), `testmap.gd`, `building_facade.gdshader` und beiden `.uid`. Vor dem Merge gelesen: Diff von `main_menu.gd`, `README.md`, `AI_HANDOVER.md` und `testmap.gd` des Remotes.
+- **Merge:** `git merge origin/main --no-commit --no-ff`, ohne `-X ours/theirs`. Ergebnis: `scenes/menu/main_menu.gd` automatisch sauber (mein Umbau und Claudes Einzeiler berühren verschiedene Stellen, geprüft: `game_scene` zeigt auf die Testmap, `OptionsMenu`-Code unverändert). Die neuen `scenes/testmap/*`-Dateien kamen ohne Konflikt. **Konflikte in 2 Dateien, 5 Blöcke:** `README.md` (1) und `AI_HANDOVER.md` (4).
+- **Geändert (Auflösung, jeweils beide Seiten behalten):**
+  - `README.md`, Ordnerstruktur: `main/` (alte einfache Testwelt, Claude), `testmap/` (Claude), `pause/` (meins) stehen jetzt alle drei da. Zusätzlich Pausemenü-Zeile: „Teil von `testmap.tscn` und `main.tscn`; neue Spielszenen müssen es selbst einbinden“.
+  - `AI_HANDOVER.md`, Block 1 (Strukturbaum): `main.tscn` „alte einfache Testwelt (nur noch per F6), enthält PauseMenu“, `testmap/` mit `testmap.tscn` (enthält PauseMenu), `testmap.gd`, `building_facade.gdshader` und beiden `.uid`, `pause/` mit beiden Dateien.
+  - Block 2 (Szenenbeschreibung): Abschnitt `pause_menu.tscn` (meiner) und Abschnitt `testmap.tscn` (Claudes) nebeneinander. Im Testmap-Baum steht zusätzlich `PauseMenu` als letztes Kind.
+  - Block 3 (Abhängigkeitsbaum): Mein Baum bleibt die Grundlage, weil Claudes Seite auf der alten Form des Baums beruhte. Übernommen von Claude: *Start* → `testmap.tscn`, Zweig `testmap.tscn` (jetzt mit `testmap.gd`, Shader, Player-Instanz **und** Pausemenü-Instanz), `main.tscn` als „nicht mehr vom Menü geladen, nur per F6“. Nicht übernommen: seine alte Zeile „Input Map … ui_cancel“ bei `player.gd`, weil der `ui_cancel`-Zweig im Player entfernt ist.
+  - Block 4 (Abschnitte 9 bis 11 gegen Claudes „8. Arbeitslog“): Meine Abschnitte 9 (Teststand), 10 (Test-Rezept) und 11 (Änderungsprotokoll) bleiben. Claudes Arbeitslog steht jetzt als **Abschnitt 12** (Nummer 8 ist bei mir „Nicht vorhanden“), Eintragstext unverändert. Davor ein Hinweis von mir (Zusammenführung, zwei Protokolle). In Claudes Regelsatz steht „Abschnitte 1–7“, dort habe ich **„1–10“** geschrieben (die Zahl wäre sonst falsch). Seine Zeile „- Audio, das die gespeicherte Lautstärke hörbar machen würde“ aus der alten Liste „Nicht vorhanden“ ist nicht übernommen, sie steht in meinem Abschnitt 8 sinngemäß als „Audio-Dateien und `AudioStreamPlayer`“.
+  - `AI_HANDOVER.md`, nachgezogen (nicht konfliktbehaftet, aber veraltet): F11-Zeilen nennen `testmap.gd` und `main.gd`; der F6-Satz in Abschnitt 3 nennt beide Spielszenen; Abschnitt 6 „Das Menü existiert nur als Instanz in `testmap.tscn` und `main.tscn`, neue Spielszenen müssen es selbst einbinden“; Abschnitt 9 neue Zahlen; Kopfzeile „Letztes Update“; Verweis auf Abschnitt 12; Kurzfassung im Arbeitslog.
+  - **`scenes/testmap/testmap.tscn` (Claudes Datei, kleiner Eingriff):** `load_steps` 27 → 28, neue `ext_resource` `4_pause` auf `res://scenes/pause/pause_menu.tscn`, neuer letzter Knoten `[node name="PauseMenu" parent="." instance=ExtResource("4_pause")]`. Gegenüber `origin/main` per `git diff`: +3 Zeilen, 1 geändert (`load_steps`). Sonst nichts an der Szene.
+- **Fund und Grund für den Eingriff in die Testmap:** Der Merge war textlich möglich, aber **funktional falsch**. *Start* lädt jetzt die Testmap, und die hatte kein `PauseMenu`. Esc hätte im echten Spielstart nichts getan, die ganze Arbeit der Einträge 5 bis 7 wäre im Spiel unsichtbar gewesen. Ein reiner Textmerge hätte das nicht gezeigt. Entdeckt durch das Lesen von `testmap.tscn` (nur `Player`, kein `PauseMenu`) vor dem Commit.
+- **Entscheidungen und Gründe:**
+  - **Zwei Protokolle nebeneinander statt eines.** Claudes Regel lautet „unten anhängen, neuester unten“, meine „oben, neuester oben, ausführlich“. Ein Zusammenlegen würde Einträge einer fremden Seite umformatieren oder umsortieren. Das habe ich nicht ohne Auftrag getan. Stattdessen: Ausführlich in Abschnitt 11, Kurzfassung mit Verweis in Abschnitt 12, damit auch Claude (der nur dort liest) meine Änderungen sieht. Ob es bei zwei Protokollen bleibt, ist offen.
+  - **`PauseMenu` als Instanz in die Testmap statt es zum Autoload zu machen.** Ein Autoload würde auch im Hauptmenü Esc abfangen und `main.tscn` doppelt bestücken. Die Instanz entspricht der Lösung in `main.tscn`.
+  - **Tests an die neue Startszene angepasst, nicht der Code an die Tests.** Die alten Skripte erwarteten nach *Start* die Szene `Main`.
+- **Getestet** (Godot 4.7.2, alle Läufe mit isoliertem `APPDATA`, echte `settings.cfg` vor und nach jedem Lauf mit gleichem Hash `36AE68DD…`):
+  - Konfliktmarker: `rg "^(<<<<<<<|=======|>>>>>>>)" . --glob "!.godot"` ohne Treffer (rg-Exit 1) nach der Auflösung.
+  - `--headless --quit-after 5` für Projekt, `testmap.tscn`, `main.tscn`: je ohne Ausgabe außer der Versionszeile.
+  - `pause_flow.gd` (angepasst): **33 PASS, 0 FAIL, 1 SKIP**. *Start* lädt `Testmap`, deren `PauseMenu` öffnet bei Esc (pausiert, Menü läuft weiter, Spieler steht still), Optionen und Fortsetzen und Zurück ins Hauptmenü funktionieren. `testmap.tscn` hat `Player`, `PauseMenu` und 16 `item_spawn`-Marker, `main.tscn` hat weiter `Player` und `PauseMenu`.
+  - `options_flow.gd` (Szenenname angepasst): erster Lauf **91 PASS, 1 FAIL** („Start laedt die Spielwelt“, erwartete `Main`, Fehler im Test), nach der Anpassung **92 PASS, 0 FAIL**, keine `ERROR`/`SCRIPT`/`WARNING`-Zeilen.
+  - Fensterlauf gegen `testmap.tscn` (1280×720, Vulkan Forward+, AMD Radeon RX 9070 XT): Maus nach Start 2, nach Esc 0, nach Fortsetzen 2. Look −0,4 bei Erwartung −0,4. Screenshots des Pausemenüs und des GRAFIK-Reiters über der Neon-Straße angesehen: Aufbau und Theme wie zuvor.
+- **Nicht getestet:** Echtes Spielen der Testmap (Treppen, Rampen, Sprünge, Tunnel, Fassaden-Shader) und alles andere an Claudes Szene, ich habe sie nur geladen und das Pausemenü darin geprüft. Echte Mausklicks in den Menüs, Controller, Ton, Vollbild-Wechsel (wie bisher). Die vier Zonen-Aussagen in Claudes Eintrag („Player kann keine Stufen steigen“ usw.) habe ich nicht nachgemessen. Nach der Auflösung kein neuer Lauf von `options_gui.gd` (Bildvergleich beider Menüs) und `apply_test.gd`, weil sich weder Optionen-Szene noch `Settings` geändert haben.
+- **Git:** Merge-Commit auf `cursor/pause-menu-shared-options` (Eltern: letzter Branch-Stand `761ef92` und `origin/main` `fec1027`), danach Push. Der Hash steht im `git log`. Es gab genau diese zwei Konfliktdateien. Verworfen wurde keine Seite ganz. Nicht verwendet: `--ours`, `--theirs`, `-X`, `reset --hard`, Force-Push.
+- **Offen:** Pull Request als Entwurf anlegen (`gh` fehlt auf diesem Rechner, Compare-Link siehe Eintrag 8 und Schlussantwort). Entscheiden, ob die zwei Protokolle (Abschnitt 11 und 12) zusammengelegt werden. Weitere Spielszenen müssen `pause_menu.tscn` selbst einbinden, sonst fehlt dort Esc. Spielerisches von Claudes Testmap (Stufensteigen) ist offen und nicht Teil dieses Merges.
 
 ### Eintrag 8 — Regel gegen Merge-Konflikte (`00_conflict_prevention.mdc`)
 
@@ -707,3 +787,57 @@ Vorlage für neue Einträge steht in `.cursor/rules/ai-handover.mdc`. Alle Eintr
 - **Neu:** `AI_HANDOVER.md` (erste Fassung mit sechs Abschnitten).
 - **Git:** `git pull` und `git fetch` holten PR #1 (`23f566b`, Godot-4-3D-Grundgerüst). Commit `482c15e` „Änderungen hinzugefügt“ mit `AI_HANDOVER.md`, `git pull.bat` und zwei Änderungen, die der Godot-Editor selbst gemacht hatte (nicht von mir): `project.godot` (Feature-Tag `4.4` → `4.7`, neuer `[animation]`-Eintrag) und `icon.svg.import` (neue Import-Optionen). Die ersten Push-Versuche scheiterten mit HTTP 403, weil das Konto EnScapeZ keine Schreibrechte auf `CaptainArschbart/Test` hatte. Ein späterer Push wurde mit `fetch first` abgelehnt und ging nach `git pull` durch.
 - **Getestet:** nur durch Lesen. Kein Godot-Lauf.
+
+---
+
+## 12. 📝 Arbeitslog (kurze Einträge, neuester unten)
+
+> **Hinweis zur Zusammenführung (Eintrag 9):** Dieser Abschnitt stammt von Claude (PR #4 und #6) und hieß dort „8. Arbeitslog“. Er ist hier Abschnitt 12, weil Abschnitt 8 inzwischen „Nicht vorhanden“ heißt. Der Text der Einträge ist unverändert. Es gibt jetzt **zwei Protokolle**: Abschnitt 11 (ausführlich, neuester oben, Regel `.cursor/rules/ai-handover.mdc`) und diesen Abschnitt (kurz, neuester unten). Wer mit Cursor arbeitet, schreibt den ausführlichen Eintrag in Abschnitt 11 und hängt hier eine Kurzfassung mit Verweis an. Ob beide Protokolle zu einem zusammengelegt werden, ist offen.
+
+**Regel für alle (Menschen und KIs):** Nach jedem Arbeitsgang hier unten einen Eintrag anhängen, bevor committet wird. Ältere Einträge nicht ändern, nur neue anhängen (neuester unten). Die Abschnitte 1–10 oben beschreiben den Ist-Stand und werden bei Änderungen mit aktualisiert.
+
+Vorlage:
+
+```text
+### JJJJ-MM-TT · Kurztitel · wer (Mensch / KI) · PR oder Commit
+- Was: …
+- Dateien: …
+- Wichtig für die Nächsten: …
+```
+
+### 2026-10-25 · Grundgerüst · Claude (für Arschi) · PR #1
+- Was: Godot-4-3D-Basis angelegt. Hauptszene mit Himmel, Sonne, CSG-Testlevel; First-Person-Spieler (Laufen, Sprint, Sprung, Maus-Kamera, Respawn); Input Map `move_*`, `jump`, `sprint`; Physik-Layer `world`/`player`; F11 = Vollbild.
+- Dateien: `project.godot`, `scenes/main/*`, `scenes/player/*`, `assets/*/.gitkeep`, `README.md`, `.gitignore`, `.gitattributes`.
+- Wichtig: Konvention „Szene + Skript im eigenen Ordner unter `scenes/<name>/`“, `.uid`/`.import` gehören ins Repo.
+
+### 2026-10-25 · AI_HANDOVER angelegt · EnScapeZ · Commit 482c15e
+- Was: Erste Fassung dieser Datei. `project.godot` mit Godot 4.7 geöffnet (Feature-Tag `4.7`, `[animation]`-Kompatibilitätseintrag). Hilfsskript `git pull.bat` (später von Arschi wieder gelöscht, b6335b3).
+
+### 2026-10-25 · Cyberpunk-Hauptmenü · Claude (für Arschi) · PR #2
+- Was: Hauptmenü als neue Startszene. Neon-Skyline-Shader mit bewegtem Gitter, CRT-Overlay (Scanlines, Farbverschiebung, Glitch), Titel „NEON//GRID“, Knöpfe Start / Optionen / Beenden. Start blendet mit Glitch in `scenes/main/main.tscn` über. Optionen damals: Vollbild, VSync, Lautstärke in `user://settings.cfg`.
+- Dateien: `scenes/menu/*` (neu), `project.godot` (`run/main_scene`), `README.md`.
+- Wichtig: Theme steckt als Sub-Resource in `main_menu.tscn`. Kein Rückweg vom Spiel ins Menü.
+
+### 2026-10-25 · GameSettings-Helfer + AI_HANDOVER-Update · EnScapeZ · Commit dcb2c84
+- Was: `scripts/game_settings.gd` (`class_name GameSettings`, statisch) für `settings.cfg`; F11 in der Spielwelt speichert Vollbild sofort. AI_HANDOVER auf den Menü-Stand gebracht.
+- Hinweis: Dieser Helfer wurde in PR #3 vom Autoload `Settings` abgelöst (siehe nächster Eintrag).
+
+### 2026-10-25 · Steuerungs-Optionen + Übernehmen · Claude (für Arschi) · PR #3
+- Was: Neuer Autoload `Settings` (`autoload/settings.gd`) als einzige Stelle für Einstellungen (laden, anwenden, speichern). Optionsmenü mit Reitern „Anzeige & Audio“ und „Steuerung“: Mausempfindlichkeit, Maus-Y invertieren, Tastenbelegung (Tausch bei Doppelbelegung). Änderungen gelten erst nach „Übernehmen“; „Standard“ setzt zurück; „Zurück“ warnt einmal bei offenen Änderungen. `player.gd` liest Empfindlichkeit und Invertierung aus `Settings`.
+- Zusammenführung: `scripts/game_settings.gd` von EnScapeZ ist im Autoload aufgegangen und wurde gelöscht. Gleiche Datei und Schlüssel, F11 speichert weiterhin sofort (`Settings.toggle_fullscreen()`), alte `settings.cfg` wird weiter gelesen.
+- Dateien: `autoload/settings.gd` (neu), `project.godot` (`[autoload]`), `scenes/menu/main_menu.gd/.tscn`, `scenes/main/main.gd`, `scenes/player/player.gd`, `README.md`, `AI_HANDOVER.md`.
+- Wichtig: Neue belegbare Aktion = in `Settings.REBINDABLE_ACTIONS` eintragen. Kein eigenes `preload` für Einstellungen mehr, immer den Autoload `Settings` benutzen.
+
+### 2026-10-25 · Arbeitslog eingeführt · Claude (für Arschi) · PR #4
+- Was: Abschnitt 8 „Arbeitslog“ mit Regel und Vorlage angelegt und die bisherigen Arbeitsgänge rückwirkend eingetragen.
+- Dateien: `AI_HANDOVER.md`.
+
+### 2026-10-25 · Testmap „Neon District“ · Claude (für Arschi) · PR folgt (Branch `claude/project-thread-0flw0w`)
+- Was: Neue Testmap `scenes/testmap/testmap.tscn` im Cyberpunk-Stil des Menüs (Nacht, Nebel, Glow, Leuchtreklamen, Fassaden-Shader). Testzonen: Treppen mit 4 Stufenhöhen plus eine Treppe mit Rampen-Kollision, Rampen 15–50°, Tunnel mit sinkender Decke, Messwand, Sprunghöhe, Weitsprung-Lücken, Parkour-Turm aufs Dach, großer Platz mit Deckung und Brücke. 16 `Marker3D` in Gruppe `item_spawn` unter `Pickups/SpawnPoints` als Plätze für Items. *Start* im Menü lädt jetzt die Testmap; `scenes/main/main.tscn` bleibt unverändert und ist per F6 startbar.
+- Dateien: `scenes/testmap/*` (neu), `scenes/menu/main_menu.gd` (nur Default von `game_scene`), `README.md`, `AI_HANDOVER.md`.
+- Wichtig für die Nächsten: Der Player kann keine Stufen hochlaufen, schon 0,15 m blockt (headless getestet). Entweder Stufensteigen in `player.gd` einbauen oder Treppen wie `Stairs_RampCollision` mit unsichtbarer Rampe bauen. Inventar/HUD aus dem Hotbar-PR hängen am Player und sind damit automatisch in der Testmap; Pickups können als Instanzen unter `Pickups` an die `item_spawn`-Marker (Mittelpunkt ca. 0,5 m über dem Pad). Die Szene ist mit einem Python-Skript erzeugt, aber normal im Editor bearbeitbar.
+
+### 2026-10-25 · Gemeinsame Optionen, Pausemenü, Konflikt-Regel, Merge · Cursor (für EnScapeZ) · Branch `cursor/pause-menu-shared-options` (Entwurfs-PR folgt)
+- Was: Hauptmenü und Pausemenü (Esc) nutzen jetzt **dieselbe** Options-Szene `scenes/options/options_menu.tscn` mit gemeinsamem Theme `scenes/ui/cyber_theme.tres` (Reiter Grafik / Audio / Steuerung, Wirkung erst nach „Übernehmen“). Neues Pausemenü `scenes/pause/pause_menu.tscn`. Audio-Busse Music/SFX (`default_bus_layout.tres`), `Settings` um `msaa`, `render_scale`, `music_volume`, `sfx_volume` erweitert. Neue Cursor-Regel `.cursor/rules/00_conflict_prevention.mdc`. `origin/main` (inkl. Testmap) in den Branch gemergt.
+- Dateien: `scenes/options/*`, `scenes/pause/*`, `scenes/ui/*`, `default_bus_layout.tres` (alle neu), `autoload/settings.gd`, `scenes/menu/main_menu.gd/.tscn` (Optionen ausgelagert), `scenes/main/main.tscn/.gd`, `scenes/player/player.gd`, **`scenes/testmap/testmap.tscn`** (nur `PauseMenu`-Instanz ergänzt), `README.md`, `AI_HANDOVER.md`.
+- Wichtig für die Nächsten: Die Testmap hat jetzt ein `PauseMenu` als letztes Kind. **Jede neue Spielszene muss `res://scenes/pause/pause_menu.tscn` selbst instanziieren**, sonst tut Esc dort nichts (das Pausemenü ist kein Autoload). Neue Einstellungen werden nur in `options_menu.tscn/.gd` gebaut und erscheinen automatisch in beiden Menüs. Das Pausemenü hat keine Live-Vorschau mehr. Ausführlich in Abschnitt 11, Einträge 5 bis 9. Vor dem Ändern gemeinsamer Dateien `.cursor/rules/00_conflict_prevention.mdc` lesen (Abgleich mit dem Remote, nur das Nötigste ändern).

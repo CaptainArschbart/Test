@@ -1,0 +1,2676 @@
+[gd_scene load_steps=28 format=3]
+
+[ext_resource type="Script" path="res://scenes/testmap/testmap.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
+[ext_resource type="Shader" path="res://scenes/testmap/building_facade.gdshader" id="3_facade"]
+[ext_resource type="PackedScene" path="res://scenes/pause/pause_menu.tscn" id="4_pause"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_asphalt"]
+albedo_color = Color(0.09, 0.09, 0.12, 1)
+metallic = 0.2
+roughness = 0.3
+
+[sub_resource type="StandardMaterial3D" id="Mat_sidewalk"]
+albedo_color = Color(0.15, 0.15, 0.19, 1)
+metallic = 0
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="Mat_test"]
+albedo_color = Color(0.3, 0.32, 0.4, 1)
+metallic = 0
+roughness = 0.7
+
+[sub_resource type="StandardMaterial3D" id="Mat_test_dark"]
+albedo_color = Color(0.17, 0.18, 0.24, 1)
+metallic = 0.3
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_metal"]
+albedo_color = Color(0.28, 0.3, 0.36, 1)
+metallic = 0.75
+roughness = 0.35
+
+[sub_resource type="StandardMaterial3D" id="Mat_crate"]
+albedo_color = Color(0.1, 0.22, 0.26, 1)
+metallic = 0.2
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_neon_cyan"]
+albedo_color = Color(0, 0.05, 0.06, 1)
+metallic = 0
+roughness = 0.8
+emission_enabled = true
+emission = Color(0, 0.9, 1, 1)
+emission_energy_multiplier = 4
+
+[sub_resource type="StandardMaterial3D" id="Mat_neon_magenta"]
+albedo_color = Color(0.06, 0, 0.05, 1)
+metallic = 0
+roughness = 0.8
+emission_enabled = true
+emission = Color(1, 0.16, 0.84, 1)
+emission_energy_multiplier = 4
+
+[sub_resource type="StandardMaterial3D" id="Mat_neon_yellow"]
+albedo_color = Color(0.06, 0.05, 0, 1)
+metallic = 0
+roughness = 0.8
+emission_enabled = true
+emission = Color(1, 0.82, 0.1, 1)
+emission_energy_multiplier = 3.5
+
+[sub_resource type="StandardMaterial3D" id="Mat_neon_purple"]
+albedo_color = Color(0.03, 0, 0.06, 1)
+metallic = 0
+roughness = 0.8
+emission_enabled = true
+emission = Color(0.55, 0.2, 1, 1)
+emission_energy_multiplier = 4
+
+[sub_resource type="StandardMaterial3D" id="Mat_neon_red"]
+albedo_color = Color(0.06, 0, 0, 1)
+metallic = 0
+roughness = 0.8
+emission_enabled = true
+emission = Color(1, 0.1, 0.15, 1)
+emission_energy_multiplier = 4
+
+[sub_resource type="StandardMaterial3D" id="Mat_grid"]
+albedo_color = Color(0, 0.03, 0.04, 1)
+metallic = 0
+roughness = 0.8
+emission_enabled = true
+emission = Color(0, 0.75, 1, 1)
+emission_energy_multiplier = 1.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_holo"]
+albedo_color = Color(1, 0.2, 0.85, 0.25)
+metallic = 0
+roughness = 0.2
+emission_enabled = true
+emission = Color(1, 0.2, 0.85, 1)
+emission_energy_multiplier = 2
+transparency = 1
+cull_mode = 2
+
+[sub_resource type="StandardMaterial3D" id="Mat_item_pad"]
+albedo_color = Color(0, 0.04, 0.05, 1)
+metallic = 0
+roughness = 0.8
+emission_enabled = true
+emission = Color(0, 1, 0.7, 1)
+emission_energy_multiplier = 2.5
+
+[sub_resource type="ShaderMaterial" id="Mat_facade"]
+render_priority = 0
+shader = ExtResource("3_facade")
+
+[sub_resource type="ShaderMaterial" id="Mat_facade_dense"]
+render_priority = 0
+shader = ExtResource("3_facade")
+shader_parameter/lit_ratio = 0.55
+shader_parameter/cell_size = Vector2(1.8, 2.8)
+
+[sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
+sky_top_color = Color(0.015, 0.01, 0.05, 1)
+sky_horizon_color = Color(0.22, 0.05, 0.28, 1)
+sky_curve = 0.12
+ground_bottom_color = Color(0.01, 0.01, 0.02, 1)
+ground_horizon_color = Color(0.22, 0.05, 0.28, 1)
+sun_angle_max = 5.0
+
+[sub_resource type="Sky" id="Sky_night"]
+sky_material = SubResource("Sky_mat")
+
+[sub_resource type="Environment" id="Env_night"]
+background_mode = 2
+sky = SubResource("Sky_night")
+ambient_light_source = 2
+ambient_light_color = Color(0.38, 0.33, 0.55, 1)
+ambient_light_energy = 1.0
+reflected_light_source = 2
+tonemap_mode = 2
+ssr_enabled = true
+ssao_enabled = true
+glow_enabled = true
+glow_intensity = 1.0
+glow_bloom = 0.08
+glow_blend_mode = 1
+fog_enabled = true
+fog_light_color = Color(0.16, 0.06, 0.24, 1)
+fog_density = 0.006
+fog_sky_affect = 0.4
+
+[sub_resource type="CylinderMesh" id="Mesh_pad"]
+top_radius = 0.6
+bottom_radius = 0.6
+height = 0.04
+material = SubResource("Mat_item_pad")
+
+[sub_resource type="BoxShape3D" id="Shape_stair_ramp"]
+size = Vector3(3.6311, 0.2, 3)
+
+[sub_resource type="BoxShape3D" id="Shape_wall0"]
+size = Vector3(1, 40, 150)
+
+[sub_resource type="BoxShape3D" id="Shape_wall1"]
+size = Vector3(120, 40, 1)
+
+[node name="Testmap" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Env_night")
+
+[node name="Moon" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.81915, 0.46985, -0.32899, 0, 0.57358, 0.81915, 0.57358, -0.67101, 0.46985, 0, 30, 0)
+light_color = Color(0.55, 0.6, 1, 1)
+light_energy = 0.35
+shadow_enabled = true
+directional_shadow_max_distance = 90.0
+
+[node name="Street" type="Node3D" parent="."]
+
+[node name="Asphalt" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -19)
+use_collision = true
+size = Vector3(120, 1, 146)
+material = SubResource("Mat_asphalt")
+
+[node name="SidewalkWest" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.1, 32)
+use_collision = true
+size = Vector3(4, 0.2, 36)
+material = SubResource("Mat_sidewalk")
+
+[node name="SidewalkEast" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0.1, 32)
+use_collision = true
+size = Vector3(4, 0.2, 36)
+material = SubResource("Mat_sidewalk")
+
+[node name="LaneMark" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 44.5)
+cast_shadow = 0
+size = Vector3(0.18, 0.02, 3)
+material = SubResource("Mat_neon_yellow")
+
+[node name="LaneMark2" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 38.5)
+cast_shadow = 0
+size = Vector3(0.18, 0.02, 3)
+material = SubResource("Mat_neon_yellow")
+
+[node name="LaneMark3" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 32.5)
+cast_shadow = 0
+size = Vector3(0.18, 0.02, 3)
+material = SubResource("Mat_neon_yellow")
+
+[node name="LaneMark4" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 26.5)
+cast_shadow = 0
+size = Vector3(0.18, 0.02, 3)
+material = SubResource("Mat_neon_yellow")
+
+[node name="LaneMark5" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 20.5)
+cast_shadow = 0
+size = Vector3(0.18, 0.02, 3)
+material = SubResource("Mat_neon_yellow")
+
+[node name="LaneMark6" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 14.5)
+cast_shadow = 0
+size = Vector3(0.18, 0.02, 3)
+material = SubResource("Mat_neon_yellow")
+
+[node name="EdgeLineWest" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.8, 0.01, 10)
+cast_shadow = 0
+size = Vector3(0.2, 0.02, 80)
+material = SubResource("Mat_neon_cyan")
+
+[node name="EdgeLineEast" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.8, 0.01, 10)
+cast_shadow = 0
+size = Vector3(0.2, 0.02, 80)
+material = SubResource("Mat_neon_magenta")
+
+[node name="Crosswalk" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.01, -27)
+cast_shadow = 0
+size = Vector3(1, 0.02, 3)
+material = SubResource("Mat_test")
+
+[node name="Crosswalk2" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.01, -27)
+cast_shadow = 0
+size = Vector3(1, 0.02, 3)
+material = SubResource("Mat_test")
+
+[node name="Crosswalk3" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.01, -27)
+cast_shadow = 0
+size = Vector3(1, 0.02, 3)
+material = SubResource("Mat_test")
+
+[node name="Crosswalk4" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, -27)
+cast_shadow = 0
+size = Vector3(1, 0.02, 3)
+material = SubResource("Mat_test")
+
+[node name="Crosswalk5" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.01, -27)
+cast_shadow = 0
+size = Vector3(1, 0.02, 3)
+material = SubResource("Mat_test")
+
+[node name="Crosswalk6" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.01, -27)
+cast_shadow = 0
+size = Vector3(1, 0.02, 3)
+material = SubResource("Mat_test")
+
+[node name="Crosswalk7" type="CSGBox3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.01, -27)
+cast_shadow = 0
+size = Vector3(1, 0.02, 3)
+material = SubResource("Mat_test")
+
+[node name="SpawnRing" type="CSGCylinder3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 42)
+radius = 1.4
+height = 0.03
+sides = 32
+material = SubResource("Mat_neon_cyan")
+
+[node name="SpawnRingInner" type="CSGCylinder3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 42)
+radius = 1.2
+height = 0.03
+sides = 32
+material = SubResource("Mat_asphalt")
+
+[node name="SpawnSign" type="Label3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.2, 36)
+billboard = 1
+modulate = Color(0, 0.9, 1, 1)
+outline_modulate = Color(0.2, 0, 0.25, 0.85)
+text = "NEON DISTRICT // TESTMAP"
+font_size = 120
+outline_size = 18
+pixel_size = 0.004
+
+[node name="SpawnHint" type="Label3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, 36)
+billboard = 1
+modulate = Color(0.9, 0.9, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "links: Treppen & Rampen   rechts: Sprünge   geradeaus: Platz"
+font_size = 56
+outline_size = 18
+pixel_size = 0.004
+
+[node name="StreetLamp" type="Node3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0.2, 44)
+
+[node name="Pole" type="CSGCylinder3D" parent="Street/StreetLamp"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+use_collision = true
+radius = 0.08
+height = 5
+sides = 16
+material = SubResource("Mat_metal")
+
+[node name="Arm" type="CSGBox3D" parent="Street/StreetLamp"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, 5, 0)
+size = Vector3(1.6, 0.1, 0.12)
+material = SubResource("Mat_metal")
+
+[node name="Lamp" type="CSGBox3D" parent="Street/StreetLamp"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 4.9, 0)
+cast_shadow = 0
+size = Vector3(0.7, 0.08, 0.35)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Light" type="OmniLight3D" parent="Street/StreetLamp"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 4.6, 0)
+light_color = Color(0, 0.9, 1, 1)
+light_energy = 2.2
+omni_range = 11
+omni_attenuation = 1.5
+
+[node name="StreetLamp2" type="Node3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0.2, 30)
+
+[node name="Pole" type="CSGCylinder3D" parent="Street/StreetLamp2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+use_collision = true
+radius = 0.08
+height = 5
+sides = 16
+material = SubResource("Mat_metal")
+
+[node name="Arm" type="CSGBox3D" parent="Street/StreetLamp2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, 5, 0)
+size = Vector3(1.6, 0.1, 0.12)
+material = SubResource("Mat_metal")
+
+[node name="Lamp" type="CSGBox3D" parent="Street/StreetLamp2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 4.9, 0)
+cast_shadow = 0
+size = Vector3(0.7, 0.08, 0.35)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Light" type="OmniLight3D" parent="Street/StreetLamp2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 4.6, 0)
+light_color = Color(0, 0.9, 1, 1)
+light_energy = 2.2
+omni_range = 11
+omni_attenuation = 1.5
+
+[node name="StreetLamp3" type="Node3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0.2, 16)
+
+[node name="Pole" type="CSGCylinder3D" parent="Street/StreetLamp3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+use_collision = true
+radius = 0.08
+height = 5
+sides = 16
+material = SubResource("Mat_metal")
+
+[node name="Arm" type="CSGBox3D" parent="Street/StreetLamp3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, 5, 0)
+size = Vector3(1.6, 0.1, 0.12)
+material = SubResource("Mat_metal")
+
+[node name="Lamp" type="CSGBox3D" parent="Street/StreetLamp3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 4.9, 0)
+cast_shadow = 0
+size = Vector3(0.7, 0.08, 0.35)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Light" type="OmniLight3D" parent="Street/StreetLamp3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 4.6, 0)
+light_color = Color(0, 0.9, 1, 1)
+light_energy = 2.2
+omni_range = 11
+omni_attenuation = 1.5
+
+[node name="StreetLamp4" type="Node3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, 2)
+
+[node name="Pole" type="CSGCylinder3D" parent="Street/StreetLamp4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+use_collision = true
+radius = 0.08
+height = 5
+sides = 16
+material = SubResource("Mat_metal")
+
+[node name="Arm" type="CSGBox3D" parent="Street/StreetLamp4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, 5, 0)
+size = Vector3(1.6, 0.1, 0.12)
+material = SubResource("Mat_metal")
+
+[node name="Lamp" type="CSGBox3D" parent="Street/StreetLamp4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 4.9, 0)
+cast_shadow = 0
+size = Vector3(0.7, 0.08, 0.35)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Light" type="OmniLight3D" parent="Street/StreetLamp4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 4.6, 0)
+light_color = Color(0, 0.9, 1, 1)
+light_energy = 2.2
+omni_range = 11
+omni_attenuation = 1.5
+
+[node name="StreetLamp5" type="Node3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -14)
+
+[node name="Pole" type="CSGCylinder3D" parent="Street/StreetLamp5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+use_collision = true
+radius = 0.08
+height = 5
+sides = 16
+material = SubResource("Mat_metal")
+
+[node name="Arm" type="CSGBox3D" parent="Street/StreetLamp5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, 5, 0)
+size = Vector3(1.6, 0.1, 0.12)
+material = SubResource("Mat_metal")
+
+[node name="Lamp" type="CSGBox3D" parent="Street/StreetLamp5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 4.9, 0)
+cast_shadow = 0
+size = Vector3(0.7, 0.08, 0.35)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Light" type="OmniLight3D" parent="Street/StreetLamp5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 4.6, 0)
+light_color = Color(0, 0.9, 1, 1)
+light_energy = 2.2
+omni_range = 11
+omni_attenuation = 1.5
+
+[node name="StreetLamp6" type="Node3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.2, 44)
+
+[node name="Pole" type="CSGCylinder3D" parent="Street/StreetLamp6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+use_collision = true
+radius = 0.08
+height = 5
+sides = 16
+material = SubResource("Mat_metal")
+
+[node name="Arm" type="CSGBox3D" parent="Street/StreetLamp6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7, 5, 0)
+size = Vector3(1.6, 0.1, 0.12)
+material = SubResource("Mat_metal")
+
+[node name="Lamp" type="CSGBox3D" parent="Street/StreetLamp6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 4.9, 0)
+cast_shadow = 0
+size = Vector3(0.7, 0.08, 0.35)
+material = SubResource("Mat_neon_magenta")
+
+[node name="Light" type="OmniLight3D" parent="Street/StreetLamp6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 4.6, 0)
+light_color = Color(1, 0.16, 0.84, 1)
+light_energy = 2.2
+omni_range = 11
+omni_attenuation = 1.5
+
+[node name="StreetLamp7" type="Node3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.2, 30)
+
+[node name="Pole" type="CSGCylinder3D" parent="Street/StreetLamp7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+use_collision = true
+radius = 0.08
+height = 5
+sides = 16
+material = SubResource("Mat_metal")
+
+[node name="Arm" type="CSGBox3D" parent="Street/StreetLamp7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7, 5, 0)
+size = Vector3(1.6, 0.1, 0.12)
+material = SubResource("Mat_metal")
+
+[node name="Lamp" type="CSGBox3D" parent="Street/StreetLamp7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 4.9, 0)
+cast_shadow = 0
+size = Vector3(0.7, 0.08, 0.35)
+material = SubResource("Mat_neon_magenta")
+
+[node name="Light" type="OmniLight3D" parent="Street/StreetLamp7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 4.6, 0)
+light_color = Color(1, 0.16, 0.84, 1)
+light_energy = 2.2
+omni_range = 11
+omni_attenuation = 1.5
+
+[node name="StreetLamp8" type="Node3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.2, 16)
+
+[node name="Pole" type="CSGCylinder3D" parent="Street/StreetLamp8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+use_collision = true
+radius = 0.08
+height = 5
+sides = 16
+material = SubResource("Mat_metal")
+
+[node name="Arm" type="CSGBox3D" parent="Street/StreetLamp8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7, 5, 0)
+size = Vector3(1.6, 0.1, 0.12)
+material = SubResource("Mat_metal")
+
+[node name="Lamp" type="CSGBox3D" parent="Street/StreetLamp8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 4.9, 0)
+cast_shadow = 0
+size = Vector3(0.7, 0.08, 0.35)
+material = SubResource("Mat_neon_magenta")
+
+[node name="Light" type="OmniLight3D" parent="Street/StreetLamp8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 4.6, 0)
+light_color = Color(1, 0.16, 0.84, 1)
+light_energy = 2.2
+omni_range = 11
+omni_attenuation = 1.5
+
+[node name="StreetLamp9" type="Node3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 2)
+
+[node name="Pole" type="CSGCylinder3D" parent="Street/StreetLamp9"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+use_collision = true
+radius = 0.08
+height = 5
+sides = 16
+material = SubResource("Mat_metal")
+
+[node name="Arm" type="CSGBox3D" parent="Street/StreetLamp9"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7, 5, 0)
+size = Vector3(1.6, 0.1, 0.12)
+material = SubResource("Mat_metal")
+
+[node name="Lamp" type="CSGBox3D" parent="Street/StreetLamp9"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 4.9, 0)
+cast_shadow = 0
+size = Vector3(0.7, 0.08, 0.35)
+material = SubResource("Mat_neon_magenta")
+
+[node name="Light" type="OmniLight3D" parent="Street/StreetLamp9"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 4.6, 0)
+light_color = Color(1, 0.16, 0.84, 1)
+light_energy = 2.2
+omni_range = 11
+omni_attenuation = 1.5
+
+[node name="StreetLamp10" type="Node3D" parent="Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -14)
+
+[node name="Pole" type="CSGCylinder3D" parent="Street/StreetLamp10"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+use_collision = true
+radius = 0.08
+height = 5
+sides = 16
+material = SubResource("Mat_metal")
+
+[node name="Arm" type="CSGBox3D" parent="Street/StreetLamp10"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7, 5, 0)
+size = Vector3(1.6, 0.1, 0.12)
+material = SubResource("Mat_metal")
+
+[node name="Lamp" type="CSGBox3D" parent="Street/StreetLamp10"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 4.9, 0)
+cast_shadow = 0
+size = Vector3(0.7, 0.08, 0.35)
+material = SubResource("Mat_neon_magenta")
+
+[node name="Light" type="OmniLight3D" parent="Street/StreetLamp10"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 4.6, 0)
+light_color = Color(1, 0.16, 0.84, 1)
+light_energy = 2.2
+omni_range = 11
+omni_attenuation = 1.5
+
+[node name="Buildings" type="Node3D" parent="."]
+
+[node name="StreetBlock" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23, 11, 45)
+use_collision = true
+size = Vector3(22, 22, 10)
+material = SubResource("Mat_facade")
+
+[node name="StreetBlock2" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21, 17, 33.5)
+use_collision = true
+size = Vector3(18, 34, 11)
+material = SubResource("Mat_facade_dense")
+
+[node name="StreetBlock3" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 9, 21.5)
+use_collision = true
+size = Vector3(16, 18, 11)
+material = SubResource("Mat_facade")
+
+[node name="StreetBlock4" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 14, 46)
+use_collision = true
+size = Vector3(20, 28, 8)
+material = SubResource("Mat_facade_dense")
+
+[node name="StreetBlock5" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 8, 35.5)
+use_collision = true
+size = Vector3(16, 16, 11)
+material = SubResource("Mat_facade")
+
+[node name="StreetBlock6" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 20, 22.5)
+use_collision = true
+size = Vector3(24, 40, 13)
+material = SubResource("Mat_facade")
+
+[node name="SouthBlock" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 15, 57)
+use_collision = true
+size = Vector3(80, 30, 10)
+material = SubResource("Mat_facade")
+
+[node name="BackdropBlock" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -63, 22.5, 36)
+use_collision = true
+size = Vector3(18, 45, 32)
+material = SubResource("Mat_facade_dense")
+
+[node name="BackdropBlock2" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -63, 15, 4)
+use_collision = true
+size = Vector3(18, 30, 28)
+material = SubResource("Mat_facade")
+
+[node name="BackdropBlock3" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -63, 26, -26)
+use_collision = true
+size = Vector3(18, 52, 28)
+material = SubResource("Mat_facade")
+
+[node name="BackdropBlock4" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -63, 13, -56)
+use_collision = true
+size = Vector3(18, 26, 28)
+material = SubResource("Mat_facade_dense")
+
+[node name="BackdropBlock5" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -63, 19, -86)
+use_collision = true
+size = Vector3(18, 38, 28)
+material = SubResource("Mat_facade")
+
+[node name="BackdropBlock6" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 63, 18, 37)
+use_collision = true
+size = Vector3(18, 36, 30)
+material = SubResource("Mat_facade")
+
+[node name="BackdropBlock7" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 63, 12, 7)
+use_collision = true
+size = Vector3(18, 24, 26)
+material = SubResource("Mat_facade_dense")
+
+[node name="BackdropBlock8" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 63, 24, -22)
+use_collision = true
+size = Vector3(18, 48, 28)
+material = SubResource("Mat_facade")
+
+[node name="BackdropBlock9" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 63, 15, -52)
+use_collision = true
+size = Vector3(18, 30, 28)
+material = SubResource("Mat_facade")
+
+[node name="BackdropBlock10" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 63, 21, -84)
+use_collision = true
+size = Vector3(18, 42, 32)
+material = SubResource("Mat_facade_dense")
+
+[node name="BackdropBlock11" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -37, 17, -97)
+use_collision = true
+size = Vector3(34, 34, 14)
+material = SubResource("Mat_facade")
+
+[node name="BackdropBlock12" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 30, -101)
+use_collision = true
+size = Vector3(36, 60, 18)
+material = SubResource("Mat_facade_dense")
+
+[node name="BackdropBlock13" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37, 14, -97)
+use_collision = true
+size = Vector3(34, 28, 14)
+material = SubResource("Mat_facade")
+
+[node name="SignPanel" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.9, 7, 45)
+cast_shadow = 0
+size = Vector3(0.15, 2, 6)
+material = SubResource("Mat_neon_magenta")
+
+[node name="SignText" type="Label3D" parent="Buildings"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -11.78, 7, 45)
+modulate = Color(1, 1, 1, 1)
+outline_modulate = Color(1, 0.16, 0.84, 0.85)
+text = "RAMEN"
+font_size = 200
+outline_size = 18
+pixel_size = 0.004
+
+[node name="SignGlow" type="OmniLight3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.4, 7, 45)
+light_color = Color(1, 0.16, 0.84, 1)
+light_energy = 3
+omni_range = 9
+omni_attenuation = 1.5
+
+[node name="SignPanel2" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.9, 12, 33)
+cast_shadow = 0
+size = Vector3(0.15, 6, 1.6)
+material = SubResource("Mat_neon_cyan")
+
+[node name="SignText2" type="Label3D" parent="Buildings"]
+transform = Transform3D(0, 0, 1, -1, 0, 0, 0, -1, 0, -11.78, 12, 33)
+modulate = Color(1, 1, 1, 1)
+outline_modulate = Color(0, 0.9, 1, 0.85)
+text = "HOTEL"
+font_size = 160
+outline_size = 18
+pixel_size = 0.004
+
+[node name="SignGlow2" type="OmniLight3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.4, 12, 33)
+light_color = Color(0, 0.9, 1, 1)
+light_energy = 3
+omni_range = 9
+omni_attenuation = 1.5
+
+[node name="SignPanel3" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.9, 5, 21)
+cast_shadow = 0
+size = Vector3(0.15, 1.6, 7)
+material = SubResource("Mat_neon_yellow")
+
+[node name="SignText3" type="Label3D" parent="Buildings"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -11.78, 5, 21)
+modulate = Color(1, 1, 1, 1)
+outline_modulate = Color(1, 0.82, 0.1, 0.85)
+text = "BAR 24/7"
+font_size = 200
+outline_size = 18
+pixel_size = 0.004
+
+[node name="SignGlow3" type="OmniLight3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.4, 5, 21)
+light_color = Color(1, 0.82, 0.1, 1)
+light_energy = 3
+omni_range = 9
+omni_attenuation = 1.5
+
+[node name="SignPanel4" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.9, 9, 46)
+cast_shadow = 0
+size = Vector3(0.15, 2.4, 5)
+material = SubResource("Mat_neon_purple")
+
+[node name="SignText4" type="Label3D" parent="Buildings"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 11.78, 9, 46)
+modulate = Color(1, 1, 1, 1)
+outline_modulate = Color(0.55, 0.2, 1, 0.85)
+text = "DATA//SHOP"
+font_size = 200
+outline_size = 18
+pixel_size = 0.004
+
+[node name="SignGlow4" type="OmniLight3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.4, 9, 46)
+light_color = Color(0.55, 0.2, 1, 1)
+light_energy = 3
+omni_range = 9
+omni_attenuation = 1.5
+
+[node name="SignPanel5" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.9, 6, 35)
+cast_shadow = 0
+size = Vector3(0.15, 1.6, 6)
+material = SubResource("Mat_neon_red")
+
+[node name="SignText5" type="Label3D" parent="Buildings"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 11.78, 6, 35)
+modulate = Color(1, 1, 1, 1)
+outline_modulate = Color(1, 0.1, 0.15, 0.85)
+text = "CLINIC"
+font_size = 200
+outline_size = 18
+pixel_size = 0.004
+
+[node name="SignGlow5" type="OmniLight3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.4, 6, 35)
+light_color = Color(1, 0.1, 0.15, 1)
+light_energy = 3
+omni_range = 9
+omni_attenuation = 1.5
+
+[node name="SignPanel6" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.9, 14, 22)
+cast_shadow = 0
+size = Vector3(0.15, 3, 7)
+material = SubResource("Mat_neon_cyan")
+
+[node name="SignText6" type="Label3D" parent="Buildings"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 11.78, 14, 22)
+modulate = Color(1, 1, 1, 1)
+outline_modulate = Color(0, 0.9, 1, 0.85)
+text = "NEON//GRID"
+font_size = 200
+outline_size = 18
+pixel_size = 0.004
+
+[node name="SignGlow6" type="OmniLight3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.4, 14, 22)
+light_color = Color(0, 0.9, 1, 1)
+light_energy = 3
+omni_range = 9
+omni_attenuation = 1.5
+
+[node name="BigSign" type="CSGBox3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 18, 52.2)
+cast_shadow = 0
+size = Vector3(16, 4, 0.2)
+material = SubResource("Mat_neon_magenta")
+
+[node name="BigSignText" type="Label3D" parent="Buildings"]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 18, 51.95)
+modulate = Color(1, 1, 1, 1)
+outline_modulate = Color(1, 0.16, 0.84, 0.85)
+text = "NEON//GRID"
+font_size = 520
+outline_size = 18
+pixel_size = 0.004
+
+[node name="ZoneWest" type="Node3D" parent="."]
+
+[node name="ZoneTitle" type="Label3D" parent="ZoneWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 5.5, -2)
+billboard = 1
+modulate = Color(0, 0.9, 1, 1)
+outline_modulate = Color(0, 0.1, 0.2, 0.85)
+text = "TREPPEN & RAMPEN"
+font_size = 150
+outline_size = 18
+pixel_size = 0.004
+
+[node name="FloorStripe" type="CSGBox3D" parent="ZoneWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31, 0.01, 12.9)
+cast_shadow = 0
+size = Vector3(38, 0.02, 0.2)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Stairs_15cm" type="Node3D" parent="ZoneWest"]
+
+[node name="Step" type="CSGBox3D" parent="ZoneWest/Stairs_15cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.25, 0.075, 9)
+use_collision = true
+size = Vector3(0.5, 0.15, 3)
+material = SubResource("Mat_test")
+
+[node name="Step2" type="CSGBox3D" parent="ZoneWest/Stairs_15cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.75, 0.15, 9)
+use_collision = true
+size = Vector3(0.5, 0.3, 3)
+material = SubResource("Mat_test")
+
+[node name="Step3" type="CSGBox3D" parent="ZoneWest/Stairs_15cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.25, 0.225, 9)
+use_collision = true
+size = Vector3(0.5, 0.45, 3)
+material = SubResource("Mat_test")
+
+[node name="Step4" type="CSGBox3D" parent="ZoneWest/Stairs_15cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.75, 0.3, 9)
+use_collision = true
+size = Vector3(0.5, 0.6, 3)
+material = SubResource("Mat_test")
+
+[node name="Step5" type="CSGBox3D" parent="ZoneWest/Stairs_15cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.25, 0.375, 9)
+use_collision = true
+size = Vector3(0.5, 0.75, 3)
+material = SubResource("Mat_test")
+
+[node name="Step6" type="CSGBox3D" parent="ZoneWest/Stairs_15cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.75, 0.45, 9)
+use_collision = true
+size = Vector3(0.5, 0.9, 3)
+material = SubResource("Mat_test")
+
+[node name="Landing" type="CSGBox3D" parent="ZoneWest/Stairs_15cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.25, 0.45, 9)
+use_collision = true
+size = Vector3(2.5, 0.9, 3)
+material = SubResource("Mat_test_dark")
+
+[node name="Edge" type="CSGBox3D" parent="ZoneWest/Stairs_15cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.25, 0.915, 7.54)
+cast_shadow = 0
+size = Vector3(2.5, 0.03, 0.08)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Label" type="Label3D" parent="ZoneWest/Stairs_15cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 2.2, 9)
+billboard = 1
+modulate = Color(0, 0.9, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "STUFE 0,15 m"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Stairs_25cm" type="Node3D" parent="ZoneWest"]
+
+[node name="Step" type="CSGBox3D" parent="ZoneWest/Stairs_25cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.25, 0.125, 4)
+use_collision = true
+size = Vector3(0.5, 0.25, 3)
+material = SubResource("Mat_test")
+
+[node name="Step2" type="CSGBox3D" parent="ZoneWest/Stairs_25cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.75, 0.25, 4)
+use_collision = true
+size = Vector3(0.5, 0.5, 3)
+material = SubResource("Mat_test")
+
+[node name="Step3" type="CSGBox3D" parent="ZoneWest/Stairs_25cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.25, 0.375, 4)
+use_collision = true
+size = Vector3(0.5, 0.75, 3)
+material = SubResource("Mat_test")
+
+[node name="Step4" type="CSGBox3D" parent="ZoneWest/Stairs_25cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.75, 0.5, 4)
+use_collision = true
+size = Vector3(0.5, 1, 3)
+material = SubResource("Mat_test")
+
+[node name="Step5" type="CSGBox3D" parent="ZoneWest/Stairs_25cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.25, 0.625, 4)
+use_collision = true
+size = Vector3(0.5, 1.25, 3)
+material = SubResource("Mat_test")
+
+[node name="Step6" type="CSGBox3D" parent="ZoneWest/Stairs_25cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.75, 0.75, 4)
+use_collision = true
+size = Vector3(0.5, 1.5, 3)
+material = SubResource("Mat_test")
+
+[node name="Landing" type="CSGBox3D" parent="ZoneWest/Stairs_25cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.25, 0.75, 4)
+use_collision = true
+size = Vector3(2.5, 1.5, 3)
+material = SubResource("Mat_test_dark")
+
+[node name="Edge" type="CSGBox3D" parent="ZoneWest/Stairs_25cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.25, 1.515, 2.54)
+cast_shadow = 0
+size = Vector3(2.5, 0.03, 0.08)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Label" type="Label3D" parent="ZoneWest/Stairs_25cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 2.2, 4)
+billboard = 1
+modulate = Color(0, 0.9, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "STUFE 0,25 m"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Stairs_35cm" type="Node3D" parent="ZoneWest"]
+
+[node name="Step" type="CSGBox3D" parent="ZoneWest/Stairs_35cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.25, 0.175, -1)
+use_collision = true
+size = Vector3(0.5, 0.35, 3)
+material = SubResource("Mat_test")
+
+[node name="Step2" type="CSGBox3D" parent="ZoneWest/Stairs_35cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.75, 0.35, -1)
+use_collision = true
+size = Vector3(0.5, 0.7, 3)
+material = SubResource("Mat_test")
+
+[node name="Step3" type="CSGBox3D" parent="ZoneWest/Stairs_35cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.25, 0.525, -1)
+use_collision = true
+size = Vector3(0.5, 1.05, 3)
+material = SubResource("Mat_test")
+
+[node name="Step4" type="CSGBox3D" parent="ZoneWest/Stairs_35cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.75, 0.7, -1)
+use_collision = true
+size = Vector3(0.5, 1.4, 3)
+material = SubResource("Mat_test")
+
+[node name="Step5" type="CSGBox3D" parent="ZoneWest/Stairs_35cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.25, 0.875, -1)
+use_collision = true
+size = Vector3(0.5, 1.75, 3)
+material = SubResource("Mat_test")
+
+[node name="Step6" type="CSGBox3D" parent="ZoneWest/Stairs_35cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.75, 1.05, -1)
+use_collision = true
+size = Vector3(0.5, 2.1, 3)
+material = SubResource("Mat_test")
+
+[node name="Landing" type="CSGBox3D" parent="ZoneWest/Stairs_35cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.25, 1.05, -1)
+use_collision = true
+size = Vector3(2.5, 2.1, 3)
+material = SubResource("Mat_test_dark")
+
+[node name="Edge" type="CSGBox3D" parent="ZoneWest/Stairs_35cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.25, 2.115, -2.46)
+cast_shadow = 0
+size = Vector3(2.5, 0.03, 0.08)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Label" type="Label3D" parent="ZoneWest/Stairs_35cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 2.2, -1)
+billboard = 1
+modulate = Color(0, 0.9, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "STUFE 0,35 m"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Stairs_50cm" type="Node3D" parent="ZoneWest"]
+
+[node name="Step" type="CSGBox3D" parent="ZoneWest/Stairs_50cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.25, 0.25, -6)
+use_collision = true
+size = Vector3(0.5, 0.5, 3)
+material = SubResource("Mat_test")
+
+[node name="Step2" type="CSGBox3D" parent="ZoneWest/Stairs_50cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.75, 0.5, -6)
+use_collision = true
+size = Vector3(0.5, 1, 3)
+material = SubResource("Mat_test")
+
+[node name="Step3" type="CSGBox3D" parent="ZoneWest/Stairs_50cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.25, 0.75, -6)
+use_collision = true
+size = Vector3(0.5, 1.5, 3)
+material = SubResource("Mat_test")
+
+[node name="Step4" type="CSGBox3D" parent="ZoneWest/Stairs_50cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.75, 1, -6)
+use_collision = true
+size = Vector3(0.5, 2, 3)
+material = SubResource("Mat_test")
+
+[node name="Step5" type="CSGBox3D" parent="ZoneWest/Stairs_50cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.25, 1.25, -6)
+use_collision = true
+size = Vector3(0.5, 2.5, 3)
+material = SubResource("Mat_test")
+
+[node name="Step6" type="CSGBox3D" parent="ZoneWest/Stairs_50cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.75, 1.5, -6)
+use_collision = true
+size = Vector3(0.5, 3, 3)
+material = SubResource("Mat_test")
+
+[node name="Landing" type="CSGBox3D" parent="ZoneWest/Stairs_50cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.25, 1.5, -6)
+use_collision = true
+size = Vector3(2.5, 3, 3)
+material = SubResource("Mat_test_dark")
+
+[node name="Edge" type="CSGBox3D" parent="ZoneWest/Stairs_50cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.25, 3.015, -7.46)
+cast_shadow = 0
+size = Vector3(2.5, 0.03, 0.08)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Label" type="Label3D" parent="ZoneWest/Stairs_50cm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 2.2, -6)
+billboard = 1
+modulate = Color(0, 0.9, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "STUFE 0,50 m"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Stairs_RampCollision" type="Node3D" parent="ZoneWest"]
+
+[node name="Step" type="CSGBox3D" parent="ZoneWest/Stairs_RampCollision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.25, 0.1, -11)
+size = Vector3(0.5, 0.2, 3)
+material = SubResource("Mat_test")
+
+[node name="Step2" type="CSGBox3D" parent="ZoneWest/Stairs_RampCollision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.75, 0.2, -11)
+size = Vector3(0.5, 0.4, 3)
+material = SubResource("Mat_test")
+
+[node name="Step3" type="CSGBox3D" parent="ZoneWest/Stairs_RampCollision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.25, 0.3, -11)
+size = Vector3(0.5, 0.6, 3)
+material = SubResource("Mat_test")
+
+[node name="Step4" type="CSGBox3D" parent="ZoneWest/Stairs_RampCollision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.75, 0.4, -11)
+size = Vector3(0.5, 0.8, 3)
+material = SubResource("Mat_test")
+
+[node name="Step5" type="CSGBox3D" parent="ZoneWest/Stairs_RampCollision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.25, 0.5, -11)
+size = Vector3(0.5, 1, 3)
+material = SubResource("Mat_test")
+
+[node name="Step6" type="CSGBox3D" parent="ZoneWest/Stairs_RampCollision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.75, 0.6, -11)
+size = Vector3(0.5, 1.2, 3)
+material = SubResource("Mat_test")
+
+[node name="Landing" type="CSGBox3D" parent="ZoneWest/Stairs_RampCollision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.25, 0.6, -11)
+use_collision = true
+size = Vector3(2.5, 1.2, 3)
+material = SubResource("Mat_test_dark")
+
+[node name="Edge" type="CSGBox3D" parent="ZoneWest/Stairs_RampCollision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.25, 1.215, -12.46)
+cast_shadow = 0
+size = Vector3(2.5, 0.03, 0.08)
+material = SubResource("Mat_neon_yellow")
+
+[node name="RampCollision" type="StaticBody3D" parent="ZoneWest/Stairs_RampCollision"]
+transform = Transform3D(0.92848, 0.37139, 0, -0.37139, 0.92848, 0, 0, 0, 1, -15.03714, 0.50715, -11)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ZoneWest/Stairs_RampCollision/RampCollision"]
+shape = SubResource("Shape_stair_ramp")
+
+[node name="Label" type="Label3D" parent="ZoneWest/Stairs_RampCollision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 2.2, -11)
+billboard = 1
+modulate = Color(1, 0.82, 0.1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "TREPPE 0,20 m (Rampen-Kollision)"
+font_size = 72
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Ramp_15deg" type="Node3D" parent="ZoneWest"]
+
+[node name="Ramp" type="CSGBox3D" parent="ZoneWest/Ramp_15deg"]
+transform = Transform3D(0.96593, 0.25882, 0, -0.25882, 0.96593, 0, 0, 0, 1, -31.37376, 1.10511, 9)
+use_collision = true
+size = Vector3(10.25926, 0.3, 3)
+material = SubResource("Mat_test")
+
+[node name="Top" type="CSGBox3D" parent="ZoneWest/Ramp_15deg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38, 1.25, 9)
+use_collision = true
+size = Vector3(4, 2.5, 3)
+material = SubResource("Mat_test_dark")
+
+[node name="Label" type="Label3D" parent="ZoneWest/Ramp_15deg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.86987, 2, 9)
+billboard = 1
+modulate = Color(1, 0.82, 0.1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "RAMPE 15°"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Ramp_30deg" type="Node3D" parent="ZoneWest"]
+
+[node name="Ramp" type="CSGBox3D" parent="ZoneWest/Ramp_30deg"]
+transform = Transform3D(0.86603, 0.5, 0, -0.5, 0.86603, 0, 0, 0, 1, -33.90994, 1.1201, 4)
+use_collision = true
+size = Vector3(5.6, 0.3, 3)
+material = SubResource("Mat_test")
+
+[node name="Top" type="CSGBox3D" parent="ZoneWest/Ramp_30deg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38, 1.25, 4)
+use_collision = true
+size = Vector3(4, 2.5, 3)
+material = SubResource("Mat_test_dark")
+
+[node name="Label" type="Label3D" parent="ZoneWest/Ramp_30deg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30.86987, 2, 4)
+billboard = 1
+modulate = Color(1, 0.82, 0.1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "RAMPE 30°"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Ramp_40deg" type="Node3D" parent="ZoneWest"]
+
+[node name="Ramp" type="CSGBox3D" parent="ZoneWest/Ramp_40deg"]
+transform = Transform3D(0.76604, 0.64279, 0, -0.64279, 0.76604, 0, 0, 0, 1, -34.60673, 1.13509, -1)
+use_collision = true
+size = Vector3(4.48931, 0.3, 3)
+material = SubResource("Mat_test")
+
+[node name="Top" type="CSGBox3D" parent="ZoneWest/Ramp_40deg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38, 1.25, -1)
+use_collision = true
+size = Vector3(4, 2.5, 3)
+material = SubResource("Mat_test_dark")
+
+[node name="Label" type="Label3D" parent="ZoneWest/Ramp_40deg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32.22062, 2, -1)
+billboard = 1
+modulate = Color(1, 0.82, 0.1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "RAMPE 40°"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Ramp_50deg" type="Node3D" parent="ZoneWest"]
+
+[node name="Ramp" type="CSGBox3D" parent="ZoneWest/Ramp_50deg"]
+transform = Transform3D(0.64279, 0.76604, 0, -0.76604, 0.64279, 0, 0, 0, 1, -35.06603, 1.15358, -6)
+use_collision = true
+size = Vector3(3.86352, 0.3, 3)
+material = SubResource("Mat_test")
+
+[node name="Top" type="CSGBox3D" parent="ZoneWest/Ramp_50deg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38, 1.25, -6)
+use_collision = true
+size = Vector3(4, 2.5, 3)
+material = SubResource("Mat_test_dark")
+
+[node name="Label" type="Label3D" parent="ZoneWest/Ramp_50deg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -33.10225, 2, -6)
+billboard = 1
+modulate = Color(1, 0.1, 0.15, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "RAMPE 50° (zu steil)"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="RampBackWalk" type="CSGBox3D" parent="ZoneWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -41.5, 1.25, 1)
+use_collision = true
+size = Vector3(3, 2.5, 20)
+material = SubResource("Mat_test_dark")
+
+[node name="RampLight" type="OmniLight3D" parent="ZoneWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 6, 1)
+light_color = Color(0.55, 0.2, 1, 1)
+light_energy = 3
+omni_range = 18
+omni_attenuation = 1.5
+
+[node name="StairLight" type="OmniLight3D" parent="ZoneWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17, 5, 1)
+light_color = Color(0, 0.9, 1, 1)
+light_energy = 2.5
+omni_range = 14
+omni_attenuation = 1.5
+
+[node name="Tunnel" type="Node3D" parent="ZoneWest"]
+
+[node name="WallNorth" type="CSGBox3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17, 1.6, -17.9)
+use_collision = true
+size = Vector3(6, 3.2, 0.6)
+material = SubResource("Mat_test_dark")
+
+[node name="WallSouth" type="CSGBox3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17, 1.6, -14.1)
+use_collision = true
+size = Vector3(6, 3.2, 0.6)
+material = SubResource("Mat_test_dark")
+
+[node name="Ceiling" type="CSGBox3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17, 2.9, -16)
+use_collision = true
+size = Vector3(6, 0.6, 4.4)
+material = SubResource("Mat_test_dark")
+
+[node name="CeilingLight" type="CSGBox3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17, 2.59, -16)
+cast_shadow = 0
+size = Vector3(6, 0.02, 0.16)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Label" type="Label3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17, 2.25, -14.5)
+billboard = 1
+modulate = Color(0, 0.9, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "DECKE 2,60 m"
+font_size = 56
+outline_size = 18
+pixel_size = 0.004
+
+[node name="WallNorth2" type="CSGBox3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23, 1.6, -17.9)
+use_collision = true
+size = Vector3(6, 3.2, 0.6)
+material = SubResource("Mat_test_dark")
+
+[node name="WallSouth2" type="CSGBox3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23, 1.6, -14.1)
+use_collision = true
+size = Vector3(6, 3.2, 0.6)
+material = SubResource("Mat_test_dark")
+
+[node name="Ceiling2" type="CSGBox3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23, 2.575, -16)
+use_collision = true
+size = Vector3(6, 1.25, 4.4)
+material = SubResource("Mat_test_dark")
+
+[node name="CeilingLight2" type="CSGBox3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23, 1.94, -16)
+cast_shadow = 0
+size = Vector3(6, 0.02, 0.16)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Label2" type="Label3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23, 1.6, -14.5)
+billboard = 1
+modulate = Color(0, 0.9, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "DECKE 1,95 m"
+font_size = 56
+outline_size = 18
+pixel_size = 0.004
+
+[node name="WallNorth3" type="CSGBox3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29, 1.6, -17.9)
+use_collision = true
+size = Vector3(6, 3.2, 0.6)
+material = SubResource("Mat_test_dark")
+
+[node name="WallSouth3" type="CSGBox3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29, 1.6, -14.1)
+use_collision = true
+size = Vector3(6, 3.2, 0.6)
+material = SubResource("Mat_test_dark")
+
+[node name="Ceiling3" type="CSGBox3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29, 2.45, -16)
+use_collision = true
+size = Vector3(6, 1.5, 4.4)
+material = SubResource("Mat_test_dark")
+
+[node name="CeilingLight3" type="CSGBox3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29, 1.69, -16)
+cast_shadow = 0
+size = Vector3(6, 0.02, 0.16)
+material = SubResource("Mat_neon_red")
+
+[node name="Label3" type="Label3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29, 1.2, -14.5)
+billboard = 1
+modulate = Color(1, 0.1, 0.15, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "DECKE 1,70 m (zu niedrig)"
+font_size = 56
+outline_size = 18
+pixel_size = 0.004
+
+[node name="EndWall" type="CSGBox3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32.3, 1.6, -16)
+use_collision = true
+size = Vector3(0.6, 3.2, 4.4)
+material = SubResource("Mat_test_dark")
+
+[node name="TunnelLight" type="OmniLight3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17, 2.2, -16)
+light_color = Color(0, 0.9, 1, 1)
+light_energy = 1.5
+omni_range = 6
+omni_attenuation = 1.5
+
+[node name="TunnelLight2" type="OmniLight3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23, 1.6, -16)
+light_color = Color(0.55, 0.2, 1, 1)
+light_energy = 1.2
+omni_range = 5
+omni_attenuation = 1.5
+
+[node name="TunnelTitle" type="Label3D" parent="ZoneWest/Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 3.8, -16)
+billboard = 1
+modulate = Color(0, 0.9, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "TUNNEL"
+font_size = 110
+outline_size = 18
+pixel_size = 0.004
+
+[node name="MeasureWall" type="Node3D" parent="ZoneWest"]
+
+[node name="Wall" type="CSGBox3D" parent="ZoneWest/MeasureWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 3.5, -26)
+use_collision = true
+size = Vector3(12, 7, 0.8)
+material = SubResource("Mat_test_dark")
+
+[node name="Line" type="CSGBox3D" parent="ZoneWest/MeasureWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 1, -25.525)
+cast_shadow = 0
+size = Vector3(12, 0.06, 0.05)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Mark" type="Label3D" parent="ZoneWest/MeasureWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35.5, 1, -25.4)
+modulate = Color(1, 1, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "1 m"
+font_size = 64
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Line2" type="CSGBox3D" parent="ZoneWest/MeasureWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 2, -25.525)
+cast_shadow = 0
+size = Vector3(12, 0.06, 0.05)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Mark2" type="Label3D" parent="ZoneWest/MeasureWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35.5, 2, -25.4)
+modulate = Color(1, 1, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "2 m"
+font_size = 64
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Line3" type="CSGBox3D" parent="ZoneWest/MeasureWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 3, -25.525)
+cast_shadow = 0
+size = Vector3(12, 0.06, 0.05)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Mark3" type="Label3D" parent="ZoneWest/MeasureWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35.5, 3, -25.4)
+modulate = Color(1, 1, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "3 m"
+font_size = 64
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Line4" type="CSGBox3D" parent="ZoneWest/MeasureWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 4, -25.525)
+cast_shadow = 0
+size = Vector3(12, 0.06, 0.05)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Mark4" type="Label3D" parent="ZoneWest/MeasureWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35.5, 4, -25.4)
+modulate = Color(1, 1, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "4 m"
+font_size = 64
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Line5" type="CSGBox3D" parent="ZoneWest/MeasureWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 5, -25.525)
+cast_shadow = 0
+size = Vector3(12, 0.06, 0.05)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Mark5" type="Label3D" parent="ZoneWest/MeasureWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35.5, 5, -25.4)
+modulate = Color(1, 1, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "5 m"
+font_size = 64
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Line6" type="CSGBox3D" parent="ZoneWest/MeasureWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 6, -25.525)
+cast_shadow = 0
+size = Vector3(12, 0.06, 0.05)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Mark6" type="Label3D" parent="ZoneWest/MeasureWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35.5, 6, -25.4)
+modulate = Color(1, 1, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "6 m"
+font_size = 64
+outline_size = 18
+pixel_size = 0.004
+
+[node name="SizeCube" type="CSGBox3D" parent="ZoneWest/MeasureWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -39, 0.25, -23.5)
+use_collision = true
+size = Vector3(0.5, 0.5, 0.5)
+material = SubResource("Mat_crate")
+
+[node name="SizeCube2" type="CSGBox3D" parent="ZoneWest/MeasureWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 0.5, -23.5)
+use_collision = true
+size = Vector3(1, 1, 1)
+material = SubResource("Mat_crate")
+
+[node name="SizeCube3" type="CSGBox3D" parent="ZoneWest/MeasureWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 1, -23.5)
+use_collision = true
+size = Vector3(2, 2, 2)
+material = SubResource("Mat_crate")
+
+[node name="Title" type="Label3D" parent="ZoneWest/MeasureWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 7.6, -25.4)
+modulate = Color(1, 0.82, 0.1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "MESSWAND"
+font_size = 110
+outline_size = 18
+pixel_size = 0.004
+
+[node name="ZoneEast" type="Node3D" parent="."]
+
+[node name="ZoneTitle" type="Label3D" parent="ZoneEast"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 5.5, -2)
+billboard = 1
+modulate = Color(1, 0.16, 0.84, 1)
+outline_modulate = Color(0.2, 0, 0.15, 0.85)
+text = "SPRUNG-PARCOURS"
+font_size = 150
+outline_size = 18
+pixel_size = 0.004
+
+[node name="FloorStripe" type="CSGBox3D" parent="ZoneEast"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31, 0.01, 12.9)
+cast_shadow = 0
+size = Vector3(38, 0.02, 0.2)
+material = SubResource("Mat_neon_magenta")
+
+[node name="JumpHeight" type="Node3D" parent="ZoneEast"]
+
+[node name="Block" type="CSGBox3D" parent="ZoneEast/JumpHeight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0.25, 9)
+use_collision = true
+size = Vector3(2.5, 0.5, 2.5)
+material = SubResource("Mat_test")
+
+[node name="Top" type="CSGBox3D" parent="ZoneEast/JumpHeight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0.515, 9)
+cast_shadow = 0
+size = Vector3(2.5, 0.03, 0.12)
+material = SubResource("Mat_neon_magenta")
+
+[node name="Label" type="Label3D" parent="ZoneEast/JumpHeight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 1.4, 9)
+billboard = 1
+modulate = Color(1, 0.16, 0.84, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "0,50 m"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Block2" type="CSGBox3D" parent="ZoneEast/JumpHeight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0.375, 9)
+use_collision = true
+size = Vector3(2.5, 0.75, 2.5)
+material = SubResource("Mat_test")
+
+[node name="Top2" type="CSGBox3D" parent="ZoneEast/JumpHeight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0.765, 9)
+cast_shadow = 0
+size = Vector3(2.5, 0.03, 0.12)
+material = SubResource("Mat_neon_magenta")
+
+[node name="Label2" type="Label3D" parent="ZoneEast/JumpHeight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1.65, 9)
+billboard = 1
+modulate = Color(1, 0.16, 0.84, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "0,75 m"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Block3" type="CSGBox3D" parent="ZoneEast/JumpHeight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0.5, 9)
+use_collision = true
+size = Vector3(2.5, 1, 2.5)
+material = SubResource("Mat_test")
+
+[node name="Top3" type="CSGBox3D" parent="ZoneEast/JumpHeight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 1.015, 9)
+cast_shadow = 0
+size = Vector3(2.5, 0.03, 0.12)
+material = SubResource("Mat_neon_magenta")
+
+[node name="Label3" type="Label3D" parent="ZoneEast/JumpHeight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 1.9, 9)
+billboard = 1
+modulate = Color(1, 0.16, 0.84, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "1,00 m"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Block4" type="CSGBox3D" parent="ZoneEast/JumpHeight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0.625, 9)
+use_collision = true
+size = Vector3(2.5, 1.25, 2.5)
+material = SubResource("Mat_test")
+
+[node name="Top4" type="CSGBox3D" parent="ZoneEast/JumpHeight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 1.265, 9)
+cast_shadow = 0
+size = Vector3(2.5, 0.03, 0.12)
+material = SubResource("Mat_neon_red")
+
+[node name="Label4" type="Label3D" parent="ZoneEast/JumpHeight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 2.15, 9)
+billboard = 1
+modulate = Color(1, 0.1, 0.15, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "1,25 m"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Block5" type="CSGBox3D" parent="ZoneEast/JumpHeight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32, 0.75, 9)
+use_collision = true
+size = Vector3(2.5, 1.5, 2.5)
+material = SubResource("Mat_test")
+
+[node name="Top5" type="CSGBox3D" parent="ZoneEast/JumpHeight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32, 1.515, 9)
+cast_shadow = 0
+size = Vector3(2.5, 0.03, 0.12)
+material = SubResource("Mat_neon_red")
+
+[node name="Label5" type="Label3D" parent="ZoneEast/JumpHeight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32, 2.4, 9)
+billboard = 1
+modulate = Color(1, 0.1, 0.15, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "1,50 m"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Title" type="Label3D" parent="ZoneEast/JumpHeight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 3.4, 9)
+billboard = 1
+modulate = Color(1, 1, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "SPRUNGHÖHE"
+font_size = 90
+outline_size = 18
+pixel_size = 0.004
+
+[node name="JumpGap" type="Node3D" parent="ZoneEast"]
+
+[node name="Takeoff" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0.25, 3)
+use_collision = true
+size = Vector3(8, 0.5, 2.5)
+material = SubResource("Mat_test")
+
+[node name="TakeoffEdge" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.925, 0.515, 3)
+cast_shadow = 0
+size = Vector3(0.15, 0.03, 2.5)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Landing" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26, 0.25, 3)
+use_collision = true
+size = Vector3(4, 0.5, 2.5)
+material = SubResource("Mat_test")
+
+[node name="GapFloor" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 0.01, 3)
+cast_shadow = 0
+size = Vector3(2, 0.02, 2.5)
+material = SubResource("Mat_neon_red")
+
+[node name="Label" type="Label3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 1.6, 3)
+billboard = 1
+modulate = Color(1, 0.82, 0.1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "LÜCKE 2 m"
+font_size = 72
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Takeoff2" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0.25, -0.5)
+use_collision = true
+size = Vector3(8, 0.5, 2.5)
+material = SubResource("Mat_test")
+
+[node name="TakeoffEdge2" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.925, 0.515, -0.5)
+cast_shadow = 0
+size = Vector3(0.15, 0.03, 2.5)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Landing2" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 27, 0.25, -0.5)
+use_collision = true
+size = Vector3(4, 0.5, 2.5)
+material = SubResource("Mat_test")
+
+[node name="GapFloor2" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23.5, 0.01, -0.5)
+cast_shadow = 0
+size = Vector3(3, 0.02, 2.5)
+material = SubResource("Mat_neon_red")
+
+[node name="Label2" type="Label3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23.5, 1.6, -0.5)
+billboard = 1
+modulate = Color(1, 0.82, 0.1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "LÜCKE 3 m"
+font_size = 72
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Takeoff3" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0.25, -4)
+use_collision = true
+size = Vector3(8, 0.5, 2.5)
+material = SubResource("Mat_test")
+
+[node name="TakeoffEdge3" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.925, 0.515, -4)
+cast_shadow = 0
+size = Vector3(0.15, 0.03, 2.5)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Landing3" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0.25, -4)
+use_collision = true
+size = Vector3(4, 0.5, 2.5)
+material = SubResource("Mat_test")
+
+[node name="GapFloor3" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0.01, -4)
+cast_shadow = 0
+size = Vector3(4, 0.02, 2.5)
+material = SubResource("Mat_neon_red")
+
+[node name="Label3" type="Label3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 1.6, -4)
+billboard = 1
+modulate = Color(1, 0.82, 0.1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "LÜCKE 4 m"
+font_size = 72
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Takeoff4" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0.25, -7.5)
+use_collision = true
+size = Vector3(8, 0.5, 2.5)
+material = SubResource("Mat_test")
+
+[node name="TakeoffEdge4" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.925, 0.515, -7.5)
+cast_shadow = 0
+size = Vector3(0.15, 0.03, 2.5)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Landing4" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29, 0.25, -7.5)
+use_collision = true
+size = Vector3(4, 0.5, 2.5)
+material = SubResource("Mat_test")
+
+[node name="GapFloor4" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.5, 0.01, -7.5)
+cast_shadow = 0
+size = Vector3(5, 0.02, 2.5)
+material = SubResource("Mat_neon_red")
+
+[node name="Label4" type="Label3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.5, 1.6, -7.5)
+billboard = 1
+modulate = Color(1, 0.82, 0.1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "LÜCKE 5 m"
+font_size = 72
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Takeoff5" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0.25, -11)
+use_collision = true
+size = Vector3(8, 0.5, 2.5)
+material = SubResource("Mat_test")
+
+[node name="TakeoffEdge5" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.925, 0.515, -11)
+cast_shadow = 0
+size = Vector3(0.15, 0.03, 2.5)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Landing5" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0.25, -11)
+use_collision = true
+size = Vector3(4, 0.5, 2.5)
+material = SubResource("Mat_test")
+
+[node name="GapFloor5" type="CSGBox3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0.01, -11)
+cast_shadow = 0
+size = Vector3(6, 0.02, 2.5)
+material = SubResource("Mat_neon_red")
+
+[node name="Label5" type="Label3D" parent="ZoneEast/JumpGap"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 1.6, -11)
+billboard = 1
+modulate = Color(1, 0.82, 0.1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "LÜCKE 6 m"
+font_size = 72
+outline_size = 18
+pixel_size = 0.004
+
+[node name="GapLight" type="OmniLight3D" parent="ZoneEast"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 5, -4)
+light_color = Color(1, 0.16, 0.84, 1)
+light_energy = 3
+omni_range = 16
+omni_attenuation = 1.5
+
+[node name="ParkourTower" type="Node3D" parent="ZoneEast"]
+
+[node name="Platform" type="CSGBox3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 0.7, -1)
+use_collision = true
+size = Vector3(2.2, 0.4, 2.2)
+material = SubResource("Mat_metal")
+
+[node name="Glow" type="CSGBox3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 0.49, -1)
+cast_shadow = 0
+size = Vector3(2, 0.02, 2)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Label" type="Label3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 2.1, -1)
+billboard = 1
+modulate = Color(0.55, 0.2, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "0,9 m"
+font_size = 64
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Platform2" type="CSGBox3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.5, 1.6, -2.5)
+use_collision = true
+size = Vector3(2.2, 0.4, 2.2)
+material = SubResource("Mat_metal")
+
+[node name="Glow2" type="CSGBox3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.5, 1.39, -2.5)
+cast_shadow = 0
+size = Vector3(2, 0.02, 2)
+material = SubResource("Mat_neon_purple")
+
+[node name="Platform3" type="CSGBox3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 2.5, -4)
+use_collision = true
+size = Vector3(2.2, 0.4, 2.2)
+material = SubResource("Mat_metal")
+
+[node name="Glow3" type="CSGBox3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 2.29, -4)
+cast_shadow = 0
+size = Vector3(2, 0.02, 2)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Platform4" type="CSGBox3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.5, 3.4, -5.5)
+use_collision = true
+size = Vector3(2.2, 0.4, 2.2)
+material = SubResource("Mat_metal")
+
+[node name="Glow4" type="CSGBox3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.5, 3.19, -5.5)
+cast_shadow = 0
+size = Vector3(2, 0.02, 2)
+material = SubResource("Mat_neon_purple")
+
+[node name="Label2" type="Label3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.5, 4.8, -5.5)
+billboard = 1
+modulate = Color(0.55, 0.2, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "3,6 m"
+font_size = 64
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Platform5" type="CSGBox3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44, 4.3, -8)
+use_collision = true
+size = Vector3(2.2, 0.4, 2.2)
+material = SubResource("Mat_metal")
+
+[node name="Glow5" type="CSGBox3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44, 4.09, -8)
+cast_shadow = 0
+size = Vector3(2, 0.02, 2)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Platform6" type="CSGBox3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 43.5, 5.2, -10.8)
+use_collision = true
+size = Vector3(2.2, 0.4, 2.2)
+material = SubResource("Mat_metal")
+
+[node name="Glow6" type="CSGBox3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 43.5, 4.99, -10.8)
+cast_shadow = 0
+size = Vector3(2, 0.02, 2)
+material = SubResource("Mat_neon_purple")
+
+[node name="Platform7" type="CSGBox3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41.5, 6.1, -13)
+use_collision = true
+size = Vector3(2.2, 0.4, 2.2)
+material = SubResource("Mat_metal")
+
+[node name="Glow7" type="CSGBox3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41.5, 5.89, -13)
+cast_shadow = 0
+size = Vector3(2, 0.02, 2)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Label3" type="Label3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41.5, 7.5, -13)
+billboard = 1
+modulate = Color(0.55, 0.2, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "6,3 m"
+font_size = 64
+outline_size = 18
+pixel_size = 0.004
+
+[node name="RoofBuilding" type="CSGBox3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37, 3.6, -20)
+use_collision = true
+size = Vector3(14, 7.2, 10)
+material = SubResource("Mat_facade")
+
+[node name="RoofRim" type="CSGBox3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37, 7.225, -15.075)
+cast_shadow = 0
+size = Vector3(14, 0.05, 0.15)
+material = SubResource("Mat_neon_cyan")
+
+[node name="RoofLabel" type="Label3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37, 8.6, -18)
+billboard = 1
+modulate = Color(0, 0.9, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "DACH 7,2 m"
+font_size = 90
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Title" type="Label3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 36, 2.8, 1)
+billboard = 1
+modulate = Color(0.55, 0.2, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "PARKOUR"
+font_size = 110
+outline_size = 18
+pixel_size = 0.004
+
+[node name="TowerLight" type="OmniLight3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42, 5, -9)
+light_color = Color(0.55, 0.2, 1, 1)
+light_energy = 3
+omni_range = 14
+omni_attenuation = 1.5
+
+[node name="RoofLight" type="OmniLight3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37, 10.2, -20)
+light_color = Color(0, 0.9, 1, 1)
+light_energy = 2
+omni_range = 10
+omni_attenuation = 1.5
+
+[node name="Antenna" type="CSGCylinder3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42, 11.2, -23)
+use_collision = true
+radius = 0.1
+height = 8
+sides = 16
+material = SubResource("Mat_metal")
+
+[node name="AntennaTip" type="CSGCylinder3D" parent="ZoneEast/ParkourTower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42, 15.3, -23)
+radius = 0.25
+height = 0.3
+sides = 16
+material = SubResource("Mat_neon_red")
+
+[node name="Plaza" type="Node3D" parent="."]
+
+[node name="GridX" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX2" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX3" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX4" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX5" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX6" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX7" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX8" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX9" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX10" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX11" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX12" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX13" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX14" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX15" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX16" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX17" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX18" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX19" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX20" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridX21" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 0.006, -59)
+cast_shadow = 0
+size = Vector3(0.08, 0.012, 58)
+material = SubResource("Mat_grid")
+
+[node name="GridZ" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, -30)
+cast_shadow = 0
+size = Vector3(100, 0.012, 0.08)
+material = SubResource("Mat_grid")
+
+[node name="GridZ2" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, -35)
+cast_shadow = 0
+size = Vector3(100, 0.012, 0.08)
+material = SubResource("Mat_grid")
+
+[node name="GridZ3" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, -40)
+cast_shadow = 0
+size = Vector3(100, 0.012, 0.08)
+material = SubResource("Mat_grid")
+
+[node name="GridZ4" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, -45)
+cast_shadow = 0
+size = Vector3(100, 0.012, 0.08)
+material = SubResource("Mat_grid")
+
+[node name="GridZ5" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, -50)
+cast_shadow = 0
+size = Vector3(100, 0.012, 0.08)
+material = SubResource("Mat_grid")
+
+[node name="GridZ6" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, -55)
+cast_shadow = 0
+size = Vector3(100, 0.012, 0.08)
+material = SubResource("Mat_grid")
+
+[node name="GridZ7" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, -60)
+cast_shadow = 0
+size = Vector3(100, 0.012, 0.08)
+material = SubResource("Mat_grid")
+
+[node name="GridZ8" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, -65)
+cast_shadow = 0
+size = Vector3(100, 0.012, 0.08)
+material = SubResource("Mat_grid")
+
+[node name="GridZ9" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, -70)
+cast_shadow = 0
+size = Vector3(100, 0.012, 0.08)
+material = SubResource("Mat_grid")
+
+[node name="GridZ10" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, -75)
+cast_shadow = 0
+size = Vector3(100, 0.012, 0.08)
+material = SubResource("Mat_grid")
+
+[node name="GridZ11" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, -80)
+cast_shadow = 0
+size = Vector3(100, 0.012, 0.08)
+material = SubResource("Mat_grid")
+
+[node name="GridZ12" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.006, -85)
+cast_shadow = 0
+size = Vector3(100, 0.012, 0.08)
+material = SubResource("Mat_grid")
+
+[node name="HoloBase" type="CSGCylinder3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, -58)
+use_collision = true
+radius = 3
+height = 0.6
+sides = 24
+material = SubResource("Mat_metal")
+
+[node name="HoloRing" type="CSGCylinder3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.62, -58)
+radius = 3.05
+height = 0.04
+sides = 24
+material = SubResource("Mat_neon_magenta")
+
+[node name="HoloPillar" type="CSGCylinder3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7, -58)
+radius = 1.2
+height = 12.8
+sides = 24
+material = SubResource("Mat_holo")
+
+[node name="HoloText" type="Label3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 15, -58)
+billboard = 1
+modulate = Color(1, 0.16, 0.84, 1)
+outline_modulate = Color(0.1, 0, 0.1, 0.85)
+text = "OPEN // ZONE"
+font_size = 200
+outline_size = 18
+pixel_size = 0.004
+
+[node name="HoloLight" type="OmniLight3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, -58)
+light_color = Color(1, 0.16, 0.84, 1)
+light_energy = 4
+omni_range = 22
+omni_attenuation = 1.5
+
+[node name="Crate" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0.6, -40)
+use_collision = true
+size = Vector3(1.2, 1.2, 1.2)
+material = SubResource("Mat_crate")
+
+[node name="CrateStripe" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0.6, -40)
+cast_shadow = 0
+size = Vector3(1.22, 0.08, 1.22)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Crate2" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23, 0.6, -42)
+use_collision = true
+size = Vector3(1.2, 1.2, 1.2)
+material = SubResource("Mat_crate")
+
+[node name="CrateStripe2" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23, 0.6, -42)
+cast_shadow = 0
+size = Vector3(1.22, 0.08, 1.22)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Crate3" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.5, 1.2, -42.6)
+use_collision = true
+size = Vector3(2.4, 2.4, 2.4)
+material = SubResource("Mat_crate")
+
+[node name="CrateStripe3" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.5, 1.2, -42.6)
+cast_shadow = 0
+size = Vector3(2.42, 0.08, 2.42)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Crate4" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0.75, -45)
+use_collision = true
+size = Vector3(1.5, 1.5, 1.5)
+material = SubResource("Mat_crate")
+
+[node name="CrateStripe4" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0.75, -45)
+cast_shadow = 0
+size = Vector3(1.52, 0.08, 1.52)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Crate5" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 0.5, -44)
+use_collision = true
+size = Vector3(1, 1, 1)
+material = SubResource("Mat_crate")
+
+[node name="CrateStripe5" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 0.5, -44)
+cast_shadow = 0
+size = Vector3(1.02, 0.08, 1.02)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Crate6" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 1, -70)
+use_collision = true
+size = Vector3(2, 2, 2)
+material = SubResource("Mat_crate")
+
+[node name="CrateStripe6" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 1, -70)
+cast_shadow = 0
+size = Vector3(2.02, 0.08, 2.02)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Crate7" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -27, 0.5, -72)
+use_collision = true
+size = Vector3(1, 1, 1)
+material = SubResource("Mat_crate")
+
+[node name="CrateStripe7" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -27, 0.5, -72)
+cast_shadow = 0
+size = Vector3(1.02, 0.08, 1.02)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Crate8" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0.8, -72)
+use_collision = true
+size = Vector3(1.6, 1.6, 1.6)
+material = SubResource("Mat_crate")
+
+[node name="CrateStripe8" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0.8, -72)
+cast_shadow = 0
+size = Vector3(1.62, 0.08, 1.62)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Crate9" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31, 0.6, -70)
+use_collision = true
+size = Vector3(1.2, 1.2, 1.2)
+material = SubResource("Mat_crate")
+
+[node name="CrateStripe9" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31, 0.6, -70)
+cast_shadow = 0
+size = Vector3(1.22, 0.08, 1.22)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Crate10" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0.5, -80)
+use_collision = true
+size = Vector3(1, 1, 1)
+material = SubResource("Mat_crate")
+
+[node name="CrateStripe10" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0.5, -80)
+cast_shadow = 0
+size = Vector3(1.02, 0.08, 1.02)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Crate11" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.7, -80)
+use_collision = true
+size = Vector3(1.4, 1.4, 1.4)
+material = SubResource("Mat_crate")
+
+[node name="CrateStripe11" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.7, -80)
+cast_shadow = 0
+size = Vector3(1.42, 0.08, 1.42)
+material = SubResource("Mat_neon_yellow")
+
+[node name="CoverWall" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38, 0.6, -50.5)
+use_collision = true
+size = Vector3(4, 1.2, 1)
+material = SubResource("Mat_test_dark")
+
+[node name="CoverWall2" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38, 1.2, -60.5)
+use_collision = true
+size = Vector3(4, 2.4, 1)
+material = SubResource("Mat_test_dark")
+
+[node name="BridgeLeft" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 1.5, -65)
+use_collision = true
+size = Vector3(2, 3, 4)
+material = SubResource("Mat_test_dark")
+
+[node name="BridgeRight" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31, 1.5, -65)
+use_collision = true
+size = Vector3(2, 3, 4)
+material = SubResource("Mat_test_dark")
+
+[node name="BridgeDeck" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26, 3.15, -65)
+use_collision = true
+size = Vector3(12, 0.3, 4)
+material = SubResource("Mat_metal")
+
+[node name="BridgeAccess" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(0.87622, 0.48192, 0, -0.48192, 0.87622, 0, 0, 0, 1, 35.1, 1.5, -65)
+use_collision = true
+size = Vector3(7, 0.3, 4)
+material = SubResource("Mat_test")
+
+[node name="BridgeNeon" type="CSGBox3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26, 2.95, -62.925)
+cast_shadow = 0
+size = Vector3(12, 0.1, 0.05)
+material = SubResource("Mat_neon_cyan")
+
+[node name="PlazaLight" type="OmniLight3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 6, -45)
+light_color = Color(0, 0.9, 1, 1)
+light_energy = 3
+omni_range = 20
+omni_attenuation = 1.5
+
+[node name="PlazaLight2" type="OmniLight3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 6, -45)
+light_color = Color(1, 0.16, 0.84, 1)
+light_energy = 3
+omni_range = 20
+omni_attenuation = 1.5
+
+[node name="PlazaLight3" type="OmniLight3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 6, -75)
+light_color = Color(0.55, 0.2, 1, 1)
+light_energy = 3
+omni_range = 20
+omni_attenuation = 1.5
+
+[node name="PlazaLight4" type="OmniLight3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 6, -75)
+light_color = Color(0, 0.9, 1, 1)
+light_energy = 3
+omni_range = 20
+omni_attenuation = 1.5
+
+[node name="Title" type="Label3D" parent="Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.5, -31)
+billboard = 1
+modulate = Color(0, 0.9, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "PLATZ // FREIE FLÄCHE"
+font_size = 140
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Pickups" type="Node3D" parent="."]
+
+[node name="SpawnPoints" type="Node3D" parent="Pickups"]
+
+[node name="Spot_Plaza" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -49)
+
+[node name="Pad" type="MeshInstance3D" parent="Pickups/SpawnPoints/Spot_Plaza"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_pad")
+
+[node name="Spot_Plaza2" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.36396, 0, -51.63604)
+
+[node name="Pad" type="MeshInstance3D" parent="Pickups/SpawnPoints/Spot_Plaza2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_pad")
+
+[node name="Spot_Plaza3" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -58)
+
+[node name="Pad" type="MeshInstance3D" parent="Pickups/SpawnPoints/Spot_Plaza3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_pad")
+
+[node name="Spot_Plaza4" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.36396, 0, -64.36396)
+
+[node name="Pad" type="MeshInstance3D" parent="Pickups/SpawnPoints/Spot_Plaza4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_pad")
+
+[node name="Spot_Plaza5" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -67)
+
+[node name="Pad" type="MeshInstance3D" parent="Pickups/SpawnPoints/Spot_Plaza5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_pad")
+
+[node name="Spot_Plaza6" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.36396, 0, -64.36396)
+
+[node name="Pad" type="MeshInstance3D" parent="Pickups/SpawnPoints/Spot_Plaza6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_pad")
+
+[node name="Spot_Plaza7" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -58)
+
+[node name="Pad" type="MeshInstance3D" parent="Pickups/SpawnPoints/Spot_Plaza7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_pad")
+
+[node name="Spot_Plaza8" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.36396, 0, -51.63604)
+
+[node name="Pad" type="MeshInstance3D" parent="Pickups/SpawnPoints/Spot_Plaza8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_pad")
+
+[node name="Spot_Street" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 30)
+
+[node name="Pad" type="MeshInstance3D" parent="Pickups/SpawnPoints/Spot_Street"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_pad")
+
+[node name="Spot_Street2" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 30)
+
+[node name="Pad" type="MeshInstance3D" parent="Pickups/SpawnPoints/Spot_Street2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_pad")
+
+[node name="Spot_StairTop" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 3, -6)
+
+[node name="Pad" type="MeshInstance3D" parent="Pickups/SpawnPoints/Spot_StairTop"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_pad")
+
+[node name="Spot_RampTop" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38, 2.5, 9)
+
+[node name="Pad" type="MeshInstance3D" parent="Pickups/SpawnPoints/Spot_RampTop"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_pad")
+
+[node name="Spot_Tunnel" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23, 0, -16)
+
+[node name="Pad" type="MeshInstance3D" parent="Pickups/SpawnPoints/Spot_Tunnel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_pad")
+
+[node name="Spot_GapLanding" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31, 0.5, -11)
+
+[node name="Pad" type="MeshInstance3D" parent="Pickups/SpawnPoints/Spot_GapLanding"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_pad")
+
+[node name="Spot_Roof" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38, 7.2, -21)
+
+[node name="Pad" type="MeshInstance3D" parent="Pickups/SpawnPoints/Spot_Roof"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_pad")
+
+[node name="Spot_Bridge" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26, 3.3, -65)
+
+[node name="Pad" type="MeshInstance3D" parent="Pickups/SpawnPoints/Spot_Bridge"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_pad")
+
+[node name="Bounds" type="Node3D" parent="."]
+
+[node name="WallWest" type="StaticBody3D" parent="Bounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -53, 20, -20)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Bounds/WallWest"]
+shape = SubResource("Shape_wall0")
+
+[node name="WallEast" type="StaticBody3D" parent="Bounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 53, 20, -20)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Bounds/WallEast"]
+shape = SubResource("Shape_wall0")
+
+[node name="WallSouth" type="StaticBody3D" parent="Bounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 20, 51.5)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Bounds/WallSouth"]
+shape = SubResource("Shape_wall1")
+
+[node name="WallNorth" type="StaticBody3D" parent="Bounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 20, -89.5)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Bounds/WallNorth"]
+shape = SubResource("Shape_wall1")
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 42)
+
+[node name="PauseMenu" parent="." instance=ExtResource("4_pause")]
