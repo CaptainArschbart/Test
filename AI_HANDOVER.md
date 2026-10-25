@@ -36,9 +36,15 @@ scenes/
     crt_overlay.gdshader      uid://cveheluq50cmp
     crt_overlay.gdshader.uid
   main/
-    main.tscn                 Spielwelt, wird von Start geladen
+    main.tscn                 alte einfache Testwelt (nur noch per F6)
     main.gd                   uid://npu706i2yy2e
     main.gd.uid
+  testmap/
+    testmap.tscn              Testmap "Neon District", wird von Start geladen
+    testmap.gd                F11, sonst leer
+    testmap.gd.uid
+    building_facade.gdshader  Fassade mit Fensterraster in Weltkoordinaten
+    building_facade.gdshader.uid
   player/
     player.tscn               CharacterBody3D, First Person
     player.gd                 class_name Player, uid://3ek5xjcrt0uw
@@ -145,7 +151,7 @@ F5
         ├─ Glitch-Stärke 1.0 für 0,5 s (CRT-Shader-Uniform "glitch")
         ├─ Fade (ColorRect $Fade) Alpha 0 → 1 in 0,45 s
         └─ get_tree().change_scene_to_file(game_scene)
-             Default: res://scenes/main/main.tscn
+             Default: res://scenes/testmap/testmap.tscn
               └─ Player._ready setzt MOUSE_MODE_CAPTURED
                    Esc gibt die Maus frei, Klick fängt sie wieder
                    kein Button, kein Pause-Menü, kein change_scene zurück
@@ -211,6 +217,32 @@ Main (Node3D)
 
 Environment: `background_mode = 2` (Sky), `ambient_light_source = 3` (Sky), `reflected_light_source = 2` (Sky), `tonemap_mode = 2` (ACES), SSAO und Glow an. Boden `Color(0.32, 0.45, 0.3)`, Kisten `Color(0.55, 0.6, 0.68)`, Rampe `Color(0.7, 0.62, 0.45)`. Alle vier CSG-Knoten haben `use_collision = true`. `BoxSmall` ragt mit der Default-Höhe in den Boden. CSG ist Platzhalter-Geometrie.
 
+### `scenes/testmap/testmap.tscn` — Wurzel `Testmap` (`Node3D`, Skript `testmap.gd`)
+
+Nacht-Cyberpunk-Map, etwa x −53…53, z −89…51 (unsichtbare Wände unter `Bounds`). Alles ist CSG mit `use_collision = true` auf Layer 1 (`world`); reine Deko (Leuchtstreifen, Gitter, Schilder) hat keine Kollision. Spawn bei (0, 0, 42), Blick nach −Z.
+
+```text
+Testmap (Node3D)
+├── WorldEnvironment        Nachthimmel, Ambient-Farbe, ACES, SSR, SSAO, Glow, Nebel
+├── Moon (DirectionalLight3D)  schwach bläulich, Schatten an
+├── Street                  Asphalt (ganze Map), Gehwege mit 0,2 m Bordstein, Laternen, Spawn-Ring
+├── Buildings               Häuserzeilen, Kulisse rundum (Material Fassaden-Shader), Leuchtreklamen
+├── ZoneWest                Treppen (Stufen 0,15/0,25/0,35/0,50 m), Rampen 15/30/40/50° (2,5 m hoch),
+│                           Tunnel (Decke 2,6/1,95/1,7 m), Messwand 1–6 m
+├── ZoneEast                Sprunghöhe 0,5–1,5 m, Weitsprung-Lücken 2–6 m, Parkour-Turm (je +0,9 m) auf Dach 7,2 m
+├── Plaza                   offene Fläche z −30…−88, Leuchtgitter, Holo-Säule, Kisten, Mauern, Brücke 3,3 m
+├── Pickups
+│   └── SpawnPoints         16 Marker3D, Gruppe "item_spawn", je mit leuchtendem Pad (MeshInstance3D)
+├── Bounds                  4 StaticBody3D-Wände, unsichtbar
+└── Player                  Instanz player.tscn, Position (0, 0.05, 42)
+```
+
+Zusätzlich `ZoneWest/Stairs_RampCollision`: Treppe 0,20 m, Stufen nur Optik, Kollision ist eine unsichtbare Rampe (`StaticBody3D`) über die Stufenkanten. So sind begehbare Treppen gedacht, solange der Player kein Stufensteigen kann.
+
+Gemessen mit Godot 4.5 headless und den Standardwerten des Players: Sprung erreicht etwa 1,03 m (1,0-m-Block geht, 1,25 m nicht). Rampen bis 40° gehen, 50° nicht (`floor_max_angle` 45°). Weitsprung: gehend bis 4 m, mit Sprint 6 m. Tunnel 1,95 m passt, 1,7 m blockt. Parkour-Turm ist bis aufs Dach schaffbar. Die echten Treppen (0,15–0,50 m) gehen nur mit Springen, weil der Player kein Stufensteigen hat.
+
+Die Szene wurde mit einem Python-Generator erzeugt, ist aber eine normale `.tscn` und darf im Editor bearbeitet werden. Der Generator liegt nicht im Repo.
+
 ### `scenes/player/player.tscn` — Wurzel `Player` (`CharacterBody3D`, `class_name Player`)
 
 ```text
@@ -243,7 +275,7 @@ Kein Knoten hat `unique_name_in_owner`. Zugriffe: `$Head`, `$Head/Camera3D`.
 
 | Export | Default |
 |---|---|
-| `game_scene` | `res://scenes/main/main.tscn` |
+| `game_scene` | `res://scenes/testmap/testmap.tscn` |
 | `glitch_interval_min` | `1.5` |
 | `glitch_interval_max` | `4.5` |
 | `glitch_duration` | `0.18` |
@@ -260,6 +292,16 @@ Optionen: `_draft` ist eine Kopie von `Settings.get_values()`, die die Bedienele
 - Keine Exports, keine Signale, keine Node-Pfade
 - Einzige Methode: `_unhandled_input` für F11 → `Settings.toggle_fullscreen()`
 - Kennt den Player nicht
+
+### `scenes/testmap/testmap.gd`
+
+- `extends Node3D`, kein `class_name`; nur `_unhandled_input` für F11 → `Settings.toggle_fullscreen()` (wie `main.gd`)
+
+### `scenes/testmap/building_facade.gdshader`
+
+- `spatial`, rechnet Fenster aus Weltposition und Normale, darum keine UVs nötig und beliebig große Boxen möglich
+- Uniforms: `wall_color`, `glass_color`, `cell_size` (Fensterraster in m), `lit_ratio`, `emission_strength`, `first_floor_height`, drei Fensterfarben
+- In `testmap.tscn` zwei ShaderMaterials: `Mat_facade` und `Mat_facade_dense` (dichter, mehr Licht)
 
 ### `scenes/player/player.gd`
 
@@ -298,10 +340,14 @@ project.godot
                     ├── main_menu.gd
                     │     ├── Autoload Settings
                     │     ├── $Overlay, $Fade, %Buttons
-                    │     └── Start ──► scenes/main/main.tscn
+                    │     └── Start ──► scenes/testmap/testmap.tscn
                     ├── menu_background.gdshader
                     └── crt_overlay.gdshader
-  main.tscn
+  testmap.tscn
+    ├── testmap.gd ── Autoload Settings (nur F11)
+    ├── building_facade.gdshader
+    └── instance scenes/player/player.tscn
+  main.tscn (nicht mehr vom Menü geladen)
     ├── main.gd ── Autoload Settings   (nur F11)
     └── instance scenes/player/player.tscn
           └── player.gd
@@ -363,3 +409,8 @@ Vorlage:
 ### 2026-10-25 · Arbeitslog eingeführt · Claude (für Arschi) · PR #4
 - Was: Abschnitt 8 „Arbeitslog“ mit Regel und Vorlage angelegt und die bisherigen Arbeitsgänge rückwirkend eingetragen.
 - Dateien: `AI_HANDOVER.md`.
+
+### 2026-10-25 · Testmap „Neon District“ · Claude (für Arschi) · PR folgt (Branch `claude/project-thread-0flw0w`)
+- Was: Neue Testmap `scenes/testmap/testmap.tscn` im Cyberpunk-Stil des Menüs (Nacht, Nebel, Glow, Leuchtreklamen, Fassaden-Shader). Testzonen: Treppen mit 4 Stufenhöhen plus eine Treppe mit Rampen-Kollision, Rampen 15–50°, Tunnel mit sinkender Decke, Messwand, Sprunghöhe, Weitsprung-Lücken, Parkour-Turm aufs Dach, großer Platz mit Deckung und Brücke. 16 `Marker3D` in Gruppe `item_spawn` unter `Pickups/SpawnPoints` als Plätze für Items. *Start* im Menü lädt jetzt die Testmap; `scenes/main/main.tscn` bleibt unverändert und ist per F6 startbar.
+- Dateien: `scenes/testmap/*` (neu), `scenes/menu/main_menu.gd` (nur Default von `game_scene`), `README.md`, `AI_HANDOVER.md`.
+- Wichtig für die Nächsten: Der Player kann keine Stufen hochlaufen, schon 0,15 m blockt (headless getestet). Entweder Stufensteigen in `player.gd` einbauen oder Treppen wie `Stairs_RampCollision` mit unsichtbarer Rampe bauen. Inventar/HUD aus dem Hotbar-PR hängen am Player und sind damit automatisch in der Testmap; Pickups können als Instanzen unter `Pickups` an die `item_spawn`-Marker (Mittelpunkt ca. 0,5 m über dem Pad). Die Szene ist mit einem Python-Skript erzeugt, aber normal im Editor bearbeitbar.
