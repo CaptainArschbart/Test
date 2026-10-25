@@ -48,4 +48,4 @@ Szenen liegen zusammen mit ihrem Skript in einem eigenen Ordner. Neue Dinge (Geg
 
 ## Zusammenarbeit
 
-Mehrere Leute arbeiten hier mit KI. Vor dem Arbeiten immer den neuesten Stand holen (`git pull`) und auf einem eigenen Branch arbeiten. Die `.godot/`-Cache-Ordner sind per `.gitignore` ausgeschlossen; `.uid`- und `.import`-Dateien gehören ins Repo.
+Mehrere Leute arbeiten hier mit KI. Vor dem Arbeiten immer den neuesten Stand holen (`git pull`) und auf einem eigenen Branch arbeiten. Nach jedem Arbeitsgang einen Eintrag ans Ende von `AI_HANDOVER.md` (Abschnitt *Arbeitslog*) anhängen, damit die anderen nachvollziehen können, was passiert ist. Die `.godot/`-Cache-Ordner sind per `.gitignore` ausgeschlossen; `.uid`- und `.import`-Dateien gehören ins Repo.

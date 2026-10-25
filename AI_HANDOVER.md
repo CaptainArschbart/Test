@@ -321,3 +321,45 @@ project.godot
 - Gamepad-Events an `move_*`, `jump`, `sprint` (auch das Neubelegen im Menü kennt nur Tastatur)
 - Dateien unter `assets/` außer `.gitkeep`
 - Audio, das die gespeicherte Lautstärke hörbar machen würde
+
+---
+
+## 8. 📝 Arbeitslog
+
+**Regel für alle (Menschen und KIs):** Nach jedem Arbeitsgang hier unten einen Eintrag anhängen, bevor committet wird. Ältere Einträge nicht ändern, nur neue anhängen (neuester unten). Die Abschnitte 1–7 oben beschreiben den Ist-Stand und werden bei Änderungen mit aktualisiert.
+
+Vorlage:
+
+```text
+### JJJJ-MM-TT · Kurztitel · wer (Mensch / KI) · PR oder Commit
+- Was: …
+- Dateien: …
+- Wichtig für die Nächsten: …
+```
+
+### 2026-10-25 · Grundgerüst · Claude (für Arschi) · PR #1
+- Was: Godot-4-3D-Basis angelegt. Hauptszene mit Himmel, Sonne, CSG-Testlevel; First-Person-Spieler (Laufen, Sprint, Sprung, Maus-Kamera, Respawn); Input Map `move_*`, `jump`, `sprint`; Physik-Layer `world`/`player`; F11 = Vollbild.
+- Dateien: `project.godot`, `scenes/main/*`, `scenes/player/*`, `assets/*/.gitkeep`, `README.md`, `.gitignore`, `.gitattributes`.
+- Wichtig: Konvention „Szene + Skript im eigenen Ordner unter `scenes/<name>/`“, `.uid`/`.import` gehören ins Repo.
+
+### 2026-10-25 · AI_HANDOVER angelegt · EnScapeZ · Commit 482c15e
+- Was: Erste Fassung dieser Datei. `project.godot` mit Godot 4.7 geöffnet (Feature-Tag `4.7`, `[animation]`-Kompatibilitätseintrag). Hilfsskript `git pull.bat` (später von Arschi wieder gelöscht, b6335b3).
+
+### 2026-10-25 · Cyberpunk-Hauptmenü · Claude (für Arschi) · PR #2
+- Was: Hauptmenü als neue Startszene. Neon-Skyline-Shader mit bewegtem Gitter, CRT-Overlay (Scanlines, Farbverschiebung, Glitch), Titel „NEON//GRID“, Knöpfe Start / Optionen / Beenden. Start blendet mit Glitch in `scenes/main/main.tscn` über. Optionen damals: Vollbild, VSync, Lautstärke in `user://settings.cfg`.
+- Dateien: `scenes/menu/*` (neu), `project.godot` (`run/main_scene`), `README.md`.
+- Wichtig: Theme steckt als Sub-Resource in `main_menu.tscn`. Kein Rückweg vom Spiel ins Menü.
+
+### 2026-10-25 · GameSettings-Helfer + AI_HANDOVER-Update · EnScapeZ · Commit dcb2c84
+- Was: `scripts/game_settings.gd` (`class_name GameSettings`, statisch) für `settings.cfg`; F11 in der Spielwelt speichert Vollbild sofort. AI_HANDOVER auf den Menü-Stand gebracht.
+- Hinweis: Dieser Helfer wurde in PR #3 vom Autoload `Settings` abgelöst (siehe nächster Eintrag).
+
+### 2026-10-25 · Steuerungs-Optionen + Übernehmen · Claude (für Arschi) · PR #3
+- Was: Neuer Autoload `Settings` (`autoload/settings.gd`) als einzige Stelle für Einstellungen (laden, anwenden, speichern). Optionsmenü mit Reitern „Anzeige & Audio“ und „Steuerung“: Mausempfindlichkeit, Maus-Y invertieren, Tastenbelegung (Tausch bei Doppelbelegung). Änderungen gelten erst nach „Übernehmen“; „Standard“ setzt zurück; „Zurück“ warnt einmal bei offenen Änderungen. `player.gd` liest Empfindlichkeit und Invertierung aus `Settings`.
+- Zusammenführung: `scripts/game_settings.gd` von EnScapeZ ist im Autoload aufgegangen und wurde gelöscht. Gleiche Datei und Schlüssel, F11 speichert weiterhin sofort (`Settings.toggle_fullscreen()`), alte `settings.cfg` wird weiter gelesen.
+- Dateien: `autoload/settings.gd` (neu), `project.godot` (`[autoload]`), `scenes/menu/main_menu.gd/.tscn`, `scenes/main/main.gd`, `scenes/player/player.gd`, `README.md`, `AI_HANDOVER.md`.
+- Wichtig: Neue belegbare Aktion = in `Settings.REBINDABLE_ACTIONS` eintragen. Kein eigenes `preload` für Einstellungen mehr, immer den Autoload `Settings` benutzen.
+
+### 2026-10-25 · Arbeitslog eingeführt · Claude (für Arschi) · PR #4
+- Was: Abschnitt 8 „Arbeitslog“ mit Regel und Vorlage angelegt und die bisherigen Arbeitsgänge rückwirkend eingetragen.
+- Dateien: `AI_HANDOVER.md`.
