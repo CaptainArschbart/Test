@@ -100,7 +100,7 @@ func _show_weapon_model() -> void:
 	if weapon == null or weapon.view_scene == null:
 		return
 	var model: Node3D = weapon.view_scene.instantiate()
-	model.scale = Vector3.ONE * 2.2
+	model.scale = Vector3.ONE * weapon.pickup_scale
 	model.rotation_degrees = Vector3(0.0, 90.0, 0.0)
 	visual.add_child(model)
 	# Mündungsfeuer gehört nur in die Hand.

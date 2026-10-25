@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scenes/items/weapon_data.gd" id="1_weapon"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/sniper_view.tscn" id="2_view"]
+[ext_resource type="AudioStream" path="res://assets/audio/sniper_shot.wav" id="3_shot"]
+[ext_resource type="AudioStream" path="res://assets/audio/sniper_reload.wav" id="4_reload"]
+[ext_resource type="AudioStream" path="res://assets/audio/pistol_empty.wav" id="5_empty"]
+
+[resource]
+script = ExtResource("1_weapon")
+damage = 120.0
+magazine_size = 5
+fire_interval = 1.1
+reload_time = 2.4
+max_range = 300.0
+view_scene = ExtResource("2_view")
+pickup_scale = 1.1
+hip_offset = Vector3(0.03, -0.03, -0.14)
+aim_fov = 16.0
+aim_time = 0.25
+sight_offset = Vector3(0, 0.1, 0)
+aim_distance = 0.35
+aim_sensitivity = 0.8
+has_scope = true
+hip_spread_degrees = 4.0
+recoil_kick = 0.09
+view_kick_degrees = 2.5
+fire_sound = ExtResource("3_shot")
+reload_sound = ExtResource("4_reload")
+empty_sound = ExtResource("5_empty")
+id = "sniper"
+display_name = "Scharfschützengewehr"
+description = "Repetierer mit 8-fach-Zielfernrohr. 5 Schuss, aus der Hüfte ungenau, Rechtsklick zielt."
+glyph = "S"
+color = Color(0.3, 1, 0.45, 1)
+max_stack = 1

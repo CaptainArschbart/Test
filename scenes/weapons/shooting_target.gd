@@ -91,7 +91,10 @@ func _spawn_number(damage: float, point: Vector3) -> void:
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.no_depth_test = true
 	label.fixed_size = true
-	label.pixel_size = 0.0012
+	# Feste Bildschirmgröße; im Zielfernrohr sonst riesig, daher mit dem Zoom verkleinern.
+	var camera := get_viewport().get_camera_3d()
+	var zoom := camera.fov / 80.0 if camera != null else 1.0
+	label.pixel_size = 0.0012 * clampf(zoom, 0.25, 1.0)
 	label.font_size = 48
 	label.outline_size = 12
 	label.modulate = Color(1.0, 0.85, 0.2)
