@@ -76,9 +76,9 @@ Konvention aus `README.md`: eine Szene und ihr Skript liegen im selben Ordner un
 | Autoloads | `Settings` → `res://autoload/settings.gd` |
 | `[animation]` | `compatibility/default_parent_skeleton_in_mesh_instance_3d=true` |
 
-### Input Map (nur diese sechs Aktionen sind im Projekt definiert)
+### Input Map (nur diese acht Aktionen sind im Projekt definiert)
 
-Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Keine Maus- und keine Joypad-Events. Die Tabelle zeigt die Standardbelegung aus `project.godot`. Der Spieler kann alle sechs im Menü neu belegen; `Settings` ersetzt beim Start und nach *Übernehmen* das Tastatur-Event der Aktion in der `InputMap`.
+Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Keine Maus- und keine Joypad-Events. Die Tabelle zeigt die Standardbelegung aus `project.godot`. Der Spieler kann alle acht im Menü neu belegen; `Settings` ersetzt beim Start und nach *Übernehmen* das Tastatur-Event der Aktion in der `InputMap`.
 
 | Aktion | Taste | physical_keycode | Verwendung |
 |---|---|---|---|
@@ -87,7 +87,9 @@ Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Kei
 | `move_left` | A | 65 | `player.gd` |
 | `move_right` | D | 68 | `player.gd` |
 | `jump` | Leertaste | 32 | `player.gd`, nur am Boden |
-| `sprint` | Shift | 4194325 (`KEY_SHIFT`) | `player.gd`, gehalten |
+| `sprint` | Shift | 4194325 (`KEY_SHIFT`) | `player.gd`, gehalten (im Noclip: schneller fliegen) |
+| `noclip` | V | 86 | `player.gd`, schaltet Noclip um |
+| `noclip_down` | Strg | 4194326 (`KEY_CTRL`) | `player.gd`, im Noclip runter (hoch = `jump`) |
 
 ### Tasten außerhalb der Input Map
 
@@ -128,7 +130,7 @@ Gelesen und geschrieben vom Autoload `Settings` (`autoload/settings.gd`). Er lä
 | `[audio] master_volume` | `80.0` (0–100) | Bus `Master`, `linear_to_db(value / 100)`, stumm bei `<= 0` |
 | `[controls] mouse_sensitivity` | `1.0` | Faktor auf `Player.mouse_sensitivity` |
 | `[controls] invert_y` | `false` | dreht die Pitch-Richtung im Player um |
-| `[keys] <aktion>` | Belegung aus `project.godot` | `physical_keycode` für `move_*`, `jump`, `sprint` |
+| `[keys] <aktion>` | Belegung aus `project.godot` | `physical_keycode` für `move_*`, `jump`, `sprint`, `noclip`, `noclip_down` |
 
 Geschrieben wird nur bei *Übernehmen* im Optionsmenü und bei F11. Fehlt die Datei, gelten die Standardwerte. Unter `assets/audio/` liegt keine Datei, und keine Szene spielt einen Ton ab.
 
@@ -318,17 +320,21 @@ Optionen: `_draft` ist eine Kopie von `Settings.get_values()`, die die Bedienele
 | Kamera | `mouse_sensitivity` | `0.002` |
 | Kamera | `max_pitch_degrees` | `85.0`, Range 0–89 |
 | Respawn | `respawn_height` | `-30.0` |
+| Noclip | `noclip_speed` | `10.0` |
+| Noclip | `noclip_sprint_multiplier` | `3.0` |
 
 Keine davon ist in der `.tscn` überschrieben.
 
 | Mitglied | Rolle |
 |---|---|
+| `set_noclip(enabled)` | Flugmodus an/aus: `CollisionShape3D.disabled`, `velocity` auf null, Anzeige „NOCLIP“ oben links |
+| `noclip` | `true` solange der Flugmodus an ist |
 | `respawn()` | Setzt `global_transform` auf den in `_ready` gemerkten Start und `velocity` auf null |
 | `gravity` | Einmal aus den ProjectSettings gelesen |
 | `head`, `camera` | `@onready` auf `$Head` und `$Head/Camera3D` |
 | `_spawn_transform` | privat, kein Marker in der Szene |
 
-Keine `signal`-Deklaration. Yaw dreht den Body, Pitch nur `Head`. Wirksame Empfindlichkeit ist `mouse_sensitivity * Settings.mouse_sensitivity`; `Settings.invert_y` dreht die Pitch-Richtung um. Unter `respawn_height` ruft `_physics_process` `respawn()` auf. Bewegung: `Input.get_vector("move_left", "move_right", "move_forward", "move_back")`, in `transform.basis` gedreht, horizontal per `lerpf`. In der Luft ist die Beschleunigung `acceleration * air_control`.
+Keine `signal`-Deklaration. Yaw dreht den Body, Pitch nur `Head`. Wirksame Empfindlichkeit ist `mouse_sensitivity * Settings.mouse_sensitivity`; `Settings.invert_y` dreht die Pitch-Richtung um. Unter `respawn_height` ruft `_physics_process` `respawn()` auf. Im Noclip springt `_physics_process` nach dem Umschalten direkt in `_noclip_move`: keine Schwerkraft, kein `move_and_slide`, Bewegung in Kamera-Blickrichtung (auch Pitch) plus `jump`/`noclip_down` vertikal, `global_position += velocity * delta`. Kein Respawn im Noclip. Die Anzeige ist ein `CanvasLayer` „NoclipHud“ mit `Label`, erzeugt in `_ready` (nicht in `player.tscn`). Bewegung: `Input.get_vector("move_left", "move_right", "move_forward", "move_back")`, in `transform.basis` gedreht, horizontal per `lerpf`. In der Luft ist die Beschleunigung `acceleration * air_control`.
 
 ---
 
@@ -414,3 +420,8 @@ Vorlage:
 - Was: Neue Testmap `scenes/testmap/testmap.tscn` im Cyberpunk-Stil des Menüs (Nacht, Nebel, Glow, Leuchtreklamen, Fassaden-Shader). Testzonen: Treppen mit 4 Stufenhöhen plus eine Treppe mit Rampen-Kollision, Rampen 15–50°, Tunnel mit sinkender Decke, Messwand, Sprunghöhe, Weitsprung-Lücken, Parkour-Turm aufs Dach, großer Platz mit Deckung und Brücke. 16 `Marker3D` in Gruppe `item_spawn` unter `Pickups/SpawnPoints` als Plätze für Items. *Start* im Menü lädt jetzt die Testmap; `scenes/main/main.tscn` bleibt unverändert und ist per F6 startbar.
 - Dateien: `scenes/testmap/*` (neu), `scenes/menu/main_menu.gd` (nur Default von `game_scene`), `README.md`, `AI_HANDOVER.md`.
 - Wichtig für die Nächsten: Der Player kann keine Stufen hochlaufen, schon 0,15 m blockt (headless getestet). Entweder Stufensteigen in `player.gd` einbauen oder Treppen wie `Stairs_RampCollision` mit unsichtbarer Rampe bauen. Inventar/HUD aus dem Hotbar-PR hängen am Player und sind damit automatisch in der Testmap; Pickups können als Instanzen unter `Pickups` an die `item_spawn`-Marker (Mittelpunkt ca. 0,5 m über dem Pad). Die Szene ist mit einem Python-Skript erzeugt, aber normal im Editor bearbeitbar.
+
+### 2026-10-25 · Noclip-Modus · Claude (für Arschi) · PR folgt (Branch `claude/project-thread-nkpau9`)
+- Was: Flugmodus im Player. V schaltet um; dann ohne Kollision und Schwerkraft in Blickrichtung fliegen, Leertaste hoch, Strg runter, Shift ×3 schneller. Anzeige „NOCLIP“ oben links. Beide Tasten unter *Optionen → Steuerung* belegbar. Headless mit Godot 4.5 in der Testmap geprüft (hoch fliegen, durch die Grenzwand, nach dem Ausschalten fällt man wieder).
+- Dateien: `scenes/player/player.gd`, `project.godot` (Aktionen `noclip`, `noclip_down`), `autoload/settings.gd` (`REBINDABLE_ACTIONS`), `README.md`, `AI_HANDOVER.md`.
+- Wichtig für die Nächsten: `player.tscn` bewusst nicht angefasst (HUD im Code), damit es mit dem offenen Hotbar-PR nicht kollidiert. Konflikte mit Hotbar-PR und Pausemenü-Branch sind nur Einfügungen an denselben Stellen (`REBINDABLE_ACTIONS`, Input Map nach `sprint`, Kopf von `_physics_process`): beide Seiten behalten. Wer Noclip in einem Release nicht will, nimmt die zwei Einträge aus `REBINDABLE_ACTIONS` und die Aktion `noclip` raus. Schaltet man Noclip in einer Wand aus, schiebt `move_and_slide` den Player nur teilweise heraus.
