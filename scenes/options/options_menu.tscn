@@ -3,13 +3,13 @@
 [ext_resource type="Script" path="res://scenes/options/options_menu.gd" id="1_options"]
 
 [node name="Options" type="VBoxContainer"]
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 script = ExtResource("1_options")
 
 [node name="Header" type="Label" parent="."]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.1, 0.75, 1)
-theme_override_font_sizes/font_size = 30
+theme_override_font_sizes/font_size = 24
 text = "> OPTIONEN"
 
 [node name="Tabs" type="TabContainer" parent="."]
@@ -34,13 +34,14 @@ layout_mode = 2
 theme_override_constants/separation = 16
 
 [node name="ResolutionLabel" type="Label" parent="Tabs/GRAFIK/ResolutionRow"]
-custom_minimum_size = Vector2(200, 0)
+custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Auflösung"
 
 [node name="ResolutionOption" type="OptionButton" parent="Tabs/GRAFIK/ResolutionRow"]
 unique_name_in_owner = true
 layout_mode = 2
+tooltip_text = "Gilt im Fenster und im Vollbild. Höhere Auflösung: schärferes Bild, kleinere Menüs."
 size_flags_horizontal = 3
 
 [node name="VsyncCheck" type="CheckButton" parent="Tabs/GRAFIK"]
@@ -53,7 +54,7 @@ layout_mode = 2
 theme_override_constants/separation = 16
 
 [node name="MsaaLabel" type="Label" parent="Tabs/GRAFIK/MsaaRow"]
-custom_minimum_size = Vector2(200, 0)
+custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Kantenglättung"
 
@@ -67,7 +68,7 @@ layout_mode = 2
 theme_override_constants/separation = 16
 
 [node name="RenderScaleLabel" type="Label" parent="Tabs/GRAFIK/RenderScaleRow"]
-custom_minimum_size = Vector2(200, 0)
+custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "3D-Auflösung"
 
@@ -82,7 +83,7 @@ value = 100.0
 
 [node name="RenderScaleValue" type="Label" parent="Tabs/GRAFIK/RenderScaleRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(70, 0)
+custom_minimum_size = Vector2(56, 0)
 layout_mode = 2
 text = "100%"
 horizontal_alignment = 2
@@ -98,7 +99,7 @@ layout_mode = 2
 theme_override_constants/separation = 16
 
 [node name="OutputDeviceLabel" type="Label" parent="Tabs/AUDIO/OutputDeviceRow"]
-custom_minimum_size = Vector2(200, 0)
+custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Ausgabegerät"
 
@@ -115,7 +116,7 @@ layout_mode = 2
 theme_override_constants/separation = 16
 
 [node name="MasterLabel" type="Label" parent="Tabs/AUDIO/MasterRow"]
-custom_minimum_size = Vector2(200, 0)
+custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Gesamt (Master)"
 
@@ -129,7 +130,7 @@ value = 80.0
 
 [node name="MasterValue" type="Label" parent="Tabs/AUDIO/MasterRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(70, 0)
+custom_minimum_size = Vector2(56, 0)
 layout_mode = 2
 text = "80%"
 horizontal_alignment = 2
@@ -139,7 +140,7 @@ layout_mode = 2
 theme_override_constants/separation = 16
 
 [node name="MusicLabel" type="Label" parent="Tabs/AUDIO/MusicRow"]
-custom_minimum_size = Vector2(200, 0)
+custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Musik"
 
@@ -153,7 +154,7 @@ value = 100.0
 
 [node name="MusicValue" type="Label" parent="Tabs/AUDIO/MusicRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(70, 0)
+custom_minimum_size = Vector2(56, 0)
 layout_mode = 2
 text = "100%"
 horizontal_alignment = 2
@@ -163,7 +164,7 @@ layout_mode = 2
 theme_override_constants/separation = 16
 
 [node name="SfxLabel" type="Label" parent="Tabs/AUDIO/SfxRow"]
-custom_minimum_size = Vector2(200, 0)
+custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Soundeffekte"
 
@@ -177,7 +178,7 @@ value = 100.0
 
 [node name="SfxValue" type="Label" parent="Tabs/AUDIO/SfxRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(70, 0)
+custom_minimum_size = Vector2(56, 0)
 layout_mode = 2
 text = "100%"
 horizontal_alignment = 2
@@ -193,7 +194,7 @@ layout_mode = 2
 theme_override_constants/separation = 16
 
 [node name="SensitivityLabel" type="Label" parent="Tabs/STEUERUNG/SensitivityRow"]
-custom_minimum_size = Vector2(200, 0)
+custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Mausempfindlichkeit"
 
@@ -209,7 +210,7 @@ value = 1.0
 
 [node name="SensitivityValue" type="Label" parent="Tabs/STEUERUNG/SensitivityRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(70, 0)
+custom_minimum_size = Vector2(56, 0)
 layout_mode = 2
 text = "1.00x"
 horizontal_alignment = 2
@@ -222,11 +223,11 @@ text = "Maus-Y invertieren"
 [node name="KeyHint" type="Label" parent="Tabs/STEUERUNG"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.95, 1, 0.6)
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 13
 text = "TASTENBELEGUNG  //  Feld anklicken, neue Taste drücken (Esc = abbrechen)"
 
 [node name="KeyScroll" type="ScrollContainer" parent="Tabs/STEUERUNG"]
-custom_minimum_size = Vector2(0, 240)
+custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
@@ -247,7 +248,7 @@ theme_override_constants/separation = 12
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 18
 disabled = true
 text = "ÜBERNEHMEN"
 
@@ -255,14 +256,14 @@ text = "ÜBERNEHMEN"
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 18
 text = "STANDARD"
 
 [node name="BackButton" type="Button" parent="ActionRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 18
 text = "ZURÜCK"
 
 [node name="StatusLabel" type="Label" parent="."]
