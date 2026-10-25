@@ -155,3 +155,10 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
   - `testmap.tscn` ohne Skriptfehler.
 - Nicht getestet: echtes Windows-Vollbild, FSR (im Container läuft nur der OpenGL-Kompatibilitäts-Renderer).
 - Wichtig für die Nächsten: Soll 3D auf 4K wirklich nativ laufen, muss `RENDER_LONG_EDGE` erhöht werden. Das hatte EnScapeZ wegen Hängern auf 4K eingebaut, also vorher auf 4K testen.
+
+### 2026-10-25 · Blackscreen beim Spielstart absichern · Claude (für Arschi) · PR #19
+- Problem: Arschi kam nach dem Merge von #17/#18 nicht mehr ins Spiel, nur schwarzer Bildschirm. Im Container (OpenGL-Kompatibilität) startet Menü → Start im Fenster und im Vollbild normal in die Testmap. Nicht reproduzierbar, deshalb zwei Absicherungen:
+  - `scenes/menu/main_menu.gd`: *Start* blendet schwarz ab und wechselt dann die Szene. Schlug `change_scene_to_file()` fehl, blieb das Bild schwarz. Jetzt gibt es eine Fehlermeldung im Output, das Menü blendet wieder ein und die Knöpfe gehen wieder.
+  - `autoload/settings.gd`: FSR-Hochskalierung aus PR #17 zurückgenommen, wieder bilinear. Unter Forward+ war FSR ungetestet und ist die einzige Render-Änderung aus #17.
+- Vermutete Ursache: PR #18 bringt neue Klassen (`WeaponData`, `WeaponHolder`, `ShootingTarget`). Wird nach `git pull` gestartet, ohne dass der Editor neu einliest, fehlen sie im Klassen-Cache. Im Container gab es dann genau solche Parse-Fehler („Could not find type WeaponData“). Abhilfe: Godot neu starten bzw. *Projekt → Aktuelles Projekt neu laden*.
+- Getestet: Godot 4.7.2 unter Xvfb. Menü → Start lädt die Testmap im Fenster und im Vollbild. Eine nicht ladbare Spielszene führt zurück ins Menü, Fade 0, Knöpfe aktiv.
