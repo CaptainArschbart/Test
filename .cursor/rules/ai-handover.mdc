@@ -17,11 +17,11 @@ Vor der Schlussantwort, im selben Arbeitsgang:
 1. Neuen Eintrag **ganz unten** in `cursor_updatenotice.md` anlegen.
 2. **`git add cursor_updatenotice.md`** — die Datei muss in denselben Commit
    wie die Änderung. Ohne Notice kein Commit.
-3. Bei `git push` muss die aktuelle Notice bereits committed sein. Sonst
-   erst committen, dann pushen. Nie pushen, während `cursor_updatenotice.md`
-   ungetrackt oder geändert ist.
-4. In der Schlussantwort sagen, dass die Cursor-Notice aktualisiert und
-   mit hochgeladen wird.
+3. Arbeitsbranch pushen **und** die Notice auf **`origin/main`** bringen.
+   Nur der Feature-Branch reicht nicht. Ablauf: `.cursor/rules/02_cursor_notice_always_upload.mdc`.
+4. In der Schlussantwort den Link auf
+   `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+   nennen, erst wenn `origin/main` die neue Datei hat.
 
 `AI_HANDOVER.md` nicht editieren. Fremde `*_updatenotice.md` nur lesen.
 

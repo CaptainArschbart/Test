@@ -124,3 +124,12 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Was: `origin/main` war Fast-Forward hinter diesem Branch (2 Notice-Commits `b36b447`, `c743776` plus dieser). Datei nach `origin/main` schieben, damit sie im GitHub-Projekt auf dem Hauptbranch liegt.
 - Dateien: `cursor_updatenotice.md` (dieser Eintrag).
 - Git: Push auf `origin/cursor/pause-menu-shared-options` und Fast-Forward nach `origin/main`.
+
+### 2026-10-25 · Regel: Notice immer auf main · Cursor (für EnScapeZ) · dieser Arbeitsgang
+- Auftrag: Update-Notice immer auf dem main-Branch halten; sonst bringt das nichts.
+- Was: Feste Regel: `cursor_updatenotice.md` muss nach jedem Arbeitsgang auf `origin/main` liegen, nicht nur auf dem Feature-Branch.
+- Geändert:
+  - `.cursor/rules/02_cursor_notice_always_upload.mdc`: Ablauf Fast-Forward `HEAD:main` oder nur die Notice-Datei auf `main`; Schluss erst nach `git ls-tree origin/main`.
+  - `.cursor/rules/01_update_notice_rules.mdc` und `.cursor/rules/ai-handover.mdc`: Ziel ist `origin/main`.
+- Git: Commit + Push Arbeitsbranch + Fast-Forward nach `origin/main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`

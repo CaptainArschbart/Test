@@ -1,16 +1,22 @@
 ---
-description: cursor_updatenotice.md muss 100 Prozent bei jedem Commit und jedem Push mit hoch
+description: cursor_updatenotice.md muss immer auf origin/main liegen und bei jedem Push mit hoch
 alwaysApply: true
 ---
 
-# cursor_updatenotice.md — 100 % immer mit hochladen
+# cursor_updatenotice.md — immer auf main, sonst bringt das nichts
 
 Wunsch von EnScapeZ, 2026-10-25, **keine Ausnahme**.
 
-- `cursor_updatenotice.md` im Projektstamm ist **ganz wichtig**.
-- Bei **jeder** Änderung am Projekt: Notice unten aktualisieren.
-- Bei **jedem** `git commit`: `git add cursor_updatenotice.md` gehört dazu.
-- Bei **jedem** `git push`: die aktuelle Notice muss schon committed sein und **mit** auf GitHub.
-- Nie pushen, während die Datei ungetrackt, geändert oder nicht im Commit ist.
-- „Später hochladen“, „nur Code pushen“, „Notice lassen wir weg“ ist verboten.
-- Gilt für immer, in jeder Session, auf jedem Branch dieses Projekts.
+- `cursor_updatenotice.md` ist **ganz wichtig**. Nur auf einem Feature-Branch zählt sie **nicht**.
+- Nach jeder Änderung: Eintrag unten in `cursor_updatenotice.md`.
+- Jeder Commit: `git add cursor_updatenotice.md`.
+- Jeder Push: Notice committed, dann **auf `origin/main`**.
+- Ablauf in demselben Arbeitsgang:
+  1. Notice schreiben, `git add cursor_updatenotice.md`, committen.
+  2. Arbeitsbranch pushen.
+  3. `git fetch origin` und Notice nach `origin/main` bringen:
+     - Ist der Arbeitsbranch Fast-Forward von `origin/main`: `git push origin HEAD:main`.
+     - Sonst: nur `cursor_updatenotice.md` auf `main` committen und `git push origin main` (keine anderen Feature-Dateien).
+  4. Schlussantwort erst, wenn `git ls-tree origin/main -- cursor_updatenotice.md` die neue Datei zeigt.
+- Nie pushen, während die Notice ungetrackt oder lokal geändert ist.
+- „Liegt auf meinem Branch“, „kommt mit dem PR“, „später auf main“ ist verboten.
