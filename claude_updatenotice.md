@@ -64,7 +64,7 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 - Dateien: `claude_updatenotice.md` (neu), `AI_HANDOVER.md` (nur die zwei PR-#5-Einträge raus), `README.md`.
 - Wichtig für die Nächsten: Cursor-Update-Notices gab es zu diesem Zeitpunkt noch keine im Repo.
 
-### 2026-10-25 · Pausemenü-PR (#7) mit main zusammengeführt · Claude (für Arschi) · PR #PRNUM
+### 2026-10-25 · Pausemenü-PR (#7) mit main zusammengeführt · Claude (für Arschi) · PR #10 (ersetzt #7)
 - Was: PR #7 von EnScapeZ/Cursor (Pausemenü, Audio-Busse, gemeinsame Optionen-Szene) hatte Merge-Konflikte mit main, weil inzwischen Hotbar/Inventar (#5) und die Claude-Update-Notice (#9) gemergt waren. #7 ist geschlossen, deshalb neuer PR auf Basis des Branches `cursor/pause-menu-shared-options` plus main. Beide Seiten behalten: Pausemenü und Pickups in `main.tscn` und `testmap.tscn`, Esc schließt zuerst das Inventar, erst das nächste Esc öffnet das Pausemenü. Die scrollbare Tastenliste aus #5 (`KeyScroll`) in die neue gemeinsame Szene `scenes/options/options_menu.tscn` übertragen, mit Mindesthöhe 240, sonst wäre sie im (zentrierten) Pausemenü 0 px hoch.
 - Dateien: `scenes/main/main.tscn`, `scenes/testmap/testmap.tscn`, `scenes/menu/main_menu.tscn` (Version aus #7), `scenes/options/options_menu.tscn`, `scenes/player/player.gd` (nur Kommentar), `README.md` (Steuerungstabelle), `AI_HANDOVER.md` (nur Konfliktstellen aufgelöst, beide Inhalte zusammengeführt, keine neuen Einträge).
 - Getestet: Godot 4.5 headless, alle Szenen laden; Testmap: Tab öffnet Inventar, Esc schließt es, nächstes Esc pausiert, Tab bei Pause wirkungslos, Optionen im Pausemenü zeigen 19 Tasten (38 Zellen) in 240 px Scrollbereich, Esc zurück und fortsetzen.
