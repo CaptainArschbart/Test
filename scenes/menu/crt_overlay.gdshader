@@ -1,12 +1,13 @@
 shader_type canvas_item;
-// Liegt über dem ganzen Menü: Scanlines, Farbverschiebung (Chromatic
-// Aberration), Vignette und kurze Glitch-Störungen.
+// Liegt über dem ganzen Menü: feine Scanlines, Vignette, leichtes Rauschen und
+// seltene, schwache Glitch-Störungen. Keine Farbverschiebung (Chromatic
+// Aberration), damit Text scharf bleibt.
 
 uniform sampler2D screen_tex : hint_screen_texture, filter_linear_mipmap;
-uniform float scanline_strength : hint_range(0.0, 1.0) = 0.22;
-uniform float aberration : hint_range(0.0, 0.02) = 0.0025;
-uniform float vignette : hint_range(0.0, 2.0) = 0.9;
-// Wird vom Skript kurzzeitig hochgesetzt (0 = ruhig, 1 = starker Glitch).
+uniform float scanline_strength : hint_range(0.0, 1.0) = 0.07;
+uniform float vignette : hint_range(0.0, 2.0) = 0.7;
+uniform float noise_strength : hint_range(0.0, 0.2) = 0.015;
+// Wird vom Skript kurzzeitig hochgesetzt (0 = ruhig, 1 = stärkster Glitch).
 uniform float glitch : hint_range(0.0, 1.0) = 0.0;
 
 float hash(float n) {
@@ -16,26 +17,19 @@ float hash(float n) {
 void fragment() {
 	vec2 uv = SCREEN_UV;
 
-	// Horizontale Streifen, die beim Glitch seitlich verrutschen
-	float band = floor(uv.y * 24.0 + floor(TIME * 18.0) * 3.0);
-	float shift = (hash(band) - 0.5) * 0.08 * glitch * step(0.6, hash(band + 1.7));
-	uv.x += shift;
+	// Beim Glitch verrutschen einzelne horizontale Streifen ein Stück.
+	float band = floor(uv.y * 32.0 + floor(TIME * 14.0) * 3.0);
+	uv.x += (hash(band) - 0.5) * 0.015 * glitch * step(0.75, hash(band + 1.7));
 
-	float ab = aberration + glitch * 0.012;
-	float r = texture(screen_tex, uv + vec2(ab, 0.0)).r;
-	float g = texture(screen_tex, uv).g;
-	float b = texture(screen_tex, uv - vec2(ab, 0.0)).b;
-	vec3 col = vec3(r, g, b);
+	vec3 col = texture(screen_tex, uv).rgb;
 
-	// Scanlines (an Bildschirmpixel gebunden) und leichtes Flackern
+	// Scanlines (an Bildschirmpixel gebunden), kaum Flackern
 	float scan = sin(FRAGCOORD.y * 3.14159) * 0.5 + 0.5;
 	col *= 1.0 - scanline_strength * scan;
-	col *= 0.97 + 0.03 * sin(TIME * 60.0);
+	col *= 0.99 + 0.01 * sin(TIME * 50.0);
 
-	// Rauschen
-	col += (hash(dot(FRAGCOORD.xy, vec2(12.9898, 78.233)) + TIME) - 0.5) * 0.04;
+	col += (hash(dot(FRAGCOORD.xy, vec2(12.9898, 78.233)) + TIME) - 0.5) * noise_strength;
 
-	// Vignette
 	vec2 v = SCREEN_UV - 0.5;
 	col *= 1.0 - dot(v, v) * vignette;
 
