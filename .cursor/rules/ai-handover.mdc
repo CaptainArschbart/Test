@@ -1,24 +1,29 @@
 ---
-description: Jede Änderung am Projekt wird ausführlich in AI_HANDOVER.md protokolliert
+description: Jede Änderung wird in cursor_updatenotice.md protokolliert und mit committet/gepusht
 alwaysApply: true
 ---
 
-# AI_HANDOVER.md pflegen
+# cursor_updatenotice.md pflegen
 
-An diesem Godot-Projekt arbeiten mehrere Personen und KI-Systeme. `AI_HANDOVER.md`
-im Projektstamm ist die gemeinsame Übergabe. Der Nutzer will, dass dort **immer
-ausdrücklich und ausführlich** steht, was gemacht wurde. Sprache: Deutsch.
+An diesem Godot-Projekt arbeiten mehrere Personen und KI-Systeme. Cursor
+protokolliert **nur** in `cursor_updatenotice.md` im Projektstamm. Claude
+schreibt in `claude_updatenotice.md`. `AI_HANDOVER.md` fasst Cursor nicht
+mehr an. Sprache: Deutsch.
 
 ## Nach jeder Aufgabe, die etwas im Projekt ändert
 
 Vor der Schlussantwort, im selben Arbeitsgang:
 
-1. Neuen Eintrag **ganz oben** im Abschnitt "Änderungsprotokoll" anlegen (Nummer
-   hochzählen, Datum, kurzer Titel).
-2. Die Ist-Stand-Abschnitte (Struktur, project.godot, Szenen, Skripte, Abhängigkeiten,
-   "Nicht vorhanden", Teststand) auf den neuen Stand bringen. Nichts Veraltetes stehen lassen.
-3. "Letztes Update" in der Kopfzeile setzen.
-4. In der Schlussantwort sagen, dass die Übergabe aktualisiert wurde.
+1. Neuen Eintrag **ganz unten** in `cursor_updatenotice.md` anlegen.
+2. **`git add cursor_updatenotice.md`** — die Datei muss in denselben Commit
+   wie die Änderung. Ohne Notice kein Commit.
+3. Bei `git push` muss die aktuelle Notice bereits committed sein. Sonst
+   erst committen, dann pushen. Nie pushen, während `cursor_updatenotice.md`
+   ungetrackt oder geändert ist.
+4. In der Schlussantwort sagen, dass die Cursor-Notice aktualisiert und
+   mit hochgeladen wird.
+
+`AI_HANDOVER.md` nicht editieren. Fremde `*_updatenotice.md` nur lesen.
 
 Reine Fragen und Analysen ohne Änderung brauchen keinen Eintrag. Git-Aktionen
 (Commit, Merge, Konfliktlösung, Push) gehören in den Eintrag der Aufgabe, zu der sie gehören.
@@ -32,6 +37,8 @@ Reine Fragen und Analysen ohne Änderung brauchen keinen Eintrag. Git-Aktionen
 - **Nicht getestet:** ausdrücklich, mit Grund.
 - **Git:** Commits, Merges, Konflikte, abgelehnte Pushes.
 - **Offen:** Bekanntes, Lücken, nächste sinnvolle Schritte.
+- Zusätzlich, wenn betroffen: neue oder geänderte Input-Map-Aktionen,
+  neue oder geänderte Node-Strukturen und Szenen.
 
 ## Regeln
 

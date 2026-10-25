@@ -1,0 +1,42 @@
+---
+description: Striktes Regelwerk für Cursor Update Notice, Claude Update Notice und PR-Fehlerfreiheit
+globs: **/*
+alwaysApply: true
+---
+
+# 📝 Update Notice & Quality Guidelines
+
+## 1. Cursor Update Notice (Schreibrecht)
+- Erstelle und aktualisiere bei deiner Arbeit ausschließlich eine eigene Übergabesektion/Datei namens **"Cursor Update Notice"**.
+- Dokumentiere dort präzise und lückenlos alle von dir durchgeführten Änderungen, erstellten/geänderten Dateien, neue Input Maps, Node-Strukturen und offene Punkte.
+- Du darfst nur in deiner eigenen "Cursor Update Notice" schreiben.
+
+## 2. Claude Update Notice (Nur Leserecht / Read-Only)
+- Die **"Claude Update Notice"** (oder von Claude erstellte Übergabe-Notizen) dient dir ausschließlich als Orientierungs- und Informationsquelle.
+- Lies die "Claude Update Notice" vor jeder Aufgabe aufmerksam durch, um den aktuellen Projektstand, geplante Features und Vorgaben von Claude zu verstehen.
+- **STRIKTES VERBOT:** Du darfst die "Claude Update Notice" NIEMALS editieren, überschreiben, löschen oder in irgendeiner Form abändern.
+
+## 3. Null-Fehler-Toleranz für Pull Requests (Zero Bug PR Policy)
+- **STRIKTE REGEL:** Es dürfen unter keinen Umständen Fehler, ungefixte Syntax-Marker, falsche GDScript-Typisierungen oder defekte Node-Referenzen in einen Pull Request oder Commit gelangen.
+- Vor jedem Erstellen eines Commits oder Pull Requests musst du den gesamten geänderten Code vollständig auf Godot 4.7-Kompatibilität, korrekte statische Typisierung und logische Integrität überprüfen.
+- Sollten Fehler oder Unstimmigkeiten gefunden werden, sind diese vor dem finalen Push bedingungslos zu beheben.
+
+## 4. Umsetzung in diesem Repository (Ergänzung, nicht Teil des Auftragstextes)
+Die Abschnitte 1 bis 3 oben sind der Wortlaut des Nutzers. Dieser Abschnitt legt nur fest, wie sie hier angewendet werden. Bei Widerspruch zu `ai-handover.mdc` oder `00_conflict_prevention.mdc` gilt diese Regel.
+
+- **Cursor Update Notice** ist die Datei `cursor_updatenotice.md` im Projektstamm. Nur Cursor schreibt dort. Einträge **unten anhängen** (wie Claude). Aufbau wie in `ai-handover.mdc`, zusätzlich immer: neue oder geänderte Input-Map-Aktionen, neue oder geänderte Node-Strukturen und Szenen, offene Punkte.
+- **IMMER mit committen und pushen (Wunsch EnScapeZ, 2026-10-25, strikt):** `cursor_updatenotice.md` gehört in **jeden** Commit, der irgendetwas ändert, und in **jeden** `git push`. Vor dem Commit: `git add cursor_updatenotice.md`, auch wenn sonst nur einzelne Dateien gestaged werden. Vor dem Push: die Datei muss committed sein. Ist sie ungetrackt oder geändert, zuerst Eintrag schreiben, adden, committen, **dann** pushen. Ein Push ohne die aktuelle Notice ist verboten. Der Hook `.cursor/hooks/require-cursor-notice.py` blockt `git commit` / `git push`, wenn die Notice fehlt oder nicht mitgeht.
+- **Claude Update Notice** ist die Datei `claude_updatenotice.md` im Projektstamm (seit PR #9 auf `origin/main`). Historisch liegt Claudes Text auch noch im Arbeitslog von `AI_HANDOVER.md`. Beides ist **nur lesen**. Dort schreibst du **nichts**: keinen Eintrag, keine Kurzfassung, keinen Hinweis, keine Korrektur, keine Nummer, keine Umsortierung.
+- **`AI_HANDOVER.md` nicht mehr beschreiben.** Kein Ist-Stand, kein Änderungsprotokoll, kein Arbeitslog, keine Kopfzeile. Das war der Konfliktmagnet. Bei einem Merge-Konflikt in dieser Datei nur Marker entfernen, indem **beide vorhandenen Seiten** behalten werden — keinen neuen Cursor-Text einfügen. Claudes Seite Zeichen für Zeichen aus `origin/<basis>`.
+- **Andere `*_updatenotice.md`:** vor jeder Aufgabe lesen, nie ändern. Fehlt die Datei im Arbeitsbaum, `git show origin/main:<datei>` lesen.
+- Wo Claude und Cursor auf dasselbe hinweisen müssen, steht der Hinweis in `cursor_updatenotice.md` (z. B. „siehe `claude_updatenotice.md`, Eintrag Noclip“), nicht in Claudes Datei.
+- **Geltungsbereich:** Das Schreibverbot gilt für fremde Notices und für `AI_HANDOVER.md`. Code, Szenen, `README.md`, `project.godot` und Autoloads gehören keiner Notice. Dort änderst du weiter nur, was die Aufgabe verlangt (siehe `00_conflict_prevention.mdc`), und nennst jede solche Änderung in `cursor_updatenotice.md`.
+- **Zero Bug PR Policy, konkrete Prüfliste vor jedem Commit und jedem PR** (jeder Punkt mit echter Ausgabe belegen, nicht annehmen):
+  1. Keine Konfliktmarker: `rg "^(<<<<<<<|=======|>>>>>>>)" . --glob "!.godot"` ohne Treffer.
+  2. Jedes geänderte `.gd` lädt und kompiliert in Godot 4.7 (Test-Rezept: `AI_HANDOVER.md`, Abschnitt 10), ohne `ERROR`, `SCRIPT ERROR`, `Parse Error` oder `WARNING`.
+  3. Statische Typisierung: neue Variablen, Parameter und Rückgaben sind typisiert (`:=` oder `: Typ`, `-> Typ`). `@onready`-Variablen haben einen Typ, `get_node`-Ergebnisse werden typisiert zugewiesen. Kein `Variant`, wo der Typ bekannt ist.
+  4. Node-Referenzen: Jeder `%Name`, `$Pfad` und `get_node(...)` zeigt auf einen Knoten, der in der Szene wirklich existiert. Bei Szenenänderungen die Szene laden und die Knoten per Skript abfragen.
+  5. `.tscn`/`.tres`: `load_steps` = Anzahl `ext_resource` + `sub_resource` + 1, alle IDs eindeutig, jeder `parent`-Pfad existiert.
+  6. Alle vorhandenen Testskripte laufen mit 0 Fehlschlägen. Ein fehlgeschlagener Test wird behoben (Code oder Test, mit Begründung), nie ignoriert.
+  7. Kann etwas nicht geprüft werden (z. B. Fensterlauf, Controller), steht das ausdrücklich unter „Nicht getestet“. Es wird nie als bestanden gemeldet.
+  8. Erst wenn die Liste vollständig ist, wird committet, gepusht und der Pull Request angelegt.

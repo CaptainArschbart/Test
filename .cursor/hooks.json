@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": "python .cursor/hooks/require-cursor-notice.py",
+        "matcher": "git\\s+(push|commit)",
+        "failClosed": true
+      }
+    ]
+  }
+}
