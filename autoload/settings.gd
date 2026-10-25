@@ -24,6 +24,23 @@ const RENDER_SCALE_MIN := 0.5
 ## 3D wird höchstens auf diese Kantenlänge gerendert. Darüber würde ein 2K-/4K-Puffer
 ## den Frame so lang machen, dass die Steuerung stehen bleibt.
 const RENDER_LONG_EDGE := 1920
+## Auswählbare Fenstergrößen. Im Menü erscheinen nur die, die auf den Monitor passen.
+const RESOLUTIONS: Array[Vector2i] = [
+	Vector2i(1280, 720),
+	Vector2i(1280, 800),
+	Vector2i(1366, 768),
+	Vector2i(1440, 900),
+	Vector2i(1600, 900),
+	Vector2i(1680, 1050),
+	Vector2i(1920, 1080),
+	Vector2i(1920, 1200),
+	Vector2i(2560, 1080),
+	Vector2i(2560, 1440),
+	Vector2i(3440, 1440),
+	Vector2i(3840, 2160),
+]
+## Fenstergröße beim ersten Start (wie viewport_width/height in project.godot).
+const DEFAULT_RESOLUTION := Vector2i(1280, 720)
 
 ## Aktionen aus der Input Map, die im Menü neu belegt werden können (Aktion → Anzeigename).
 const REBINDABLE_ACTIONS := {
@@ -50,6 +67,9 @@ const REBINDABLE_ACTIONS := {
 
 var fullscreen := false
 var vsync := true
+## Fenstergröße im Fenstermodus. Im Vollbild gilt immer die Monitorauflösung
+## (Godot 4 ändert den Bildschirmmodus des Monitors nicht); die Menüs skalieren mit.
+var resolution := DEFAULT_RESOLUTION
 ## Kantenglättung der 3D-Szene als Viewport.MSAA: 0 = aus, 1 = 2x, 2 = 4x, 3 = 8x.
 var msaa: int = Viewport.MSAA_4X
 ## 3D-Auflösung als Faktor auf die Fenstergröße (RENDER_SCALE_MIN bis 1.0).
@@ -71,6 +91,9 @@ var key_bindings := {}
 
 var _default_bindings := {}
 var _applied_window_size := Vector2i(-1, -1)
+## Zuletzt gesetzte Fenstergröße. Nur bei einer Änderung wird das Fenster neu gesetzt,
+## damit apply() ein von Hand vergrößertes Fenster nicht jedes Mal zurücksetzt.
+var _applied_resolution := Vector2i(-1, -1)
 var _applying_scale := false
 
 
@@ -91,6 +114,7 @@ func get_values() -> Dictionary:
 	return {
 		"fullscreen": fullscreen,
 		"vsync": vsync,
+		"resolution": resolution,
 		"msaa": msaa,
 		"render_scale": render_scale,
 		"master_volume": master_volume,
@@ -108,6 +132,7 @@ func get_defaults() -> Dictionary:
 	return {
 		"fullscreen": false,
 		"vsync": true,
+		"resolution": DEFAULT_RESOLUTION,
 		"msaa": Viewport.MSAA_4X,
 		"render_scale": 1.0,
 		"master_volume": 80.0,
@@ -125,6 +150,7 @@ func apply_values(values: Dictionary) -> void:
 	fullscreen = values.fullscreen
 	vsync = values.vsync
 	# Neuere Schlüssel mit Rückfall, falls ein Aufrufer ein älteres Dictionary übergibt.
+	resolution = values.get("resolution", resolution)
 	msaa = values.get("msaa", msaa)
 	render_scale = values.get("render_scale", render_scale)
 	master_volume = values.master_volume
@@ -147,6 +173,7 @@ func apply() -> void:
 		DisplayServer.window_set_mode(
 			DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
 		)
+	_apply_resolution()
 	DisplayServer.window_set_vsync_mode(
 		DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED
 	)
@@ -192,6 +219,9 @@ func load_settings() -> void:
 		return  # Noch keine Datei: Standardwerte bleiben.
 	fullscreen = config.get_value("video", "fullscreen", fullscreen)
 	vsync = config.get_value("video", "vsync", vsync)
+	var saved_resolution: Variant = config.get_value("video", "resolution", resolution)
+	if saved_resolution is Vector2i and saved_resolution.x >= 640 and saved_resolution.y >= 360:
+		resolution = saved_resolution
 	msaa = clampi(int(config.get_value("video", "msaa", msaa)), Viewport.MSAA_DISABLED, Viewport.MSAA_8X)
 	render_scale = clampf(float(config.get_value("video", "render_scale", render_scale)), RENDER_SCALE_MIN, 1.0)
 	master_volume = config.get_value("audio", "master_volume", master_volume)
@@ -208,6 +238,7 @@ func save_settings() -> void:
 	var config := ConfigFile.new()
 	config.set_value("video", "fullscreen", fullscreen)
 	config.set_value("video", "vsync", vsync)
+	config.set_value("video", "resolution", resolution)
 	config.set_value("video", "msaa", msaa)
 	config.set_value("video", "render_scale", render_scale)
 	config.set_value("audio", "master_volume", master_volume)
@@ -219,6 +250,40 @@ func save_settings() -> void:
 	for action: String in key_bindings:
 		config.set_value("keys", action, key_bindings[action])
 	config.save(PATH)
+
+
+## Fenstergrößen aus RESOLUTIONS, die auf den aktuellen Monitor passen. Ohne
+## Monitorgröße (headless) alle.
+static func available_resolutions() -> Array[Vector2i]:
+	var screen := DisplayServer.screen_get_size()
+	var result: Array[Vector2i] = []
+	for size: Vector2i in RESOLUTIONS:
+		if screen.x <= 0 or screen.y <= 0 or (size.x <= screen.x and size.y <= screen.y):
+			result.append(size)
+	return result
+
+
+## Setzt im Fenstermodus die gewählte Größe (höchstens Monitorgröße) und zentriert
+## das Fenster. Im Vollbild passiert nichts; beim Zurückschalten wird neu gesetzt.
+func _apply_resolution() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	if fullscreen:
+		_applied_resolution = Vector2i(-1, -1)
+		return
+	if resolution == _applied_resolution:
+		return
+	_applied_resolution = resolution
+	var screen_id := DisplayServer.window_get_current_screen()
+	var screen_size := DisplayServer.screen_get_size(screen_id)
+	var size := resolution
+	if screen_size.x > 0 and screen_size.y > 0:
+		size = Vector2i(mini(size.x, screen_size.x), mini(size.y, screen_size.y))
+	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_MAXIMIZED:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	DisplayServer.window_set_size(size)
+	var origin := DisplayServer.screen_get_position(screen_id)
+	DisplayServer.window_set_position(origin + (screen_size - size) / 2)
 
 
 ## Faktor fürs 3D-Bild. Unter oder bei 1920 px bleibt der Reglerwert. Darüber wird
