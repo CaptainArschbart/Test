@@ -269,3 +269,20 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: Fensterbild der Leisten, Blinken mit dem Auge, 2K/4K-Screenshot. Echte `settings.cfg` nicht angefasst.
 - Git: davor `git pull origin main` (Fast-forward `eea10d5..74d97c5`, Optionen-Audio, keine gemeinsamen Dateien). Commit auf `main`, `git push origin main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-25 · Leisten grauen aus, Poster an der Kiste · Cursor (für EnScapeZ) · main
+- Auftrag: Die Vitalleisten sollen bei niedrigen Werten ausgrauen statt zu springen, Hunger und Durst weiter über die Zeit sinken, und ein Bild aus `pictures` als Poster an einer Wand in `main.tscn` hängen.
+- Entscheidung: Neon-Rahmen, Schräge, Glow und Tech-Striche aus dem vorigen Eintrag bleiben. Das warme Blinken ist weg. Unter 20 % ändert sich nur `modulate`: Farbe Richtung Grau, nahe 0 zusätzlich gedämpftes Rot, Alpha bis etwa 0,42 und dann ein langsamer Puls. Alpha bleibt über 0,25. Position, Mindestgröße und Anker bleiben. `PlayerStats` bleibt Kind des Players, kein Autoload, damit Menü und Pause nicht mitzählen. `deplete_stats` und die Raten 0,35 / 0,55 bleiben. Neu ist `clamp_value`: 0 bis Maximum, Maximum 0 ergibt 0. Die Standard-Maxima sind 100. Das Poster hängt an der dem Spieler zugewandten Seite der großen Kiste (`BoxLarge`, Mitte −5, 1, −10, Fläche bei z = −8), 2,5 cm davor, damit es nicht in der Fläche flackert.
+- Neu:
+  - `pictures/maxresdefault.jpg` (1280×720, 123735 Bytes) und `pictures/maxresdefault.jpg.import` (`mipmaps/generate=true`).
+- Geändert:
+  - `scenes/survival/survival_hud.gd`: `fade_color(ratio)` und `_fade`. Schwelle `FADE_RATIO` 0,2. Kein Verschieben der Leisten.
+  - `scenes/survival/player_stats.gd`: `clamp_value` in `_add`.
+  - `scenes/main/main.tscn`: `load_steps` 17 → 20 (11 ext + 8 sub + 1). Knoten `Level/Poster` (`MeshInstance3D`, `QuadMesh` 1,6×0,9 m, 16:9). Material mit `res://pictures/maxresdefault.jpg`, `cull_mode` 2, `texture_filter` 5, `cast_shadow` 0. Transform (−5, 1,15, −7,975).
+- Node-Struktur: `Level/Poster` neben `BoxLarge`. Keine neue Input-Aktion. HUD-`mouse_filter` bleibt `Ignore`. Die Leisten skalieren weiter über den Stretch der Basis 1280×720.
+- Nicht geändert: `claude_updatenotice.md`, `project.godot`, `scenes/survival/survival_hud.tscn`, `scenes/survival/hud_bar.gdshader`.
+- Getestet (Godot 4.7.2 stable, headless, isoliertes APPDATA): temporäre Szene `poster_runner` (danach gelöscht) `CHECKS 19 FAILS 0`. Volle Leiste und 20 % bleiben Weiß mit Alpha 1. Bei 10 % Alpha zwischen 0,5 und 0,9 und die Kanäle liegen beieinander. Bei 0 Alpha zwischen 0,25 und 0,55, Rot höher als Grün. Mindestgröße und Position der Hunger-Leiste bleiben, Maus `Ignore`, Rahmen unter 400 px. `clamp_value` 140 → 100, −5 → 0, Maximum 0 → 0. Hunger nach 10 s bei 1 auf 0, Essen 500 bleibt 100. Poster-Quad 16:9, Texturpfad `res://pictures/maxresdefault.jpg`, Position x −5 / y 1,15, z zwischen −8 und −7,95. `main.tscn --quit-after 2`: nur die Versionszeile, kein `SCRIPT ERROR` / `Parse Error`.
+- Bekannt beim Beenden: weiter `ERROR: 1 resources still in use at exit` (Musik-Stream). Kein neuer Skriptfehler.
+- Nicht getestet: Fensterbild des Posters und der ausgegrauten Leisten, ob die Quad-Vorderseite im echten Blickfeld sitzt. Echte `settings.cfg` nicht angefasst.
+- Git: `git pull origin main` war schon aktuell. Commit auf `main`, `git push origin main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`

@@ -140,7 +140,7 @@ func restore_all() -> void:
 func _add(stat_name: String, amount: float) -> void:
 	var current := _value(stat_name)
 	var maximum := _maximum(stat_name)
-	var next := clampf(current + amount, 0.0, maximum)
+	var next := clamp_value(current + amount, maximum)
 	if is_equal_approx(next, current):
 		return
 	_set_value(stat_name, next)
@@ -149,6 +149,12 @@ func _add(stat_name: String, amount: float) -> void:
 		_dead = true
 		_sprinting = false
 		died.emit()
+
+
+## Hält einen Wert in 0…Maximum. Maximum 0 ergibt 0, damit nichts überläuft.
+static func clamp_value(value: float, maximum: float) -> float:
+	var cap := maximum if maximum > 0.0 else 0.0
+	return clampf(value, 0.0, cap)
 
 
 func _value(stat_name: String) -> float:
