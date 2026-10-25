@@ -172,7 +172,7 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 - Getestet: Godot 4.7.2 unter Xvfb mit echten Maus-Events, 15/15 Prüfungen (beide Waffen aufgehoben, Pistole gezielt FOV 60 und Treffer auf 20 m, zurück auf 80, Sniper im Zielfernrohr FOV 16, Hände aus, Treffer auf 40 m mit 120 Schaden, Kamera-Kick, Hände wieder da, Hüftfeuer streut, Tafel zeigt beide Schäden, Weg von der Straße ohne Wand). Screenshots von Zielfernrohr, Pistole im Anschlag und Sniper aus der Hüfte angesehen. `testmap.tscn`/`main.tscn` ohne Skriptfehler.
 - Nicht getestet: Spielgefühl und Mausempfindlichkeit am echten PC.
 
-### 2026-10-25 · Ego-Hände und Spielerkörper neu · Claude (für Arschi)
+### 2026-10-25 · Ego-Hände und Spielerkörper neu · Claude (für Arschi) · PR #22
 - Auftrag: Die Hände sahen hässlich aus (Kapsel plus Kiste), danach auch das Playermodel überarbeiten (war eine orange Kapsel, die nur Schatten warf).
 - Hände (`scenes/hands/player_hands.gd`, `.tscn`):
   - Modell wird in `_ready` aus Grundformen gebaut: Handfläche, Daumenballen, vier Finger mit je drei Gelenken, Daumen mit Grundgelenk, Knöchelschutz, Handrücken-Platte mit Neon, Armband mit Leuchtringen, Jackenärmel. Fingerlose Handschuhe, Kuppen in Hautfarbe.
