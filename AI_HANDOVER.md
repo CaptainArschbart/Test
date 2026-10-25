@@ -496,11 +496,6 @@ Vorlage:
 - Was: Abschnitt 8 „Arbeitslog“ mit Regel und Vorlage angelegt und die bisherigen Arbeitsgänge rückwirkend eingetragen.
 - Dateien: `AI_HANDOVER.md`.
 
-### 2026-10-25 · Hotbar + Inventar · Claude (für Arschi) · PR #5
-- Was: Hotbar mit 9 Slots (Tasten 1–9, Mausrad) und Inventar-Fenster (Tab) mit 27 Rucksack-Slots im Neon-Stil. Drag & Drop zum Verschieben/Tauschen/Stapeln, Rechtsklick = Hotbar ↔ Rucksack, aus dem Fenster ziehen oder Q = wegwerfen. Items sind `ItemData`-Resources (6 Beispiele), Pickups in der Welt leuchten, drehen sich und werden beim Drüberlaufen eingesammelt. Neue Aktionen `inventory`, `drop_item`, `hotbar_1`…`hotbar_9` sind im Optionsmenü belegbar; die Tastenliste dort scrollt jetzt (`KeyScroll`).
-- Dateien: `scenes/inventory/*` (neu), `scenes/items/*` (neu), `scenes/player/player.gd/.tscn`, `scenes/main/main.tscn` (Knoten `Pickups`), `scenes/menu/main_menu.tscn` (`KeyScroll` um `%KeyGrid`), `autoload/settings.gd` (`REBINDABLE_ACTIONS`), `project.godot` (Input Map), `README.md`, `AI_HANDOVER.md`.
-- Wichtig für die Nächsten: HUD und Inventar hängen am Player, also hat jede Map mit `player.tscn` sie automatisch. Items in eine Map setzen = `scenes/items/pickup.tscn` instanzieren und `item` + `count` setzen. Items haben noch keine Wirkung und das Inventar wird nicht gespeichert. Mit Godot 4.7 headless getestet (Aufsammeln, Stapeln, Tauschen, Wegwerfen, Inventar öffnen, Menü).
-
 ### 2026-10-25 · Testmap „Neon District“ · Claude (für Arschi) · PR folgt (Branch `claude/project-thread-0flw0w`)
 - Was: Neue Testmap `scenes/testmap/testmap.tscn` im Cyberpunk-Stil des Menüs (Nacht, Nebel, Glow, Leuchtreklamen, Fassaden-Shader). Testzonen: Treppen mit 4 Stufenhöhen plus eine Treppe mit Rampen-Kollision, Rampen 15–50°, Tunnel mit sinkender Decke, Messwand, Sprunghöhe, Weitsprung-Lücken, Parkour-Turm aufs Dach, großer Platz mit Deckung und Brücke. 16 `Marker3D` in Gruppe `item_spawn` unter `Pickups/SpawnPoints` als Plätze für Items. *Start* im Menü lädt jetzt die Testmap; `scenes/main/main.tscn` bleibt unverändert und ist per F6 startbar.
 - Dateien: `scenes/testmap/*` (neu), `scenes/menu/main_menu.gd` (nur Default von `game_scene`), `README.md`, `AI_HANDOVER.md`.
@@ -510,7 +505,3 @@ Vorlage:
 - Was: Flugmodus im Player. V schaltet um; dann ohne Kollision und Schwerkraft in Blickrichtung fliegen, Leertaste hoch, Strg runter, Shift ×3 schneller. Anzeige „NOCLIP“ oben links. Beide Tasten unter *Optionen → Steuerung* belegbar. Headless mit Godot 4.5 in der Testmap geprüft (hoch fliegen, durch die Grenzwand, nach dem Ausschalten fällt man wieder).
 - Dateien: `scenes/player/player.gd`, `project.godot` (Aktionen `noclip`, `noclip_down`), `autoload/settings.gd` (`REBINDABLE_ACTIONS`), `README.md`, `AI_HANDOVER.md`.
 - Wichtig für die Nächsten: `player.tscn` bewusst nicht angefasst (HUD im Code), damit es mit dem offenen Hotbar-PR nicht kollidiert. Konflikte mit Hotbar-PR und Pausemenü-Branch sind nur Einfügungen an denselben Stellen (`REBINDABLE_ACTIONS`, Input Map nach `sprint`, Kopf von `_physics_process`): beide Seiten behalten. Wer Noclip in einem Release nicht will, nimmt die zwei Einträge aus `REBINDABLE_ACTIONS` und die Aktion `noclip` raus. Schaltet man Noclip in einer Wand aus, schiebt `move_and_slide` den Player nur teilweise heraus.
-
-### 2026-10-25 · Hotbar-PR mit main zusammengeführt · Claude (für Arschi) · PR #5
-- Was: Merge-Konflikte nach Testmap (#6) und Noclip (#8) aufgelöst, beide Seiten behalten: Aktionen und `REBINDABLE_ACTIONS` enthalten jetzt Inventar, Hotbar und Noclip (19 belegbar). Bei offenem Inventar ist Noclip gesperrt (kein Umschalten, kein Fliegen). Beispiel-Items an den `item_spawn`-Markern der Testmap verteilt.
-- Dateien: `scenes/player/player.gd`, `autoload/settings.gd`, `project.godot`, `README.md`, `AI_HANDOVER.md`, `scenes/testmap/testmap.tscn` (Pickups).
