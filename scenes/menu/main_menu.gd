@@ -5,7 +5,7 @@ extends Control
 ## schreibt sie in den Autoload Settings (und damit nach user://settings.cfg).
 
 ## Szene, die "Start" lädt.
-@export_file("*.tscn") var game_scene := "res://scenes/main/main.tscn"
+@export_file("*.tscn") var game_scene := "res://scenes/testmap/testmap.tscn"
 
 @export_group("Glitch")
 ## Zeitraum (Sekunden), in dem zufällig ein Glitch kommt.

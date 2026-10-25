@@ -4,6 +4,8 @@ extends CharacterBody3D
 ##
 ## Escape gibt die Maus frei, ein Klick ins Fenster fängt sie wieder ein.
 ## Zahlentasten und Mausrad wählen den Hotbar-Slot, "drop_item" wirft ein Stück davon weg.
+## "noclip" schaltet den Flugmodus um: durch Wände fliegen in Blickrichtung,
+## "jump" hoch, "noclip_down" runter, "sprint" schneller.
 
 @export_group("Bewegung")
 @export var walk_speed := 5.0
@@ -22,22 +24,33 @@ extends CharacterBody3D
 ## Fällt der Spieler unter diese Höhe, wird er zum Startpunkt zurückgesetzt.
 @export var respawn_height := -30.0
 
+@export_group("Noclip")
+@export var noclip_speed := 10.0
+## Faktor auf noclip_speed, solange "sprint" gehalten wird.
+@export var noclip_sprint_multiplier := 3.0
+
 const PICKUP_SCENE := preload("res://scenes/items/pickup.tscn")
 
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 ## Wird vom Inventar-Fenster gesetzt: keine Bewegung, kein Umschauen.
 var input_locked := false
 
+## Flugmodus ohne Kollision und Schwerkraft (umschalten mit set_noclip).
+var noclip := false
+
 var _spawn_transform: Transform3D
+var _noclip_label: Label
 
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
 @onready var inventory: Inventory = $Inventory
+@onready var collision_shape: CollisionShape3D = $CollisionShape3D
 
 
 func _ready() -> void:
 	_spawn_transform = global_transform
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_create_noclip_label()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -60,6 +73,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if Input.is_action_just_pressed("noclip") and not input_locked:
+		set_noclip(not noclip)
+	if noclip:
+		_noclip_move(delta)
+		return
+
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 
@@ -127,3 +146,44 @@ func _handle_hotbar_input(event: InputEvent) -> bool:
 			inventory.select_next(-1)
 			return true
 	return false
+
+## Schaltet den Flugmodus ein oder aus.
+func set_noclip(enabled: bool) -> void:
+	noclip = enabled
+	collision_shape.disabled = enabled
+	velocity = Vector3.ZERO
+	_noclip_label.visible = enabled
+
+
+## Fliegt in Blickrichtung der Kamera, ohne Kollision und Schwerkraft.
+func _noclip_move(delta: float) -> void:
+	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var vertical := Input.get_axis("noclip_down", "jump")
+	if input_locked:
+		input_dir = Vector2.ZERO
+		vertical = 0.0
+	var direction := camera.global_basis * Vector3(input_dir.x, 0.0, input_dir.y) + Vector3.UP * vertical
+	if direction.length() > 1.0:
+		direction = direction.normalized()
+	var speed := noclip_speed
+	if Input.is_action_pressed("sprint"):
+		speed *= noclip_sprint_multiplier
+	var weight := minf(acceleration * delta, 1.0)
+	velocity = velocity.lerp(direction * speed, weight)
+	global_position += velocity * delta
+
+
+## Kleine Anzeige oben links, solange Noclip an ist (im Code erzeugt, damit player.tscn gleich bleibt).
+func _create_noclip_label() -> void:
+	var layer := CanvasLayer.new()
+	layer.name = "NoclipHud"
+	add_child(layer)
+	_noclip_label = Label.new()
+	_noclip_label.text = "NOCLIP"
+	_noclip_label.position = Vector2(24.0, 20.0)
+	_noclip_label.add_theme_font_size_override("font_size", 22)
+	_noclip_label.add_theme_color_override("font_color", Color(0.0, 1.0, 0.95))
+	_noclip_label.add_theme_color_override("font_outline_color", Color(1.0, 0.1, 0.6))
+	_noclip_label.add_theme_constant_override("outline_size", 4)
+	_noclip_label.visible = false
+	layer.add_child(_noclip_label)

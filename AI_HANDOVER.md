@@ -36,9 +36,15 @@ scenes/
     crt_overlay.gdshader      uid://cveheluq50cmp
     crt_overlay.gdshader.uid
   main/
-    main.tscn                 Spielwelt, wird von Start geladen
+    main.tscn                 alte einfache Testwelt (nur noch per F6)
     main.gd                   uid://npu706i2yy2e
     main.gd.uid
+  testmap/
+    testmap.tscn              Testmap "Neon District", wird von Start geladen
+    testmap.gd                F11, sonst leer
+    testmap.gd.uid
+    building_facade.gdshader  Fassade mit Fensterraster in Weltkoordinaten
+    building_facade.gdshader.uid
   player/
     player.tscn               CharacterBody3D, First Person
     player.gd                 class_name Player, uid://3ek5xjcrt0uw
@@ -80,9 +86,9 @@ Konvention aus `README.md`: eine Szene und ihr Skript liegen im selben Ordner un
 | Autoloads | `Settings` → `res://autoload/settings.gd` |
 | `[animation]` | `compatibility/default_parent_skeleton_in_mesh_instance_3d=true` |
 
-### Input Map (nur diese 17 Aktionen sind im Projekt definiert)
+### Input Map (nur diese 19 Aktionen sind im Projekt definiert)
 
-Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Keine Maus- und keine Joypad-Events. Die Tabelle zeigt die Standardbelegung aus `project.godot`. Der Spieler kann alle 17 im Menü neu belegen (Liste in `Settings.REBINDABLE_ACTIONS`); `Settings` ersetzt beim Start und nach *Übernehmen* das Tastatur-Event der Aktion in der `InputMap`.
+Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Keine Maus- und keine Joypad-Events. Die Tabelle zeigt die Standardbelegung aus `project.godot`. Der Spieler kann alle 19 im Menü neu belegen (Liste in `Settings.REBINDABLE_ACTIONS`); `Settings` ersetzt beim Start und nach *Übernehmen* das Tastatur-Event der Aktion in der `InputMap`.
 
 | Aktion | Taste | physical_keycode | Verwendung |
 |---|---|---|---|
@@ -91,7 +97,9 @@ Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Kei
 | `move_left` | A | 65 | `player.gd` |
 | `move_right` | D | 68 | `player.gd` |
 | `jump` | Leertaste | 32 | `player.gd`, nur am Boden |
-| `sprint` | Shift | 4194325 (`KEY_SHIFT`) | `player.gd`, gehalten |
+| `sprint` | Shift | 4194325 (`KEY_SHIFT`) | `player.gd`, gehalten (im Noclip: schneller fliegen) |
+| `noclip` | V | 86 | `player.gd`, schaltet Noclip um |
+| `noclip_down` | Strg | 4194326 (`KEY_CTRL`) | `player.gd`, im Noclip runter (hoch = `jump`) |
 | `inventory` | Tab | 4194306 (`KEY_TAB`) | `inventory_ui.gd` (`_input`), öffnet/schließt das Inventar |
 | `drop_item` | Q | 81 | `player.gd`, wirft 1 Stück aus dem gewählten Hotbar-Slot |
 | `hotbar_1` … `hotbar_9` | 1 … 9 | 49 … 57 | `player.gd`, wählt den Hotbar-Slot |
@@ -140,7 +148,7 @@ Gelesen und geschrieben vom Autoload `Settings` (`autoload/settings.gd`). Er lä
 | `[audio] master_volume` | `80.0` (0–100) | Bus `Master`, `linear_to_db(value / 100)`, stumm bei `<= 0` |
 | `[controls] mouse_sensitivity` | `1.0` | Faktor auf `Player.mouse_sensitivity` |
 | `[controls] invert_y` | `false` | dreht die Pitch-Richtung im Player um |
-| `[keys] <aktion>` | Belegung aus `project.godot` | `physical_keycode` für `move_*`, `jump`, `sprint` |
+| `[keys] <aktion>` | Belegung aus `project.godot` | `physical_keycode` für `move_*`, `jump`, `sprint`, `noclip`, `noclip_down` |
 
 Geschrieben wird nur bei *Übernehmen* im Optionsmenü und bei F11. Fehlt die Datei, gelten die Standardwerte. Unter `assets/audio/` liegt keine Datei, und keine Szene spielt einen Ton ab.
 
@@ -163,7 +171,7 @@ F5
         ├─ Glitch-Stärke 1.0 für 0,5 s (CRT-Shader-Uniform "glitch")
         ├─ Fade (ColorRect $Fade) Alpha 0 → 1 in 0,45 s
         └─ get_tree().change_scene_to_file(game_scene)
-             Default: res://scenes/main/main.tscn
+             Default: res://scenes/testmap/testmap.tscn
               └─ Player._ready setzt MOUSE_MODE_CAPTURED
                    Esc gibt die Maus frei, Klick fängt sie wieder
                    kein Button, kein Pause-Menü, kein change_scene zurück
@@ -232,6 +240,32 @@ Fallengelassene Items hängt `Player.drop_item` an den Parent des Players (hier 
 
 Environment: `background_mode = 2` (Sky), `ambient_light_source = 3` (Sky), `reflected_light_source = 2` (Sky), `tonemap_mode = 2` (ACES), SSAO und Glow an. Boden `Color(0.32, 0.45, 0.3)`, Kisten `Color(0.55, 0.6, 0.68)`, Rampe `Color(0.7, 0.62, 0.45)`. Alle vier CSG-Knoten haben `use_collision = true`. `BoxSmall` ragt mit der Default-Höhe in den Boden. CSG ist Platzhalter-Geometrie.
 
+### `scenes/testmap/testmap.tscn` — Wurzel `Testmap` (`Node3D`, Skript `testmap.gd`)
+
+Nacht-Cyberpunk-Map, etwa x −53…53, z −89…51 (unsichtbare Wände unter `Bounds`). Alles ist CSG mit `use_collision = true` auf Layer 1 (`world`); reine Deko (Leuchtstreifen, Gitter, Schilder) hat keine Kollision. Spawn bei (0, 0, 42), Blick nach −Z.
+
+```text
+Testmap (Node3D)
+├── WorldEnvironment        Nachthimmel, Ambient-Farbe, ACES, SSR, SSAO, Glow, Nebel
+├── Moon (DirectionalLight3D)  schwach bläulich, Schatten an
+├── Street                  Asphalt (ganze Map), Gehwege mit 0,2 m Bordstein, Laternen, Spawn-Ring
+├── Buildings               Häuserzeilen, Kulisse rundum (Material Fassaden-Shader), Leuchtreklamen
+├── ZoneWest                Treppen (Stufen 0,15/0,25/0,35/0,50 m), Rampen 15/30/40/50° (2,5 m hoch),
+│                           Tunnel (Decke 2,6/1,95/1,7 m), Messwand 1–6 m
+├── ZoneEast                Sprunghöhe 0,5–1,5 m, Weitsprung-Lücken 2–6 m, Parkour-Turm (je +0,9 m) auf Dach 7,2 m
+├── Plaza                   offene Fläche z −30…−88, Leuchtgitter, Holo-Säule, Kisten, Mauern, Brücke 3,3 m
+├── Pickups
+│   └── SpawnPoints         16 Marker3D, Gruppe "item_spawn", je mit leuchtendem Pad (MeshInstance3D)
+├── Bounds                  4 StaticBody3D-Wände, unsichtbar
+└── Player                  Instanz player.tscn, Position (0, 0.05, 42)
+```
+
+Zusätzlich `ZoneWest/Stairs_RampCollision`: Treppe 0,20 m, Stufen nur Optik, Kollision ist eine unsichtbare Rampe (`StaticBody3D`) über die Stufenkanten. So sind begehbare Treppen gedacht, solange der Player kein Stufensteigen kann.
+
+Gemessen mit Godot 4.5 headless und den Standardwerten des Players: Sprung erreicht etwa 1,03 m (1,0-m-Block geht, 1,25 m nicht). Rampen bis 40° gehen, 50° nicht (`floor_max_angle` 45°). Weitsprung: gehend bis 4 m, mit Sprint 6 m. Tunnel 1,95 m passt, 1,7 m blockt. Parkour-Turm ist bis aufs Dach schaffbar. Die echten Treppen (0,15–0,50 m) gehen nur mit Springen, weil der Player kein Stufensteigen hat.
+
+Die Szene wurde mit einem Python-Generator erzeugt, ist aber eine normale `.tscn` und darf im Editor bearbeitet werden. Der Generator liegt nicht im Repo.
+
 ### `scenes/player/player.tscn` — Wurzel `Player` (`CharacterBody3D`, `class_name Player`)
 
 ```text
@@ -295,7 +329,7 @@ Pickup                                 Exports: item (ItemData), count, hover_he
 
 | Export | Default |
 |---|---|
-| `game_scene` | `res://scenes/main/main.tscn` |
+| `game_scene` | `res://scenes/testmap/testmap.tscn` |
 | `glitch_interval_min` | `1.5` |
 | `glitch_interval_max` | `4.5` |
 | `glitch_duration` | `0.18` |
@@ -313,6 +347,16 @@ Optionen: `_draft` ist eine Kopie von `Settings.get_values()`, die die Bedienele
 - Einzige Methode: `_unhandled_input` für F11 → `Settings.toggle_fullscreen()`
 - Kennt den Player nicht
 
+### `scenes/testmap/testmap.gd`
+
+- `extends Node3D`, kein `class_name`; nur `_unhandled_input` für F11 → `Settings.toggle_fullscreen()` (wie `main.gd`)
+
+### `scenes/testmap/building_facade.gdshader`
+
+- `spatial`, rechnet Fenster aus Weltposition und Normale, darum keine UVs nötig und beliebig große Boxen möglich
+- Uniforms: `wall_color`, `glass_color`, `cell_size` (Fensterraster in m), `lit_ratio`, `emission_strength`, `first_floor_height`, drei Fensterfarben
+- In `testmap.tscn` zwei ShaderMaterials: `Mat_facade` und `Mat_facade_dense` (dichter, mehr Licht)
+
 ### `scenes/player/player.gd`
 
 - `class_name Player`
@@ -328,17 +372,21 @@ Optionen: `_draft` ist eine Kopie von `Settings.get_values()`, die die Bedienele
 | Kamera | `mouse_sensitivity` | `0.002` |
 | Kamera | `max_pitch_degrees` | `85.0`, Range 0–89 |
 | Respawn | `respawn_height` | `-30.0` |
+| Noclip | `noclip_speed` | `10.0` |
+| Noclip | `noclip_sprint_multiplier` | `3.0` |
 
 Keine davon ist in der `.tscn` überschrieben.
 
 | Mitglied | Rolle |
 |---|---|
+| `set_noclip(enabled)` | Flugmodus an/aus: `CollisionShape3D.disabled`, `velocity` auf null, Anzeige „NOCLIP“ oben links |
+| `noclip` | `true` solange der Flugmodus an ist |
 | `respawn()` | Setzt `global_transform` auf den in `_ready` gemerkten Start und `velocity` auf null |
 | `gravity` | Einmal aus den ProjectSettings gelesen |
 | `head`, `camera` | `@onready` auf `$Head` und `$Head/Camera3D` |
 | `_spawn_transform` | privat, kein Marker in der Szene |
 
-Keine `signal`-Deklaration. Yaw dreht den Body, Pitch nur `Head`. Wirksame Empfindlichkeit ist `mouse_sensitivity * Settings.mouse_sensitivity`; `Settings.invert_y` dreht die Pitch-Richtung um. Unter `respawn_height` ruft `_physics_process` `respawn()` auf. Bewegung: `Input.get_vector("move_left", "move_right", "move_forward", "move_back")`, in `transform.basis` gedreht, horizontal per `lerpf`. In der Luft ist die Beschleunigung `acceleration * air_control`.
+Keine `signal`-Deklaration. Yaw dreht den Body, Pitch nur `Head`. Wirksame Empfindlichkeit ist `mouse_sensitivity * Settings.mouse_sensitivity`; `Settings.invert_y` dreht die Pitch-Richtung um. Unter `respawn_height` ruft `_physics_process` `respawn()` auf. Im Noclip springt `_physics_process` nach dem Umschalten direkt in `_noclip_move`: keine Schwerkraft, kein `move_and_slide`, Bewegung in Kamera-Blickrichtung (auch Pitch) plus `jump`/`noclip_down` vertikal, `global_position += velocity * delta`. Kein Respawn im Noclip. Die Anzeige ist ein `CanvasLayer` „NoclipHud“ mit `Label`, erzeugt in `_ready` (nicht in `player.tscn`). Bewegung: `Input.get_vector("move_left", "move_right", "move_forward", "move_back")`, in `transform.basis` gedreht, horizontal per `lerpf`. In der Luft ist die Beschleunigung `acceleration * air_control`.
 
 Neu: `input_locked` (setzt das Inventar-Fenster; blockiert Umschauen, Laufen, Springen, Hotbar-Tasten), `inventory` (`@onready $Inventory`), `drop_item(index, amount)` (wirft Items als `ItemPickup` vor die Kamera, mit Raycast gegen Wände) und `_handle_hotbar_input` (Zahlentasten, Mausrad, `drop_item`).
 
@@ -373,10 +421,14 @@ project.godot
                     ├── main_menu.gd
                     │     ├── Autoload Settings
                     │     ├── $Overlay, $Fade, %Buttons
-                    │     └── Start ──► scenes/main/main.tscn
+                    │     └── Start ──► scenes/testmap/testmap.tscn
                     ├── menu_background.gdshader
                     └── crt_overlay.gdshader
-  main.tscn
+  testmap.tscn
+    ├── testmap.gd ── Autoload Settings (nur F11)
+    ├── building_facade.gdshader
+    └── instance scenes/player/player.tscn
+  main.tscn (nicht mehr vom Menü geladen)
     ├── main.gd ── Autoload Settings   (nur F11)
     └── instance scenes/player/player.tscn
           └── player.gd
@@ -448,3 +500,17 @@ Vorlage:
 - Was: Hotbar mit 9 Slots (Tasten 1–9, Mausrad) und Inventar-Fenster (Tab) mit 27 Rucksack-Slots im Neon-Stil. Drag & Drop zum Verschieben/Tauschen/Stapeln, Rechtsklick = Hotbar ↔ Rucksack, aus dem Fenster ziehen oder Q = wegwerfen. Items sind `ItemData`-Resources (6 Beispiele), Pickups in der Welt leuchten, drehen sich und werden beim Drüberlaufen eingesammelt. Neue Aktionen `inventory`, `drop_item`, `hotbar_1`…`hotbar_9` sind im Optionsmenü belegbar; die Tastenliste dort scrollt jetzt (`KeyScroll`).
 - Dateien: `scenes/inventory/*` (neu), `scenes/items/*` (neu), `scenes/player/player.gd/.tscn`, `scenes/main/main.tscn` (Knoten `Pickups`), `scenes/menu/main_menu.tscn` (`KeyScroll` um `%KeyGrid`), `autoload/settings.gd` (`REBINDABLE_ACTIONS`), `project.godot` (Input Map), `README.md`, `AI_HANDOVER.md`.
 - Wichtig für die Nächsten: HUD und Inventar hängen am Player, also hat jede Map mit `player.tscn` sie automatisch. Items in eine Map setzen = `scenes/items/pickup.tscn` instanzieren und `item` + `count` setzen. Items haben noch keine Wirkung und das Inventar wird nicht gespeichert. Mit Godot 4.7 headless getestet (Aufsammeln, Stapeln, Tauschen, Wegwerfen, Inventar öffnen, Menü).
+
+### 2026-10-25 · Testmap „Neon District“ · Claude (für Arschi) · PR folgt (Branch `claude/project-thread-0flw0w`)
+- Was: Neue Testmap `scenes/testmap/testmap.tscn` im Cyberpunk-Stil des Menüs (Nacht, Nebel, Glow, Leuchtreklamen, Fassaden-Shader). Testzonen: Treppen mit 4 Stufenhöhen plus eine Treppe mit Rampen-Kollision, Rampen 15–50°, Tunnel mit sinkender Decke, Messwand, Sprunghöhe, Weitsprung-Lücken, Parkour-Turm aufs Dach, großer Platz mit Deckung und Brücke. 16 `Marker3D` in Gruppe `item_spawn` unter `Pickups/SpawnPoints` als Plätze für Items. *Start* im Menü lädt jetzt die Testmap; `scenes/main/main.tscn` bleibt unverändert und ist per F6 startbar.
+- Dateien: `scenes/testmap/*` (neu), `scenes/menu/main_menu.gd` (nur Default von `game_scene`), `README.md`, `AI_HANDOVER.md`.
+- Wichtig für die Nächsten: Der Player kann keine Stufen hochlaufen, schon 0,15 m blockt (headless getestet). Entweder Stufensteigen in `player.gd` einbauen oder Treppen wie `Stairs_RampCollision` mit unsichtbarer Rampe bauen. Inventar/HUD aus dem Hotbar-PR hängen am Player und sind damit automatisch in der Testmap; Pickups können als Instanzen unter `Pickups` an die `item_spawn`-Marker (Mittelpunkt ca. 0,5 m über dem Pad). Die Szene ist mit einem Python-Skript erzeugt, aber normal im Editor bearbeitbar.
+
+### 2026-10-25 · Noclip-Modus · Claude (für Arschi) · PR folgt (Branch `claude/project-thread-nkpau9`)
+- Was: Flugmodus im Player. V schaltet um; dann ohne Kollision und Schwerkraft in Blickrichtung fliegen, Leertaste hoch, Strg runter, Shift ×3 schneller. Anzeige „NOCLIP“ oben links. Beide Tasten unter *Optionen → Steuerung* belegbar. Headless mit Godot 4.5 in der Testmap geprüft (hoch fliegen, durch die Grenzwand, nach dem Ausschalten fällt man wieder).
+- Dateien: `scenes/player/player.gd`, `project.godot` (Aktionen `noclip`, `noclip_down`), `autoload/settings.gd` (`REBINDABLE_ACTIONS`), `README.md`, `AI_HANDOVER.md`.
+- Wichtig für die Nächsten: `player.tscn` bewusst nicht angefasst (HUD im Code), damit es mit dem offenen Hotbar-PR nicht kollidiert. Konflikte mit Hotbar-PR und Pausemenü-Branch sind nur Einfügungen an denselben Stellen (`REBINDABLE_ACTIONS`, Input Map nach `sprint`, Kopf von `_physics_process`): beide Seiten behalten. Wer Noclip in einem Release nicht will, nimmt die zwei Einträge aus `REBINDABLE_ACTIONS` und die Aktion `noclip` raus. Schaltet man Noclip in einer Wand aus, schiebt `move_and_slide` den Player nur teilweise heraus.
+
+### 2026-10-25 · Hotbar-PR mit main zusammengeführt · Claude (für Arschi) · PR #5
+- Was: Merge-Konflikte nach Testmap (#6) und Noclip (#8) aufgelöst, beide Seiten behalten: Aktionen und `REBINDABLE_ACTIONS` enthalten jetzt Inventar, Hotbar und Noclip (19 belegbar). Bei offenem Inventar ist Noclip gesperrt (kein Umschalten, kein Fliegen). Beispiel-Items an den `item_spawn`-Markern der Testmap verteilt.
+- Dateien: `scenes/player/player.gd`, `autoload/settings.gd`, `project.godot`, `README.md`, `AI_HANDOVER.md`, `scenes/testmap/testmap.tscn` (Pickups).

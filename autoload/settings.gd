@@ -28,6 +28,8 @@ const REBINDABLE_ACTIONS := {
 	"hotbar_7": "Slot 7",
 	"hotbar_8": "Slot 8",
 	"hotbar_9": "Slot 9",
+	"noclip": "Noclip an/aus",
+	"noclip_down": "Noclip runter",
 }
 
 var fullscreen := false
