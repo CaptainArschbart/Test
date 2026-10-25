@@ -79,6 +79,23 @@ layout_mode = 2
 theme_override_constants/separation = 10
 metadata/_tab_index = 1
 
+[node name="OutputDeviceRow" type="HBoxContainer" parent="Tabs/AUDIO"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="OutputDeviceLabel" type="Label" parent="Tabs/AUDIO/OutputDeviceRow"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "Ausgabegerät"
+
+[node name="OutputDeviceOption" type="OptionButton" parent="Tabs/AUDIO/OutputDeviceRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+clip_text = true
+fit_to_longest_item = false
+
 [node name="MasterRow" type="HBoxContainer" parent="Tabs/AUDIO"]
 layout_mode = 2
 theme_override_constants/separation = 16
