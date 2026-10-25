@@ -1,44 +1,58 @@
 # 🤖 Project AI Handover Log
 
-> **Engine:** Godot 4.4 (Feature-Tag `4.4`, Renderer Forward Plus)  
-> **Projekt-Typ:** 3D Game (Grundgerüst, kein fertiges Spiel)  
+> **Engine:** Godot 4.7 (Feature-Tag `4.7`, Renderer Forward Plus)  
+> **Projekt-Typ:** 3D Game (Grundgerüst: Cyberpunk-Hauptmenü plus First-Person-Testwelt)  
 > **Projektname:** Godot 3D Base  
 > **Letztes Update:** 2026-10-25  
-> **Startszene:** `res://scenes/menu/main_menu.tscn` (Hauptmenü) → Spielwelt `res://scenes/main/main.tscn`  
+> **Hauptszene:** `res://scenes/menu/main_menu.tscn`  
 > **Sprache:** GDScript (Standard-Godot, nicht .NET / C#)
 
-Dieses Dokument ist der Ist-Stand des Repos. Es beschreibt nur, was in `project.godot`, den Szenen und den Skripten tatsächlich steht.
+Dieses Dokument ist der Ist-Stand des Repos. Es beschreibt nur, was in `project.godot`, den Szenen und den Skripten steht.
+
+`scenes/interactive/interactive_box.tscn` ist **nicht** im Projekt. Es gibt keinen Ordner `scenes/interactive/`.
 
 ---
 
 ## 1. 📁 Ordner- & Datei-Struktur
 
 ```text
-project.godot
+project.godot                 Hauptszene, Input Map, Physik-Layer, 4× MSAA
 icon.svg
 icon.svg.import
 README.md
 .gitignore
 .gitattributes
-assets/
-  audio/.gitkeep          (leer, Platzhalter)
-  materials/.gitkeep      (leer, Platzhalter)
-  models/.gitkeep         (leer, Platzhalter)
-  textures/.gitkeep       (leer, Platzhalter)
+AI_HANDOVER.md
+autoload/
+  settings.gd                 Autoload "Settings", user://settings.cfg
+  settings.gd.uid
 scenes/
+  menu/
+    main_menu.tscn            Startszene, Control
+    main_menu.gd              uid://b56yhlqq1bgvx
+    main_menu.gd.uid
+    menu_background.gdshader  uid://cw7ulhsglsebx
+    menu_background.gdshader.uid
+    crt_overlay.gdshader      uid://cveheluq50cmp
+    crt_overlay.gdshader.uid
   main/
-    main.tscn             Hauptszene: Welt, Licht, Test-Level, Player-Instanz
-    main.gd               uid://npu706i2yy2e
+    main.tscn                 Spielwelt, wird von Start geladen
+    main.gd                   uid://npu706i2yy2e
     main.gd.uid
   player/
-    player.tscn           CharacterBody3D, First Person
-    player.gd             class_name Player, uid://3ek5xjcrt0uw
+    player.tscn               CharacterBody3D, First Person
+    player.gd                 class_name Player, uid://3ek5xjcrt0uw
     player.gd.uid
+assets/
+  audio/.gitkeep              leer
+  materials/.gitkeep          leer
+  models/.gitkeep             leer
+  textures/.gitkeep           leer
 ```
 
-Es gibt keine weiteren `.gd`-, `.tscn`- oder `.tres`-Dateien. Keine UI-Szene, keine Gegner, keine Items, keine geladenen Modelle, Texturen oder Audio-Dateien. `.godot/` ist per `.gitignore` ausgeschlossen und gehört nicht zum Projektinhalt.
+`.godot/` ist per `.gitignore` ausgeschlossen. Keine `.tres`-Dateien, keine Export-Presets, keine Audio-Dateien. Einziger Autoload: `Settings`.
 
-Konvention aus `README.md`: eine Szene und ihr Skript liegen im selben Ordner unter `scenes/<name>/`. Neue Systeme (Gegner, Items, UI) bekommen einen eigenen Ordner dort. `.uid`- und `.import`-Dateien gehören ins Repo.
+Konvention aus `README.md`: eine Szene und ihr Skript liegen im selben Ordner unter `scenes/<name>/`. `autoload/settings.gd` ist die Ausnahme, weil es ein Autoload ohne eigene Szene ist.
 
 ---
 
@@ -49,230 +63,261 @@ Konvention aus `README.md`: eine Szene und ihr Skript liegen im selben Ordner un
 | `config/name` | `Godot 3D Base` |
 | `config/description` | Grundgerüst für ein 3D-Spiel in Godot 4 (GDScript). |
 | `run/main_scene` | `res://scenes/menu/main_menu.tscn` |
-| `config/features` | `4.4`, `Forward Plus` |
+| `config/features` | `4.7`, `Forward Plus` |
 | `config/icon` | `res://icon.svg` |
 | Viewport | 1280 × 720 |
 | MSAA 3D | `2` → 4× MSAA |
-| Autoloads | `Settings` → `res://autoload/settings.gd` (siehe Abschnitt 7) |
-| Gruppen | keine definiert |
-| Shader / Renderer-Overrides | keine außer MSAA |
+| Autoloads | `Settings` → `res://autoload/settings.gd` |
+| `[animation]` | `compatibility/default_parent_skeleton_in_mesh_instance_3d=true` |
 
-### Input Map
+### Input Map (nur diese sechs Aktionen sind im Projekt definiert)
 
-Alle Aktionen haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Keine Maus-, Gamepad- oder Zweitbelegung.
+Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Keine Maus- und keine Joypad-Events. Die Tabelle zeigt die Standardbelegung aus `project.godot`. Der Spieler kann alle sechs im Menü neu belegen; `Settings` ersetzt beim Start und nach *Übernehmen* das Tastatur-Event der Aktion in der `InputMap`.
 
-| Aktion | Taste | physical_keycode |
-|---|---|---|
-| `move_forward` | W | 87 |
-| `move_back` | S | 83 |
-| `move_left` | A | 65 |
-| `move_right` | D | 68 |
-| `jump` | Leertaste | 32 |
-| `sprint` | Shift | 4194325 (`KEY_SHIFT`) |
+| Aktion | Taste | physical_keycode | Verwendung |
+|---|---|---|---|
+| `move_forward` | W | 87 | `player.gd` |
+| `move_back` | S | 83 | `player.gd` |
+| `move_left` | A | 65 | `player.gd` |
+| `move_right` | D | 68 | `player.gd` |
+| `jump` | Leertaste | 32 | `player.gd`, nur am Boden |
+| `sprint` | Shift | 4194325 (`KEY_SHIFT`) | `player.gd`, gehalten |
 
-Zusätzlich hart im Code, nicht in der Input Map:
+### Tasten außerhalb der Input Map
 
 | Taste | Ort | Wirkung |
 |---|---|---|
-| Esc (`ui_cancel`, Godot-Default) | `player.gd` | Maus sichtbar machen |
-| Linksklick (`InputEventMouseButton`) | `player.gd` | Maus wieder einfangen |
-| F11 (`KEY_F11`) | `main.gd`, `main_menu.gd` | Fenster ↔ Vollbild über `Settings.toggle_fullscreen()` |
+| F11 (`KEY_F11`) | `main_menu.gd`, `main.gd` | `Settings.toggle_fullscreen()`: schaltet das Fenster und speichert sofort. Im Menü wird zusätzlich die Vollbild-Checkbox der offenen Optionen nachgezogen. |
+| Esc | Menü | Während eine Taste neu belegt wird: bricht das Belegen ab. Sonst, wenn das Options-Panel offen ist: wie *Zurück* (bei nicht übernommenen Änderungen erst eine Warnung, beim zweiten Mal verwerfen). Sonst keine Wirkung. |
+| Esc | Spielwelt | `ui_cancel` in `player.gd` macht die Maus sichtbar. Kein Pause-Menü, kein Szenenwechsel. |
+| Mausklick | Spielwelt | Jeder gedrückte `InputEventMouseButton` setzt `MOUSE_MODE_CAPTURED`. |
+
+### Controller und UI-Fokus
+
+Die Spielaktionen haben keine Gamepad-Belegung. Laufen, Sprint und Sprung sind nur Tastatur.
+
+Das Menü definiert keine eigenen UI-Aktionen. Godots eingebaute `ui_up`, `ui_down`, `ui_accept` und `ui_cancel` sind im Projekt nicht überschrieben und behalten die Engine-Defaults (Pfeiltasten, Enter, Escape, Controller-Stick, D-Pad, Joypad-Buttons). Die Menü-Buttons liegen in einer `VBoxContainer` und nehmen Fokus (`grab_focus`, zusätzlich `mouse_entered` → `grab_focus`). Damit lässt sich das Menü mit Tastatur und mit dem Controller-Fokus bedienen. Die Spielwelt nicht.
+
+`Beenden` wird ausgeblendet, wenn `OS.has_feature("web")`. Es gibt keinen Web-Export-Preset im Repo.
 
 ### Physik-Layer (3D)
 
-| Layer-Bit | Name | Verwendung im Projekt |
+| Layer-Bit | Name | Verwendung |
 |---|---|---|
-| 1 | `world` | Default-Layer der CSG-Körper (`use_collision = true`, Layer nicht überschrieben) |
+| 1 | `world` | Default der CSG-Körper (`use_collision = true`, Layer nicht gesetzt) |
 | 2 | `player` | `Player.collision_layer = 2` |
 
-`Player.collision_mask` ist in der Szene nicht gesetzt und bleibt damit auf dem Godot-Default `1` (nur `world`). Der Spieler kollidiert nicht mit anderen Objekten auf Layer 2.
+`Player.collision_mask` ist nicht gesetzt und bleibt auf dem Godot-Default `1` (nur `world`). Layer 3–32 sind unbenannt.
 
-Schwerkraft wird nicht in `project.godot` überschrieben. `Player.gravity` liest `physics/3d/default_gravity` (Godot-Default 9.8).
+Schwerkraft steht nicht in `project.godot`. `Player.gravity` liest `physics/3d/default_gravity` (Engine-Default 9.8).
+
+### user://settings.cfg
+
+Gelesen und geschrieben vom Autoload `Settings` (`autoload/settings.gd`). Er lädt die Datei in `_ready`, also vor jeder Szene, und wendet alles an. Auch ein direkter Start von `main.tscn` (F6) bekommt so die gespeicherten Werte.
+
+| Schlüssel | Standard | Wirkung |
+|---|---|---|
+| `[video] fullscreen` | `false` | `DisplayServer.window_set_mode` |
+| `[video] vsync` | `true` | `DisplayServer.window_set_vsync_mode` |
+| `[audio] master_volume` | `80.0` (0–100) | Bus `Master`, `linear_to_db(value / 100)`, stumm bei `<= 0` |
+| `[controls] mouse_sensitivity` | `1.0` | Faktor auf `Player.mouse_sensitivity` |
+| `[controls] invert_y` | `false` | dreht die Pitch-Richtung im Player um |
+| `[keys] <aktion>` | Belegung aus `project.godot` | `physical_keycode` für `move_*`, `jump`, `sprint` |
+
+Geschrieben wird nur bei *Übernehmen* im Optionsmenü und bei F11. Fehlt die Datei, gelten die Standardwerte. Unter `assets/audio/` liegt keine Datei, und keine Szene spielt einen Ton ab.
+
+---|---|---|
+| `[video] fullscreen` | aktueller Fenstermodus ist bereits Vollbild | Sofort bei jedem Vollbild-Umschalten (Checkbox, F11 im Menü, F11 in der Spielwelt). Beim Öffnen des Menüs wird der gelesene Wert angewendet und dabei erneut geschrieben. |
+| `[video] vsync` | `true` | Nur in `save_preferences`, aufgerufen wenn die Optionen mit Zurück oder Esc verlassen werden. |
+| `[audio] master_volume` | `80.0` | Ebenfalls nur beim Verlassen der Optionen. |
+
+`set_fullscreen` und `save_preferences` laden die Datei zuerst und ersetzen sie nicht leer. Ein F11 in der Spielwelt löscht Lautstärke und VSync nicht. Fehlt die Datei, liefert `ConfigFile.load` einen Fehler und die Defaults gelten. Lautstärke setzt den Bus `Master` (`linear_to_db(value / 100)`, stumm bei `<= 0`). Unter `assets/audio/` liegt keine Datei, und keine Szene spielt einen Ton ab.
 
 ---
 
-## 3. 🎬 Szenen-Hierarchie
+## 3. 🎬 Ablauf (Einbahnstraße)
 
-Es gibt zwei Szenen. `Main` instanziiert `Player` als Kind. Der Player hat in `main.tscn` keinen eigenen Transform und startet daher im Ursprung.
+```text
+F5
+ └─ main_menu.tscn
+      Maus sichtbar, Start hat Fokus (settings.cfg hat der Autoload schon angewendet)
+      Start
+        ├─ Glitch-Stärke 1.0 für 0,5 s (CRT-Shader-Uniform "glitch")
+        ├─ Fade (ColorRect $Fade) Alpha 0 → 1 in 0,45 s
+        └─ get_tree().change_scene_to_file(game_scene)
+             Default: res://scenes/main/main.tscn
+              └─ Player._ready setzt MOUSE_MODE_CAPTURED
+                   Esc gibt die Maus frei, Klick fängt sie wieder
+                   kein Button, kein Pause-Menü, kein change_scene zurück
+```
+
+`game_scene` ist `@export_file` am Menü und in der Szene nicht überschrieben. Der Szenenwechsel ersetzt den ganzen Baum. Einstellungen bleiben, weil sie im Autoload `Settings` und an `DisplayServer`, `AudioServer` und `InputMap` hängen, nicht am Menü-Knoten.
+
+Es gibt keinen Rückweg ins Menü.
+
+---
+
+## 4. Szenen-Hierarchie
+
+### `scenes/menu/main_menu.tscn` — Wurzel `MainMenu` (`Control`, Skript `main_menu.gd`)
+
+```text
+MainMenu (Control)                     theme: cyber, script main_menu.gd
+├── Background (ColorRect)             Shader menu_background.gdshader
+├── Margin (MarginContainer)
+│   └── Layout (VBoxContainer)
+│       ├── %TitleBox
+│       │   ├── %TitleCyan             "NEON//GRID"
+│       │   ├── %TitleMagenta          "NEON//GRID"
+│       │   └── %Title                 "NEON//GRID"
+│       ├── %Subtitle                  "// SYSTEM ONLINE_"
+│       ├── Spacer
+│       ├── %MainButtons (VBoxContainer)
+│       │   ├── %StartButton           "START"
+│       │   ├── %OptionsButton         "OPTIONEN"
+│       │   └── %QuitButton            "BEENDEN"
+│       └── Footer
+├── %OptionsPanel (PanelContainer)     anfangs unsichtbar, mittig; beim Öffnen werden %TitleBox und %Subtitle ausgeblendet
+│   └── Options
+│       ├── Header                     "> OPTIONEN"
+│       ├── %Tabs (TabContainer)
+│       │   ├── "ANZEIGE & AUDIO"      %FullscreenCheck, %VsyncCheck, %VolumeSlider/%VolumeValue
+│       │   └── "STEUERUNG"            %SensitivitySlider/%SensitivityValue (0.1–3.0),
+│       │                              %InvertYCheck, KeyHint, %KeyGrid (4 Spalten, Knöpfe im Code erzeugt)
+│       ├── ActionRow                  %ApplyButton "ÜBERNEHMEN" (nur aktiv bei Änderungen),
+│       │                              %DefaultsButton "STANDARD", %BackButton "ZURÜCK"
+│       └── %StatusLabel               "Ungespeicherte Änderungen" / "übernommen" / Warnung
+├── Fade (ColorRect)                   schwarz, Alpha 0, Pfad $Fade
+└── Overlay (ColorRect)                Shader crt_overlay.gdshader, Pfad $Overlay
+```
+
+`%` bedeutet `unique_name_in_owner`. Relative Pfade im Skript: `$Overlay.material`, `$Fade`.
+
+Hintergrund-Shader zeichnet Himmel, zwei Skyline-Ebenen und ein perspektivisches Bodengitter. CRT-Shader zeichnet Scanlines, chromatische Aberration, Vignette, Rauschen und das Uniform `glitch` (0 = ruhig, 1 = stark).
 
 ### `scenes/main/main.tscn` — Wurzel `Main` (`Node3D`, Skript `main.gd`)
 
 ```text
-Main (Node3D)                          script: main.gd
-├── WorldEnvironment                   Environment: Sky, ACES, SSAO, Glow
-├── Sun (DirectionalLight3D)           Schatten an, shadow max distance 80
+Main (Node3D)
+├── WorldEnvironment                   Sky, ACES, SSAO, Glow
+├── Sun (DirectionalLight3D)           Schatten an, max distance 80
 ├── Level (Node3D)
-│   ├── Ground (CSGBox3D)              100×1×100, Position (0, -0.5, 0), Kollision
+│   ├── Ground (CSGBox3D)              100×1×100, Position (0, -0.5, 0)
 │   ├── BoxSmall (CSGBox3D)            Default-Größe 2×2×2, Position (4, 0.5, -6)
 │   ├── BoxLarge (CSGBox3D)            4×2×4, Position (-5, 1, -10)
-│   └── Ramp (CSGBox3D)                3×0.3×8, ~20° um X, Position (8, 0.6, 2)
-└── Player (Instanz player.tscn)       Position (0, 0, 0)
+│   └── Ramp (CSGBox3D)                3×0.3×8, etwa 20° um X, Position (8, 0.6, 2)
+└── Player                             Instanz player.tscn, Transform nicht überschrieben
 ```
 
-Environment-Subressourcen (nur in der Szene, keine `.tres`-Datei):
+Environment: `background_mode = 2` (Sky), `ambient_light_source = 3` (Sky), `reflected_light_source = 2` (Sky), `tonemap_mode = 2` (ACES), SSAO und Glow an. Boden `Color(0.32, 0.45, 0.3)`, Kisten `Color(0.55, 0.6, 0.68)`, Rampe `Color(0.7, 0.62, 0.45)`. Alle vier CSG-Knoten haben `use_collision = true`. `BoxSmall` ragt mit der Default-Höhe in den Boden. CSG ist Platzhalter-Geometrie.
 
-- `ProceduralSkyMaterial` → `Sky` → `Environment`
-- `background_mode = 2` (Sky), `ambient_light_source = 3` (Sky), `reflected_light_source = 2` (Sky)
-- `tonemap_mode = 2` (ACES), `ssao_enabled = true`, `glow_enabled = true`
-- Materialien: Boden `Color(0.32, 0.45, 0.3)`, Kisten `Color(0.55, 0.6, 0.68)`, Rampe `Color(0.7, 0.62, 0.45)`
-
-CSG ist bewusst Platzhalter-Geometrie. `README.md` sagt, sie später durch echte Modelle zu ersetzen. Alle vier CSG-Knoten haben `use_collision = true`.
-
-### `scenes/player/player.tscn` — Wurzel `Player` (`CharacterBody3D`, Skript `player.gd`, `class_name Player`)
+### `scenes/player/player.tscn` — Wurzel `Player` (`CharacterBody3D`, `class_name Player`)
 
 ```text
-Player (CharacterBody3D)               collision_layer = 2, collision_mask = 1 (Default)
-├── CollisionShape3D                   CapsuleShape3D, radius 0.4, height 1.8, Offset Y 0.9
-├── Body (MeshInstance3D)              CapsuleMesh, gleiche Maße, Schatten an, Offset Y 0.9
+Player                                 collision_layer = 2, collision_mask = 1 (Default)
+├── CollisionShape3D                   Capsule radius 0.4, height 1.8, Offset Y 0.9
+├── Body (MeshInstance3D)              gleiche Kapsel, Farbe (0.85, 0.45, 0.2), Schatten an
 └── Head (Node3D)                      Offset Y 1.6
     └── Camera3D                       current = true, fov = 80
 ```
 
-Körperfarbe `Color(0.85, 0.45, 0.2)`. Kapsel und Kollision sind 1.8 m hoch und sitzen mit dem Boden bei Y = 0, wenn der Player bei Y = 0 steht. Die Kamera sitzt bei lokaler Höhe 1.6.
-
-Kein Knoten trägt `unique_name_in_owner`. Es gibt keine `%NodeName`-Zugriffe.
+Kein Knoten hat `unique_name_in_owner`. Zugriffe: `$Head`, `$Head/Camera3D`.
 
 ---
 
-## 4. 📜 Skripte
+## 5. 📜 Skripte
+
+### `autoload/settings.gd` (Autoload `Settings`)
+
+- `extends Node`, kein `class_name` (der Autoload-Name ist `Settings`)
+- Signal `changed` nach jedem `apply()`
+- Konstanten `PATH := "user://settings.cfg"` und `REBINDABLE_ACTIONS` (Aktion → Anzeigename im Menü). Eine weitere Aktion belegbar machen: dort eintragen.
+- Felder: `fullscreen`, `vsync`, `master_volume`, `mouse_sensitivity`, `invert_y`, `key_bindings` (Aktion → `physical_keycode`)
+- Öffentlich: `get_values()`, `get_defaults()`, `apply_values(dict)` (übernehmen, anwenden, speichern), `apply()`, `toggle_fullscreen()`, `key_name(code)` (statisch, Name im aktuellen Tastaturlayout), `load_settings()`, `save_settings()`
+- Standard-Tastenbelegung wird in `_ready` aus der `InputMap` gelesen, bevor die Datei geladen wird
+
+### `scenes/menu/main_menu.gd`
+
+- `extends Control`, kein `class_name`
+- Keine eigenen `signal`-Deklarationen. Verbindungen laufen auf Button- und Slider-Signale.
+
+| Export | Default |
+|---|---|
+| `game_scene` | `res://scenes/main/main.tscn` |
+| `glitch_interval_min` | `1.5` |
+| `glitch_interval_max` | `4.5` |
+| `glitch_duration` | `0.18` |
+
+Engine-Callbacks: `_ready`, `_process`, `_input` (fängt die Taste beim Neubelegen ab), `_unhandled_input`. Alles andere ist privat.
+
+State: `_glitch_timer`, `_glitch_left`, `_starting`. `_starting` blockiert einen zweiten Start. Die Buttons werden dabei `PROCESS_MODE_DISABLED`.
+
+Optionen: `_draft` ist eine Kopie von `Settings.get_values()`, die die Bedienelemente ändern. *Übernehmen* ruft `Settings.apply_values(_draft)` auf, *Standard* lädt `Settings.get_defaults()` in `_draft`, *Zurück* verwirft (mit einmaliger Warnung, `_confirm_discard`). `_rebinding_action` ist die Aktion, die gerade auf eine Taste wartet; ist die neue Taste schon vergeben, tauschen die beiden Aktionen ihre Tasten.
 
 ### `scenes/main/main.gd`
 
-- `extends Node3D`
-- Kein `class_name`
-- Keine `@export`-Variablen
-- Keine `signal`-Deklarationen
-- Keine `@onready`-Referenzen
-- Keine Node-Pfade (`$` oder `%`)
-- Einzige Methode: `_unhandled_input` (Engine-Callback, nicht als API gedacht)
-
-State: keiner. F11 schaltet `DisplayServer.window_get_mode()` zwischen `WINDOW_MODE_FULLSCREEN` und `WINDOW_MODE_WINDOWED`. Echo-Events werden ignoriert.
+- `extends Node3D`, kein `class_name`
+- Keine Exports, keine Signale, keine Node-Pfade
+- Einzige Methode: `_unhandled_input` für F11 → `Settings.toggle_fullscreen()`
+- Kennt den Player nicht
 
 ### `scenes/player/player.gd`
 
 - `class_name Player`
 - `extends CharacterBody3D`
-- Globale Klasse. Andere Skripte können den Typ `Player` ohne `preload` verwenden, sobald Godot die Klasse registriert hat.
 
-#### Exportierte Variablen (Inspector-Gruppen)
-
-| Gruppe | Variable | Default | Hinweis |
-|---|---|---|---|
-| Bewegung | `walk_speed` | `5.0` | m/s am Boden ohne Sprint |
-| Bewegung | `sprint_speed` | `8.0` | aktiv bei gehaltener Aktion `sprint` |
-| Bewegung | `jump_velocity` | `4.5` | nur wenn `is_on_floor()` |
-| Bewegung | `acceleration` | `12.0` | Lerp-Gewicht `min(accel * delta, 1)` |
-| Bewegung | `air_control` | `0.3` | `@export_range(0.0, 1.0)`. In der Luft wird `acceleration` damit multipliziert |
-| Kamera | `mouse_sensitivity` | `0.002` | Radiant-Faktor auf `event.relative` |
-| Kamera | `max_pitch_degrees` | `85.0` | `@export_range(0.0, 89.0)`, klemmt `Head.rotation.x` |
-| Respawn | `respawn_height` | `-30.0` | Welt-Y, unter der `respawn()` läuft |
-
-Keine dieser Variablen ist in der `.tscn` überschrieben. Die Defaults im Skript gelten.
-
-#### Signale
-
-Keine. Weder `signal` noch `emit` noch Verbindungen in den Szenen.
-
-#### Öffentliche Mitglieder und State
-
-| Mitglied | Sichtbarkeit | Rolle |
+| Gruppe | Variable | Default |
 |---|---|---|
-| `respawn()` | öffentlich, dokumentiert | Setzt `global_transform` auf den Start-Transform und `velocity` auf `Vector3.ZERO` |
-| `gravity` | öffentlich, kein `@export` | Einmal beim Laden aus `ProjectSettings` gelesen, nicht pro Frame |
-| `head` | öffentlich, `@onready` | `Node3D`, Pfad `$Head` |
-| `camera` | öffentlich, `@onready` | `Camera3D`, Pfad `$Head/Camera3D` |
-| `_spawn_transform` | privat | In `_ready` aus `global_transform` gespeichert. Respawn kehrt hierhin zurück, nicht zu einem Marker in der Szene |
+| Bewegung | `walk_speed` | `5.0` |
+| Bewegung | `sprint_speed` | `8.0` |
+| Bewegung | `jump_velocity` | `4.5` |
+| Bewegung | `acceleration` | `12.0` |
+| Bewegung | `air_control` | `0.3`, Range 0–1 |
+| Kamera | `mouse_sensitivity` | `0.002` |
+| Kamera | `max_pitch_degrees` | `85.0`, Range 0–89 |
+| Respawn | `respawn_height` | `-30.0` |
 
-Engine-Callbacks, keine externe API: `_ready`, `_unhandled_input`, `_physics_process`.
+Keine davon ist in der `.tscn` überschrieben.
 
-#### Node-Pfade
-
-| Zugriff | Art |
+| Mitglied | Rolle |
 |---|---|
-| `$Head` | relativer Pfad, direktes Kind |
-| `$Head/Camera3D` | relativer Pfad, Enkel |
-| `%…` | nicht verwendet |
+| `respawn()` | Setzt `global_transform` auf den in `_ready` gemerkten Start und `velocity` auf null |
+| `gravity` | Einmal aus den ProjectSettings gelesen |
+| `head`, `camera` | `@onready` auf `$Head` und `$Head/Camera3D` |
+| `_spawn_transform` | privat, kein Marker in der Szene |
 
-`Head` und `Camera3D` umzubenennen oder zu verschachteln bricht die `@onready`-Zeilen.
-
-#### Bewegungs-State (pro Physik-Frame)
-
-1. Nicht auf dem Boden: `velocity.y -= gravity * delta`.
-2. `jump` gerade gedrückt und auf dem Boden: `velocity.y = jump_velocity`.
-3. Eingabe über `Input.get_vector("move_left", "move_right", "move_forward", "move_back")`, in den lokalen Basis-Raum gedreht (`transform.basis`). Y der Bewegung bleibt unberührt, damit Schwerkraft und Sprung erhalten bleiben.
-4. Zieltempo ist `sprint_speed` oder `walk_speed`. Horizontale Geschwindigkeit wird mit `lerpf` angenähert. In der Luft ist die Annäherung `acceleration * air_control`.
-5. `move_and_slide()`.
-6. `global_position.y < respawn_height` ruft `respawn()` auf.
-
-Maus-State:
-
-- `_ready` setzt `Input.MOUSE_MODE_CAPTURED`.
-- Yaw dreht den `CharacterBody3D` (`rotate_y`). Pitch dreht nur `Head` und wird auf ±`max_pitch_degrees` geklemmt.
-- Look nur bei `MOUSE_MODE_CAPTURED`.
-- `ui_cancel` (Esc) macht die Maus sichtbar. Jeder gedrückte Mausbutton fängt sie wieder ein.
-
-Es gibt keine Animation, keine Health-, Inventar- oder Interaktions-Logik und keinen separaten State-Enum.
+Keine `signal`-Deklaration. Yaw dreht den Body, Pitch nur `Head`. Wirksame Empfindlichkeit ist `mouse_sensitivity * Settings.mouse_sensitivity`; `Settings.invert_y` dreht die Pitch-Richtung um. Unter `respawn_height` ruft `_physics_process` `respawn()` auf. Bewegung: `Input.get_vector("move_left", "move_right", "move_forward", "move_back")`, in `transform.basis` gedreht, horizontal per `lerpf`. In der Luft ist die Beschleunigung `acceleration * air_control`.
 
 ---
 
-## 5. 🔌 Abhängigkeiten zwischen den Teilen
+## 6. 🔌 Abhängigkeiten
 
 ```text
 project.godot
-  main_scene ──► scenes/main/main.tscn
-                      ├── main.gd          (nur F11, kennt den Player nicht)
-                      └── instance ──► scenes/player/player.tscn
-                                           └── player.gd
-                                                 ├── Input Map: move_*, jump, sprint, ui_cancel
-                                                 ├── ProjectSettings: physics/3d/default_gravity
-                                                 └── Nodes: $Head, $Head/Camera3D
+  main_scene ──► scenes/menu/main_menu.tscn
+                    ├── main_menu.gd
+                    │     ├── Autoload Settings
+                    │     ├── $Overlay, $Fade, %Buttons
+                    │     └── Start ──► scenes/main/main.tscn
+                    ├── menu_background.gdshader
+                    └── crt_overlay.gdshader
+  main.tscn
+    ├── main.gd ── Autoload Settings   (nur F11)
+    └── instance scenes/player/player.tscn
+          └── player.gd
+                ├── Input Map: move_*, jump, sprint, ui_cancel
+                ├── ProjectSettings: physics/3d/default_gravity
+                ├── Autoload Settings: mouse_sensitivity, invert_y
+                └── $Head, $Head/Camera3D
 ```
-
-`main.gd` hält keine Referenz auf `Player`. Der Player findet seinen Spawn selbst über den eigenen `global_transform` in `_ready`. Ein später gesetzter Transform am instanzierten Player in `main.tscn` wäre damit der Respawn-Punkt, solange er vor `_ready` steht.
 
 ---
 
-## 6. 🚫 Bewusst nicht vorhanden
+## 7. 🚫 Nicht vorhanden
 
-Für das nächste KI-System: diese Dinge nicht als vorhanden annehmen und nicht „reparieren“, ohne dass es ausdrücklich gewünscht ist.
-
-- Nur ein Autoload (`Settings`), sonst keine Singletons
-- Keine eigenen Signale und keine Signal-Verbindungen
-- Keine Gruppen
-- UI nur im Hauptmenü (`scenes/menu/`), kein HUD im Spiel
-- Keine Ressourcen unter `assets/` (nur `.gitkeep`)
-- Keine externen Modelle; Level ist CSG
-- Kein Pause-Menü, kein Spielzustand, kein Speicherstand
-- Keine zweiten Kameras, kein Third-Person-Rig
-- Input Map ohne Gamepad
-- Physik-Layer 3–32 sind unbenannt und unbenutzt
-
----
-
-## 7. 🖥️ Hauptmenü & Settings
-
-Hinweis: Die Abschnitte 1–6 beschreiben das Grundgerüst. Seitdem dazugekommen:
-
-```text
-autoload/
-  settings.gd             Autoload "Settings"
-scenes/menu/
-  main_menu.tscn          Startszene (Control), Theme als Sub-Resource in der Szene
-  main_menu.gd            Menülogik, Optionen, Tastenbelegung
-  menu_background.gdshader  Skyline + Neon-Gitter (canvas_item)
-  crt_overlay.gdshader    Scanlines, Farbverschiebung, Glitch (liest Screen-Texture)
-```
-
-### `autoload/settings.gd` (Autoload `Settings`)
-
-- Felder: `fullscreen`, `vsync`, `master_volume` (0–100), `mouse_sensitivity` (Faktor, 1.0 = Standard), `invert_y`, `key_bindings` (Aktion → `physical_keycode`).
-- `REBINDABLE_ACTIONS`: die im Menü belegbaren Aktionen mit Anzeigenamen. Neue Aktion belegbar machen = hier eintragen.
-- Speichert in `user://settings.cfg` (Sektionen `video`, `audio`, `controls`, `keys`). Lädt und wendet beim Spielstart an; Tastenbelegung ersetzt die Events der Aktion in der `InputMap` (genau ein Tastatur-Event pro Aktion).
-- API: `get_values()`, `get_defaults()`, `apply_values(dict)` (anwenden + speichern), `toggle_fullscreen()`, `key_name(code)`. Signal `changed` nach jedem Anwenden.
-- `player.gd` nutzt `mouse_sensitivity * Settings.mouse_sensitivity` und `Settings.invert_y`.
-
-### Optionsmenü (`main_menu.gd`)
-
-- Bearbeitet eine Kopie (`_draft`) der Settings. Erst **Übernehmen** ruft `Settings.apply_values()` auf. **Standard** lädt `get_defaults()` in die Kopie. **Zurück**/Esc mit offenen Änderungen warnt einmal, beim zweiten Mal wird verworfen.
-- Tastenbelegung: Knopf anklicken, nächste Taste wird in `_input` abgefangen; Esc bricht ab. Ist die Taste schon vergeben, tauschen die beiden Aktionen.
-- Reiter (`TabContainer`): „ANZEIGE & AUDIO“ und „STEUERUNG“. Die Tastenknöpfe werden im Code in `KeyGrid` erzeugt.
+- Ordner `scenes/interactive/` und Szene `interactive_box.tscn`
+- Weitere Autoloads außer `Settings`; eigene Signale außer `Settings.changed`
+- Pause-Menü, Spielziel, Gegner, Items, Rückweg ins Hauptmenü
+- Gamepad-Events an `move_*`, `jump`, `sprint` (auch das Neubelegen im Menü kennt nur Tastatur)
+- Dateien unter `assets/` außer `.gitkeep`
+- Audio, das die gespeicherte Lautstärke hörbar machen würde
