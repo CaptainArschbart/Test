@@ -4,7 +4,7 @@
 > **Projekt-Typ:** 3D Game (Grundgerüst, kein fertiges Spiel)  
 > **Projektname:** Godot 3D Base  
 > **Letztes Update:** 2026-10-25  
-> **Hauptszene:** `res://scenes/main/main.tscn`  
+> **Startszene:** `res://scenes/menu/main_menu.tscn` (Hauptmenü) → Spielwelt `res://scenes/main/main.tscn`  
 > **Sprache:** GDScript (Standard-Godot, nicht .NET / C#)
 
 Dieses Dokument ist der Ist-Stand des Repos. Es beschreibt nur, was in `project.godot`, den Szenen und den Skripten tatsächlich steht.
@@ -48,12 +48,12 @@ Konvention aus `README.md`: eine Szene und ihr Skript liegen im selben Ordner un
 |---|---|
 | `config/name` | `Godot 3D Base` |
 | `config/description` | Grundgerüst für ein 3D-Spiel in Godot 4 (GDScript). |
-| `run/main_scene` | `res://scenes/main/main.tscn` |
+| `run/main_scene` | `res://scenes/menu/main_menu.tscn` |
 | `config/features` | `4.4`, `Forward Plus` |
 | `config/icon` | `res://icon.svg` |
 | Viewport | 1280 × 720 |
 | MSAA 3D | `2` → 4× MSAA |
-| Autoloads | keine |
+| Autoloads | `Settings` → `res://autoload/settings.gd` (siehe Abschnitt 7) |
 | Gruppen | keine definiert |
 | Shader / Renderer-Overrides | keine außer MSAA |
 
@@ -76,7 +76,7 @@ Zusätzlich hart im Code, nicht in der Input Map:
 |---|---|---|
 | Esc (`ui_cancel`, Godot-Default) | `player.gd` | Maus sichtbar machen |
 | Linksklick (`InputEventMouseButton`) | `player.gd` | Maus wieder einfangen |
-| F11 (`KEY_F11`) | `main.gd` | Fenster ↔ Vollbild |
+| F11 (`KEY_F11`) | `main.gd`, `main_menu.gd` | Fenster ↔ Vollbild über `Settings.toggle_fullscreen()` |
 
 ### Physik-Layer (3D)
 
@@ -236,13 +236,43 @@ project.godot
 
 Für das nächste KI-System: diese Dinge nicht als vorhanden annehmen und nicht „reparieren“, ohne dass es ausdrücklich gewünscht ist.
 
-- Keine Autoloads / Singletons
+- Nur ein Autoload (`Settings`), sonst keine Singletons
 - Keine eigenen Signale und keine Signal-Verbindungen
 - Keine Gruppen
-- Keine UI (`CanvasLayer`, `Control`, Theme)
+- UI nur im Hauptmenü (`scenes/menu/`), kein HUD im Spiel
 - Keine Ressourcen unter `assets/` (nur `.gitkeep`)
 - Keine externen Modelle; Level ist CSG
 - Kein Pause-Menü, kein Spielzustand, kein Speicherstand
 - Keine zweiten Kameras, kein Third-Person-Rig
 - Input Map ohne Gamepad
 - Physik-Layer 3–32 sind unbenannt und unbenutzt
+
+---
+
+## 7. 🖥️ Hauptmenü & Settings
+
+Hinweis: Die Abschnitte 1–6 beschreiben das Grundgerüst. Seitdem dazugekommen:
+
+```text
+autoload/
+  settings.gd             Autoload "Settings"
+scenes/menu/
+  main_menu.tscn          Startszene (Control), Theme als Sub-Resource in der Szene
+  main_menu.gd            Menülogik, Optionen, Tastenbelegung
+  menu_background.gdshader  Skyline + Neon-Gitter (canvas_item)
+  crt_overlay.gdshader    Scanlines, Farbverschiebung, Glitch (liest Screen-Texture)
+```
+
+### `autoload/settings.gd` (Autoload `Settings`)
+
+- Felder: `fullscreen`, `vsync`, `master_volume` (0–100), `mouse_sensitivity` (Faktor, 1.0 = Standard), `invert_y`, `key_bindings` (Aktion → `physical_keycode`).
+- `REBINDABLE_ACTIONS`: die im Menü belegbaren Aktionen mit Anzeigenamen. Neue Aktion belegbar machen = hier eintragen.
+- Speichert in `user://settings.cfg` (Sektionen `video`, `audio`, `controls`, `keys`). Lädt und wendet beim Spielstart an; Tastenbelegung ersetzt die Events der Aktion in der `InputMap` (genau ein Tastatur-Event pro Aktion).
+- API: `get_values()`, `get_defaults()`, `apply_values(dict)` (anwenden + speichern), `toggle_fullscreen()`, `key_name(code)`. Signal `changed` nach jedem Anwenden.
+- `player.gd` nutzt `mouse_sensitivity * Settings.mouse_sensitivity` und `Settings.invert_y`.
+
+### Optionsmenü (`main_menu.gd`)
+
+- Bearbeitet eine Kopie (`_draft`) der Settings. Erst **Übernehmen** ruft `Settings.apply_values()` auf. **Standard** lädt `get_defaults()` in die Kopie. **Zurück**/Esc mit offenen Änderungen warnt einmal, beim zweiten Mal wird verworfen.
+- Tastenbelegung: Knopf anklicken, nächste Taste wird in `_input` abgefangen; Esc bricht ab. Ist die Taste schon vergeben, tauschen die beiden Aktionen.
+- Reiter (`TabContainer`): „ANZEIGE & AUDIO“ und „STEUERUNG“. Die Tastenknöpfe werden im Code in `KeyGrid` erzeugt.

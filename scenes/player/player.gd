@@ -36,8 +36,11 @@ func _ready() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		rotate_y(-event.relative.x * mouse_sensitivity)
-		head.rotate_x(-event.relative.y * mouse_sensitivity)
+		# Grundwert aus dem Inspector mal Faktor aus dem Optionsmenü.
+		var sensitivity := mouse_sensitivity * Settings.mouse_sensitivity
+		var pitch_sign := 1.0 if Settings.invert_y else -1.0
+		rotate_y(-event.relative.x * sensitivity)
+		head.rotate_x(pitch_sign * event.relative.y * sensitivity)
 		var max_pitch := deg_to_rad(max_pitch_degrees)
 		head.rotation.x = clampf(head.rotation.x, -max_pitch, max_pitch)
 	elif event.is_action_pressed("ui_cancel"):
