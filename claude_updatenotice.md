@@ -76,3 +76,9 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 - Nicht geändert: `scenes/ui/cyber_theme.tres`, `scenes/options/*`, `scenes/pause/*` (Options- und Pausemenü sehen aus wie vorher).
 - Getestet: Godot 4.7.2 headless/Xvfb: Import ohne Fehler, Menü-Screenshots, Fokus-Stil, Optionen öffnen/schließen, *Spielstand laden* deaktiviert, *Start* lädt `Testmap`; `testmap.tscn` und `main.tscn` starten ohne Fehler.
 - Wichtig für die Nächsten: Wer ein Speichersystem baut, schaltet `%LoadButton` frei (`disabled = false`, `pressed` verbinden). Den Spielnamen ändern = Text von `%Title` in `main_menu.tscn`.
+
+### 2026-10-25 · Inventar-Fenster blieb leer offen · Claude (für Arschi) · PR #12
+- Was: Arschi sah im Spiel ein leeres Inventar-Fenster (nur Überschriften, keine Slots), das sich nicht schließen ließ. Das Fenster war in `inventory_ui.tscn` standardmäßig sichtbar und wurde erst am Ende von `_ready` versteckt. Bricht `_ready` vorher ab oder lässt sich das Skript lokal nicht laden, bleibt es stehen. Jetzt ist `InventoryOverlay` in der Szene unsichtbar, `_ready` versteckt es als Erstes, und ein fehlender `Inventory`-Knoten am Player gibt eine klare Fehlermeldung statt eines hängenden Fensters.
+- Ursache auf Arschis Rechner nicht sicher geklärt: Auf `main` (Godot 4.7, Testmap und `main.tscn`, auch über Menü → Start) tritt der Fehler nicht auf. Vermutlich ein lokaler Stand, bei dem `inventory_ui.gd` oder ein abhängiges Skript nicht lädt.
+- Dateien: `scenes/inventory/inventory_ui.gd`, `scenes/inventory/inventory_ui.tscn`, `claude_updatenotice.md`.
+- Wichtig für die Nächsten: Gelesen `cursor_updatenotice.md` (Cursor-Änderungen an Inventar/Hotbar vom 25.10. sind drin und unverändert). Falls das Fenster nach diesem Fix noch auftaucht: Godot-Ausgabe/Debugger-Fehler beim Start ansehen.
