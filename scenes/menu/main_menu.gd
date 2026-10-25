@@ -1,11 +1,8 @@
 extends Control
 ## Hauptmenü im Cyberpunk-Stil: Start, Optionen, Beenden.
 ##
-## Vollbild, VSync und Lautstärke liegen in user://settings.cfg (siehe GameSettings).
-## Vollbild wird beim Umschalten sofort geschrieben. VSync und Lautstärke
-## werden beim Verlassen der Optionen mitgeschrieben.
-
-const Settings := preload("res://scripts/game_settings.gd")
+## Die Optionen bearbeiten eine Kopie der Einstellungen. Erst "Übernehmen"
+## schreibt sie in den Autoload Settings (und damit nach user://settings.cfg).
 
 ## Szene, die "Start" lädt.
 @export_file("*.tscn") var game_scene := "res://scenes/main/main.tscn"
@@ -20,7 +17,15 @@ var _glitch_timer := 0.0
 var _glitch_left := 0.0
 var _starting := false
 
+## Bearbeitete, noch nicht übernommene Einstellungen.
+var _draft := {}
+## Aktion, für die gerade eine neue Taste erwartet wird ("" = keine).
+var _rebinding_action := ""
+var _key_buttons := {}
+var _confirm_discard := false
+
 @onready var overlay_material: ShaderMaterial = $Overlay.material
+@onready var title_box: Control = %TitleBox
 @onready var title: Label = %Title
 @onready var title_cyan: Label = %TitleCyan
 @onready var title_magenta: Label = %TitleMagenta
@@ -30,11 +35,19 @@ var _starting := false
 @onready var options_button: Button = %OptionsButton
 @onready var quit_button: Button = %QuitButton
 @onready var options_panel: Control = %OptionsPanel
+@onready var tabs: TabContainer = %Tabs
 @onready var fullscreen_check: CheckButton = %FullscreenCheck
 @onready var vsync_check: CheckButton = %VsyncCheck
 @onready var volume_slider: HSlider = %VolumeSlider
 @onready var volume_value: Label = %VolumeValue
+@onready var sensitivity_slider: HSlider = %SensitivitySlider
+@onready var sensitivity_value: Label = %SensitivityValue
+@onready var invert_y_check: CheckButton = %InvertYCheck
+@onready var key_grid: GridContainer = %KeyGrid
+@onready var apply_button: Button = %ApplyButton
+@onready var defaults_button: Button = %DefaultsButton
 @onready var back_button: Button = %BackButton
+@onready var status_label: Label = %StatusLabel
 
 
 func _ready() -> void:
@@ -44,16 +57,22 @@ func _ready() -> void:
 	start_button.pressed.connect(_on_start_pressed)
 	options_button.pressed.connect(_show_options)
 	quit_button.pressed.connect(_on_quit_pressed)
-	back_button.pressed.connect(_hide_options)
-	fullscreen_check.toggled.connect(_on_fullscreen_toggled)
-	vsync_check.toggled.connect(_on_vsync_toggled)
-	volume_slider.value_changed.connect(_on_volume_changed)
+	apply_button.pressed.connect(_on_apply_pressed)
+	defaults_button.pressed.connect(_on_defaults_pressed)
+	back_button.pressed.connect(_on_back_pressed)
+	fullscreen_check.toggled.connect(_set_draft.bind("fullscreen"))
+	vsync_check.toggled.connect(_set_draft.bind("vsync"))
+	volume_slider.value_changed.connect(_set_draft.bind("master_volume"))
+	sensitivity_slider.value_changed.connect(_set_draft.bind("mouse_sensitivity"))
+	invert_y_check.toggled.connect(_set_draft.bind("invert_y"))
+	tabs.tab_changed.connect(func(_tab: int) -> void: _trigger_glitch(0.5, 0.08))
 
-	for button: Button in [start_button, options_button, quit_button, back_button]:
+	_build_key_grid()
+
+	for button: Button in [start_button, options_button, quit_button]:
 		button.mouse_entered.connect(button.grab_focus)
 		button.focus_entered.connect(_trigger_glitch.bind(0.35, 0.08))
 
-	_load_settings()
 	_schedule_glitch()
 	start_button.grab_focus()
 	if OS.has_feature("web"):
@@ -85,12 +104,37 @@ func _process(delta: float) -> void:
 	cursor_label.text = "// SYSTEM ONLINE" + ("_" if blink else " ")
 
 
+func _input(event: InputEvent) -> void:
+	# Während auf eine neue Taste gewartet wird, geht jede Taste an die Belegung.
+	if _rebinding_action.is_empty() or not (event is InputEventKey and event.pressed):
+		return
+	get_viewport().set_input_as_handled()
+	if event.echo:
+		return
+	if event.keycode != KEY_ESCAPE:
+		var code: int = event.physical_keycode if event.physical_keycode != KEY_NONE else event.keycode
+		var bindings: Dictionary = _draft.key_bindings
+		# Ist die Taste schon vergeben, tauschen die beiden Aktionen.
+		for other: String in bindings:
+			if other != _rebinding_action and bindings[other] == code:
+				bindings[other] = bindings[_rebinding_action]
+		bindings[_rebinding_action] = code
+		_update_dirty()
+	var button: Button = _key_buttons[_rebinding_action]
+	_rebinding_action = ""
+	_refresh_options()
+	button.grab_focus()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel") and options_panel.visible:
-		_hide_options()
+		_on_back_pressed()
 		get_viewport().set_input_as_handled()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F11:
-		fullscreen_check.button_pressed = not fullscreen_check.button_pressed
+		Settings.toggle_fullscreen()
+		if not _draft.is_empty():
+			_draft.fullscreen = Settings.fullscreen
+			_refresh_options()
 
 
 func _trigger_glitch(strength: float, duration: float) -> void:
@@ -119,60 +163,123 @@ func _on_quit_pressed() -> void:
 	get_tree().quit()
 
 
+# --- Optionen -----------------------------------------------------------------
+
 func _show_options() -> void:
+	_draft = Settings.get_values()
+	_refresh_options()
+	_update_dirty()
+	status_label.text = " "
+	# Titel ausblenden, damit das Panel Platz hat.
+	title_box.hide()
+	cursor_label.hide()
 	main_buttons.hide()
 	options_panel.show()
 	_trigger_glitch(0.7, 0.12)
-	fullscreen_check.grab_focus()
+	tabs.get_tab_bar().grab_focus()
 
 
 func _hide_options() -> void:
-	_save_settings()
+	_rebinding_action = ""
+	_draft = {}
 	options_panel.hide()
+	title_box.show()
+	cursor_label.show()
 	main_buttons.show()
 	_trigger_glitch(0.7, 0.12)
 	options_button.grab_focus()
 
 
-func _on_fullscreen_toggled(on: bool) -> void:
-	DisplayServer.window_set_mode(
-		DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED
-	)
-	Settings.set_fullscreen(on)
+func _on_back_pressed() -> void:
+	if not _rebinding_action.is_empty():
+		return
+	if _is_dirty() and not _confirm_discard:
+		_confirm_discard = true
+		_set_status("Nicht übernommen! Nochmal ZURÜCK = Änderungen verwerfen", Color(1, 0.3, 0.3))
+		_trigger_glitch(0.8, 0.15)
+		return
+	_hide_options()
 
 
-func _on_vsync_toggled(on: bool) -> void:
-	DisplayServer.window_set_vsync_mode(
-		DisplayServer.VSYNC_ENABLED if on else DisplayServer.VSYNC_DISABLED
-	)
+func _on_apply_pressed() -> void:
+	Settings.apply_values(_draft)
+	_draft = Settings.get_values()
+	_update_dirty()
+	_set_status("Einstellungen übernommen und gespeichert", Color(0, 0.95, 1))
+	_trigger_glitch(0.6, 0.12)
 
 
-func _on_volume_changed(value: float) -> void:
-	volume_value.text = "%d%%" % int(value)
-	var bus := AudioServer.get_bus_index("Master")
-	AudioServer.set_bus_volume_db(bus, linear_to_db(value / 100.0))
-	AudioServer.set_bus_mute(bus, value <= 0.0)
+func _on_defaults_pressed() -> void:
+	_draft = Settings.get_defaults()
+	_refresh_options()
+	_update_dirty()
 
 
-func _load_settings() -> void:
-	var fullscreen := Settings.get_fullscreen(
-		DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
-	)
-	var vsync := Settings.get_vsync(true)
-	var volume := Settings.get_master_volume(80.0)
-
-	fullscreen_check.button_pressed = fullscreen
-	vsync_check.button_pressed = vsync
-	volume_slider.value = volume
-	# Signale feuern nicht, wenn sich der Wert nicht ändert, daher direkt anwenden.
-	_on_fullscreen_toggled(fullscreen)
-	_on_vsync_toggled(vsync)
-	_on_volume_changed(volume)
+func _set_draft(value: Variant, key: String) -> void:
+	_draft[key] = value
+	_refresh_labels()
+	_update_dirty()
 
 
-func _save_settings() -> void:
-	Settings.save_preferences(
-		fullscreen_check.button_pressed,
-		vsync_check.button_pressed,
-		volume_slider.value
-	)
+func _is_dirty() -> bool:
+	return not _draft.is_empty() and _draft != Settings.get_values()
+
+
+func _update_dirty() -> void:
+	_confirm_discard = false
+	var dirty := _is_dirty()
+	apply_button.disabled = not dirty
+	if dirty:
+		_set_status("Ungespeicherte Änderungen", Color(1, 0.1, 0.75))
+	else:
+		status_label.text = " "
+
+
+func _set_status(text: String, color: Color) -> void:
+	status_label.text = text
+	status_label.add_theme_color_override("font_color", color)
+
+
+## Schreibt die Werte aus _draft in die Bedienelemente, ohne Signale auszulösen.
+func _refresh_options() -> void:
+	fullscreen_check.set_pressed_no_signal(_draft.fullscreen)
+	vsync_check.set_pressed_no_signal(_draft.vsync)
+	volume_slider.set_value_no_signal(_draft.master_volume)
+	sensitivity_slider.set_value_no_signal(_draft.mouse_sensitivity)
+	invert_y_check.set_pressed_no_signal(_draft.invert_y)
+	for action: String in _key_buttons:
+		var button: Button = _key_buttons[action]
+		if action == _rebinding_action:
+			button.text = "[ Taste drücken ]"
+		else:
+			button.text = Settings.key_name(_draft.key_bindings[action])
+	_refresh_labels()
+
+
+func _refresh_labels() -> void:
+	volume_value.text = "%d%%" % int(_draft.master_volume)
+	sensitivity_value.text = "%.2fx" % _draft.mouse_sensitivity
+
+
+func _build_key_grid() -> void:
+	for action: String in Settings.REBINDABLE_ACTIONS:
+		var label := Label.new()
+		label.text = Settings.REBINDABLE_ACTIONS[action]
+		label.custom_minimum_size.x = 110
+		key_grid.add_child(label)
+
+		var button := Button.new()
+		button.custom_minimum_size.x = 150
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.add_theme_font_size_override("font_size", 20)
+		button.pressed.connect(_start_rebind.bind(action))
+		key_grid.add_child(button)
+		_key_buttons[action] = button
+
+
+func _start_rebind(action: String) -> void:
+	if not _rebinding_action.is_empty():
+		return
+	_rebinding_action = action
+	_refresh_options()
+	_trigger_glitch(0.5, 0.08)

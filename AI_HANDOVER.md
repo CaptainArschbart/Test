@@ -23,9 +23,9 @@ README.md
 .gitignore
 .gitattributes
 AI_HANDOVER.md
-git pull.bat                  lokales `git pull`, kein Spielcode
-scripts/
-  game_settings.gd            class_name GameSettings, user://settings.cfg
+autoload/
+  settings.gd                 Autoload "Settings", user://settings.cfg
+  settings.gd.uid
 scenes/
   menu/
     main_menu.tscn            Startszene, Control
@@ -50,9 +50,9 @@ assets/
   textures/.gitkeep           leer
 ```
 
-`.godot/` ist per `.gitignore` ausgeschlossen. Keine `.tres`-Dateien, keine Export-Presets, keine Autoloads, keine Audio-Dateien.
+`.godot/` ist per `.gitignore` ausgeschlossen. Keine `.tres`-Dateien, keine Export-Presets, keine Audio-Dateien. Einziger Autoload: `Settings`.
 
-Konvention aus `README.md`: eine Szene und ihr Skript liegen im selben Ordner unter `scenes/<name>/`. `scripts/game_settings.gd` ist die Ausnahme, weil Menü und Spielwelt dieselbe Datei lesen.
+Konvention aus `README.md`: eine Szene und ihr Skript liegen im selben Ordner unter `scenes/<name>/`. `autoload/settings.gd` ist die Ausnahme, weil es ein Autoload ohne eigene Szene ist.
 
 ---
 
@@ -67,12 +67,12 @@ Konvention aus `README.md`: eine Szene und ihr Skript liegen im selben Ordner un
 | `config/icon` | `res://icon.svg` |
 | Viewport | 1280 × 720 |
 | MSAA 3D | `2` → 4× MSAA |
-| Autoloads | keine |
+| Autoloads | `Settings` → `res://autoload/settings.gd` |
 | `[animation]` | `compatibility/default_parent_skeleton_in_mesh_instance_3d=true` |
 
 ### Input Map (nur diese sechs Aktionen sind im Projekt definiert)
 
-Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Keine Maus- und keine Joypad-Events.
+Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Keine Maus- und keine Joypad-Events. Die Tabelle zeigt die Standardbelegung aus `project.godot`. Der Spieler kann alle sechs im Menü neu belegen; `Settings` ersetzt beim Start und nach *Übernehmen* das Tastatur-Event der Aktion in der `InputMap`.
 
 | Aktion | Taste | physical_keycode | Verwendung |
 |---|---|---|---|
@@ -87,9 +87,8 @@ Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Kei
 
 | Taste | Ort | Wirkung |
 |---|---|---|
-| F11 (`KEY_F11`) | `main_menu.gd` | Kippt `FullscreenCheck`. Das `toggled`-Signal schaltet das Fenster und schreibt `[video] fullscreen` sofort. |
-| F11 (`KEY_F11`) | `main.gd` | Schaltet Fenster ↔ `WINDOW_MODE_FULLSCREEN` und schreibt `[video] fullscreen` sofort. VSync und Lautstärke bleiben in der Datei. |
-| Esc | Menü | Nur wenn das Options-Panel sichtbar ist: `ui_cancel` schließt die Optionen und speichert. Sonst keine Wirkung. |
+| F11 (`KEY_F11`) | `main_menu.gd`, `main.gd` | `Settings.toggle_fullscreen()`: schaltet das Fenster und speichert sofort. Im Menü wird zusätzlich die Vollbild-Checkbox der offenen Optionen nachgezogen. |
+| Esc | Menü | Während eine Taste neu belegt wird: bricht das Belegen ab. Sonst, wenn das Options-Panel offen ist: wie *Zurück* (bei nicht übernommenen Änderungen erst eine Warnung, beim zweiten Mal verwerfen). Sonst keine Wirkung. |
 | Esc | Spielwelt | `ui_cancel` in `player.gd` macht die Maus sichtbar. Kein Pause-Menü, kein Szenenwechsel. |
 | Mausklick | Spielwelt | Jeder gedrückte `InputEventMouseButton` setzt `MOUSE_MODE_CAPTURED`. |
 
@@ -114,10 +113,20 @@ Schwerkraft steht nicht in `project.godot`. `Player.gravity` liest `physics/3d/d
 
 ### user://settings.cfg
 
-Geschrieben von `scripts/game_settings.gd` (`class_name GameSettings`). Kein Autoload. Menü und Spielwelt laden das Skript per `preload`.
+Gelesen und geschrieben vom Autoload `Settings` (`autoload/settings.gd`). Er lädt die Datei in `_ready`, also vor jeder Szene, und wendet alles an. Auch ein direkter Start von `main.tscn` (F6) bekommt so die gespeicherten Werte.
 
-| Schlüssel | Default, wenn der Schlüssel fehlt | Wann geschrieben |
+| Schlüssel | Standard | Wirkung |
 |---|---|---|
+| `[video] fullscreen` | `false` | `DisplayServer.window_set_mode` |
+| `[video] vsync` | `true` | `DisplayServer.window_set_vsync_mode` |
+| `[audio] master_volume` | `80.0` (0–100) | Bus `Master`, `linear_to_db(value / 100)`, stumm bei `<= 0` |
+| `[controls] mouse_sensitivity` | `1.0` | Faktor auf `Player.mouse_sensitivity` |
+| `[controls] invert_y` | `false` | dreht die Pitch-Richtung im Player um |
+| `[keys] <aktion>` | Belegung aus `project.godot` | `physical_keycode` für `move_*`, `jump`, `sprint` |
+
+Geschrieben wird nur bei *Übernehmen* im Optionsmenü und bei F11. Fehlt die Datei, gelten die Standardwerte. Unter `assets/audio/` liegt keine Datei, und keine Szene spielt einen Ton ab.
+
+---|---|---|
 | `[video] fullscreen` | aktueller Fenstermodus ist bereits Vollbild | Sofort bei jedem Vollbild-Umschalten (Checkbox, F11 im Menü, F11 in der Spielwelt). Beim Öffnen des Menüs wird der gelesene Wert angewendet und dabei erneut geschrieben. |
 | `[video] vsync` | `true` | Nur in `save_preferences`, aufgerufen wenn die Optionen mit Zurück oder Esc verlassen werden. |
 | `[audio] master_volume` | `80.0` | Ebenfalls nur beim Verlassen der Optionen. |
@@ -131,7 +140,7 @@ Geschrieben von `scripts/game_settings.gd` (`class_name GameSettings`). Kein Aut
 ```text
 F5
  └─ main_menu.tscn
-      Maus sichtbar, Start hat Fokus, settings.cfg wird gelesen und angewendet
+      Maus sichtbar, Start hat Fokus (settings.cfg hat der Autoload schon angewendet)
       Start
         ├─ Glitch-Stärke 1.0 für 0,5 s (CRT-Shader-Uniform "glitch")
         ├─ Fade (ColorRect $Fade) Alpha 0 → 1 in 0,45 s
@@ -142,7 +151,7 @@ F5
                    kein Button, kein Pause-Menü, kein change_scene zurück
 ```
 
-`game_scene` ist `@export_file` am Menü und in der Szene nicht überschrieben. Der Szenenwechsel ersetzt den ganzen Baum. Vollbild, VSync und Bus-Lautstärke bleiben, weil sie an `DisplayServer` und `AudioServer` hängen, nicht am Menü-Knoten.
+`game_scene` ist `@export_file` am Menü und in der Szene nicht überschrieben. Der Szenenwechsel ersetzt den ganzen Baum. Einstellungen bleiben, weil sie im Autoload `Settings` und an `DisplayServer`, `AudioServer` und `InputMap` hängen, nicht am Menü-Knoten.
 
 Es gibt keinen Rückweg ins Menü.
 
@@ -157,7 +166,7 @@ MainMenu (Control)                     theme: cyber, script main_menu.gd
 ├── Background (ColorRect)             Shader menu_background.gdshader
 ├── Margin (MarginContainer)
 │   └── Layout (VBoxContainer)
-│       ├── TitleBox
+│       ├── %TitleBox
 │       │   ├── %TitleCyan             "NEON//GRID"
 │       │   ├── %TitleMagenta          "NEON//GRID"
 │       │   └── %Title                 "NEON//GRID"
@@ -167,17 +176,17 @@ MainMenu (Control)                     theme: cyber, script main_menu.gd
 │       │   ├── %StartButton           "START"
 │       │   ├── %OptionsButton         "OPTIONEN"
 │       │   └── %QuitButton            "BEENDEN"
-│       ├── %OptionsPanel              anfangs visible = false
-│       │   └── Options
-│       │       ├── Header             "> OPTIONEN"
-│       │       ├── %FullscreenCheck
-│       │       ├── %VsyncCheck
-│       │       ├── VolumeRow
-│       │       │   ├── VolumeLabel
-│       │       │   ├── %VolumeSlider  step 5, value 80
-│       │       │   └── %VolumeValue
-│       │       └── %BackButton        "ZURÜCK"
 │       └── Footer
+├── %OptionsPanel (PanelContainer)     anfangs unsichtbar, mittig; beim Öffnen werden %TitleBox und %Subtitle ausgeblendet
+│   └── Options
+│       ├── Header                     "> OPTIONEN"
+│       ├── %Tabs (TabContainer)
+│       │   ├── "ANZEIGE & AUDIO"      %FullscreenCheck, %VsyncCheck, %VolumeSlider/%VolumeValue
+│       │   └── "STEUERUNG"            %SensitivitySlider/%SensitivityValue (0.1–3.0),
+│       │                              %InvertYCheck, KeyHint, %KeyGrid (4 Spalten, Knöpfe im Code erzeugt)
+│       ├── ActionRow                  %ApplyButton "ÜBERNEHMEN" (nur aktiv bei Änderungen),
+│       │                              %DefaultsButton "STANDARD", %BackButton "ZURÜCK"
+│       └── %StatusLabel               "Ungespeicherte Änderungen" / "übernommen" / Warnung
 ├── Fade (ColorRect)                   schwarz, Alpha 0, Pfad $Fade
 └── Overlay (ColorRect)                Shader crt_overlay.gdshader, Pfad $Overlay
 ```
@@ -218,14 +227,14 @@ Kein Knoten hat `unique_name_in_owner`. Zugriffe: `$Head`, `$Head/Camera3D`.
 
 ## 5. 📜 Skripte
 
-### `scripts/game_settings.gd`
+### `autoload/settings.gd` (Autoload `Settings`)
 
-- `class_name GameSettings`
-- `extends RefCounted`
-- Kein Node, keine Szene, kein Autoload
-- Öffentliche statische Methoden: `get_fullscreen`, `get_vsync`, `get_master_volume`, `set_fullscreen`, `save_preferences`
-- Konstante `PATH := "user://settings.cfg"`
-- Keine Signale, keine `@export`
+- `extends Node`, kein `class_name` (der Autoload-Name ist `Settings`)
+- Signal `changed` nach jedem `apply()`
+- Konstanten `PATH := "user://settings.cfg"` und `REBINDABLE_ACTIONS` (Aktion → Anzeigename im Menü). Eine weitere Aktion belegbar machen: dort eintragen.
+- Felder: `fullscreen`, `vsync`, `master_volume`, `mouse_sensitivity`, `invert_y`, `key_bindings` (Aktion → `physical_keycode`)
+- Öffentlich: `get_values()`, `get_defaults()`, `apply_values(dict)` (übernehmen, anwenden, speichern), `apply()`, `toggle_fullscreen()`, `key_name(code)` (statisch, Name im aktuellen Tastaturlayout), `load_settings()`, `save_settings()`
+- Standard-Tastenbelegung wird in `_ready` aus der `InputMap` gelesen, bevor die Datei geladen wird
 
 ### `scenes/menu/main_menu.gd`
 
@@ -239,15 +248,17 @@ Kein Knoten hat `unique_name_in_owner`. Zugriffe: `$Head`, `$Head/Camera3D`.
 | `glitch_interval_max` | `4.5` |
 | `glitch_duration` | `0.18` |
 
-Öffentliche Engine-Callbacks: `_ready`, `_process`, `_unhandled_input`. Der Rest ist privat (`_on_start_pressed`, `_show_options`, `_hide_options`, `_on_fullscreen_toggled`, `_on_vsync_toggled`, `_on_volume_changed`, `_load_settings`, `_save_settings`, `_trigger_glitch`, `_schedule_glitch`).
+Engine-Callbacks: `_ready`, `_process`, `_input` (fängt die Taste beim Neubelegen ab), `_unhandled_input`. Alles andere ist privat.
 
 State: `_glitch_timer`, `_glitch_left`, `_starting`. `_starting` blockiert einen zweiten Start. Die Buttons werden dabei `PROCESS_MODE_DISABLED`.
+
+Optionen: `_draft` ist eine Kopie von `Settings.get_values()`, die die Bedienelemente ändern. *Übernehmen* ruft `Settings.apply_values(_draft)` auf, *Standard* lädt `Settings.get_defaults()` in `_draft`, *Zurück* verwirft (mit einmaliger Warnung, `_confirm_discard`). `_rebinding_action` ist die Aktion, die gerade auf eine Taste wartet; ist die neue Taste schon vergeben, tauschen die beiden Aktionen ihre Tasten.
 
 ### `scenes/main/main.gd`
 
 - `extends Node3D`, kein `class_name`
 - Keine Exports, keine Signale, keine Node-Pfade
-- Einzige Methode: `_unhandled_input` für F11 plus `Settings.set_fullscreen`
+- Einzige Methode: `_unhandled_input` für F11 → `Settings.toggle_fullscreen()`
 - Kennt den Player nicht
 
 ### `scenes/player/player.gd`
@@ -275,7 +286,7 @@ Keine davon ist in der `.tscn` überschrieben.
 | `head`, `camera` | `@onready` auf `$Head` und `$Head/Camera3D` |
 | `_spawn_transform` | privat, kein Marker in der Szene |
 
-Keine `signal`-Deklaration. Yaw dreht den Body, Pitch nur `Head`. Unter `respawn_height` ruft `_physics_process` `respawn()` auf. Bewegung: `Input.get_vector("move_left", "move_right", "move_forward", "move_back")`, in `transform.basis` gedreht, horizontal per `lerpf`. In der Luft ist die Beschleunigung `acceleration * air_control`.
+Keine `signal`-Deklaration. Yaw dreht den Body, Pitch nur `Head`. Wirksame Empfindlichkeit ist `mouse_sensitivity * Settings.mouse_sensitivity`; `Settings.invert_y` dreht die Pitch-Richtung um. Unter `respawn_height` ruft `_physics_process` `respawn()` auf. Bewegung: `Input.get_vector("move_left", "move_right", "move_forward", "move_back")`, in `transform.basis` gedreht, horizontal per `lerpf`. In der Luft ist die Beschleunigung `acceleration * air_control`.
 
 ---
 
@@ -285,17 +296,18 @@ Keine `signal`-Deklaration. Yaw dreht den Body, Pitch nur `Head`. Unter `respawn
 project.godot
   main_scene ──► scenes/menu/main_menu.tscn
                     ├── main_menu.gd
-                    │     ├── preload scripts/game_settings.gd
+                    │     ├── Autoload Settings
                     │     ├── $Overlay, $Fade, %Buttons
                     │     └── Start ──► scenes/main/main.tscn
                     ├── menu_background.gdshader
                     └── crt_overlay.gdshader
   main.tscn
-    ├── main.gd ── preload scripts/game_settings.gd   (nur F11)
+    ├── main.gd ── Autoload Settings   (nur F11)
     └── instance scenes/player/player.tscn
           └── player.gd
                 ├── Input Map: move_*, jump, sprint, ui_cancel
                 ├── ProjectSettings: physics/3d/default_gravity
+                ├── Autoload Settings: mouse_sensitivity, invert_y
                 └── $Head, $Head/Camera3D
 ```
 
@@ -304,8 +316,8 @@ project.godot
 ## 7. 🚫 Nicht vorhanden
 
 - Ordner `scenes/interactive/` und Szene `interactive_box.tscn`
-- Autoloads und eigene Signale
+- Weitere Autoloads außer `Settings`; eigene Signale außer `Settings.changed`
 - Pause-Menü, Spielziel, Gegner, Items, Rückweg ins Hauptmenü
-- Gamepad-Events an `move_*`, `jump`, `sprint`
+- Gamepad-Events an `move_*`, `jump`, `sprint` (auch das Neubelegen im Menü kennt nur Tastatur)
 - Dateien unter `assets/` außer `.gitkeep`
 - Audio, das die gespeicherte Lautstärke hörbar machen würde
