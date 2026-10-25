@@ -3,13 +3,13 @@
 > **Engine:** Godot 4.7 (Feature-Tag `4.7`, Renderer Forward Plus). Getestet mit 4.7.2 stable.  
 > **Projekt-Typ:** 3D Game (Grundgerüst: Cyberpunk-Hauptmenü, First-Person-Testwelt, Pausemenü, gemeinsame Optionen)  
 > **Projektname:** Godot 3D Base  
-> **Letztes Update:** 2026-10-25 (Eintrag 7: Optionen in Haupt- und Pausemenü sind jetzt dieselbe Szene)  
+> **Letztes Update:** 2026-10-25 (Eintrag 8: Regel gegen Merge-Konflikte `00_conflict_prevention.mdc`)  
 > **Hauptszene:** `res://scenes/menu/main_menu.tscn`  
 > **Sprache:** GDScript (Standard-Godot, nicht .NET / C#)
 
 Dieses Dokument ist der Ist-Stand des Repos. Es beschreibt nur, was in `project.godot`, den Szenen und den Skripten steht. Abschnitt 9 sagt, was getestet wurde und was nicht. Abschnitt 10 ist das Test-Rezept. **Abschnitt 11 ist das Änderungsprotokoll**: was wann gemacht wurde, welche Datei wie geändert wurde und warum (neuester Eintrag zuerst).
 
-**Pflege-Regel:** Wer hier etwas ändert, trägt es im selben Arbeitsgang ausführlich in Abschnitt 11 ein und zieht die Ist-Stand-Abschnitte nach. Die Regel steht in `.cursor/rules/ai-handover.mdc` (`alwaysApply: true`).
+**Pflege-Regel:** Wer hier etwas ändert, trägt es im selben Arbeitsgang ausführlich in Abschnitt 11 ein und zieht die Ist-Stand-Abschnitte nach. Die Regel steht in `.cursor/rules/ai-handover.mdc` (`alwaysApply: true`). Wie man Merge-Konflikte vermeidet und löst, steht in `.cursor/rules/00_conflict_prevention.mdc` (`alwaysApply: true`).
 
 `scenes/interactive/interactive_box.tscn` ist **nicht** im Projekt. Es gibt keinen Ordner `scenes/interactive/`.
 
@@ -28,6 +28,7 @@ README.md
 AI_HANDOVER.md
 .cursor/
   rules/
+    00_conflict_prevention.mdc  Regel (alwaysApply): Merge-Konflikte vermeiden und verlustfrei lösen
     ai-handover.mdc           Regel (alwaysApply): Handover immer ausführlich pflegen
 autoload/
   settings.gd                 Autoload "Settings", user://settings.cfg
@@ -530,6 +531,28 @@ Stolpersteine, die schon Zeit gekostet haben:
 ## 11. 📝 Änderungsprotokoll (neuester Eintrag zuerst)
 
 Vorlage für neue Einträge steht in `.cursor/rules/ai-handover.mdc`. Alle Einträge unten stammen vom selben Tag, 2026-10-25. Die Einträge 1 bis 5 sind aus dem Verlauf der Sitzung nachgetragen. Änderungen anderer Personen oder Systeme, die per `git pull` hereinkamen, sind nur anhand der Commit-Nachrichten und der Diffs beschrieben.
+
+### Eintrag 8 — Regel gegen Merge-Konflikte (`00_conflict_prevention.mdc`)
+
+- **Auftrag:** Als „System-Architekt“ im Ordner `.cursor/rules/` die Regeldatei `00_conflict_prevention.mdc` anlegen, die Merge-Konflikte bei paralleler Arbeit mit anderen KIs und Entwicklern (z. B. Claude) vermeidet und bestehende Konflikte automatisch behebt. Der Auftrag lieferte Frontmatter, Titel, Abschnitt 1 komplett und von Abschnitt 2 die Punkte „Kapselung“ und den Anfang von „Node-Referenzen“.
+- **Ausgangslage:** Es gab nur `.cursor/rules/ai-handover.mdc` (Protokollpflicht). Eine Regel zu Konflikten gab es nicht. Echte Konflikte gab es in diesem Repo schon: `project.godot` (Eintrag 2: `run/main_scene` und `config/features`) und aktuell absehbar `AI_HANDOVER.md` und `README.md` gegen `origin/main` (siehe Eintrag 7, Git).
+- **Neu:** `.cursor/rules/00_conflict_prevention.mdc` (60 Zeilen, 7270 Zeichen, `alwaysApply: true`). Inhalt:
+  - Frontmatter, Titel, Abschnitt 1 (erste zwei Punkte) und Abschnitt 2 (Punkt „Kapselung“) **wörtlich aus dem Auftrag**. Der erste Punkt von Abschnitt 1 ist unverändert, im zweiten Punkt steht statt „(z. B. neue Abschnitte/Einträge unten anfügen)“ jetzt „(z. B. neue Abschnitte/Einträge ergänzen)“, Grund siehe Entscheidungen.
+  - Von mir ergänzt (der Auftrag verlangt „komplett vermeiden“, bot dafür aber keinen Text an): Abschnitt 1 um den Abgleich mit dem Remote (`git fetch`, `git log`/`git diff` gegen `origin/<basis>`, vor dem Ändern mergen, nicht rebasen, kein Force-Push) und die Commit-Auswahl; Abschnitt 2 um „Gemeinsame Szenen schmal anfassen“ (mit Vermerk „Merge-Risiko“ im Handover bei größeren Umbauten), „Keine Kosmetik-Diffs“ und „Neue Dateien statt Umbau“; Abschnitt 3 „Gemeinsame Dateien“ (`project.godot`, `AI_HANDOVER.md`, `README.md`, Autoloads, `.uid`); Abschnitt 4 „Branches“ (kurzlebig, Präfix `cursor/`, vor dem Push `origin` einmergen); Abschnitt 5 „Konflikte beheben“ mit sechs Schritten (Überblick mit den Merge-Stufen `:1:`/`:2:`/`:3:`, Verbotsliste, Lösen nach Dateityp, bei Widerspruch `AskQuestion`, Prüfung vor dem Commit, Dokumentation).
+  - **Der Auftragstext bricht mitten in Abschnitt 2 ab** („Node-Referenzen: Verwende für dynam“). Den Rest habe ich ergänzt, **das ist meine Annahme, nicht der Wortlaut des Nutzers**: Unique Names (`%Name`) oder `@export`-Referenzen statt fester Pfade, Laden per `preload`. Bitte gegen die eigentliche Absicht prüfen und den Punkt bei Bedarf anpassen. Falls im Auftrag noch weitere Abschnitte folgen sollten, sind sie nicht angekommen.
+- **Geändert:**
+  - `AI_HANDOVER.md`: Kopfzeile „Letztes Update“, Pflege-Regel-Absatz (Verweis auf die neue Regel), Strukturbaum (neue Zeile `00_conflict_prevention.mdc`), dieser Eintrag. Sonst nichts, passend zur neuen Regel (nur betroffene Zeilen).
+- **Entscheidungen und Gründe:**
+  - **Reihenfolge im Änderungsprotokoll bleibt „neuester oben“.** Das Beispiel im Auftrag sagte „unten anfügen“, `ai-handover.mdc` und die sieben vorhandenen Einträge verlangen „oben“. Beides gleichzeitig würde sich widersprechen, und eine KI müsste raten. Deshalb steht in der neuen Regel ausdrücklich, dass die Protokoll-Reihenfolge `ai-handover.mdc` bestimmt, und im Auftragstext wurde „unten anfügen“ zu „ergänzen“ neutralisiert. Umstellen auf „unten“ wäre eine Änderung in beiden Regeln und ein Umsortieren der Einträge, das habe ich nicht ohne Auftrag gemacht.
+  - **Ehrliche Grenze:** Ob oben oder unten, zwei Branches, die an derselben Stelle einfügen, kollidieren in Git trotzdem. Die Regel verhindert das nicht, sie macht die Lösung eindeutig (beide Einträge behalten, Nummer des eigenen Eintrags erhöhen). Wirklich konfliktfrei wäre ein Eintrag pro Datei (z. B. `docs/handover/0008-….md`). Das wurde **nicht** gebaut, weil es die Struktur der Übergabe ändert.
+  - **„Letztes Update“ als Konfliktmagnet benannt.** Jeder Branch ändert diese Zeile, also kollidiert sie bei jedem Merge. Die Regel legt fest: Der Eintrag mit der höheren Nummer gewinnt.
+  - **Automatische Konfliktlösung nur verlustfrei.** `--ours`/`--theirs` für ganze Dateien, `-X ours/theirs`, `reset --hard` und das bloße Löschen der Marker sind verboten, weil damit die Arbeit der anderen Seite verloren gehen kann. Bei unvereinbaren Änderungen soll gefragt werden statt zu raten.
+  - **`globs: **/*` unverändert aus dem Auftrag übernommen.** In strengem YAML ist ein führendes `*` ein Alias. Ich konnte das nicht prüfen (kein PyYAML installiert). Cursor liest solche Zeilen üblicherweise tolerant, und mit `alwaysApply: true` wird `globs` nicht gebraucht. Sollte die Regel in Cursor nicht erscheinen, ist diese Zeile der erste Verdächtige (dann `globs` löschen oder in Anführungszeichen setzen).
+  - **Titel mit Emoji** ( 🛡️ ) wie im Auftrag.
+- **Getestet:** Datei gelesen und gezählt (60 Zeilen). Der in der Regel genannte Marker-Befehl `rg "^(<<<<<<<|=======|>>>>>>>)" --glob "!*.md"` über das Projekt: kein Treffer (rg-Exit 1), die Regeldatei löst ihn nicht aus. Zusätzlich vorab geprüft: `git fetch` und `git log main..origin/main` (siehe Eintrag 7), auf die sich die Regel stützt. Die Regel behauptet nichts über Godot-Verhalten, das ich nicht aus diesem Projekt kenne (`load_steps` = ext + sub + 1: gegen `main_menu.tscn` geprüft, 5 + 5 + 1 = 11).
+- **Nicht getestet:** Ob Cursor die Regel tatsächlich lädt (kein Neustart und keine Cursor-Oberfläche geprüft). Ob eine andere KI (Claude) `.cursor/rules/` überhaupt liest: Das tut sie nur, wenn sie über Cursor läuft oder man ihr den Inhalt gibt. Die Konfliktlösungsschritte wurden an keinem echten Konflikt ausprobiert. Ein Godot-Lauf war nicht nötig, weil sich keine Spieldatei geändert hat.
+- **Git:** Auf Anweisung des Nutzers (Diff-Tab-Aktion „committen und Pull Request anlegen“, als Entwurf) zweiter Commit auf `cursor/pause-menu-shared-options` mit `.cursor/rules/00_conflict_prevention.mdc` (neu) und `AI_HANDOVER.md` (geändert), danach Push nach `origin`. Der Commit-Hash steht im `git log` des Branches. Vorher war die Regeldatei ungetrackt (Commit `73bc44d` aus Eintrag 7 enthält sie nicht). Weitere Dateien gab es nicht. **Pull Request nicht angelegt:** `gh` ist auf diesem Rechner nicht installiert (`gh --version` meldet „nicht erkannt“), Anmeldung nicht geprüft. Der Nutzer bekommt stattdessen den Compare-Link `https://github.com/CaptainArschbart/Test/compare/main...cursor/pause-menu-shared-options` und legt den Entwurf dort an. Der Konflikt mit `origin/main` (`6bf1f89`) in `AI_HANDOVER.md` und `README.md` ist **weiterhin ungelöst**, ich habe ihn auf diesen Auftrag hin nicht angefasst. Er erscheint spätestens im Pull Request.
+- **Offen:** Rest von Abschnitt 2 und eventuell weitere Abschnitte des Auftrags nachliefern oder bestätigen. Entscheiden, ob das Protokoll auf eine Datei pro Eintrag umgestellt werden soll (einziger echter Schutz vor Textkonflikten in `AI_HANDOVER.md`). Den offenen Merge mit `origin/main` nach den neuen Regeln durchführen (Eintragsnummer des Remotes prüfen, falls dort ebenfalls „Eintrag 8“ vergeben wurde, bekommt einer von beiden die nächste Nummer).
 
 ### Eintrag 7 — Optionen in Hauptmenü und Pausemenü sind jetzt dieselbe Szene
 
