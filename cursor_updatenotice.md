@@ -118,3 +118,9 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Neu: `.cursor/rules/02_cursor_notice_always_upload.mdc`.
 - Git: dieser Eintrag + die neue Regel werden sofort committet und gepusht. Auf `origin/main` liegt die Notice noch nicht (nur auf diesem Branch).
 - Link nach dem Push: `https://github.com/CaptainArschbart/Test/blob/cursor/pause-menu-shared-options/cursor_updatenotice.md`
+
+### 2026-10-25 · Notice auf origin/main hochgeladen · Cursor (für EnScapeZ) · dieser Arbeitsgang
+- Auftrag: Die Cursor-Notice wirklich hochladen (nicht nur auf dem Feature-Branch lassen).
+- Was: `origin/main` war Fast-Forward hinter diesem Branch (2 Notice-Commits `b36b447`, `c743776` plus dieser). Datei nach `origin/main` schieben, damit sie im GitHub-Projekt auf dem Hauptbranch liegt.
+- Dateien: `cursor_updatenotice.md` (dieser Eintrag).
+- Git: Push auf `origin/cursor/pause-menu-shared-options` und Fast-Forward nach `origin/main`.
