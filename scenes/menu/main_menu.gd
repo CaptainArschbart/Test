@@ -1,5 +1,8 @@
 extends Control
-## Hauptmenü im Cyberpunk-Stil: Start, Optionen, Beenden.
+## Hauptmenü im Cyberpunk-Stil: Start, Spielstand laden, Optionen, Beenden.
+##
+## "Spielstand laden" ist ein Platzhalter und bleibt deaktiviert, bis es ein
+## Speichersystem gibt.
 ##
 ## Die Optionen sind die gemeinsame Szene scenes/options/options_menu.tscn, dieselbe
 ## wie im Pausemenü. Sie bearbeitet eine Kopie der Einstellungen. Erst "Übernehmen"
@@ -11,10 +14,12 @@ const OptionsMenu := preload("res://scenes/options/options_menu.gd")
 @export_file("*.tscn") var game_scene := "res://scenes/testmap/testmap.tscn"
 
 @export_group("Glitch")
-## Zeitraum (Sekunden), in dem zufällig ein Glitch kommt.
-@export var glitch_interval_min := 1.5
-@export var glitch_interval_max := 4.5
-@export var glitch_duration := 0.18
+## Zeitraum (Sekunden), in dem zufällig ein schwacher Glitch kommt.
+@export var glitch_interval_min := 5.0
+@export var glitch_interval_max := 10.0
+@export var glitch_duration := 0.12
+## Stärke der zufälligen Glitches (0–1).
+@export_range(0.0, 1.0) var glitch_strength := 0.3
 
 var _glitch_timer := 0.0
 var _glitch_left := 0.0
@@ -23,11 +28,10 @@ var _starting := false
 @onready var overlay_material: ShaderMaterial = $Overlay.material
 @onready var title_box: Control = %TitleBox
 @onready var title: Label = %Title
-@onready var title_cyan: Label = %TitleCyan
-@onready var title_magenta: Label = %TitleMagenta
 @onready var cursor_label: Label = %Subtitle
 @onready var main_buttons: Control = %MainButtons
 @onready var start_button: Button = %StartButton
+@onready var load_button: Button = %LoadButton
 @onready var options_button: Button = %OptionsButton
 @onready var quit_button: Button = %QuitButton
 @onready var options_panel: Control = %OptionsPanel
@@ -42,11 +46,14 @@ func _ready() -> void:
 	options_button.pressed.connect(_show_options)
 	quit_button.pressed.connect(_on_quit_pressed)
 	options.closed.connect(_hide_options)
-	options.glitch_requested.connect(_trigger_glitch)
+	# Die Optionen fordern recht kräftige Glitches an; im Hauptmenü gedämpft.
+	options.glitch_requested.connect(
+		func(strength: float, duration: float) -> void: _trigger_glitch(strength * 0.3, duration)
+	)
 
-	for button: Button in [start_button, options_button, quit_button]:
-		button.mouse_entered.connect(button.grab_focus)
-		button.focus_entered.connect(_trigger_glitch.bind(0.35, 0.08))
+	for button: Button in [start_button, load_button, options_button, quit_button]:
+		button.mouse_entered.connect(_focus_if_enabled.bind(button))
+		button.focus_entered.connect(_trigger_glitch.bind(0.12, 0.06))
 
 	_schedule_glitch()
 	start_button.grab_focus()
@@ -57,7 +64,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_glitch_timer -= delta
 	if _glitch_timer <= 0.0:
-		_trigger_glitch(randf_range(0.4, 1.0), glitch_duration)
+		_trigger_glitch(randf_range(0.5, 1.0) * glitch_strength, glitch_duration)
 		_schedule_glitch()
 
 	var strength := 0.0
@@ -68,11 +75,8 @@ func _process(delta: float) -> void:
 			strength = 0.0
 	overlay_material.set_shader_parameter("glitch", strength)
 
-	# Titel: Farbkanäle zittern leicht, beim Glitch stärker.
-	var jitter := 2.0 + strength * 14.0
-	title_cyan.position = Vector2(randf_range(-jitter, 0.0), randf_range(-1.0, 1.0) * strength * 4.0)
-	title_magenta.position = Vector2(randf_range(0.0, jitter), randf_range(-1.0, 1.0) * strength * 4.0)
-	title.position.x = randf_range(-1.0, 1.0) * strength * 6.0
+	# Titel: ruhiges Neon, das beim Glitch kurz flackert.
+	title.modulate.a = 1.0 - strength * randf_range(0.0, 0.6)
 
 	# Blinkender Cursor hinter dem Untertitel.
 	var blink := fmod(Time.get_ticks_msec() / 1000.0, 1.0) < 0.5
@@ -86,6 +90,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F11:
 		# Die Optionen ziehen das Vollbild im Entwurf selbst nach (Settings.changed).
 		Settings.toggle_fullscreen()
+
+
+func _focus_if_enabled(button: Button) -> void:
+	if not button.disabled:
+		button.grab_focus()
 
 
 func _trigger_glitch(strength: float, duration: float) -> void:
@@ -103,7 +112,7 @@ func _on_start_pressed() -> void:
 	_starting = true
 	main_buttons.process_mode = Node.PROCESS_MODE_DISABLED
 	# Kurzer, harter Glitch als Übergang, dann ins Spiel.
-	_trigger_glitch(1.0, 0.5)
+	_trigger_glitch(0.6, 0.4)
 	var tween := create_tween()
 	tween.tween_property($Fade, "color:a", 1.0, 0.45)
 	await tween.finished

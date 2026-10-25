@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scenes/menu/main_menu.gd" id="1_menu"]
 [ext_resource type="Shader" path="res://scenes/menu/menu_background.gdshader" id="2_bg"]
@@ -13,21 +13,93 @@ shader = ExtResource("2_bg")
 shader = ExtResource("3_crt")
 
 [sub_resource type="LabelSettings" id="LabelSettings_title"]
-font_size = 96
-font_color = Color(1, 1, 1, 1)
-outline_size = 2
-outline_color = Color(1, 1, 1, 0.6)
-shadow_size = 18
-shadow_color = Color(1, 0.1, 0.75, 0.45)
+font_size = 88
+font_color = Color(0.95, 0.97, 1, 1)
+outline_size = 3
+outline_color = Color(1, 0.2, 0.75, 0.55)
+shadow_size = 24
+shadow_color = Color(1, 0.1, 0.75, 0.35)
 shadow_offset = Vector2(0, 0)
 
-[sub_resource type="LabelSettings" id="LabelSettings_title_cyan"]
-font_size = 96
-font_color = Color(0, 0.95, 1, 0.75)
+[sub_resource type="StyleBoxFlat" id="Style_menu_normal"]
+content_margin_left = 36.0
+content_margin_top = 16.0
+content_margin_right = 36.0
+content_margin_bottom = 16.0
+bg_color = Color(0.03, 0, 0.08, 0.72)
+border_width_left = 6
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0.95, 1, 0.45)
+skew = Vector2(0.18, 0)
 
-[sub_resource type="LabelSettings" id="LabelSettings_title_magenta"]
-font_size = 96
-font_color = Color(1, 0.1, 0.6, 0.75)
+[sub_resource type="StyleBoxFlat" id="Style_menu_hover"]
+content_margin_left = 52.0
+content_margin_top = 16.0
+content_margin_right = 36.0
+content_margin_bottom = 16.0
+bg_color = Color(1, 0.1, 0.75, 0.28)
+border_width_left = 10
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 2
+border_color = Color(1, 0.15, 0.75, 1)
+skew = Vector2(0.18, 0)
+shadow_color = Color(1, 0.1, 0.75, 0.35)
+shadow_size = 16
+
+[sub_resource type="StyleBoxFlat" id="Style_menu_pressed"]
+content_margin_left = 52.0
+content_margin_top = 16.0
+content_margin_right = 36.0
+content_margin_bottom = 16.0
+bg_color = Color(0, 0.95, 1, 0.35)
+border_width_left = 10
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 2
+border_color = Color(0, 0.95, 1, 1)
+skew = Vector2(0.18, 0)
+shadow_color = Color(0, 0.95, 1, 0.35)
+shadow_size = 16
+
+[sub_resource type="StyleBoxFlat" id="Style_menu_focus"]
+draw_center = false
+border_width_left = 10
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 2
+border_color = Color(1, 0.15, 0.75, 1)
+skew = Vector2(0.18, 0)
+
+[sub_resource type="StyleBoxFlat" id="Style_menu_disabled"]
+content_margin_left = 36.0
+content_margin_top = 16.0
+content_margin_right = 36.0
+content_margin_bottom = 16.0
+bg_color = Color(0.03, 0, 0.08, 0.45)
+border_width_left = 6
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.35, 0.35, 0.45, 0.4)
+skew = Vector2(0.18, 0)
+
+[sub_resource type="Theme" id="Theme_menu_buttons"]
+Button/colors/font_color = Color(0, 0.95, 1, 1)
+Button/colors/font_disabled_color = Color(0.45, 0.45, 0.55, 1)
+Button/colors/font_focus_color = Color(1, 1, 1, 1)
+Button/colors/font_hover_color = Color(1, 1, 1, 1)
+Button/colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+Button/colors/font_pressed_color = Color(1, 1, 1, 1)
+Button/font_sizes/font_size = 34
+Button/styles/disabled = SubResource("Style_menu_disabled")
+Button/styles/focus = SubResource("Style_menu_focus")
+Button/styles/hover = SubResource("Style_menu_hover")
+Button/styles/hover_pressed = SubResource("Style_menu_pressed")
+Button/styles/normal = SubResource("Style_menu_normal")
+Button/styles/pressed = SubResource("Style_menu_pressed")
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -56,85 +128,93 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 96
-theme_override_constants/margin_top = 64
+theme_override_constants/margin_left = 110
+theme_override_constants/margin_top = 40
 theme_override_constants/margin_right = 96
-theme_override_constants/margin_bottom = 48
+theme_override_constants/margin_bottom = 40
 
 [node name="Layout" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
-theme_override_constants/separation = 8
+size_flags_horizontal = 0
+theme_override_constants/separation = 0
+alignment = 1
 
-[node name="TitleBox" type="Control" parent="Margin/Layout"]
+[node name="TitleBox" type="VBoxContainer" parent="Margin/Layout"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 130)
 layout_mode = 2
-
-[node name="TitleCyan" type="Label" parent="Margin/Layout/TitleBox"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_right = 900.0
-offset_bottom = 130.0
-text = "NEON//GRID"
-label_settings = SubResource("LabelSettings_title_cyan")
-
-[node name="TitleMagenta" type="Label" parent="Margin/Layout/TitleBox"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_right = 900.0
-offset_bottom = 130.0
-text = "NEON//GRID"
-label_settings = SubResource("LabelSettings_title_magenta")
+theme_override_constants/separation = 0
 
 [node name="Title" type="Label" parent="Margin/Layout/TitleBox"]
 unique_name_in_owner = true
-layout_mode = 0
-offset_right = 900.0
-offset_bottom = 130.0
-text = "NEON//GRID"
+layout_mode = 2
+text = "NEON DISTRICT"
 label_settings = SubResource("LabelSettings_title")
 
-[node name="Subtitle" type="Label" parent="Margin/Layout"]
+[node name="Subtitle" type="Label" parent="Margin/Layout/TitleBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.1, 0.75, 1)
+theme_override_colors/font_color = Color(1, 0.25, 0.8, 0.9)
 theme_override_font_sizes/font_size = 22
 text = "// SYSTEM ONLINE_"
 
-[node name="Spacer" type="Control" parent="Margin/Layout"]
+[node name="Gap" type="Control" parent="Margin/Layout"]
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
-size_flags_vertical = 3
 
 [node name="MainButtons" type="VBoxContainer" parent="Margin/Layout"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(340, 0)
+custom_minimum_size = Vector2(480, 0)
 layout_mode = 2
 size_flags_horizontal = 0
-theme_override_constants/separation = 14
+theme = SubResource("Theme_menu_buttons")
+theme_override_constants/separation = 16
 
 [node name="StartButton" type="Button" parent="Margin/Layout/MainButtons"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 78)
 layout_mode = 2
 text = "START"
 alignment = 0
 
+[node name="LoadButton" type="Button" parent="Margin/Layout/MainButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 78)
+layout_mode = 2
+tooltip_text = "Noch kein Spielstand vorhanden"
+disabled = true
+text = "SPIELSTAND LADEN"
+alignment = 0
+
 [node name="OptionsButton" type="Button" parent="Margin/Layout/MainButtons"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 78)
 layout_mode = 2
 text = "OPTIONEN"
 alignment = 0
 
 [node name="QuitButton" type="Button" parent="Margin/Layout/MainButtons"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 78)
 layout_mode = 2
 text = "BEENDEN"
 alignment = 0
 
-[node name="Footer" type="Label" parent="Margin/Layout"]
-layout_mode = 2
+[node name="Footer" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -520.0
+offset_top = -44.0
+offset_right = -32.0
+offset_bottom = -16.0
+grow_horizontal = 0
+grow_vertical = 0
 theme_override_colors/font_color = Color(0, 0.95, 1, 0.5)
 theme_override_font_sizes/font_size = 16
-text = "v0.2  //  ESC = zurück  //  F11 = Vollbild"
+text = "v0.3  //  ESC = zurück  //  F11 = Vollbild"
 horizontal_alignment = 2
 
 [node name="OptionsPanel" type="PanelContainer" parent="."]
