@@ -67,8 +67,9 @@ const REBINDABLE_ACTIONS := {
 
 var fullscreen := false
 var vsync := true
-## Fenstergröße im Fenstermodus. Im Vollbild gilt immer die Monitorauflösung
-## (Godot 4 ändert den Bildschirmmodus des Monitors nicht); die Menüs skalieren mit.
+## Spielauflösung. Im Fenster ist das die Fenstergröße. Im Vollbild wird das Bild in
+## dieser Größe gerendert und auf den Monitor hochskaliert. Die Oberfläche hat in jeder
+## Auflösung dieselbe Pixelgröße, bei höherer Auflösung wirken die Menüs also kleiner.
 var resolution := DEFAULT_RESOLUTION
 ## Kantenglättung der 3D-Szene als Viewport.MSAA: 0 = aus, 1 = 2x, 2 = 4x, 3 = 8x.
 var msaa: int = Viewport.MSAA_4X
@@ -252,33 +253,53 @@ func save_settings() -> void:
 	config.save(PATH)
 
 
-## Fenstergrößen aus RESOLUTIONS, die auf den aktuellen Monitor passen. Ohne
-## Monitorgröße (headless) alle.
+## Auflösungen aus RESOLUTIONS, die auf den aktuellen Monitor passen, plus die
+## Monitorauflösung selbst. Ohne Monitorgröße (headless) alle aus RESOLUTIONS.
 static func available_resolutions() -> Array[Vector2i]:
 	var screen := DisplayServer.screen_get_size()
 	var result: Array[Vector2i] = []
 	for size: Vector2i in RESOLUTIONS:
 		if screen.x <= 0 or screen.y <= 0 or (size.x <= screen.x and size.y <= screen.y):
 			result.append(size)
+	if screen.x > 0 and screen.y > 0 and not result.has(screen):
+		result.append(screen)
+		result.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x * a.y < b.x * b.y)
 	return result
 
 
-## Setzt im Fenstermodus die gewählte Größe (höchstens Monitorgröße) und zentriert
-## das Fenster. Im Vollbild passiert nichts; beim Zurückschalten wird neu gesetzt.
+## Die gewählte Auflösung, höchstens so groß wie der Monitor.
+func _clamped_resolution() -> Vector2i:
+	var screen_size := DisplayServer.screen_get_size(DisplayServer.window_get_current_screen())
+	if screen_size.x <= 0 or screen_size.y <= 0:
+		return resolution
+	return Vector2i(mini(resolution.x, screen_size.x), mini(resolution.y, screen_size.y))
+
+
+## Stellt die Auflösung ein.
+## Vollbild: Stretch-Modus "viewport". Godot rendert alles (3D und Oberfläche) in der
+## gewählten Größe und skaliert das fertige Bild auf den Monitor hoch. Die
+## Bildschirmauflösung des Monitors selbst ändert Godot 4 nicht.
+## Fenster: Stretch-Modus "canvas_items" mit der gewählten Größe als Basis, das Fenster
+## bekommt die Größe und wird zentriert. Zieht man es von Hand größer, wird scharf
+## mitskaliert.
+## In beiden Fällen ist die Auflösung zugleich die Basisgröße der Oberfläche, deshalb
+## sieht die Oberfläche im Fenster und im Vollbild bei gleicher Auflösung gleich aus.
 func _apply_resolution() -> void:
-	if DisplayServer.get_name() == "headless":
-		return
+	var root := get_tree().root
+	var size := _clamped_resolution()
+	root.content_scale_size = size
 	if fullscreen:
+		root.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
 		_applied_resolution = Vector2i(-1, -1)
+		return
+	root.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+	if DisplayServer.get_name() == "headless":
 		return
 	if resolution == _applied_resolution:
 		return
 	_applied_resolution = resolution
 	var screen_id := DisplayServer.window_get_current_screen()
 	var screen_size := DisplayServer.screen_get_size(screen_id)
-	var size := resolution
-	if screen_size.x > 0 and screen_size.y > 0:
-		size = Vector2i(mini(size.x, screen_size.x), mini(size.y, screen_size.y))
 	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_MAXIMIZED:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 	DisplayServer.window_set_size(size)
@@ -293,6 +314,15 @@ static func scale_for_window(scale: float, window_size: Vector2i) -> float:
 	if longest <= RENDER_LONG_EDGE:
 		return scale
 	return minf(scale, float(RENDER_LONG_EDGE) / float(longest))
+
+
+## Größe, in der tatsächlich gerendert wird. Im Vollbild (Stretch "viewport") ist das
+## die gewählte Auflösung, sonst die Fenstergröße.
+func _render_size(window_size: Vector2i) -> Vector2i:
+	var root := get_tree().root
+	if root.content_scale_mode == Window.CONTENT_SCALE_MODE_VIEWPORT:
+		return Vector2i(root.get_visible_rect().size)
+	return window_size
 
 
 func _on_root_size_changed() -> void:
@@ -310,7 +340,7 @@ func _apply_3d_scale() -> void:
 	if viewport == null:
 		return
 	var size := DisplayServer.window_get_size()
-	var scale := scale_for_window(render_scale, size)
+	var scale := scale_for_window(render_scale, _render_size(size))
 	if is_equal_approx(viewport.scaling_3d_scale, scale):
 		_applied_window_size = size
 		return

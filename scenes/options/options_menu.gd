@@ -171,7 +171,6 @@ func _on_msaa_selected(index: int) -> void:
 
 func _on_fullscreen_toggled(on: bool) -> void:
 	_set_draft(on, "fullscreen")
-	_update_resolution_enabled()
 
 
 func _on_resolution_selected(index: int) -> void:
@@ -187,8 +186,12 @@ func _fill_resolutions() -> void:
 	if not sizes.has(wanted):
 		sizes.append(wanted)
 		sizes.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x * a.y < b.x * b.y)
+	var screen := DisplayServer.screen_get_size()
 	for size: Vector2i in sizes:
-		resolution_option.add_item("%d × %d" % [size.x, size.y])
+		var text := "%d × %d" % [size.x, size.y]
+		if size == screen:
+			text += "  (Monitor)"
+		resolution_option.add_item(text)
 		resolution_option.set_item_metadata(resolution_option.item_count - 1, size)
 
 
@@ -200,16 +203,6 @@ func _select_resolution(size: Vector2i) -> void:
 				return
 		# "Standard" kann eine Größe verlangen, die noch nicht in der Liste steht.
 		_fill_resolutions()
-
-
-## Im Vollbild gilt die Monitorauflösung, die Auswahl ist dann ausgegraut.
-func _update_resolution_enabled() -> void:
-	var fullscreen: bool = _draft.get("fullscreen", false)
-	resolution_option.disabled = fullscreen
-	resolution_option.tooltip_text = (
-		"Im Vollbild gilt die Monitorauflösung, die Menüs skalieren mit." if fullscreen
-		else "Fenstergröße im Fenstermodus"
-	)
 
 
 func _on_output_device_selected(index: int) -> void:
@@ -296,7 +289,6 @@ func _refresh_options() -> void:
 	fullscreen_check.set_pressed_no_signal(_draft.fullscreen)
 	vsync_check.set_pressed_no_signal(_draft.vsync)
 	_select_resolution(_draft.get("resolution", Settings.DEFAULT_RESOLUTION))
-	_update_resolution_enabled()
 	msaa_option.select(msaa_option.get_item_index(_draft.msaa))
 	render_scale_slider.set_value_no_signal(_draft.render_scale * 100.0)
 	_select_output_device(_draft.get("output_device", Settings.DEFAULT_OUTPUT_DEVICE))
@@ -326,13 +318,13 @@ func _build_key_grid() -> void:
 	for action: String in Settings.REBINDABLE_ACTIONS:
 		var label := Label.new()
 		label.text = Settings.REBINDABLE_ACTIONS[action]
-		label.custom_minimum_size.x = 110
+		label.custom_minimum_size.x = 96
 		key_grid.add_child(label)
 
 		var button := Button.new()
-		button.custom_minimum_size.x = 150
+		button.custom_minimum_size.x = 120
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 20)
+		button.add_theme_font_size_override("font_size", 16)
 		button.pressed.connect(_start_rebind.bind(action))
 		key_grid.add_child(button)
 		_key_buttons[action] = button
