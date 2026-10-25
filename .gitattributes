@@ -1,0 +1,7 @@
+# Einheitliche Zeilenenden für alle Mitwirkenden (Windows/Linux/Mac)
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.glb binary
+*.wav binary
+*.ogg binary
