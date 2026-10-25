@@ -3,7 +3,7 @@
 > **Engine:** Godot 4.7 (Feature-Tag `4.7`, Renderer Forward Plus). Getestet mit 4.7.2 stable.  
 > **Projekt-Typ:** 3D Game (Grundgerüst: Cyberpunk-Hauptmenü, First-Person-Testwelt, Pausemenü, gemeinsame Optionen)  
 > **Projektname:** Godot 3D Base  
-> **Letztes Update:** 2026-10-25 (Eintrag 9: `origin/main` gemergt, Konflikte gelöst, Pausemenü auch in der Testmap)  
+> **Letztes Update:** 2026-10-25 (Eintrag 10: zweiter Merge von `origin/main` mit PR #8 Noclip, Konflikte gelöst)  
 > **Hauptszene:** `res://scenes/menu/main_menu.tscn`  
 > **Sprache:** GDScript (Standard-Godot, nicht .NET / C#)
 
@@ -91,9 +91,9 @@ Konvention aus `README.md`: eine Szene und ihr Skript liegen im selben Ordner un
 | Autoloads | `Settings` → `res://autoload/settings.gd` |
 | `[animation]` | `compatibility/default_parent_skeleton_in_mesh_instance_3d=true` |
 
-### Input Map (nur diese sechs Aktionen sind im Projekt definiert)
+### Input Map (nur diese acht Aktionen sind im Projekt definiert)
 
-Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Keine Maus- und keine Joypad-Events. Die Tabelle zeigt die Standardbelegung aus `project.godot`. Der Spieler kann alle sechs in den **Optionen** (Reiter Steuerung) neu belegen, im Hauptmenü ebenso wie im Pausemenü, denn beide zeigen dieselbe Szene. `Settings` ersetzt beim Start und nach *Übernehmen* das Tastatur-Event der Aktion in der `InputMap`.
+Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Keine Maus- und keine Joypad-Events. Die Tabelle zeigt die Standardbelegung aus `project.godot`. Der Spieler kann alle acht in den **Optionen** (Reiter Steuerung) neu belegen, im Hauptmenü ebenso wie im Pausemenü, denn beide zeigen dieselbe Szene. `Settings` ersetzt beim Start und nach *Übernehmen* das Tastatur-Event der Aktion in der `InputMap`.
 
 | Aktion | Taste | physical_keycode | Verwendung |
 |---|---|---|---|
@@ -102,7 +102,9 @@ Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Kei
 | `move_left` | A | 65 | `player.gd` |
 | `move_right` | D | 68 | `player.gd` |
 | `jump` | Leertaste | 32 | `player.gd`, nur am Boden |
-| `sprint` | Shift | 4194325 (`KEY_SHIFT`) | `player.gd`, gehalten |
+| `sprint` | Shift | 4194325 (`KEY_SHIFT`) | `player.gd`, gehalten (im Noclip: schneller fliegen) |
+| `noclip` | V | 86 | `player.gd`, schaltet Noclip um |
+| `noclip_down` | Strg | 4194326 (`KEY_CTRL`) | `player.gd`, im Noclip runter (hoch = `jump`) |
 
 ### Tasten außerhalb der Input Map
 
@@ -180,7 +182,7 @@ Gelesen und geschrieben vom Autoload `Settings`. Er lädt die Datei in `_ready`,
 | `[audio] sfx_volume` | `100.0` | Bus `SFX`, begrenzt auf 0–100 |
 | `[controls] mouse_sensitivity` | `1.0` | Faktor auf `Player.mouse_sensitivity` |
 | `[controls] invert_y` | `false` | dreht die Pitch-Richtung im Player um |
-| `[keys] <aktion>` | Belegung aus `project.godot` | `physical_keycode` für `move_*`, `jump`, `sprint` |
+| `[keys] <aktion>` | Belegung aus `project.godot` | `physical_keycode` für `move_*`, `jump`, `sprint`, `noclip`, `noclip_down` |
 
 `save_settings()` schreibt **immer alle** Schlüssel. Geschrieben wird:
 
@@ -267,7 +269,7 @@ Options (VBoxContainer)                    separation 12
 │   ├── AUDIO         %MasterSlider / %MasterValue, %MusicSlider / %MusicValue,
 │   │                 %SfxSlider / %SfxValue (je 0–100, Schritt 5)
 │   └── STEUERUNG     %SensitivitySlider (0.1–3.0, Schritt 0.05) / %SensitivityValue,
-│                     %InvertYCheck, KeyHint, %KeyGrid (4 Spalten, 6 Aktionen, Knöpfe im Code erzeugt)
+│                     %InvertYCheck, KeyHint, %KeyGrid (4 Spalten, 8 Aktionen = 16 Zellen aus `Settings.REBINDABLE_ACTIONS`, Knöpfe im Code erzeugt)
 ├── ActionRow         %ApplyButton "ÜBERNEHMEN" (nur aktiv bei Änderungen),
 │                     %DefaultsButton "STANDARD", %BackButton "ZURÜCK"
 └── %StatusLabel
@@ -438,17 +440,21 @@ Engine-Callbacks: `_ready`, `_process`, `_unhandled_input`. Alles andere ist pri
 | Kamera | `mouse_sensitivity` | `0.002` |
 | Kamera | `max_pitch_degrees` | `85.0`, Range 0–89 |
 | Respawn | `respawn_height` | `-30.0` |
+| Noclip | `noclip_speed` | `10.0` |
+| Noclip | `noclip_sprint_multiplier` | `3.0` |
 
 Keine davon ist in der `.tscn` überschrieben.
 
 | Mitglied | Rolle |
 |---|---|
+| `set_noclip(enabled)` | Flugmodus an/aus: `CollisionShape3D.disabled`, `velocity` auf null, Anzeige „NOCLIP“ oben links |
+| `noclip` | `true` solange der Flugmodus an ist |
 | `respawn()` | Setzt `global_transform` auf den in `_ready` gemerkten Start und `velocity` auf null |
 | `gravity` | Einmal aus den ProjectSettings gelesen |
 | `head`, `camera` | `@onready` auf `$Head` und `$Head/Camera3D` |
 | `_spawn_transform` | privat, kein Marker in der Szene |
 
-Keine `signal`-Deklaration. Yaw dreht den Body, Pitch nur `Head`. Wirksame Empfindlichkeit ist `mouse_sensitivity * Settings.mouse_sensitivity`; `Settings.invert_y` dreht die Pitch-Richtung um. Mausbewegung wirkt nur bei `MOUSE_MODE_CAPTURED`. Der frühere Zweig, der bei `ui_cancel` die Maus freigab, ist entfernt. Unter `respawn_height` ruft `_physics_process` `respawn()` auf. Bewegung: `Input.get_vector("move_left", "move_right", "move_forward", "move_back")`, in `transform.basis` gedreht, horizontal per `lerpf`. In der Luft ist die Beschleunigung `acceleration * air_control`. Bei pausiertem Baum laufen weder Physik noch Eingabe des Players.
+Keine `signal`-Deklaration. Yaw dreht den Body, Pitch nur `Head`. Wirksame Empfindlichkeit ist `mouse_sensitivity * Settings.mouse_sensitivity`; `Settings.invert_y` dreht die Pitch-Richtung um. Mausbewegung wirkt nur bei `MOUSE_MODE_CAPTURED`. Der frühere Zweig, der bei `ui_cancel` die Maus freigab, ist entfernt. Unter `respawn_height` ruft `_physics_process` `respawn()` auf. Im Noclip springt `_physics_process` nach dem Umschalten direkt in `_noclip_move`: keine Schwerkraft, kein `move_and_slide`, Bewegung in Kamera-Blickrichtung (auch Pitch) plus `jump`/`noclip_down` vertikal, `global_position += velocity * delta`. Kein Respawn im Noclip. Die Anzeige ist ein `CanvasLayer` „NoclipHud“ mit `Label`, erzeugt in `_ready` (nicht in `player.tscn`). Bewegung: `Input.get_vector("move_left", "move_right", "move_forward", "move_back")`, in `transform.basis` gedreht, horizontal per `lerpf`. In der Luft ist die Beschleunigung `acceleration * air_control`. Bei pausiertem Baum laufen weder Physik noch Eingabe des Players, auch das Umschalten von Noclip (`is_action_just_pressed("noclip")` steht in `_physics_process`) geht im Pausemenü nicht.
 
 ---
 
@@ -490,7 +496,7 @@ main.tscn (nicht mehr vom Menü geladen, nur per F6)
   ├── main.gd ── Settings.toggle_fullscreen (F11, nur wenn nicht pausiert)
   ├── instance scenes/player/player.tscn
   │     └── player.gd ── Settings.mouse_sensitivity, Settings.invert_y,
-  │                      Input Map: move_*, jump, sprint,
+  │                      Input Map: move_*, jump, sprint, noclip, noclip_down,
   │                      ProjectSettings: physics/3d/default_gravity, $Head, $Head/Camera3D
   └── instance scenes/pause/pause_menu.tscn
         ├── theme ── scenes/ui/cyber_theme.tres
@@ -521,15 +527,16 @@ Geprüft mit Godot 4.7.2 stable (headless und im Fenster) gegen den Stand dieses
 
 | Lauf | Ergebnis |
 |---|---|
-| `--headless` Start von Projekt, `testmap.tscn` und `main.tscn` je mit `--quit-after 5` (**nach** dem Merge mit `origin/main`, Eintrag 9) | 3 von 3 ohne Ausgabe außer der Versionszeile, also keine Fehler und Warnungen |
-| `--headless` Start von Projekt, `main_menu.tscn`, `main.tscn`, `pause_menu.tscn` und `options_menu.tscn` je mit `--quit-after 5` | 5 von 5 ohne Ausgabe außer der Versionszeile, aber **vor** dem Merge gemessen (Eintrag 7). Nach dem Merge nur Projekt, `main.tscn` und `testmap.tscn` einzeln gestartet, die anderen drei sind über `options_flow.gd` und `pause_flow.gd` geladen worden |
-| `options_flow.gd` (Headless): dieselbe Prüfroutine einmal im Hauptmenü, einmal im Pausemenü, dazu Strukturvergleich und Übernahme der Werte vom Hauptmenü ins Spiel | **92 PASS, 0 FAIL**, keine `ERROR`/`SCRIPT`/`WARNING`-Zeilen (nach dem Merge). Der erste Lauf danach hatte **91 PASS, 1 FAIL**: Der Test erwartete nach *Start* die Szene `Main` statt `Testmap`. Der Fehler lag im Test, nach Anpassung 92/0 |
-| `pause_flow.gd` (Headless): Skripte und Szenen laden (jetzt auch `testmap.gd`/`testmap.tscn`), Esc, Pause, Spieler steht still, Fortsetzen, Zurück ins Hauptmenü, dazu Prüfung, dass `testmap.tscn` (16 `item_spawn`-Marker) und `main.tscn` je `Player` und `PauseMenu` haben | **33 PASS, 0 FAIL, 1 SKIP** (Player-Look braucht eine echte Maus, im Fensterlauf nachgeholt). *Start* lädt dabei `Testmap`, und das `PauseMenu` darin reagiert auf Esc |
-| `pause_gui.gd` gegen `testmap.tscn` (Fenster 1280×720, Vulkan Forward+, AMD Radeon RX 9070 XT) | Mausmodus nach Start 2 (gefangen), nach Esc 0 (frei), nach Fortsetzen 2. Look-Differenz −0,4 bei Erwartung −0,4, `ok=true`. Screenshots von Pausemenü und GRAFIK-Reiter über der Neon-Straße angesehen |
-| `options_gui.gd` (Fenster 1280×720): Screenshots der drei Reiter in beiden Menüs | Beide Panels 780 px breit, gleiche x-Position (250), gleicher Aufbau, per Bildvergleich bestanden (GRAFIK, AUDIO, STEUERUNG) |
+| `--headless` Start von Projekt und `testmap.tscn` je mit `--quit-after 5` (**nach** dem Merge von PR #8, Eintrag 10) | 2 von 2 ohne Ausgabe außer der Versionszeile, also keine Fehler und Warnungen. `main.tscn` einzeln wurde nach PR #8 nicht neu gestartet (Stand Eintrag 9: ohne Ausgabe) |
+| `--headless` Start von Projekt, `main_menu.tscn`, `main.tscn`, `pause_menu.tscn` und `options_menu.tscn` je mit `--quit-after 5` | 5 von 5 ohne Ausgabe außer der Versionszeile, aber **vor** den Merges gemessen (Eintrag 7). `main_menu.tscn`, `pause_menu.tscn` und `options_menu.tscn` sind seitdem nur über `options_flow.gd` und `pause_flow.gd` geladen worden |
+| `options_flow.gd` (Headless): dieselbe Prüfroutine einmal im Hauptmenü, einmal im Pausemenü, dazu Strukturvergleich und Übernahme der Werte vom Hauptmenü ins Spiel | **92 PASS, 0 FAIL**, keine `ERROR`/`SCRIPT`/`WARNING`-Zeilen (nach dem Merge von PR #8, mit 16 statt 12 Zellen in der Tastenbelegung). Frühere Fehlversuche: Eintrag 9 (91/1, Szenenname im Test) |
+| `pause_flow.gd` (Headless): Skripte und Szenen laden (jetzt auch `testmap.gd`/`testmap.tscn`), Esc, Pause, Spieler steht still, Fortsetzen, Zurück ins Hauptmenü, dazu Prüfung, dass `testmap.tscn` (16 `item_spawn`-Marker) und `main.tscn` je `Player` und `PauseMenu` haben | **33 PASS, 0 FAIL, 1 SKIP** (Player-Look braucht eine echte Maus, im Fensterlauf nachgeholt), nach dem Merge von PR #8 wiederholt. *Start* lädt dabei `Testmap`, und das `PauseMenu` darin reagiert auf Esc |
+| `noclip_flow.gd` (Headless, neu in Eintrag 10): `testmap.tscn` mit Player und PauseMenü, V/G, Esc, Optionen | **22 PASS, 0 FAIL.** `REBINDABLE_ACTIONS` hat 8 Einträge, Standard V (86) und Strg (4194326). V schaltet Noclip an und aus (Kollision, Anzeige), Esc öffnet das Pausemenü auch im Noclip, im Pausemenü fliegt der Spieler nicht weiter und V ändert Noclip nicht. Die Tastenbelegung im Pausemenü zeigt 16 Zellen mit „Noclip an/aus“ und „Noclip runter“, Umbelegen auf G wirkt in `Settings`, `InputMap` und im Spiel |
+| `pause_gui.gd` gegen `testmap.tscn` (Fenster 1280×720, Vulkan Forward+, AMD Radeon RX 9070 XT) | Mausmodus nach Start 2 (gefangen), nach Esc 0 (frei), nach Fortsetzen 2. Look-Differenz −0,4 bei Erwartung −0,4, `ok=true`. Screenshots von Pausemenü und GRAFIK-Reiter über der Neon-Straße angesehen. **Gemessen vor dem Merge von PR #8**, danach nicht wiederholt (`player.gd` ist seitdem um Noclip erweitert) |
+| `options_gui.gd` (Fenster 1280×720): Screenshots der drei Reiter in beiden Menüs | Beide Panels 780 px breit, gleiche x-Position (250), gleicher Aufbau (GRAFIK, AUDIO, STEUERUNG). **Nach PR #8 neu gemessen: beide Panels 605 px hoch** (Hauptmenü y = 39,5, Pausemenü y = 57), die vierte Zeile der Tastenbelegung macht alle Reiter gleich hoch. Beide STEUERUNG-Screenshots angesehen: 8 Aktionen in 4 Zeilen, identisch, nichts abgeschnitten. Den früheren Bildvergleich selbst habe ich nicht wiederholt |
 | `apply_test.gd` (Headless) | Master nach `_ready` −1,938 dB, nach `apply()` −6,02 dB (50 %), Music −12,04 dB (25 %), SFX −80 dB und stumm (0 %), `scaling_3d_scale` 0,7 |
 
-Inhalt von `options_flow.gd` je Menü (dieselben Prüfungen, deshalb „gleich“ belegt): 3 Reiter GRAFIK/AUDIO/STEUERUNG, ÜBERNEHMEN anfangs gesperrt, 4 Kantenglättungs-Einträge, 12 Zellen der Tastenbelegung. Änderungen nur im Entwurf (Settings, `AudioServer` unverändert, Beschriftungen folgen). Neubelegung Springen → G erst im Entwurf, Esc während der Belegung bricht nur diese ab. *Übernehmen*: MSAA 8×, 3D-Auflösung 0,7, Master 50 %, Musik 25 %, SFX stumm, Sensitivität 2,0, Y-Invert, `jump` = G in `Settings`, `InputMap` und `settings.cfg`. Esc mit offenem Entwurf: Warnung, zweites Esc verwirft. Wieder öffnen zeigt die übernommenen Werte. *Standard* lädt Standardwerte nur in den Entwurf. F11 zieht die Checkbox nach und macht den Entwurf nicht „ungespeichert“. *Zurück* ohne Änderung schließt sofort. Zusätzlich: gleiche Szene (`scene_file_path`), gleiches Theme (`resource_path`), identische Knotenstruktur (66 Knoten), im Hauptmenü übernommene Werte stehen nach *Start* im Pausemenü.
+Inhalt von `options_flow.gd` je Menü (dieselben Prüfungen, deshalb „gleich“ belegt): 3 Reiter GRAFIK/AUDIO/STEUERUNG, ÜBERNEHMEN anfangs gesperrt, 4 Kantenglättungs-Einträge, 16 Zellen der Tastenbelegung (8 Aktionen, seit PR #8 mit `noclip` und `noclip_down`). Änderungen nur im Entwurf (Settings, `AudioServer` unverändert, Beschriftungen folgen). Neubelegung Springen → G erst im Entwurf, Esc während der Belegung bricht nur diese ab. *Übernehmen*: MSAA 8×, 3D-Auflösung 0,7, Master 50 %, Musik 25 %, SFX stumm, Sensitivität 2,0, Y-Invert, `jump` = G in `Settings`, `InputMap` und `settings.cfg`. Esc mit offenem Entwurf: Warnung, zweites Esc verwirft. Wieder öffnen zeigt die übernommenen Werte. *Standard* lädt Standardwerte nur in den Entwurf. F11 zieht die Checkbox nach und macht den Entwurf nicht „ungespeichert“. *Zurück* ohne Änderung schließt sofort. Zusätzlich: gleiche Szene (`scene_file_path`), gleiches Theme (`resource_path`), identische Knotenstruktur (66 Knoten), im Hauptmenü übernommene Werte stehen nach *Start* im Pausemenü.
 
 Frühere Zahlen („49 Prüfungen, 48 bestanden“) stammen vom alten Pausemenü mit eigenen Optionen und gelten nicht mehr. Dieses `pause_flow.gd` gibt es so nicht mehr.
 
@@ -583,6 +590,32 @@ Stolpersteine, die schon Zeit gekostet haben:
 ## 11. 📝 Änderungsprotokoll (neuester Eintrag zuerst)
 
 Vorlage für neue Einträge steht in `.cursor/rules/ai-handover.mdc`. Alle Einträge unten stammen vom selben Tag, 2026-10-25. Die Einträge 1 bis 5 sind aus dem Verlauf der Sitzung nachgetragen. Änderungen anderer Personen oder Systeme, die per `git pull` hereinkamen, sind nur anhand der Commit-Nachrichten und der Diffs beschrieben.
+
+### Eintrag 10 — Zweiter Merge von `origin/main` (PR #8 Noclip), Konflikte gelöst
+
+- **Auftrag:** Als Systemarchitekt den neuesten Stand von `origin/main` in `cursor/pause-menu-shared-options` mergen (PR #7), Konflikte in `AI_HANDOVER.md` und `README.md` lösen, nichts von beiden Seiten löschen, die Protokolleinträge lückenlos zusammenführen, sicherstellen, dass die Übergabe sowohl PR #4 als auch die Änderungen dieses PRs dokumentiert, committen und pushen. Strikt nach `.cursor/rules/00_conflict_prevention.mdc`.
+- **Ausgangslage:** `git fetch origin main` brachte `origin/main` von `fec1027` auf `882ff59` (Merge von PR #8, Claude, Commit `7e17dbc` „Noclip-Modus: V fliegt durch Wände, Leertaste/Strg hoch/runter, Shift schneller“, 19:43; Merge-Commit 20:47). Das Remote änderte laut `git diff --numstat HEAD...origin/main`: `AI_HANDOVER.md` +16/−5, `README.md` +3/−2, `autoload/settings.gd` +2/−0, `project.godot` +10/−0, `scenes/player/player.gd` +58/−0. PR #4 (Arbeitslog) war schon im ersten Merge (Eintrag 9) enthalten. Vor dem Merge gelesen: die Diffs aller fünf Dateien.
+- **Merge:** `git merge origin/main --no-commit --no-ff` (kein `-X`, damit vor dem Commit getestet werden konnte). Automatisch sauber: `README.md`, `autoload/settings.gd` (zwei neue Einträge in `REBINDABLE_ACTIONS`), `project.godot` (Aktionen `noclip` = V, `noclip_down` = Strg; meine Seite hatte dort nichts geändert). **Konflikte in 2 Dateien, 4 Blöcke:** `scenes/player/player.gd` (1) und `AI_HANDOVER.md` (3). Anders als im Auftrag vermutet gab es **keinen** Konflikt in `README.md`.
+- **Geändert (Auflösung, jeweils beide Seiten behalten):**
+  - `scenes/player/player.gd`, Kopfkommentar: Mein Esc-Text (Pausemenü) und Claudes Noclip-Zeilen stehen jetzt beide da. Dabei habe ich in meinem Satz „PauseMenu in main.tscn“ zu „in testmap.tscn und main.tscn“ berichtigt (nach Eintrag 9 stimmte er nicht mehr). Der gesamte Funktionsteil (Noclip: `noclip`, `set_noclip`, `_noclip_move`, `_create_noclip_label`, Exports, `_physics_process`-Kopf) kam von Claude unverändert und ohne Konflikt.
+  - `AI_HANDOVER.md`, Abschnitt 2 (Input Map): Mein Satz „Der Spieler kann alle … in den **Optionen** (Reiter Steuerung) neu belegen, im Hauptmenü ebenso wie im Pausemenü …“ mit Claudes Zahl **acht** statt sechs. Die Überschrift „nur diese acht Aktionen“ und die Tabellenzeilen `noclip` und `noclip_down` kamen automatisch von Claude.
+  - `AI_HANDOVER.md`, Abschnitt 6 (Player): Mein Absatz (Maus nur bei `MOUSE_MODE_CAPTURED`, kein Esc-Zweig mehr, pausiert = keine Physik) und Claudes Noclip-Sätze sind zu **einem** Absatz zusammengefügt, alle Aussagen beider Seiten bleiben. Ergänzt: Auch das Umschalten von Noclip geht im Pausemenü nicht, weil `is_action_just_pressed("noclip")` in `_physics_process` steht (per Test belegt, siehe unten).
+  - `AI_HANDOVER.md`, Abschnitt 12 (Arbeitslog): Claudes Noclip-Eintrag und mein Kurzeintrag standen beide am Ende. **Reihenfolge nach Zeitstempel:** Testmap (19:12) → Noclip (19:43) → mein Kurzeintrag (20:4x), also steht Noclip jetzt vor meinem Eintrag. Text beider Einträge unverändert, bis auf meinen eigenen, der um die PR-#8-Folgen ergänzt ist (siehe unten).
+  - Nachgezogen, weil durch die zwei neuen Aktionen veraltet: `AI_HANDOVER.md` Abschnitt 5 (`%KeyGrid` 8 Aktionen = 16 Zellen), Abschnitt 7 (`player.gd` hängt jetzt auch an `noclip`, `noclip_down`), Abschnitt 9 (Zellenzahl 12 → 16, neue Zeilen für `noclip_flow.gd` und die neue Panelhöhe), Kopfzeile „Letztes Update“, diese Nummer; `README.md` „Tastenbelegung für alle Bewegungs- und Noclip-Aktionen“.
+  - **Kein neuer Code von mir in Spielskripten.** Das Gitter der Tastenbelegung (`options_menu.gd`, `_build_key_grid`) baut sich aus `Settings.REBINDABLE_ACTIONS`, deshalb erschienen die zwei neuen Zeilen in beiden Menüs ohne Änderung an `options_menu.gd/.tscn`.
+- **Entscheidungen und Gründe:**
+  - **Reihenfolge der Arbeitslog-Einträge nach Commit-/Eintragszeit,** wie im Auftrag („chronologisch“) und in Claudes Regel („neuester unten“). Geprüft per `git log --format=%ad`, nicht geraten.
+  - **Kein Eingriff in Claudes Noclip-Code.** Er passt zu meiner Pause-Logik (Physik steht bei `paused`), das habe ich getestet statt angenommen.
+  - **Behauptung im Auftrag korrigiert:** „insbesondere in `AI_HANDOVER.md` und `README.md`“. Real kollidierten `AI_HANDOVER.md` und `player.gd`, `README.md` nicht.
+- **Getestet** (Godot 4.7.2, alle Läufe mit isoliertem `APPDATA`, echte `settings.cfg` vor und nach jedem Lauf mit gleichem Hash `36AE68DD…`):
+  - Konfliktmarker: `rg "^(<<<<<<<|=======|>>>>>>>)" . --glob "!.godot"` ohne Treffer (rg-Exit 1).
+  - `--headless --quit-after 5` für Projekt und `testmap.tscn`: ohne Ausgabe außer der Versionszeile.
+  - `pause_flow.gd`: **33 PASS, 0 FAIL, 1 SKIP.** `options_flow.gd`: **92 PASS, 0 FAIL**, nachdem ich die erwartete Zellenzahl von 12 auf 16 geändert habe (Test, nicht Spielcode).
+  - **`noclip_flow.gd` (neu, liegt wie die anderen nur in `%TEMP%\godot_tests\`): 22 PASS, 0 FAIL.** Belegt: 8 `REBINDABLE_ACTIONS`, Standard V (86) und Strg (4194326), beide Aktionen in der `InputMap`. In `testmap.tscn`: V schaltet Noclip an (Kollision aus, Anzeige sichtbar), Esc öffnet das Pausemenü auch im Noclip, im Pausemenü bewegt sich der Spieler nicht (Position gleich bei Geschwindigkeit 8 nach oben), V in der Pause ändert nichts, Fortsetzen und V schalten Noclip wieder aus. Die Tastenbelegung im Pausemenü hat 16 Zellen mit „Noclip an/aus“ (Knopf „V“) und „Noclip runter“. Umbelegen auf G und *Übernehmen* wirkt in `Settings`, `InputMap` und im Spiel (G schaltet Noclip an).
+  - `options_gui.gd` (Fenster 1280×720): beide Panels jetzt **605 px hoch** (vorher 588 und 551), 780 px breit, bei y = 39,5 (Hauptmenü) und y = 57 (Pausemenü), also innerhalb von 720 px. Beide Screenshots von STEUERUNG angesehen: 8 Aktionen in 4 Zeilen, in beiden Menüs identisch, nichts abgeschnitten.
+- **Nicht getestet:** Das eigentliche Fliegen (Richtung, Geschwindigkeit, Durch-Wände) und der Ausstieg aus einer Wand, das ist Claudes Teil (er meldet Headless-Prüfung mit Godot 4.5). `pause_gui.gd` (Fenster, Mausmodus) und `main.tscn` einzeln habe ich nach diesem Merge nicht wiederholt. Echte Mausklicks, Controller, Ton, Vollbild-Wechsel wie bisher. Im Noclip das Pausemenü mit echter Maus bedienen.
+- **Git:** Merge-Commit auf `cursor/pause-menu-shared-options` (Eltern: Branch-Stand `3af8c95` und `origin/main` `882ff59`), danach Push nach `origin`. Der Hash steht im `git log`. Nicht verwendet: `--ours`, `--theirs`, `-X`, `reset --hard`, Force-Push.
+- **Offen:** Pull Request #7 existiert laut Auftrag. Ob die zwei Protokolle (Abschnitt 11 und 12) zusammengelegt werden, ist weiter offen. Claudes Einträge nennen einen offenen Hotbar-PR. Er ist in diesem Merge-Stand nicht enthalten und wurde von mir nicht geprüft. Claude erwartet dort Konflikte an denselben Stellen (`REBINDABLE_ACTIONS`, Input Map, Kopf von `_physics_process`), also auch in `player.gd` und `settings.gd`.
 
 ### Eintrag 9 — `origin/main` in den Branch gemergt, Konflikte gelöst, Pausemenü in die Testmap
 
@@ -837,7 +870,12 @@ Vorlage:
 - Dateien: `scenes/testmap/*` (neu), `scenes/menu/main_menu.gd` (nur Default von `game_scene`), `README.md`, `AI_HANDOVER.md`.
 - Wichtig für die Nächsten: Der Player kann keine Stufen hochlaufen, schon 0,15 m blockt (headless getestet). Entweder Stufensteigen in `player.gd` einbauen oder Treppen wie `Stairs_RampCollision` mit unsichtbarer Rampe bauen. Inventar/HUD aus dem Hotbar-PR hängen am Player und sind damit automatisch in der Testmap; Pickups können als Instanzen unter `Pickups` an die `item_spawn`-Marker (Mittelpunkt ca. 0,5 m über dem Pad). Die Szene ist mit einem Python-Skript erzeugt, aber normal im Editor bearbeitbar.
 
+### 2026-10-25 · Noclip-Modus · Claude (für Arschi) · PR folgt (Branch `claude/project-thread-nkpau9`)
+- Was: Flugmodus im Player. V schaltet um; dann ohne Kollision und Schwerkraft in Blickrichtung fliegen, Leertaste hoch, Strg runter, Shift ×3 schneller. Anzeige „NOCLIP“ oben links. Beide Tasten unter *Optionen → Steuerung* belegbar. Headless mit Godot 4.5 in der Testmap geprüft (hoch fliegen, durch die Grenzwand, nach dem Ausschalten fällt man wieder).
+- Dateien: `scenes/player/player.gd`, `project.godot` (Aktionen `noclip`, `noclip_down`), `autoload/settings.gd` (`REBINDABLE_ACTIONS`), `README.md`, `AI_HANDOVER.md`.
+- Wichtig für die Nächsten: `player.tscn` bewusst nicht angefasst (HUD im Code), damit es mit dem offenen Hotbar-PR nicht kollidiert. Konflikte mit Hotbar-PR und Pausemenü-Branch sind nur Einfügungen an denselben Stellen (`REBINDABLE_ACTIONS`, Input Map nach `sprint`, Kopf von `_physics_process`): beide Seiten behalten. Wer Noclip in einem Release nicht will, nimmt die zwei Einträge aus `REBINDABLE_ACTIONS` und die Aktion `noclip` raus. Schaltet man Noclip in einer Wand aus, schiebt `move_and_slide` den Player nur teilweise heraus.
+
 ### 2026-10-25 · Gemeinsame Optionen, Pausemenü, Konflikt-Regel, Merge · Cursor (für EnScapeZ) · Branch `cursor/pause-menu-shared-options` (Entwurfs-PR folgt)
-- Was: Hauptmenü und Pausemenü (Esc) nutzen jetzt **dieselbe** Options-Szene `scenes/options/options_menu.tscn` mit gemeinsamem Theme `scenes/ui/cyber_theme.tres` (Reiter Grafik / Audio / Steuerung, Wirkung erst nach „Übernehmen“). Neues Pausemenü `scenes/pause/pause_menu.tscn`. Audio-Busse Music/SFX (`default_bus_layout.tres`), `Settings` um `msaa`, `render_scale`, `music_volume`, `sfx_volume` erweitert. Neue Cursor-Regel `.cursor/rules/00_conflict_prevention.mdc`. `origin/main` (inkl. Testmap) in den Branch gemergt.
+- Was: Hauptmenü und Pausemenü (Esc) nutzen jetzt **dieselbe** Options-Szene `scenes/options/options_menu.tscn` mit gemeinsamem Theme `scenes/ui/cyber_theme.tres` (Reiter Grafik / Audio / Steuerung, Wirkung erst nach „Übernehmen“). Neues Pausemenü `scenes/pause/pause_menu.tscn`. Audio-Busse Music/SFX (`default_bus_layout.tres`), `Settings` um `msaa`, `render_scale`, `music_volume`, `sfx_volume` erweitert. Neue Cursor-Regel `.cursor/rules/00_conflict_prevention.mdc`. `origin/main` (inkl. Testmap und Noclip, PR #8) in den Branch gemergt; die Tastenbelegung in beiden Menüs zeigt dadurch 8 Aktionen (4 Zeilen), beide Panels sind 605 px hoch.
 - Dateien: `scenes/options/*`, `scenes/pause/*`, `scenes/ui/*`, `default_bus_layout.tres` (alle neu), `autoload/settings.gd`, `scenes/menu/main_menu.gd/.tscn` (Optionen ausgelagert), `scenes/main/main.tscn/.gd`, `scenes/player/player.gd`, **`scenes/testmap/testmap.tscn`** (nur `PauseMenu`-Instanz ergänzt), `README.md`, `AI_HANDOVER.md`.
 - Wichtig für die Nächsten: Die Testmap hat jetzt ein `PauseMenu` als letztes Kind. **Jede neue Spielszene muss `res://scenes/pause/pause_menu.tscn` selbst instanziieren**, sonst tut Esc dort nichts (das Pausemenü ist kein Autoload). Neue Einstellungen werden nur in `options_menu.tscn/.gd` gebaut und erscheinen automatisch in beiden Menüs. Das Pausemenü hat keine Live-Vorschau mehr. Ausführlich in Abschnitt 11, Einträge 5 bis 9. Vor dem Ändern gemeinsamer Dateien `.cursor/rules/00_conflict_prevention.mdc` lesen (Abgleich mit dem Remote, nur das Nötigste ändern).

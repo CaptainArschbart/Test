@@ -28,6 +28,8 @@ const REBINDABLE_ACTIONS := {
 	"move_right": "Rechts",
 	"jump": "Springen",
 	"sprint": "Sprinten",
+	"noclip": "Noclip an/aus",
+	"noclip_down": "Noclip runter",
 }
 
 var fullscreen := false

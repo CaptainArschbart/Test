@@ -15,11 +15,12 @@ Grundgerüst für ein **3D-Spiel in Godot 4** (GDScript). Kein fertiges Spiel, s
 | W / A / S / D | Laufen |
 | Shift | Sprinten |
 | Leertaste | Springen |
+| V | Noclip an/aus (fliegen durch Wände; Leertaste hoch, Strg runter, Shift schneller) |
 | Maus | Umschauen |
 | Esc | Pausemenü öffnen und schließen (hält das Spiel an, gibt die Maus frei) |
 | F11 | Vollbild an/aus (auch bei offenem Pausemenü, wird gespeichert) |
 
-Die Tasten lassen sich im Spiel unter *Optionen → Steuerung* ändern. Die Standardbelegung steht unter *Projekt → Projekteinstellungen → Eingabezuordnung* (`move_forward`, `move_back`, `move_left`, `move_right`, `jump`, `sprint`).
+Die Tasten lassen sich im Spiel unter *Optionen → Steuerung* ändern. Die Standardbelegung steht unter *Projekt → Projekteinstellungen → Eingabezuordnung* (`move_forward`, `move_back`, `move_left`, `move_right`, `jump`, `sprint`, `noclip`, `noclip_down`).
 
 ## Ordnerstruktur
 
@@ -45,12 +46,12 @@ Szenen liegen zusammen mit ihrem Skript in einem eigenen Ordner. Neue Dinge (Geg
 ## Was drin ist
 
 - **Hauptmenü** (`scenes/menu/main_menu.tscn`, Startszene): Neon-Skyline mit bewegtem Gitter, Scanlines, Farbverschiebung und zufällige Glitch-Effekte. Knöpfe *Start*, *Optionen* und *Beenden*. Bedienbar mit Maus, Tastatur und Controller. Titeltext und Farben lassen sich direkt in der Szene bzw. in den Shader-Parametern ändern.
-- **Optionen** (`scenes/options/options_menu.tscn`): **eine** Szene, die Hauptmenü und Pausemenü gemeinsam einbinden, damit sie überall gleich aussehen und sich gleich verhalten. Drei Reiter: *Grafik* (Vollbild, VSync, Kantenglättung/MSAA, 3D-Auflösung), *Audio* (Master, Musik, Soundeffekte) und *Steuerung* (Mausempfindlichkeit, Maus-Y invertieren, Tastenbelegung für alle Bewegungsaktionen). Änderungen gelten erst nach **Übernehmen** (keine Live-Vorschau); *Standard* lädt die Standardwerte, *Zurück* oder Esc mit offenen Änderungen fragt einmal nach. Neue Einstellungen werden nur dort gebaut und erscheinen automatisch in beiden Menüs. Das gemeinsame Aussehen steckt in `scenes/ui/cyber_theme.tres`.
+- **Optionen** (`scenes/options/options_menu.tscn`): **eine** Szene, die Hauptmenü und Pausemenü gemeinsam einbinden, damit sie überall gleich aussehen und sich gleich verhalten. Drei Reiter: *Grafik* (Vollbild, VSync, Kantenglättung/MSAA, 3D-Auflösung), *Audio* (Master, Musik, Soundeffekte) und *Steuerung* (Mausempfindlichkeit, Maus-Y invertieren, Tastenbelegung für alle Bewegungs- und Noclip-Aktionen). Änderungen gelten erst nach **Übernehmen** (keine Live-Vorschau); *Standard* lädt die Standardwerte, *Zurück* oder Esc mit offenen Änderungen fragt einmal nach. Neue Einstellungen werden nur dort gebaut und erscheinen automatisch in beiden Menüs. Das gemeinsame Aussehen steckt in `scenes/ui/cyber_theme.tres`.
 - **Pausemenü** (`scenes/pause/pause_menu.tscn`, Teil von `testmap.tscn` und `main.tscn`; neue Spielszenen müssen es selbst einbinden): **Esc** hält das Spiel an und öffnet es. Knöpfe *Fortsetzen*, *Optionen* (dieselben Optionen wie im Hauptmenü), *Zurück zum Hauptmenü* und *Spiel beenden*. Bedienbar mit Maus, Tastatur und Controller.
 - **Settings** (`autoload/settings.gd`, Autoload): hält alle Einstellungen, lädt/speichert `user://settings.cfg` und wendet sie beim Spielstart an (auch wenn man direkt `main.tscn` startet). Der Player liest Mausempfindlichkeit und Y-Invertierung von hier. Neben Vollbild, VSync, Master-Lautstärke und Steuerung stehen hier auch MSAA, 3D-Auflösung sowie die Lautstärke der Busse *Music* und *SFX*. Die Busse stehen in `default_bus_layout.tres`; es gibt noch keine Audio-Dateien, die darauf spielen.
 - **Main** (`scenes/main/main.tscn`): WorldEnvironment mit prozeduralem Himmel, Sonne mit Schatten, Boden und ein paar Kisten und eine Rampe zum Testen (CSG-Formen mit Kollision, später durch echte Modelle ersetzen).
 - **Testmap** (`scenes/testmap/testmap.tscn`, wird von *Start* geladen): Nacht-Cyberpunk-Straße passend zum Menü, mit Leuchtreklamen und Fassaden-Shader (Fenster leuchten zufällig). Testzonen mit Schildern: Treppen mit Stufen 0,15/0,25/0,35/0,50 m, Rampen 15°/30°/40°/50°, Tunnel mit Deckenhöhe 2,6/1,95/1,7 m, Messwand bis 6 m, Sprunghöhe 0,5–1,5 m, Weitsprung-Lücken 2–6 m, Parkour-Turm bis auf ein Dach (7,2 m) und ein großer offener Platz mit Deckung und Brücke. Plätze für Items sind `Marker3D` in der Gruppe `item_spawn` unter `Pickups/SpawnPoints`.
-- **Player** (`scenes/player/player.tscn`): First-Person-Steuerung mit Beschleunigung, Luftsteuerung, Sprint, Sprung und Respawn beim Herunterfallen. Werte wie Geschwindigkeit, Sprunghöhe und Maus-Empfindlichkeit sind im Inspector unter *Bewegung*, *Kamera* und *Respawn* einstellbar.
+- **Player** (`scenes/player/player.tscn`): First-Person-Steuerung mit Beschleunigung, Luftsteuerung, Sprint, Sprung und Respawn beim Herunterfallen. Werte wie Geschwindigkeit, Sprunghöhe und Maus-Empfindlichkeit sind im Inspector unter *Bewegung*, *Kamera*, *Respawn* und *Noclip* einstellbar.
 - **Physik-Layer**: 1 = `world`, 2 = `player`.
 
 ## Zusammenarbeit
