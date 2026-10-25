@@ -15,6 +15,9 @@ extends Node3D
 ## Unter dieser horizontalen Geschwindigkeit gilt der Spieler als stehend.
 @export var move_speed_epsilon: float = 0.45
 
+## Faktor auf alle Ausschläge (WeaponHolder senkt ihn beim Zielen).
+var motion_scale: float = 1.0
+
 var _base_position: Vector3
 var _base_rotation: Vector3
 var _time: float = 0.0
@@ -51,6 +54,8 @@ func apply_motion(delta: float, horizontal_speed: float, sprinting: bool) -> voi
 		frequency = bob_frequency
 		amplitude_y = walk_bob_amplitude
 		amplitude_x = sway_amplitude
+	amplitude_y *= motion_scale
+	amplitude_x *= motion_scale
 	_time += delta * frequency
 	var wave := sin(_time)
 	var sway := sin(_time * 0.5)

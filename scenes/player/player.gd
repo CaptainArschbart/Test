@@ -9,7 +9,8 @@ extends CharacterBody3D
 ## "drop_item" wirft ein Stück davon weg. Beides gilt auch bei offenem Inventar.
 ## Sprinten verbraucht Ausdauer (PlayerStats). Ohne Hunger oder Durst sinken die HP.
 ## %PlayerHands sitzt an der Kamera und wackelt bei Idle, Gehen und Sprint.
-## %WeaponHolder darunter zeigt eine Waffe aus dem gewählten Slot und schießt ("fire", "reload").
+## %WeaponHolder darunter zeigt eine Waffe aus dem gewählten Slot und schießt ("fire", "reload",
+## "aim" zum Zielen).
 ## Stufen bis max_step_height hebt der Körper an, bevor move_and_slide läuft.
 ## %Footsteps und %LandImpact spielen auf dem Bus SFX.
 ## "noclip" schaltet den Flugmodus um: durch Wände fliegen in Blickrichtung,
@@ -114,6 +115,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		# Grundwert aus dem Inspector mal Faktor aus dem Optionsmenü.
 		var sensitivity := mouse_sensitivity * Settings.mouse_sensitivity
+		# Beim Zielen langsamer (Zoom).
+		if weapon_holder != null:
+			sensitivity *= weapon_holder.get_look_scale()
 		var pitch_sign := 1.0 if Settings.invert_y else -1.0
 		rotate_y(-event.relative.x * sensitivity)
 		head.rotate_x(pitch_sign * event.relative.y * sensitivity)

@@ -6,10 +6,14 @@ extends Node3D
 ## "fire" (linke Maustaste) schießt einen Strahl aus der Bildschirmmitte (Hitscan,
 ## Layer world). Getroffene Knoten mit take_hit(damage, point, normal) bekommen den
 ## Schaden. "reload" (R, belegbar) füllt das Magazin; Reservemunition gibt es noch nicht.
-## Die Munitionsanzeige unten rechts wird im Code erzeugt, damit player.tscn klein bleibt.
+## "aim" (rechte Maustaste halten) zielt: Kamera zoomt auf aim_fov, die Waffe rückt mit
+## sight_offset in die Bildmitte, Streuung fällt weg und die Maus wird langsamer
+## (Player fragt get_look_scale()). Waffen mit has_scope zeigen dann das Zielfernrohr.
+## Munitionsanzeige und Zielfernrohr werden im Code erzeugt, damit player.tscn klein bleibt.
 
-## Wie weit die Waffe beim Schuss nach hinten zuckt (Meter) und wie schnell sie zurückkommt.
-@export var recoil_kick := 0.035
+const SCOPE_SHADER := preload("res://scenes/weapons/scope_overlay.gdshader")
+
+## Wie schnell das Modell nach dem Rückstoß zurückkommt.
 @export var recoil_return := 14.0
 ## Wie lange Mündungsfeuer und Licht zu sehen sind.
 @export var flash_time := 0.05
@@ -29,6 +33,11 @@ var _flash_left := 0.0
 var _recoil := 0.0
 var _audio: AudioStreamPlayer
 var _ammo_label: Label
+var _scope: ColorRect
+## 0 = aus der Hüfte, 1 = voll im Anschlag.
+var _aim := 0.0
+var _base_transform: Transform3D
+var _base_fov := 80.0
 
 
 func _ready() -> void:
@@ -36,13 +45,16 @@ func _ready() -> void:
 	if _player == null:
 		push_error("WeaponHolder braucht einen Player über sich.")
 		return
+	_base_transform = transform
 	_audio = AudioStreamPlayer.new()
 	_audio.bus = &"SFX"
 	add_child(_audio)
 	_create_ammo_hud()
+	_create_scope()
 	# Kinder sind vor dem Player fertig; inventory ist erst danach gesetzt.
 	if not _player.is_node_ready():
 		await _player.ready
+	_base_fov = _player.camera.fov
 	_player.inventory.changed.connect(_update_weapon)
 	_player.inventory.selected_changed.connect(_update_weapon.unbind(1))
 	_update_weapon()
@@ -71,6 +83,7 @@ func _process(delta: float) -> void:
 		if _reload_left <= 0.0:
 			_finish_reload()
 	_recoil = lerpf(_recoil, 0.0, minf(recoil_return * delta, 1.0))
+	_update_aim(delta)
 	if _view != null:
 		_view.position = Vector3(0.0, _recoil * 0.3, _recoil)
 		_view.rotation.x = _recoil * 3.0
@@ -94,11 +107,14 @@ func try_fire() -> bool:
 		return false
 	_ammo[_weapon.id] = get_ammo() - 1
 	_cooldown = _weapon.fire_interval
-	_recoil = recoil_kick
+	_recoil = _weapon.recoil_kick
 	_flash_left = flash_time
 	_set_flash(true)
 	_play(_weapon.fire_sound, randf_range(0.95, 1.05))
 	_shoot_ray()
+	# Kamera springt erst nach dem Strahl hoch, sonst ginge der Schuss daneben.
+	_player.head.rotation.x = clampf(_player.head.rotation.x + deg_to_rad(_weapon.view_kick_degrees),
+		-deg_to_rad(_player.max_pitch_degrees), deg_to_rad(_player.max_pitch_degrees))
 	_update_hud()
 	return true
 
@@ -115,6 +131,19 @@ func get_ammo() -> int:
 	if _weapon == null:
 		return 0
 	return _ammo.get(_weapon.id, _weapon.magazine_size)
+
+
+## 0 = Hüfte, 1 = voll im Anschlag.
+func get_aim() -> float:
+	return _aim
+
+
+## Faktor auf die Mausempfindlichkeit: beim Zielen im Verhältnis der Sichtfelder langsamer.
+func get_look_scale() -> float:
+	if _weapon == null or _aim <= 0.0 or _player == null:
+		return 1.0
+	var zoomed := _player.camera.fov / _base_fov
+	return lerpf(1.0, zoomed * _weapon.aim_sensitivity, _aim)
 
 
 func get_weapon() -> WeaponData:
@@ -135,7 +164,15 @@ func _finish_reload() -> void:
 func _shoot_ray() -> void:
 	var camera := _player.camera
 	var from := camera.global_position
-	var to := from - camera.global_basis.z * _weapon.max_range
+	var direction := -camera.global_basis.z
+	# Streuung aus der Hüfte: zufällig im Kegel, beim Zielen keine.
+	var spread := deg_to_rad(_weapon.hip_spread_degrees) * (1.0 - _aim)
+	if spread > 0.0:
+		var angle := randf() * TAU
+		var amount := sqrt(randf()) * spread
+		var axis := camera.global_basis.x * cos(angle) + camera.global_basis.y * sin(angle)
+		direction = direction.rotated(axis.normalized(), amount)
+	var to := from + direction * _weapon.max_range
 	var query := PhysicsRayQueryParameters3D.create(from, to, 1, [_player.get_rid()])
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	if hit.is_empty():
@@ -173,6 +210,8 @@ func _update_weapon() -> void:
 	_weapon = weapon
 	_reload_left = 0.0
 	_recoil = 0.0
+	_aim = 0.0
+	_apply_aim()
 	if _view != null:
 		_view.queue_free()
 		_view = null
@@ -185,6 +224,36 @@ func _update_weapon() -> void:
 		_flash_light = _view.get_node_or_null("Muzzle/FlashLight")
 	_set_flash(false)
 	_update_hud()
+
+
+func _update_aim(delta: float) -> void:
+	var wants := _weapon != null and _reload_left <= 0.0 and _can_use() \
+		and Input.is_action_pressed("aim")
+	var speed := 1.0 / maxf(_weapon.aim_time, 0.01) if _weapon != null else 10.0
+	_aim = move_toward(_aim, 1.0 if wants else 0.0, speed * delta)
+	_apply_aim()
+
+
+## Setzt Sichtfeld, Waffenposition, Hände und Zielfernrohr passend zu _aim.
+func _apply_aim() -> void:
+	if _player == null or not _player.is_node_ready():
+		return
+	var t := ease(_aim, -2.0)
+	var fov := _base_fov
+	var scoped := false
+	if _weapon != null:
+		fov = lerpf(_base_fov, _weapon.aim_fov, t)
+		var aim_transform := Transform3D(Basis(), Vector3(0.0, 0.0, -_weapon.aim_distance) - _weapon.sight_offset)
+		var hip := _base_transform.translated_local(_weapon.hip_offset)
+		transform = hip.interpolate_with(aim_transform, t)
+		scoped = _weapon.has_scope and _aim > 0.85
+	else:
+		transform = _base_transform
+	_player.camera.fov = fov
+	_player.hands.motion_scale = 1.0 - t * 0.85
+	_player.hands.visible = not scoped
+	if _scope != null:
+		_scope.visible = scoped
 
 
 func _set_flash(on: bool) -> void:
@@ -231,6 +300,21 @@ func _create_ammo_hud() -> void:
 	_ammo_label.add_theme_constant_override("outline_size", 6)
 	_ammo_label.visible = false
 	layer.add_child(_ammo_label)
+
+
+func _create_scope() -> void:
+	var layer := CanvasLayer.new()
+	layer.name = "ScopeOverlay"
+	layer.layer = 1
+	add_child(layer)
+	_scope = ColorRect.new()
+	_scope.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_scope.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var material := ShaderMaterial.new()
+	material.shader = SCOPE_SHADER
+	_scope.material = material
+	_scope.visible = false
+	layer.add_child(_scope)
 
 
 func _update_hud() -> void:
