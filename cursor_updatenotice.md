@@ -286,3 +286,16 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: Fensterbild des Posters und der ausgegrauten Leisten, ob die Quad-Vorderseite im echten Blickfeld sitzt. Echte `settings.cfg` nicht angefasst.
 - Git: `git pull origin main` war schon aktuell. Commit auf `main`, `git push origin main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-25 · Poster in der Testmap, die Start wirklich lädt · Cursor (für EnScapeZ) · main
+- Auftrag: Die Änderungen waren im Spiel nicht zu sehen.
+- Ursache: *Start* im Hauptmenü lädt `res://scenes/testmap/testmap.tscn` (`main_menu.gd`, `game_scene`). Das Poster lag nur in `main.tscn` an der großen Kiste. Die Vitalleisten und die Abnahme hängen am Player und gelten damit in beiden Szenen. Spawn der Testmap ist (0, 0,05, 42), Blick nach −Z.
+- Geändert:
+  - `scenes/testmap/testmap.tscn`: `load_steps` 35 → 38 (12 ext + 25 sub + 1). Knoten `Buildings/Poster`, `QuadMesh` 4,8×2,7 m, Textur `res://pictures/maxresdefault.jpg`. Hängt an der Straßenseite von `StreetBlock3` (Wand bei x = −12), Position (−11,96, 3,2, 22), 4 cm vor der Wand. `basis.z` zeigt nach +X, zur Straße. Emission 0,9, damit das Bild in der Nachtmap lesbar ist. `cast_shadow` 0, `cull_mode` 2.
+  - `scenes/main/main.tscn`: dasselbe Poster an der Kiste bekommt Emission 0,45, Textur unverändert.
+- Nicht geändert: `claude_updatenotice.md`, `scenes/survival/*`, `scenes/player/player.tscn`. Keine neue Input-Aktion.
+- Getestet (Godot 4.7.2 stable, headless, isoliertes APPDATA): temporäre Szene `seen_runner` (danach gelöscht) `CHECKS 8 FAILS 0`. Nach der ersten Drehung zeigte `basis.z` nach −X (1 Fehlschlag), danach nach +X. Poster x zwischen −12 und −11,9, z zwischen 16 und 42. Emission an, Texturpfad stimmt. Am Player der Testmap steht die Überschrift `VITALS`, die Hunger-Leiste hat Maus `Ignore`, `hunger_drain_rate` ist 0,35. `testmap.tscn --quit-after 2`: kein `SCRIPT ERROR` / `Parse Error`.
+- Bekannt beim Beenden: weiter `ERROR: 1 resources still in use at exit` (Musik-Stream).
+- Nicht getestet: Fensterbild vom Spawn aus. Echte `settings.cfg` nicht angefasst.
+- Git: `git pull origin main` war aktuell (`79d3f5e`). Commit auf `main`, `git push origin main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
