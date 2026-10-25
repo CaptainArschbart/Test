@@ -15,11 +15,12 @@ Grundgerüst für ein **3D-Spiel in Godot 4** (GDScript). Kein fertiges Spiel, s
 | W / A / S / D | Laufen |
 | Shift | Sprinten |
 | Leertaste | Springen |
+| V | Noclip an/aus (fliegen durch Wände; Leertaste hoch, Strg runter, Shift schneller) |
 | Maus | Umschauen |
 | Esc | Maus freigeben (Klick fängt sie wieder ein) |
 | F11 | Vollbild an/aus |
 
-Die Tasten lassen sich im Spiel unter *Optionen → Steuerung* ändern. Die Standardbelegung steht unter *Projekt → Projekteinstellungen → Eingabezuordnung* (`move_forward`, `move_back`, `move_left`, `move_right`, `jump`, `sprint`).
+Die Tasten lassen sich im Spiel unter *Optionen → Steuerung* ändern. Die Standardbelegung steht unter *Projekt → Projekteinstellungen → Eingabezuordnung* (`move_forward`, `move_back`, `move_left`, `move_right`, `jump`, `sprint`, `noclip`, `noclip_down`).
 
 ## Ordnerstruktur
 
@@ -45,7 +46,7 @@ Szenen liegen zusammen mit ihrem Skript in einem eigenen Ordner. Neue Dinge (Geg
 - **Settings** (`autoload/settings.gd`, Autoload): hält alle Einstellungen, lädt/speichert `user://settings.cfg` und wendet sie beim Spielstart an (auch wenn man direkt `main.tscn` startet). Der Player liest Mausempfindlichkeit und Y-Invertierung von hier.
 - **Main** (`scenes/main/main.tscn`): WorldEnvironment mit prozeduralem Himmel, Sonne mit Schatten, Boden und ein paar Kisten und eine Rampe zum Testen (CSG-Formen mit Kollision, später durch echte Modelle ersetzen).
 - **Testmap** (`scenes/testmap/testmap.tscn`, wird von *Start* geladen): Nacht-Cyberpunk-Straße passend zum Menü, mit Leuchtreklamen und Fassaden-Shader (Fenster leuchten zufällig). Testzonen mit Schildern: Treppen mit Stufen 0,15/0,25/0,35/0,50 m, Rampen 15°/30°/40°/50°, Tunnel mit Deckenhöhe 2,6/1,95/1,7 m, Messwand bis 6 m, Sprunghöhe 0,5–1,5 m, Weitsprung-Lücken 2–6 m, Parkour-Turm bis auf ein Dach (7,2 m) und ein großer offener Platz mit Deckung und Brücke. Plätze für Items sind `Marker3D` in der Gruppe `item_spawn` unter `Pickups/SpawnPoints`.
-- **Player** (`scenes/player/player.tscn`): First-Person-Steuerung mit Beschleunigung, Luftsteuerung, Sprint, Sprung und Respawn beim Herunterfallen. Werte wie Geschwindigkeit, Sprunghöhe und Maus-Empfindlichkeit sind im Inspector unter *Bewegung*, *Kamera* und *Respawn* einstellbar.
+- **Player** (`scenes/player/player.tscn`): First-Person-Steuerung mit Beschleunigung, Luftsteuerung, Sprint, Sprung und Respawn beim Herunterfallen. Werte wie Geschwindigkeit, Sprunghöhe und Maus-Empfindlichkeit sind im Inspector unter *Bewegung*, *Kamera*, *Respawn* und *Noclip* einstellbar.
 - **Physik-Layer**: 1 = `world`, 2 = `player`.
 
 ## Zusammenarbeit
