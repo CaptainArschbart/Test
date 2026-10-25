@@ -16,6 +16,8 @@ const PATH := "user://settings.cfg"
 const MASTER_BUS := "Master"
 const MUSIC_BUS := "Music"
 const SFX_BUS := "SFX"
+## So heißt das System-Standardgerät in AudioServer.get_output_device_list().
+const DEFAULT_OUTPUT_DEVICE := "Default"
 
 ## Kleinste einstellbare 3D-Auflösung (Faktor auf die Fenstergröße).
 const RENDER_SCALE_MIN := 0.5
@@ -58,6 +60,9 @@ var master_volume := 80.0
 var music_volume := 100.0
 ## 0–100 (%), Bus "SFX"
 var sfx_volume := 100.0
+## Name des Audio-Ausgabegeräts aus AudioServer.get_output_device_list().
+## "Default" = Standardgerät des Systems.
+var output_device := DEFAULT_OUTPUT_DEVICE
 ## Faktor auf Player.mouse_sensitivity (1.0 = Standard).
 var mouse_sensitivity := 1.0
 var invert_y := false
@@ -91,6 +96,7 @@ func get_values() -> Dictionary:
 		"master_volume": master_volume,
 		"music_volume": music_volume,
 		"sfx_volume": sfx_volume,
+		"output_device": output_device,
 		"mouse_sensitivity": mouse_sensitivity,
 		"invert_y": invert_y,
 		"key_bindings": key_bindings.duplicate(),
@@ -107,6 +113,7 @@ func get_defaults() -> Dictionary:
 		"master_volume": 80.0,
 		"music_volume": 100.0,
 		"sfx_volume": 100.0,
+		"output_device": DEFAULT_OUTPUT_DEVICE,
 		"mouse_sensitivity": 1.0,
 		"invert_y": false,
 		"key_bindings": _default_bindings.duplicate(),
@@ -123,6 +130,7 @@ func apply_values(values: Dictionary) -> void:
 	master_volume = values.master_volume
 	music_volume = values.get("music_volume", music_volume)
 	sfx_volume = values.get("sfx_volume", sfx_volume)
+	output_device = values.get("output_device", output_device)
 	mouse_sensitivity = values.mouse_sensitivity
 	invert_y = values.invert_y
 	key_bindings = values.key_bindings.duplicate()
@@ -150,6 +158,7 @@ func apply() -> void:
 	_apply_bus(MASTER_BUS, master_volume)
 	_apply_bus(MUSIC_BUS, music_volume)
 	_apply_bus(SFX_BUS, sfx_volume)
+	_apply_output_device()
 
 	for action: String in key_bindings:
 		if key_bindings[action] == KEY_NONE:
@@ -188,6 +197,7 @@ func load_settings() -> void:
 	master_volume = config.get_value("audio", "master_volume", master_volume)
 	music_volume = clampf(float(config.get_value("audio", "music_volume", music_volume)), 0.0, 100.0)
 	sfx_volume = clampf(float(config.get_value("audio", "sfx_volume", sfx_volume)), 0.0, 100.0)
+	output_device = str(config.get_value("audio", "output_device", output_device))
 	mouse_sensitivity = config.get_value("controls", "mouse_sensitivity", mouse_sensitivity)
 	invert_y = config.get_value("controls", "invert_y", invert_y)
 	for action: String in REBINDABLE_ACTIONS:
@@ -203,6 +213,7 @@ func save_settings() -> void:
 	config.set_value("audio", "master_volume", master_volume)
 	config.set_value("audio", "music_volume", music_volume)
 	config.set_value("audio", "sfx_volume", sfx_volume)
+	config.set_value("audio", "output_device", output_device)
 	config.set_value("controls", "mouse_sensitivity", mouse_sensitivity)
 	config.set_value("controls", "invert_y", invert_y)
 	for action: String in key_bindings:
@@ -247,6 +258,17 @@ func _apply_3d_scale() -> void:
 ## Stellt einen Bus sofort, ohne zu speichern. Der Musik-Regler nutzt das für "Music".
 func preview_bus(bus_name: String, percent: float) -> void:
 	_apply_bus(bus_name, percent)
+
+
+## Stellt das gewählte Ausgabegerät ein. Ist es gerade nicht angeschlossen, läuft der
+## Ton über das Standardgerät; die Wahl bleibt gespeichert und greift wieder, sobald
+## das Gerät da ist und apply() erneut läuft (z. B. beim nächsten Spielstart).
+func _apply_output_device() -> void:
+	var target := output_device
+	if not AudioServer.get_output_device_list().has(target):
+		target = DEFAULT_OUTPUT_DEVICE
+	if AudioServer.output_device != target:
+		AudioServer.output_device = target
 
 
 ## Lautstärke in Prozent auf einen Bus anwenden. Fehlt der Bus, passiert nichts.

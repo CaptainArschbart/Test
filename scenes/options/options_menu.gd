@@ -32,6 +32,7 @@ var _confirm_discard := false
 @onready var msaa_option: OptionButton = %MsaaOption
 @onready var render_scale_slider: HSlider = %RenderScaleSlider
 @onready var render_scale_value: Label = %RenderScaleValue
+@onready var output_device_option: OptionButton = %OutputDeviceOption
 @onready var master_slider: HSlider = %MasterSlider
 @onready var master_value: Label = %MasterValue
 @onready var music_slider: HSlider = %MusicSlider
@@ -63,6 +64,7 @@ func _ready() -> void:
 	vsync_check.toggled.connect(_set_draft.bind("vsync"))
 	msaa_option.item_selected.connect(_on_msaa_selected)
 	render_scale_slider.value_changed.connect(_on_render_scale_changed)
+	output_device_option.item_selected.connect(_on_output_device_selected)
 	master_slider.value_changed.connect(_set_draft.bind("master_volume"))
 	music_slider.value_changed.connect(_on_music_slider_changed)
 	sfx_slider.value_changed.connect(_set_draft.bind("sfx_volume"))
@@ -103,6 +105,7 @@ func open() -> void:
 	_rebinding_action = ""
 	_draft = Settings.get_values()
 	tabs.current_tab = 0
+	_fill_output_devices()
 	_refresh_options()
 	_update_dirty()
 	show()
@@ -163,6 +166,42 @@ func _on_msaa_selected(index: int) -> void:
 	_set_draft(msaa_option.get_item_id(index), "msaa")
 
 
+func _on_output_device_selected(index: int) -> void:
+	_set_draft(output_device_option.get_item_metadata(index), "output_device")
+
+
+## Liest die Geräteliste neu ein (Kopfhörer können zwischendurch angesteckt werden).
+## Ein gespeichertes Gerät, das gerade fehlt, bleibt als "(nicht verbunden)" wählbar.
+func _fill_output_devices() -> void:
+	output_device_option.clear()
+	var devices := AudioServer.get_output_device_list()
+	var wanted: String = _draft.get("output_device", Settings.DEFAULT_OUTPUT_DEVICE)
+	if not devices.has(wanted):
+		devices.append(wanted)
+	for device: String in devices:
+		var text := device
+		if device == Settings.DEFAULT_OUTPUT_DEVICE:
+			text = "Systemstandard"
+		elif not AudioServer.get_output_device_list().has(device):
+			text = "%s (nicht verbunden)" % device
+		output_device_option.add_item(text)
+		output_device_option.set_item_metadata(output_device_option.item_count - 1, device)
+		output_device_option.set_item_tooltip(output_device_option.item_count - 1, text)
+
+
+func _select_output_device(device: String) -> void:
+	for i in output_device_option.item_count:
+		if output_device_option.get_item_metadata(i) == device:
+			output_device_option.select(i)
+			return
+	# "Standard" kann ein Gerät verlangen, das noch nicht in der Liste steht.
+	_fill_output_devices()
+	for i in output_device_option.item_count:
+		if output_device_option.get_item_metadata(i) == device:
+			output_device_option.select(i)
+			return
+
+
 func _on_render_scale_changed(percent: float) -> void:
 	_set_draft(percent / 100.0, "render_scale")
 
@@ -212,6 +251,7 @@ func _refresh_options() -> void:
 	vsync_check.set_pressed_no_signal(_draft.vsync)
 	msaa_option.select(msaa_option.get_item_index(_draft.msaa))
 	render_scale_slider.set_value_no_signal(_draft.render_scale * 100.0)
+	_select_output_device(_draft.get("output_device", Settings.DEFAULT_OUTPUT_DEVICE))
 	master_slider.set_value_no_signal(_draft.master_volume)
 	music_slider.set_value_no_signal(_draft.music_volume)
 	sfx_slider.set_value_no_signal(_draft.sfx_volume)
