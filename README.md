@@ -6,7 +6,7 @@ Grundgerüst für ein **3D-Spiel in Godot 4** (GDScript). Kein fertiges Spiel, s
 
 1. [Godot 4.4 oder neuer](https://godotengine.org/download) (Standard-Version, nicht .NET) installieren.
 2. In Godot **Importieren** wählen und die `project.godot` in diesem Ordner öffnen.
-3. **F5** startet das Spiel (Hauptszene `scenes/main/main.tscn`).
+3. **F5** startet das Spiel. Zuerst kommt das Hauptmenü (`scenes/menu/main_menu.tscn`), **Start** lädt die Spielwelt (`scenes/main/main.tscn`).
 
 ## Steuerung
 
@@ -26,6 +26,7 @@ Die Tastenbelegung steht unter *Projekt → Projekteinstellungen → Eingabezuor
 ```
 project.godot          Projekteinstellungen, Eingabezuordnung, Physik-Layer
 scenes/
+  menu/                Hauptmenü (Cyberpunk-Stil) mit Hintergrund- und CRT-Shader
   main/                Hauptszene: Himmel, Licht, Boden, Test-Level
   player/              Spielfigur (CharacterBody3D) + Skript
 assets/
@@ -36,6 +37,7 @@ Szenen liegen zusammen mit ihrem Skript in einem eigenen Ordner. Neue Dinge (Geg
 
 ## Was drin ist
 
+- **Hauptmenü** (`scenes/menu/main_menu.tscn`, Startszene): Neon-Skyline mit bewegtem Gitter, Scanlines, Farbverschiebung und zufällige Glitch-Effekte. Knöpfe *Start*, *Optionen* (Vollbild, VSync, Lautstärke, gespeichert in `user://settings.cfg`) und *Beenden*. Bedienbar mit Maus, Tastatur und Controller. Titeltext und Farben lassen sich direkt in der Szene bzw. in den Shader-Parametern ändern.
 - **Main** (`scenes/main/main.tscn`): WorldEnvironment mit prozeduralem Himmel, Sonne mit Schatten, Boden und ein paar Kisten und eine Rampe zum Testen (CSG-Formen mit Kollision, später durch echte Modelle ersetzen).
 - **Player** (`scenes/player/player.tscn`): First-Person-Steuerung mit Beschleunigung, Luftsteuerung, Sprint, Sprung und Respawn beim Herunterfallen. Werte wie Geschwindigkeit, Sprunghöhe und Maus-Empfindlichkeit sind im Inspector unter *Bewegung*, *Kamera* und *Respawn* einstellbar.
 - **Physik-Layer**: 1 = `world`, 2 = `player`.
