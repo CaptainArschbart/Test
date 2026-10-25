@@ -163,3 +163,19 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: Fensterlauf, Mausrad, Controller, Drag mit echter Maus. Echte `settings.cfg` nicht angefasst (APPDATA war isoliert).
 - Git: Commit auf `main`, `git push origin main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-25 · Überleben: HP, Ausdauer, Hunger, Durst · Cursor (für EnScapeZ) · main
+- Auftrag: Vollständiges Überlebenssystem mit HP, Ausdauer, Hunger, Durst und vier HUD-Leisten. Claudes Notice nur gelesen.
+- Entscheidung: Kein Autoload. `PlayerStats` ist ein Kind des Players, wie das Inventar. Im Hauptmenü gibt es den Knoten nicht. Bei Pause läuft er nicht, weil der Baum steht. Jede Map mit `player.tscn` hat die Werte und die Leisten.
+- Neu:
+  - `scenes/survival/player_stats.gd` (`class_name PlayerStats`). Signale `stat_changed(stat_name, current, maximum)` und `died`. Standard je 100. Hunger −0,35/s, Durst −0,55/s. Sprint −20 Ausdauer/s, Erholung +15/s erst 0,75 s nach dem Sprint und erst wieder ab 15 Punkten. Unter 25 Hunger oder Durst ist die Erholung halb. Bei 0 Hunger −4 HP/s, bei 0 Durst −6 HP/s (beides zusammen −10). `eat` / `drink` / `heal` / `damage` / `restore_all`.
+  - `scenes/survival/survival_hud.tscn` + `survival_hud.gd`. CanvasLayer 2. Leisten `%HPBar`, `%StaminaBar`, `%HungerBar`, `%DurstBar` (Farben Magenta, Cyan, Orange, Blau). Position oben links ab y = 56, damit die Zeile „NOCLIP“ (y = 20, Layer 1) frei bleibt. Pausemenü bleibt Layer 10. `load_steps` = 7 (1 ext + 5 sub + 1). `step = 0` an den Leisten, sonst rundet die Bar auf 0,01.
+  - `.uid` zu den beiden neuen Skripten.
+- Geändert:
+  - `scenes/player/player.tscn`: Knoten `PlayerStats`, Instanz `SurvivalHud`. `load_steps` 7 → 9 (5 ext + 3 sub + 1).
+  - `scenes/player/player.gd`: Sprint (Boden und Noclip) nur, wenn `PlayerStats` ihn erlaubt. Bei `died`: Respawn und alle vier Werte voll.
+- Nicht geändert: `claude_updatenotice.md`, `AI_HANDOVER.md`, `project.godot` (kein neuer Autoload, keine neue Input-Aktion).
+- Getestet (Godot 4.7.2 stable, headless, isoliertes APPDATA): temporäre Szene `survival_runner` (danach gelöscht) `CHECKS 38 FAILS 0`. Darin: Verhungern, keine Ausdauer-Erholung bei Hunger 0, halbe Erholung unter 25, Sprint startet nicht unter 15 und stoppt bei 0, HP-Verlust wenn Hunger und Durst beide 0, `died` genau einmal, Testmap und `main.tscn` mit vier Leisten auf Layer 2 die den Werten folgen, Tod füllt wieder auf, Pause hält Hunger an. `testmap.tscn --quit-after 2`: nur die Versionszeile, kein `ERROR` / `SCRIPT ERROR`.
+- Nicht getestet: Fensterbild der Leisten, Shift im echten Fenster, Controller. Echte `settings.cfg` nicht angefasst.
+- Git: Commit auf `main`, `git push origin main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`

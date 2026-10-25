@@ -1,0 +1,139 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scenes/survival/survival_hud.gd" id="1_hud"]
+
+[sub_resource type="StyleBoxFlat" id="Style_bg"]
+bg_color = Color(0.02, 0, 0.06, 0.78)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0.95, 1, 0.45)
+
+[sub_resource type="StyleBoxFlat" id="Style_hp"]
+bg_color = Color(1, 0.1, 0.75, 1)
+
+[sub_resource type="StyleBoxFlat" id="Style_stamina"]
+bg_color = Color(0, 0.95, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="Style_hunger"]
+bg_color = Color(1, 0.62, 0.12, 1)
+
+[sub_resource type="StyleBoxFlat" id="Style_thirst"]
+bg_color = Color(0.25, 0.55, 1, 1)
+
+[node name="SurvivalHud" type="CanvasLayer"]
+layer = 2
+script = ExtResource("1_hud")
+
+[node name="Bars" type="VBoxContainer" parent="."]
+offset_left = 24.0
+offset_top = 56.0
+offset_right = 268.0
+offset_bottom = 200.0
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="HPRow" type="HBoxContainer" parent="Bars"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="HPLabel" type="Label" parent="Bars/HPRow"]
+custom_minimum_size = Vector2(88, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.1, 0.75, 1)
+theme_override_font_sizes/font_size = 14
+text = "HP"
+
+[node name="HPBar" type="ProgressBar" parent="Bars/HPRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(148, 16)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_styles/background = SubResource("Style_bg")
+theme_override_styles/fill = SubResource("Style_hp")
+max_value = 100.0
+step = 0.0
+value = 100.0
+show_percentage = false
+
+[node name="StaminaRow" type="HBoxContainer" parent="Bars"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="StaminaLabel" type="Label" parent="Bars/StaminaRow"]
+custom_minimum_size = Vector2(88, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "AUSDAUER"
+
+[node name="StaminaBar" type="ProgressBar" parent="Bars/StaminaRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(148, 16)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_styles/background = SubResource("Style_bg")
+theme_override_styles/fill = SubResource("Style_stamina")
+max_value = 100.0
+step = 0.0
+value = 100.0
+show_percentage = false
+
+[node name="HungerRow" type="HBoxContainer" parent="Bars"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="HungerLabel" type="Label" parent="Bars/HungerRow"]
+custom_minimum_size = Vector2(88, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.62, 0.12, 1)
+theme_override_font_sizes/font_size = 14
+text = "HUNGER"
+
+[node name="HungerBar" type="ProgressBar" parent="Bars/HungerRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(148, 16)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_styles/background = SubResource("Style_bg")
+theme_override_styles/fill = SubResource("Style_hunger")
+max_value = 100.0
+step = 0.0
+value = 100.0
+show_percentage = false
+
+[node name="DurstRow" type="HBoxContainer" parent="Bars"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="DurstLabel" type="Label" parent="Bars/DurstRow"]
+custom_minimum_size = Vector2(88, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.25, 0.55, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "DURST"
+
+[node name="DurstBar" type="ProgressBar" parent="Bars/DurstRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(148, 16)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_styles/background = SubResource("Style_bg")
+theme_override_styles/fill = SubResource("Style_thirst")
+max_value = 100.0
+step = 0.0
+value = 100.0
+show_percentage = false

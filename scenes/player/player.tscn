@@ -1,8 +1,10 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scenes/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scenes/inventory/inventory.gd" id="2_inventory"]
 [ext_resource type="PackedScene" path="res://scenes/inventory/inventory_ui.tscn" id="3_hud"]
+[ext_resource type="Script" path="res://scenes/survival/player_stats.gd" id="4_stats"]
+[ext_resource type="PackedScene" path="res://scenes/survival/survival_hud.tscn" id="5_hud"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.4
@@ -39,4 +41,9 @@ fov = 80.0
 [node name="Inventory" type="Node" parent="."]
 script = ExtResource("2_inventory")
 
+[node name="PlayerStats" type="Node" parent="."]
+script = ExtResource("4_stats")
+
 [node name="InventoryUI" parent="." instance=ExtResource("3_hud")]
+
+[node name="SurvivalHud" parent="." instance=ExtResource("5_hud")]

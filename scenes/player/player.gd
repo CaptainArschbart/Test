@@ -7,6 +7,7 @@ extends CharacterBody3D
 ## Ein Klick ins Fenster fängt eine freie Maus ebenfalls ein, etwa nach Alt-Tab.
 ## Zahlentasten (belegbar als hotbar_1…9) und Mausrad wählen den Hotbar-Slot,
 ## "drop_item" wirft ein Stück davon weg. Beides gilt auch bei offenem Inventar.
+## Sprinten verbraucht Ausdauer (PlayerStats). Ohne Hunger oder Durst sinken die HP.
 ## "noclip" schaltet den Flugmodus um: durch Wände fliegen in Blickrichtung,
 ## "jump" hoch, "noclip_down" runter, "sprint" schneller.
 
@@ -47,12 +48,14 @@ var _noclip_label: Label
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
 @onready var inventory: Inventory = $Inventory
+@onready var stats: PlayerStats = $PlayerStats
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 
 
 func _ready() -> void:
 	_spawn_transform = global_transform
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	stats.died.connect(_on_stats_died)
 	_create_noclip_label()
 
 
@@ -79,10 +82,13 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var sprinting := not input_locked and Input.is_action_pressed("sprint") and stats.is_alive()
+	stats.set_sprinting(sprinting)
+	sprinting = stats.is_sprinting()
 	if Input.is_action_just_pressed("noclip") and not input_locked:
 		set_noclip(not noclip)
 	if noclip:
-		_noclip_move(delta)
+		_noclip_move(delta, sprinting)
 		return
 
 	if not is_on_floor():
@@ -95,7 +101,7 @@ func _physics_process(delta: float) -> void:
 	if input_locked:
 		input_dir = Vector2.ZERO
 	var direction := (transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
-	var speed := sprint_speed if Input.is_action_pressed("sprint") else walk_speed
+	var speed := sprint_speed if sprinting else walk_speed
 	var accel := acceleration if is_on_floor() else acceleration * air_control
 	var weight := minf(accel * delta, 1.0)
 	velocity.x = lerpf(velocity.x, direction.x * speed, weight)
@@ -111,6 +117,11 @@ func _physics_process(delta: float) -> void:
 func respawn() -> void:
 	global_transform = _spawn_transform
 	velocity = Vector3.ZERO
+
+
+func _on_stats_died() -> void:
+	respawn()
+	stats.restore_all()
 
 
 ## Wirft `amount` Stück aus einem Inventar-Slot vor den Spieler.
@@ -162,7 +173,7 @@ func set_noclip(enabled: bool) -> void:
 
 
 ## Fliegt in Blickrichtung der Kamera, ohne Kollision und Schwerkraft.
-func _noclip_move(delta: float) -> void:
+func _noclip_move(delta: float, sprinting: bool) -> void:
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var vertical := Input.get_axis("noclip_down", "jump")
 	if input_locked:
@@ -172,7 +183,7 @@ func _noclip_move(delta: float) -> void:
 	if direction.length() > 1.0:
 		direction = direction.normalized()
 	var speed := noclip_speed
-	if Input.is_action_pressed("sprint"):
+	if sprinting:
 		speed *= noclip_sprint_multiplier
 	var weight := minf(acceleration * delta, 1.0)
 	velocity = velocity.lerp(direction * speed, weight)
