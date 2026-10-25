@@ -40,6 +40,10 @@ albedo_color = Color(0.7, 0.62, 0.45, 1)
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_poster"]
 albedo_texture = ExtResource("11_poster")
 roughness = 0.9
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.45
+emission_texture = ExtResource("11_poster")
 texture_filter = 5
 cull_mode = 2
 

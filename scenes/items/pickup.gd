@@ -4,6 +4,7 @@ extends Area3D
 ## sobald der Spieler hineinläuft (Rest bleibt liegen, wenn das Inventar voll ist).
 ##
 ## Fallengelassene Items fliegen per throw() ein Stück und landen auf dem Boden.
+## Waffen (WeaponData mit view_scene) zeigen ihr Modell statt des Würfels.
 
 @export var item: ItemData
 @export_range(1, 999) var count := 1
@@ -35,6 +36,7 @@ func _ready() -> void:
 	material.emission_energy_multiplier = 2.5
 	mesh.material_override = material
 	glow.light_color = item.color
+	_show_weapon_model()
 	_update_label()
 
 
@@ -90,6 +92,23 @@ func _fall(delta: float) -> void:
 		if ground:
 			global_position = ground.position + Vector3.UP * hover_height
 			_falling = false
+
+
+## Waffen zeigen ihr Handmodell (vergrößert) statt des Würfels.
+func _show_weapon_model() -> void:
+	var weapon := item as WeaponData
+	if weapon == null or weapon.view_scene == null:
+		return
+	var model: Node3D = weapon.view_scene.instantiate()
+	model.scale = Vector3.ONE * 2.2
+	model.rotation_degrees = Vector3(0.0, 90.0, 0.0)
+	visual.add_child(model)
+	# Mündungsfeuer gehört nur in die Hand.
+	for flash: String in ["Muzzle/Flash", "Muzzle/FlashLight"]:
+		var node := model.get_node_or_null(flash)
+		if node != null:
+			node.queue_free()
+	mesh.visible = false
 
 
 func _update_label() -> void:

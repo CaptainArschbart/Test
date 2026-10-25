@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scenes/items/weapon_data.gd" id="1_weapon"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/pistol_view.tscn" id="2_view"]
+[ext_resource type="AudioStream" path="res://assets/audio/pistol_shot.wav" id="3_shot"]
+[ext_resource type="AudioStream" path="res://assets/audio/pistol_reload.wav" id="4_reload"]
+[ext_resource type="AudioStream" path="res://assets/audio/pistol_empty.wav" id="5_empty"]
+
+[resource]
+script = ExtResource("1_weapon")
+damage = 25.0
+magazine_size = 12
+fire_interval = 0.18
+reload_time = 1.2
+max_range = 80.0
+view_scene = ExtResource("2_view")
+fire_sound = ExtResource("3_shot")
+reload_sound = ExtResource("4_reload")
+empty_sound = ExtResource("5_empty")
+id = "pistol"
+display_name = "Pistole"
+description = "Kompakte 9-mm-Pistole mit Neon-Visier. 12 Schuss pro Magazin, R lädt nach."
+glyph = "P"
+color = Color(1, 0.55, 0.1, 1)
+max_stack = 1

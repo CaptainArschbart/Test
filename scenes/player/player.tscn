@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://scenes/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scenes/inventory/inventory.gd" id="2_inventory"]
@@ -11,6 +11,7 @@
 [ext_resource type="AudioStream" path="res://assets/audio/footstep_03.wav" id="9_fs3"]
 [ext_resource type="AudioStream" path="res://assets/audio/land_01.wav" id="10_land1"]
 [ext_resource type="AudioStream" path="res://assets/audio/land_02.wav" id="11_land2"]
+[ext_resource type="Script" path="res://scenes/weapons/weapon_holder.gd" id="12_weapon"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.4
@@ -49,6 +50,11 @@ near = 0.05
 
 [node name="PlayerHands" parent="Head/Camera3D" instance=ExtResource("6_hands")]
 unique_name_in_owner = true
+
+[node name="WeaponHolder" type="Node3D" parent="Head/Camera3D/PlayerHands"]
+unique_name_in_owner = true
+transform = Transform3D(0.995, 0, 0.1, 0, 1, 0, -0.1, 0, 0.995, 0.15, -0.13, -0.4)
+script = ExtResource("12_weapon")
 
 [node name="Inventory" type="Node" parent="."]
 script = ExtResource("2_inventory")

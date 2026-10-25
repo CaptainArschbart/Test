@@ -1,4 +1,4 @@
-[gd_scene load_steps=35 format=3]
+[gd_scene load_steps=39 format=3]
 
 [ext_resource type="Script" path="res://scenes/testmap/testmap.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
@@ -11,6 +11,22 @@
 [ext_resource type="Resource" path="res://scenes/items/data/stim_pack.tres" id="94_stim_pack"]
 [ext_resource type="Resource" path="res://scenes/items/data/mono_blade.tres" id="95_mono_blade"]
 [ext_resource type="Resource" path="res://scenes/items/data/emp_grenade.tres" id="96_emp_grenade"]
+[ext_resource type="Texture2D" path="res://pictures/maxresdefault.jpg" id="97_poster"]
+[ext_resource type="PackedScene" path="res://scenes/testmap/shooting_range.tscn" id="98_shooting_range"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_poster"]
+albedo_texture = ExtResource("97_poster")
+roughness = 0.85
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.9
+emission_texture = ExtResource("97_poster")
+texture_filter = 5
+cull_mode = 2
+
+[sub_resource type="QuadMesh" id="Quad_poster"]
+material = SubResource("Mat_poster")
+size = Vector2(4.8, 2.7)
 
 [sub_resource type="StandardMaterial3D" id="Mat_asphalt"]
 albedo_color = Color(0.09, 0.09, 0.12, 1)
@@ -629,6 +645,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 9, 21.5)
 use_collision = true
 size = Vector3(16, 18, 11)
 material = SubResource("Mat_facade")
+
+[node name="Poster" type="MeshInstance3D" parent="Buildings"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -11.96, 3.2, 22)
+cast_shadow = 0
+mesh = SubResource("Quad_poster")
 
 [node name="StreetBlock4" type="CSGBox3D" parent="Buildings"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 14, 46)
@@ -2719,5 +2740,8 @@ count = 50
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
 item = ExtResource("93_data_shard")
 count = 3
+
+[node name="ShootingRange" parent="." instance=ExtResource("98_shooting_range")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, 16)
 
 [node name="PauseMenu" parent="." instance=ExtResource("4_pause")]
