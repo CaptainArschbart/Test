@@ -299,3 +299,17 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: Fensterbild vom Spawn aus. Echte `settings.cfg` nicht angefasst.
 - Git: `git pull origin main` war aktuell (`79d3f5e`). Commit auf `main`, `git push origin main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-25 · Spieler stand, Menüs gingen noch · Cursor (für EnScapeZ) · main
+- Auftrag: In der Spielwelt keine Bewegung per Tastatur oder Maus, Menüs lassen sich trotzdem öffnen.
+- Ursache: Bewegung hängt nicht am Mausfilter. Sie bleibt aus, wenn der Baum pausiert ist oder `input_locked` klebt. Beides lässt das Pausemenü weiterlaufen (`PROCESS_MODE_ALWAYS`). Zusätzlich behält ein versteckter Pause-Knopf den Tastaturfokus, und ein Klick zum Mausfangen kommt nicht an, wenn eine Fläche ihn schluckt. HUD, Hotbar und die Cyberpunk-Leisten standen schon auf `Ignore`.
+- Geändert:
+  - `scenes/player/player.gd`: Gruppe `player`. `_ensure_play_input()` in `_ready` und `_physics_process`. Solange nicht pausiert und das Inventar zu ist: Fokus weg, und bei fokussiertem Fenster Maus auf `MOUSE_MODE_CAPTURED`. Headless setzt die Maus nicht.
+  - `scenes/pause/pause_menu.gd`: `open()` schließt zuerst das Inventar, pausiert dann, Maus sichtbar. `close()` gibt den Fokus frei, hebt die Pause auf, fängt die Maus. `_process`: Menü unsichtbar und Baum trotzdem pausiert → Pause aus und Maus gefangen.
+  - `scenes/inventory/inventory_ui.gd`: `force_close()`. Ist das Fenster zu, bleibt `mouse_filter` auf `Ignore` und `input_locked` wird falsch.
+- Nicht geändert: `claude_updatenotice.md`, `project.godot`, die HUD-Szenen. Keine neue Input-Aktion.
+- Getestet (Godot 4.7.2 stable, headless, isoliertes APPDATA, davor `--import` weil `WeaponData` im lokalen Klassen-Cache fehlte): temporäre Szene `input_runner` (danach gelöscht) `CHECKS 11 FAILS 0`. Start: nicht gesperrt, Overlay zu und `Ignore`, nicht pausiert, keine sichtbare Vollfläche mit `Stop`. Gesperrte Steuerung bei geschlossenem Overlay ist nach einem Frame wieder frei. Pause öffnen schließt das Inventar und pausiert. Schließen: nicht pausiert, kein Fokus. Versteckte Pause mit gesetztem `paused` hebt sich im nächsten Frame auf.
+- Bekannt beim Beenden: weiter `ERROR: 1 resources still in use at exit` (Musik-Stream). Kein `SCRIPT ERROR` im bestandenen Lauf.
+- Nicht getestet: echtes Fenster, Alt-Tab, ob WASD danach wieder geht. Echte `settings.cfg` nicht angefasst.
+- Git: `git pull origin main` Fast-forward bis `90185a5` (PR #17, vor der Änderung). Commit auf `main`, `git push origin main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`

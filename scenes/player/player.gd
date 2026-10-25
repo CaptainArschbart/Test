@@ -88,11 +88,13 @@ var _last_land: int = -1
 
 
 func _ready() -> void:
+	add_to_group("player")
 	_spawn_transform = global_transform
 	floor_snap_length = max_step_height
 	floor_max_angle = deg_to_rad(floor_angle_degrees)
 	max_slides = slide_count
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	input_locked = false
+	_ensure_play_input()
 	stats.died.connect(_on_stats_died)
 	_create_noclip_label()
 	if footsteps == null or land_impact == null:
@@ -122,6 +124,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_ensure_play_input()
 	var sprinting := not input_locked and Input.is_action_pressed("sprint") and stats.is_alive()
 	stats.set_sprinting(sprinting)
 	sprinting = stats.is_sprinting()
@@ -164,6 +167,21 @@ func _physics_process(delta: float) -> void:
 
 	if global_position.y < respawn_height:
 		respawn()
+
+
+## Spiel läuft: kein Menü-Fokus, Maus gefangen. Pause und offenes Inventar bleiben unberührt.
+func _ensure_play_input() -> void:
+	if input_locked or get_tree().paused:
+		return
+	var focus := get_viewport().gui_get_focus_owner()
+	if focus != null:
+		focus.release_focus()
+	if DisplayServer.get_name() == "headless":
+		return
+	if not DisplayServer.window_is_focused():
+		return
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 ## Setzt den Spieler an den Startpunkt zurück.

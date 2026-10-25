@@ -40,6 +40,14 @@ func _exit_tree() -> void:
 		get_tree().paused = false
 
 
+func _process(_delta: float) -> void:
+	# Menü zu, Baum aber noch an: die Figur käme nie wieder vom Fleck, Esc öffnet nur das Menü.
+	if visible or not get_tree().paused:
+		return
+	get_tree().paused = false
+	_capture_mouse()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	# Echo würde nach dem Schließen des Inventars sofort die Pause öffnen.
 	if event.is_echo():
@@ -63,6 +71,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func open() -> void:
 	if visible:
 		return
+	_close_inventory()
 	get_tree().paused = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	options.hide()
@@ -76,7 +85,26 @@ func close() -> void:
 	if not visible:
 		return
 	hide()
+	var focus := get_viewport().gui_get_focus_owner()
+	if focus != null:
+		focus.release_focus()
 	get_tree().paused = false
+	_capture_mouse()
+
+
+func _close_inventory() -> void:
+	var player := get_tree().get_first_node_in_group("player") as Player
+	if player == null:
+		return
+	var hud := player.get_node_or_null("InventoryUI")
+	if hud != null and hud.has_method("force_close"):
+		hud.call("force_close")
+	player.input_locked = false
+
+
+func _capture_mouse() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
