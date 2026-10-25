@@ -1,0 +1,177 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scenes/testmap/shooting_range.gd" id="1_range"]
+[ext_resource type="Resource" path="res://scenes/items/data/pistol.tres" id="2_pistol"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/shooting_target.tscn" id="3_target"]
+[ext_resource type="PackedScene" path="res://scenes/items/pickup.tscn" id="4_pickup"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_floor"]
+albedo_color = Color(0.07, 0.07, 0.1, 1)
+metallic = 0.3
+roughness = 0.5
+
+[sub_resource type="StandardMaterial3D" id="Mat_wall"]
+albedo_color = Color(0.13, 0.13, 0.17, 1)
+metallic = 0.4
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_neon_orange"]
+albedo_color = Color(1, 0.55, 0.1, 1)
+emission_enabled = true
+emission = Color(1, 0.55, 0.1, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_neon_cyan"]
+albedo_color = Color(0, 0.95, 1, 1)
+emission_enabled = true
+emission = Color(0, 0.95, 1, 1)
+emission_energy_multiplier = 1.5
+
+[sub_resource type="StandardMaterial3D" id="Mat_table"]
+albedo_color = Color(0.2, 0.21, 0.26, 1)
+metallic = 0.7
+roughness = 0.35
+
+[sub_resource type="StandardMaterial3D" id="Mat_lane"]
+albedo_color = Color(1, 0.1, 0.75, 1)
+emission_enabled = true
+emission = Color(1, 0.1, 0.75, 1)
+emission_energy_multiplier = 1.0
+
+[node name="ShootingRange" type="Node3D"]
+script = ExtResource("1_range")
+weapon = ExtResource("2_pistol")
+
+[node name="Floor" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 16.5)
+size = Vector3(16, 0.02, 35)
+material = SubResource("Mat_floor")
+
+[node name="FiringLine" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, 2)
+size = Vector3(16, 0.02, 0.15)
+material = SubResource("Mat_neon_orange")
+
+[node name="Lane" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.025, 17.5)
+size = Vector3(0.08, 0.02, 31)
+material = SubResource("Mat_lane")
+
+[node name="Lane2" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.025, 17.5)
+size = Vector3(0.08, 0.02, 31)
+material = SubResource("Mat_lane")
+
+[node name="Mark10" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, 12)
+size = Vector3(16, 0.02, 0.06)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Mark20" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, 22)
+size = Vector3(16, 0.02, 0.06)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Mark30" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, 32)
+size = Vector3(16, 0.02, 0.06)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Backstop" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 34.3)
+use_collision = true
+size = Vector3(16.8, 6, 0.6)
+material = SubResource("Mat_wall")
+
+[node name="BackstopStripe" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.6, 33.98)
+size = Vector3(16.8, 0.12, 0.04)
+material = SubResource("Mat_neon_orange")
+
+[node name="WallLeft" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.2, 1.5, 19)
+use_collision = true
+size = Vector3(0.4, 3, 30)
+material = SubResource("Mat_wall")
+
+[node name="WallRight" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.2, 1.5, 19)
+use_collision = true
+size = Vector3(0.4, 3, 30)
+material = SubResource("Mat_wall")
+
+[node name="Table" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 1.2)
+use_collision = true
+size = Vector3(3, 1, 0.7)
+material = SubResource("Mat_table")
+
+[node name="TableEdge" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.005, 0.86)
+size = Vector3(3, 0.02, 0.04)
+material = SubResource("Mat_neon_orange")
+
+[node name="PistolPickup" parent="." instance=ExtResource("4_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 1.2)
+item = ExtResource("2_pistol")
+
+[node name="Board" type="Label3D" parent="."]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 4.6, 6)
+pixel_size = 0.007
+modulate = Color(1, 0.6, 0.15, 1)
+outline_modulate = Color(0.15, 0, 0.2, 0.9)
+text = "SCHIESSSTAND"
+font_size = 48
+outline_size = 12
+
+[node name="EntranceSign" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 4, -2)
+billboard = 1
+pixel_size = 0.012
+modulate = Color(1, 0.6, 0.15, 1)
+outline_modulate = Color(0.15, 0, 0.2, 0.9)
+text = "SCHIESSSTAND"
+font_size = 64
+outline_size = 14
+
+[node name="Target10" parent="." instance=ExtResource("3_target")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 12)
+caption = "10 m"
+
+[node name="Target20" parent="." instance=ExtResource("3_target")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 22)
+caption = "20 m"
+
+[node name="Target30" parent="." instance=ExtResource("3_target")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 32)
+caption = "30 m"
+
+[node name="TargetMoving" parent="." instance=ExtResource("3_target")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 27)
+move_distance = 4.0
+move_speed = 1.2
+caption = "25 m · bewegt"
+
+[node name="TableLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 1)
+light_color = Color(1, 0.7, 0.4, 1)
+light_energy = 1.5
+omni_range = 6.0
+
+[node name="RangeLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 12)
+light_color = Color(0.6, 0.9, 1, 1)
+light_energy = 1.5
+omni_range = 10.0
+
+[node name="RangeLight2" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 26)
+light_color = Color(0.6, 0.9, 1, 1)
+light_energy = 1.5
+omni_range = 10.0
+
+[node name="EntranceLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 3.5, -1.5)
+light_color = Color(1, 0.6, 0.15, 1)
+light_energy = 2.0
+omni_range = 6.0

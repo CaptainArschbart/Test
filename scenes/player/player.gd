@@ -9,6 +9,7 @@ extends CharacterBody3D
 ## "drop_item" wirft ein Stück davon weg. Beides gilt auch bei offenem Inventar.
 ## Sprinten verbraucht Ausdauer (PlayerStats). Ohne Hunger oder Durst sinken die HP.
 ## %PlayerHands sitzt an der Kamera und wackelt bei Idle, Gehen und Sprint.
+## %WeaponHolder darunter zeigt eine Waffe aus dem gewählten Slot und schießt ("fire", "reload").
 ## Stufen bis max_step_height hebt der Körper an, bevor move_and_slide läuft.
 ## %Footsteps und %LandImpact spielen auf dem Bus SFX.
 ## "noclip" schaltet den Flugmodus um: durch Wände fliegen in Blickrichtung,
@@ -78,6 +79,7 @@ var _last_land: int = -1
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
 @onready var hands: PlayerHands = %PlayerHands
+@onready var weapon_holder: WeaponHolder = %WeaponHolder
 @onready var inventory: Inventory = $Inventory
 @onready var stats: PlayerStats = $PlayerStats
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D

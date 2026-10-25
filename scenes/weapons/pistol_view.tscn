@@ -1,0 +1,81 @@
+[gd_scene load_steps=9 format=3]
+
+[sub_resource type="StandardMaterial3D" id="Mat_body"]
+albedo_color = Color(0.08, 0.085, 0.1, 1)
+metallic = 0.7
+roughness = 0.35
+
+[sub_resource type="StandardMaterial3D" id="Mat_neon"]
+albedo_color = Color(1, 0.55, 0.1, 1)
+emission_enabled = true
+emission = Color(1, 0.55, 0.1, 1)
+emission_energy_multiplier = 2.5
+
+[sub_resource type="BoxMesh" id="Mesh_slide"]
+material = SubResource("Mat_body")
+size = Vector3(0.034, 0.042, 0.2)
+
+[sub_resource type="BoxMesh" id="Mesh_grip"]
+material = SubResource("Mat_body")
+size = Vector3(0.03, 0.1, 0.045)
+
+[sub_resource type="BoxMesh" id="Mesh_stripe"]
+material = SubResource("Mat_neon")
+size = Vector3(0.036, 0.006, 0.16)
+
+[sub_resource type="CylinderMesh" id="Mesh_barrel"]
+material = SubResource("Mat_body")
+top_radius = 0.009
+bottom_radius = 0.009
+height = 0.03
+
+[sub_resource type="StandardMaterial3D" id="Mat_flash"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.85, 0.4, 0.9)
+billboard_mode = 1
+
+[sub_resource type="QuadMesh" id="Mesh_flash"]
+material = SubResource("Mat_flash")
+size = Vector2(0.09, 0.09)
+
+[node name="PistolView" type="Node3D"]
+
+[node name="Slide" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, -0.07)
+cast_shadow = 0
+mesh = SubResource("Mesh_slide")
+
+[node name="Stripe" type="MeshInstance3D" parent="Slide"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.012, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_stripe")
+
+[node name="Sight" type="MeshInstance3D" parent="Slide"]
+transform = Transform3D(0.2, 0, 0, 0, 1.5, 0, 0, 0, 0.06, 0, 0.025, -0.09)
+cast_shadow = 0
+mesh = SubResource("Mesh_stripe")
+
+[node name="Grip" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.966, 0.259, 0, -0.259, 0.966, 0, -0.03, 0.005)
+cast_shadow = 0
+mesh = SubResource("Mesh_grip")
+
+[node name="Barrel" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.03, -0.18)
+cast_shadow = 0
+mesh = SubResource("Mesh_barrel")
+
+[node name="Muzzle" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, -0.2)
+
+[node name="Flash" type="MeshInstance3D" parent="Muzzle"]
+visible = false
+cast_shadow = 0
+mesh = SubResource("Mesh_flash")
+
+[node name="FlashLight" type="OmniLight3D" parent="Muzzle"]
+visible = false
+light_color = Color(1, 0.75, 0.35, 1)
+light_energy = 3.0
+omni_range = 4.0

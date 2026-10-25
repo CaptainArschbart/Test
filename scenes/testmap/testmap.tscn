@@ -1,4 +1,4 @@
-[gd_scene load_steps=38 format=3]
+[gd_scene load_steps=39 format=3]
 
 [ext_resource type="Script" path="res://scenes/testmap/testmap.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
@@ -12,6 +12,7 @@
 [ext_resource type="Resource" path="res://scenes/items/data/mono_blade.tres" id="95_mono_blade"]
 [ext_resource type="Resource" path="res://scenes/items/data/emp_grenade.tres" id="96_emp_grenade"]
 [ext_resource type="Texture2D" path="res://pictures/maxresdefault.jpg" id="97_poster"]
+[ext_resource type="PackedScene" path="res://scenes/testmap/shooting_range.tscn" id="98_shooting_range"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_poster"]
 albedo_texture = ExtResource("97_poster")
@@ -2739,5 +2740,8 @@ count = 50
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
 item = ExtResource("93_data_shard")
 count = 3
+
+[node name="ShootingRange" parent="." instance=ExtResource("98_shooting_range")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, 16)
 
 [node name="PauseMenu" parent="." instance=ExtResource("4_pause")]
