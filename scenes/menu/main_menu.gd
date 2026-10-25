@@ -116,7 +116,15 @@ func _on_start_pressed() -> void:
 	var tween := create_tween()
 	tween.tween_property($Fade, "color:a", 1.0, 0.45)
 	await tween.finished
-	get_tree().change_scene_to_file(game_scene)
+	var err := get_tree().change_scene_to_file(game_scene)
+	if err != OK:
+		# Spielszene lässt sich nicht laden (z. B. Skriptfehler nach einem Update).
+		# Nicht im schwarzen Bild hängen bleiben, sondern zurück ins Menü.
+		push_error("Spielszene %s konnte nicht geladen werden (Fehler %d). Details stehen im Debugger/Output." % [game_scene, err])
+		var back := create_tween()
+		back.tween_property($Fade, "color:a", 0.0, 0.3)
+		main_buttons.process_mode = Node.PROCESS_MODE_INHERIT
+		_starting = false
 
 
 func _on_quit_pressed() -> void:

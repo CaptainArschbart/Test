@@ -340,13 +340,10 @@ func _apply_3d_scale() -> void:
 	if fullscreen:
 		scale *= fullscreen_factor(fullscreen_resolution, size)
 	scale = scale_for_window(scale, size)
-	# Hochskalieren mit FSR statt bilinear, sieht deutlich schärfer aus. Der
-	# Kompatibilitäts-Renderer (OpenGL) kann nur bilinear.
-	var mode := Viewport.SCALING_3D_MODE_BILINEAR
-	if scale < 1.0 and RenderingServer.get_current_rendering_method() != "gl_compatibility":
-		mode = Viewport.SCALING_3D_MODE_FSR
-	if viewport.scaling_3d_mode != mode:
-		viewport.scaling_3d_mode = mode
+	# Bewusst bilinear: FSR war unter Forward+ ungetestet und stand im Verdacht, nach
+	# PR #17 einen schwarzen Bildschirm im Spiel zu verursachen.
+	if viewport.scaling_3d_mode != Viewport.SCALING_3D_MODE_BILINEAR:
+		viewport.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
 	if is_equal_approx(viewport.scaling_3d_scale, scale):
 		_applied_window_size = size
 		return
