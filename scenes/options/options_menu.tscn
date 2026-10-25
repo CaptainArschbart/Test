@@ -41,7 +41,7 @@ text = "Auflösung"
 [node name="ResolutionOption" type="OptionButton" parent="Tabs/GRAFIK/ResolutionRow"]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "Gilt im Fenster und im Vollbild. Höhere Auflösung: schärferes Bild, kleinere Menüs."
+tooltip_text = "Fenster: Fenstergröße. Vollbild: Auflösung der 3D-Welt (Monitor = volle Schärfe, kleiner = mehr FPS). Menüs bleiben immer scharf."
 size_flags_horizontal = 3
 
 [node name="VsyncCheck" type="CheckButton" parent="Tabs/GRAFIK"]

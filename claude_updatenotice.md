@@ -110,3 +110,39 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 - Getestet: Godot 4.7.2 unter Xvfb (2560×1600 und 1920×1080): Prüfskript (Monitorauflösung in der Liste und sortiert, im Vollbild aktiv, Vollbild rendert 1280×720/1920×1080/2560×1600, 3D-Deckel 0,75 bei 2560, gespeichert, zurück ins Fenster → `canvas_items` und Fenster 1600×900, *Standard* → 1280×720). Screenshots von Hauptmenü, allen Options-Reitern und Pausemenü bei 1280×720 und 1920×1080. `testmap.tscn`/`main.tscn` ohne Skriptfehler. Hinweis: Eine 16:9-Auflösung auf einem 16:10-Monitor wird wegen `expand` zu z. B. 1280×800 (kein schwarzer Rand).
 - Nicht getestet: echtes exklusives Vollbild unter Windows (Xvfb hat keinen Fenstermanager).
 - Wichtig für die Nächsten: UI nicht mehr auf feste 1280×720 auslegen, sondern mittig/über Anker bauen, sie muss auch bei 1920×1080 und mehr ohne Hochskalierung gut aussehen.
+
+### 2026-10-25 · 4K verpixelt: Vollbild nativ, Oberfläche immer scharf · Claude (für Arschi) · PR #17
+- Problem: Arschi meldete nach PR #16, dass das Spiel auf 4K stark verpixelt ist. Ursache: PR #16 hat im Vollbild alles (auch die Oberfläche) in der gespeicherten Auflösung gerendert, und die war von PR #15 meist noch 1280×720. Auf 4K wurde also ein 720p-Bild dreifach hochgezogen.
+- Was:
+  - Vollbild und Fenster haben jetzt getrennte Auflösungen.
+    - `resolution` bleibt die Fenstergröße.
+    - Neu ist `fullscreen_resolution` (`[video] fullscreen_resolution`). `Vector2i.ZERO` steht für die Monitorauflösung und ist der Standard. Alte `settings.cfg` haben den Schlüssel nicht und landen damit automatisch auf „Monitor“.
+  - Der Stretch-Umbau aus PR #16 ist zurückgenommen. Das Root-Fenster wird nicht mehr angefasst, es gilt wieder `canvas_items` mit Basis 1280×720 aus `project.godot`. Die Oberfläche wird dadurch immer in voller Fenster- bzw. Monitorauflösung gezeichnet und ist scharf.
+  - Eine kleinere Vollbild-Auflösung wirkt nur noch auf die 3D-Welt. `_apply_3d_scale()` multipliziert `scaling_3d_scale` mit `fullscreen_factor()`, z. B. 1280×720 auf 4K → 1/3.
+  - Hochskaliert wird jetzt mit FSR statt bilinear, wenn der Renderer das kann. Mit dem Kompatibilitäts-Renderer bleibt es bilinear.
+  - Der 1920-px-Deckel von EnScapeZ (`RENDER_LONG_EDGE`) gilt unverändert. Auf 4K läuft 3D also auch bei „Monitor“ mit Faktor 0,5, jetzt aber mit FSR.
+  - Optionen: Die Liste *Auflösung* zeigt die Werte für den Modus, der gerade im Haken *Vollbild* steht.
+    - Im Vollbild steht oben „Monitor (B × H)“, darunter die kleineren Auflösungen von groß nach klein.
+    - Im Fenster stehen die Fenstergrößen wie bisher.
+    - Beim Umschalten des Hakens wechselt die Liste.
+- Die kleineren Menüs aus PR #16 (Theme, Pausemenü, Optionen) bleiben.
+- Dateien:
+  - `autoload/settings.gd`:
+    - Neu: Feld `fullscreen_resolution` und `fullscreen_factor()`.
+    - `_apply_resolution()` wieder ohne Stretch-Änderung.
+    - `_apply_3d_scale()` mit Vollbild-Faktor und FSR.
+    - Entfernt: `_clamped_resolution()` und `_render_size()`.
+  - `scenes/options/options_menu.gd`: `_resolution_key()`, `_wanted_resolution()` und `_fill_resolutions()` je nach Modus.
+  - `scenes/options/options_menu.tscn`: nur der Tooltip.
+- Getestet: Godot 4.7.2 unter Xvfb mit 3840×2160, 16/16 Prüfungen:
+  - Alte Datei (Vollbild + 1280×720) → Vollbild „Monitor“.
+  - Stretch wieder `canvas_items` 1280×720.
+  - 4K nativ → 3D 0,5.
+  - 1920×1080 → 0,5, 1280×720 → 1/3.
+  - Nur die Vollbild-Auflösung ändert sich, und sie wird gespeichert.
+  - Die Liste wechselt mit dem Haken, die Wahl bleibt.
+  - *Standard* → Fenster 1280×720 und Vollbild „Monitor“.
+  - 4K-Screenshot: Pausemenü-Schrift scharf.
+  - `testmap.tscn` ohne Skriptfehler.
+- Nicht getestet: echtes Windows-Vollbild, FSR (im Container läuft nur der OpenGL-Kompatibilitäts-Renderer).
+- Wichtig für die Nächsten: Soll 3D auf 4K wirklich nativ laufen, muss `RENDER_LONG_EDGE` erhöht werden. Das hatte EnScapeZ wegen Hängern auf 4K eingebaut, also vorher auf 4K testen.

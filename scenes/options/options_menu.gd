@@ -171,22 +171,47 @@ func _on_msaa_selected(index: int) -> void:
 
 func _on_fullscreen_toggled(on: bool) -> void:
 	_set_draft(on, "fullscreen")
+	# Fenster und Vollbild haben je eine eigene Auflösung, die Liste zeigt die passende.
+	_fill_resolutions()
+	_select_resolution(_wanted_resolution())
 
 
 func _on_resolution_selected(index: int) -> void:
-	_set_draft(resolution_option.get_item_metadata(index), "resolution")
+	_set_draft(resolution_option.get_item_metadata(index), _resolution_key())
 
 
-## Füllt die Auflösungsliste. Eine gespeicherte Größe, die nicht (mehr) auf den Monitor
-## passt oder nicht in der Liste steht, bleibt als eigener Eintrag wählbar.
+## Im Vollbild bearbeitet die Liste "fullscreen_resolution", im Fenster "resolution".
+func _resolution_key() -> String:
+	return "fullscreen_resolution" if _draft.get("fullscreen", false) else "resolution"
+
+
+func _wanted_resolution() -> Vector2i:
+	if _draft.get("fullscreen", false):
+		return _draft.get("fullscreen_resolution", Vector2i.ZERO)
+	return _draft.get("resolution", Settings.DEFAULT_RESOLUTION)
+
+
+## Füllt die Auflösungsliste. Im Vollbild steht oben "Monitor" (nativ, Vector2i.ZERO),
+## darunter die kleineren Auflösungen. Eine gespeicherte Größe, die nicht (mehr) in
+## der Liste steht, bleibt als eigener Eintrag wählbar.
 func _fill_resolutions() -> void:
 	resolution_option.clear()
+	var fullscreen: bool = _draft.get("fullscreen", false)
+	var screen := DisplayServer.screen_get_size()
 	var sizes := Settings.available_resolutions()
-	var wanted: Vector2i = _draft.get("resolution", Settings.DEFAULT_RESOLUTION)
-	if not sizes.has(wanted):
+	var wanted := _wanted_resolution()
+	if fullscreen:
+		sizes.erase(screen)
+		var native := "Monitor"
+		if screen.x > 0 and screen.y > 0:
+			native = "Monitor  (%d × %d)" % [screen.x, screen.y]
+		resolution_option.add_item(native)
+		resolution_option.set_item_metadata(0, Vector2i.ZERO)
+	if wanted != Vector2i.ZERO and not sizes.has(wanted):
 		sizes.append(wanted)
 		sizes.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x * a.y < b.x * b.y)
-	var screen := DisplayServer.screen_get_size()
+	if fullscreen:
+		sizes.reverse()
 	for size: Vector2i in sizes:
 		var text := "%d × %d" % [size.x, size.y]
 		if size == screen:
@@ -288,7 +313,8 @@ func _set_status(text: String, color: Color) -> void:
 func _refresh_options() -> void:
 	fullscreen_check.set_pressed_no_signal(_draft.fullscreen)
 	vsync_check.set_pressed_no_signal(_draft.vsync)
-	_select_resolution(_draft.get("resolution", Settings.DEFAULT_RESOLUTION))
+	_fill_resolutions()
+	_select_resolution(_wanted_resolution())
 	msaa_option.select(msaa_option.get_item_index(_draft.msaa))
 	render_scale_slider.set_value_no_signal(_draft.render_scale * 100.0)
 	_select_output_device(_draft.get("output_device", Settings.DEFAULT_OUTPUT_DEVICE))
