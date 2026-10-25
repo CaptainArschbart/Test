@@ -58,6 +58,7 @@ def remote_ref_is_main(command: str) -> bool:
     explicit = re.search(r"git\s+(?:push|pull)\s+origin\s+(\S+)", command)
     if explicit:
         dest = explicit.group(1).strip("'\"")
+        dest = dest.rstrip(";,&|")
         return dest in ("main", "HEAD", "HEAD:main") or dest.endswith(":main")
     if re.search(r"origin/(?!main\b)\S+", command):
         return False

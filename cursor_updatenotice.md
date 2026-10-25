@@ -143,4 +143,5 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
   - `.cursor/rules/02_cursor_notice_always_upload.mdc`, `01_update_notice_rules.mdc`, `ai-handover.mdc`: nur `git pull origin main` / `git push origin main`.
   - `.cursor/hooks/require-cursor-notice.py` + `hooks.json`: blockt Pull/Push/Commit, wenn HEAD nicht `main` ist oder das Remote nicht `origin/main` ist.
 - Git: Commit auf `main`, nur `git push origin main`.
+- Korrektur im selben Arbeitsgang: Hook hat `git push origin main; git fetch …` als Remote `main;` gelesen und den Push blockiert. `rstrip(";,&|")` ergänzt.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
