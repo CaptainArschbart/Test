@@ -28,6 +28,7 @@ var _confirm_discard := false
 
 @onready var tabs: TabContainer = %Tabs
 @onready var fullscreen_check: CheckButton = %FullscreenCheck
+@onready var resolution_option: OptionButton = %ResolutionOption
 @onready var vsync_check: CheckButton = %VsyncCheck
 @onready var msaa_option: OptionButton = %MsaaOption
 @onready var render_scale_slider: HSlider = %RenderScaleSlider
@@ -60,7 +61,8 @@ func _ready() -> void:
 	defaults_button.pressed.connect(_on_defaults_pressed)
 	back_button.pressed.connect(request_back)
 
-	fullscreen_check.toggled.connect(_set_draft.bind("fullscreen"))
+	fullscreen_check.toggled.connect(_on_fullscreen_toggled)
+	resolution_option.item_selected.connect(_on_resolution_selected)
 	vsync_check.toggled.connect(_set_draft.bind("vsync"))
 	msaa_option.item_selected.connect(_on_msaa_selected)
 	render_scale_slider.value_changed.connect(_on_render_scale_changed)
@@ -106,6 +108,7 @@ func open() -> void:
 	_draft = Settings.get_values()
 	tabs.current_tab = 0
 	_fill_output_devices()
+	_fill_resolutions()
 	_refresh_options()
 	_update_dirty()
 	show()
@@ -164,6 +167,49 @@ func _on_settings_changed() -> void:
 
 func _on_msaa_selected(index: int) -> void:
 	_set_draft(msaa_option.get_item_id(index), "msaa")
+
+
+func _on_fullscreen_toggled(on: bool) -> void:
+	_set_draft(on, "fullscreen")
+	_update_resolution_enabled()
+
+
+func _on_resolution_selected(index: int) -> void:
+	_set_draft(resolution_option.get_item_metadata(index), "resolution")
+
+
+## Füllt die Auflösungsliste. Eine gespeicherte Größe, die nicht (mehr) auf den Monitor
+## passt oder nicht in der Liste steht, bleibt als eigener Eintrag wählbar.
+func _fill_resolutions() -> void:
+	resolution_option.clear()
+	var sizes := Settings.available_resolutions()
+	var wanted: Vector2i = _draft.get("resolution", Settings.DEFAULT_RESOLUTION)
+	if not sizes.has(wanted):
+		sizes.append(wanted)
+		sizes.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x * a.y < b.x * b.y)
+	for size: Vector2i in sizes:
+		resolution_option.add_item("%d × %d" % [size.x, size.y])
+		resolution_option.set_item_metadata(resolution_option.item_count - 1, size)
+
+
+func _select_resolution(size: Vector2i) -> void:
+	for _attempt in 2:
+		for i in resolution_option.item_count:
+			if resolution_option.get_item_metadata(i) == size:
+				resolution_option.select(i)
+				return
+		# "Standard" kann eine Größe verlangen, die noch nicht in der Liste steht.
+		_fill_resolutions()
+
+
+## Im Vollbild gilt die Monitorauflösung, die Auswahl ist dann ausgegraut.
+func _update_resolution_enabled() -> void:
+	var fullscreen: bool = _draft.get("fullscreen", false)
+	resolution_option.disabled = fullscreen
+	resolution_option.tooltip_text = (
+		"Im Vollbild gilt die Monitorauflösung, die Menüs skalieren mit." if fullscreen
+		else "Fenstergröße im Fenstermodus"
+	)
 
 
 func _on_output_device_selected(index: int) -> void:
@@ -249,6 +295,8 @@ func _set_status(text: String, color: Color) -> void:
 func _refresh_options() -> void:
 	fullscreen_check.set_pressed_no_signal(_draft.fullscreen)
 	vsync_check.set_pressed_no_signal(_draft.vsync)
+	_select_resolution(_draft.get("resolution", Settings.DEFAULT_RESOLUTION))
+	_update_resolution_enabled()
 	msaa_option.select(msaa_option.get_item_index(_draft.msaa))
 	render_scale_slider.set_value_no_signal(_draft.render_scale * 100.0)
 	_select_output_device(_draft.get("output_device", Settings.DEFAULT_OUTPUT_DEVICE))
