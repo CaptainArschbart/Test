@@ -11,12 +11,10 @@ Wunsch von EnScapeZ, 2026-10-25, **keine Ausnahme**.
 - Nach jeder Änderung: Eintrag unten in `cursor_updatenotice.md`.
 - Jeder Commit: `git add cursor_updatenotice.md`.
 - Jeder Push: Notice committed, dann **auf `origin/main`**.
-- Ablauf in demselben Arbeitsgang:
-  1. Notice schreiben, `git add cursor_updatenotice.md`, committen.
-  2. Arbeitsbranch pushen.
-  3. `git fetch origin` und Notice nach `origin/main` bringen:
-     - Ist der Arbeitsbranch Fast-Forward von `origin/main`: `git push origin HEAD:main`.
-     - Sonst: nur `cursor_updatenotice.md` auf `main` committen und `git push origin main` (keine anderen Feature-Dateien).
+- Ablauf in demselben Arbeitsgang, **nur auf `main`**:
+  1. `git checkout main` und `git pull origin main`.
+  2. Notice schreiben, `git add cursor_updatenotice.md`, committen.
+  3. `git push origin main`.
   4. Schlussantwort erst, wenn `git ls-tree origin/main -- cursor_updatenotice.md` die neue Datei zeigt.
 - Nie pushen, während die Notice ungetrackt oder lokal geändert ist.
 - „Liegt auf meinem Branch“, „kommt mit dem PR“, „später auf main“ ist verboten.

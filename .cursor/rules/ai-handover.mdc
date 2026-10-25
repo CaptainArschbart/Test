@@ -17,8 +17,8 @@ Vor der Schlussantwort, im selben Arbeitsgang:
 1. Neuen Eintrag **ganz unten** in `cursor_updatenotice.md` anlegen.
 2. **`git add cursor_updatenotice.md`** — die Datei muss in denselben Commit
    wie die Änderung. Ohne Notice kein Commit.
-3. Arbeitsbranch pushen **und** die Notice auf **`origin/main`** bringen.
-   Nur der Feature-Branch reicht nicht. Ablauf: `.cursor/rules/02_cursor_notice_always_upload.mdc`.
+3. Auf Branch `main` bleiben. Nur `git pull origin main` und
+   `git push origin main`. Siehe `.cursor/rules/03_main_only.mdc`.
 4. In der Schlussantwort den Link auf
    `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
    nennen, erst wenn `origin/main` die neue Datei hat.

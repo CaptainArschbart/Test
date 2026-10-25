@@ -4,7 +4,7 @@
     "beforeShellExecution": [
       {
         "command": "python .cursor/hooks/require-cursor-notice.py",
-        "matcher": "git\\s+(push|commit)",
+        "matcher": "git\\s+(push|commit|pull)",
         "failClosed": true
       }
     ]

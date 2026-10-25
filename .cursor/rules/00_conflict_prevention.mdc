@@ -38,8 +38,8 @@ bestimmt `ai-handover.mdc` (neuester Eintrag oben), alles andere diese Regel.
 - **`.uid`-Dateien** gehören zusammen mit ihrem Skript/Shader/Resource ins Repository. Nicht löschen, nicht neu erzeugen, wenn sie schon existieren.
 
 ## 4. Branches
-- Pro Aufgabe ein eigener, kurzlebiger Branch mit Präfix `cursor/` (z. B. `cursor/pause-menu-shared-options`). Ein Branch lebt Stunden, nicht Wochen.
-- Vor jedem Push `git fetch` und `origin/<basis-branch>` einmergen (siehe Abschnitt 1), damit Konflikte lokal gelöst werden, nicht im Pull Request.
+- **Cursor und Claude arbeiten auf `main` (Wunsch EnScapeZ, 2026-10-25).** Pull und Push nur `origin/main`. Keine `cursor/`-Feature-Branches mehr. Vor der Arbeit: `git checkout main` und `git pull origin main`.
+- Vor jedem Push `git fetch` und `git pull origin main` (nicht rebasen), damit Konflikte lokal gelöst werden.
 - Niemals `git push --force`, `git reset --hard` auf geteilten Ständen oder History-Umschreiben.
 
 ## 5. Konflikte beheben (automatisch, aber ohne Verlust)

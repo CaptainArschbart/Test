@@ -133,3 +133,14 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
   - `.cursor/rules/01_update_notice_rules.mdc` und `.cursor/rules/ai-handover.mdc`: Ziel ist `origin/main`.
 - Git: Commit + Push Arbeitsbranch + Fast-Forward nach `origin/main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-25 · Nur noch main pullen und pushen · Cursor (für EnScapeZ) · dieser Arbeitsgang
+- Auftrag: Nur noch die main-Branch zum Pullen und Pushen benutzen, damit Cursor auf dem gleichen Branch wie Claude arbeitet. Ganz wichtige Regel.
+- Was: Lokales `main` von `2117c2e` auf `f822b9c` fast-forward (`git checkout main`, `git pull origin main`). Ab jetzt kein `cursor/`-Branch mehr für Pull/Push.
+- Neu: `.cursor/rules/03_main_only.mdc` (`alwaysApply: true`).
+- Geändert:
+  - `.cursor/rules/00_conflict_prevention.mdc` Abschnitt 4: Cursor und Claude auf `main`.
+  - `.cursor/rules/02_cursor_notice_always_upload.mdc`, `01_update_notice_rules.mdc`, `ai-handover.mdc`: nur `git pull origin main` / `git push origin main`.
+  - `.cursor/hooks/require-cursor-notice.py` + `hooks.json`: blockt Pull/Push/Commit, wenn HEAD nicht `main` ist oder das Remote nicht `origin/main` ist.
+- Git: Commit auf `main`, nur `git push origin main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
