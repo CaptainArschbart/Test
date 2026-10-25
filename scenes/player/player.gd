@@ -2,7 +2,9 @@ class_name Player
 extends CharacterBody3D
 ## Spielfigur: WASD-Bewegung, Sprint, Sprung und Maus-Kamera (First Person).
 ##
-## Escape gibt die Maus frei, ein Klick ins Fenster fängt sie wieder ein.
+## Escape öffnet das Pausemenü (PauseMenu in main.tscn), das auch die Maus freigibt
+## und wieder einfängt. Ein Klick ins Fenster fängt eine freie Maus ebenfalls ein,
+## etwa nach Alt-Tab.
 
 @export_group("Bewegung")
 @export var walk_speed := 5.0
@@ -43,8 +45,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		head.rotate_x(pitch_sign * event.relative.y * sensitivity)
 		var max_pitch := deg_to_rad(max_pitch_degrees)
 		head.rotation.x = clampf(head.rotation.x, -max_pitch, max_pitch)
-	elif event.is_action_pressed("ui_cancel"):
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif event is InputEventMouseButton and event.pressed:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 

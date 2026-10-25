@@ -1,5 +1,6 @@
 extends Node3D
-## Hauptszene: Welt, Licht und Spieler. Spiel-Logik auf Szenenebene kommt hierher.
+## Spielwelt: Licht, Test-Level, Spieler und Pausemenü. Spiel-Logik auf Szenenebene kommt hierher.
+## F11 gilt hier nur, solange das Spiel läuft. Bei offenem Pausemenü übernimmt es das Menü selbst.
 
 
 func _unhandled_input(event: InputEvent) -> void:

@@ -1,13 +1,15 @@
 # 🤖 Project AI Handover Log
 
-> **Engine:** Godot 4.7 (Feature-Tag `4.7`, Renderer Forward Plus)  
-> **Projekt-Typ:** 3D Game (Grundgerüst: Cyberpunk-Hauptmenü plus First-Person-Testwelt)  
+> **Engine:** Godot 4.7 (Feature-Tag `4.7`, Renderer Forward Plus). Getestet mit 4.7.2 stable.  
+> **Projekt-Typ:** 3D Game (Grundgerüst: Cyberpunk-Hauptmenü, First-Person-Testwelt, Pausemenü, gemeinsame Optionen)  
 > **Projektname:** Godot 3D Base  
-> **Letztes Update:** 2026-10-25  
+> **Letztes Update:** 2026-10-25 (Eintrag 7: Optionen in Haupt- und Pausemenü sind jetzt dieselbe Szene)  
 > **Hauptszene:** `res://scenes/menu/main_menu.tscn`  
 > **Sprache:** GDScript (Standard-Godot, nicht .NET / C#)
 
-Dieses Dokument ist der Ist-Stand des Repos. Es beschreibt nur, was in `project.godot`, den Szenen und den Skripten steht.
+Dieses Dokument ist der Ist-Stand des Repos. Es beschreibt nur, was in `project.godot`, den Szenen und den Skripten steht. Abschnitt 9 sagt, was getestet wurde und was nicht. Abschnitt 10 ist das Test-Rezept. **Abschnitt 11 ist das Änderungsprotokoll**: was wann gemacht wurde, welche Datei wie geändert wurde und warum (neuester Eintrag zuerst).
+
+**Pflege-Regel:** Wer hier etwas ändert, trägt es im selben Arbeitsgang ausführlich in Abschnitt 11 ein und zieht die Ist-Stand-Abschnitte nach. Die Regel steht in `.cursor/rules/ai-handover.mdc` (`alwaysApply: true`).
 
 `scenes/interactive/interactive_box.tscn` ist **nicht** im Projekt. Es gibt keinen Ordner `scenes/interactive/`.
 
@@ -16,19 +18,28 @@ Dieses Dokument ist der Ist-Stand des Repos. Es beschreibt nur, was in `project.
 ## 1. 📁 Ordner- & Datei-Struktur
 
 ```text
-project.godot                 Hauptszene, Input Map, Physik-Layer, 4× MSAA
+project.godot                 Hauptszene, Autoload, Input Map, Physik-Layer, 4× MSAA
+default_bus_layout.tres       Audio-Busse Master (implizit), Music, SFX
 icon.svg
 icon.svg.import
 README.md
 .gitignore
 .gitattributes
 AI_HANDOVER.md
+.cursor/
+  rules/
+    ai-handover.mdc           Regel (alwaysApply): Handover immer ausführlich pflegen
 autoload/
   settings.gd                 Autoload "Settings", user://settings.cfg
   settings.gd.uid
 scenes/
+  ui/
+    cyber_theme.tres          gemeinsames Neon-Theme für Hauptmenü, Pausemenü und Optionen (noch ohne uid)
+  options/
+    options_menu.tscn         Optionen-Seite (VBoxContainer), von Haupt- und Pausemenü eingebunden
+    options_menu.gd           (noch ohne .uid, siehe Abschnitt 9)
   menu/
-    main_menu.tscn            Startszene, Control
+    main_menu.tscn            Startszene, Control, bindet options_menu.tscn ein
     main_menu.gd              uid://b56yhlqq1bgvx
     main_menu.gd.uid
     menu_background.gdshader  uid://cw7ulhsglsebx
@@ -36,9 +47,12 @@ scenes/
     crt_overlay.gdshader      uid://cveheluq50cmp
     crt_overlay.gdshader.uid
   main/
-    main.tscn                 Spielwelt, wird von Start geladen
+    main.tscn                 Spielwelt, wird von Start geladen, enthält PauseMenu
     main.gd                   uid://npu706i2yy2e
     main.gd.uid
+  pause/
+    pause_menu.tscn           CanvasLayer, Pausemenü, bindet options_menu.tscn ein
+    pause_menu.gd             (noch ohne .uid, siehe Abschnitt 9)
   player/
     player.tscn               CharacterBody3D, First Person
     player.gd                 class_name Player, uid://3ek5xjcrt0uw
@@ -50,9 +64,9 @@ assets/
   textures/.gitkeep           leer
 ```
 
-`.godot/` ist per `.gitignore` ausgeschlossen. Keine `.tres`-Dateien, keine Export-Presets, keine Audio-Dateien. Einziger Autoload: `Settings`.
+`.godot/` ist per `.gitignore` ausgeschlossen. Außer `default_bus_layout.tres` und `scenes/ui/cyber_theme.tres` gibt es keine `.tres`-Dateien, keine Export-Presets, keine Audio-Dateien. Einziger Autoload: `Settings`.
 
-Konvention aus `README.md`: eine Szene und ihr Skript liegen im selben Ordner unter `scenes/<name>/`. `autoload/settings.gd` ist die Ausnahme, weil es ein Autoload ohne eigene Szene ist.
+Konvention aus `README.md`: eine Szene und ihr Skript liegen im selben Ordner unter `scenes/<name>/`. `autoload/settings.gd` ist die Ausnahme (Autoload ohne eigene Szene), `scenes/ui/` hält nur das gemeinsame Theme. `default_bus_layout.tres` liegt im Projektstamm, weil Godot genau diesen Pfad als Standard für das Bus-Layout lädt (`audio/buses/default_bus_layout`, in `project.godot` nicht überschrieben).
 
 ---
 
@@ -66,13 +80,13 @@ Konvention aus `README.md`: eine Szene und ihr Skript liegen im selben Ordner un
 | `config/features` | `4.7`, `Forward Plus` |
 | `config/icon` | `res://icon.svg` |
 | Viewport | 1280 × 720 |
-| MSAA 3D | `2` → 4× MSAA |
+| MSAA 3D (Projekt) | `2` → 4× MSAA. Zur Laufzeit überschreibt `Settings` den Wert am Root-Viewport. |
 | Autoloads | `Settings` → `res://autoload/settings.gd` |
 | `[animation]` | `compatibility/default_parent_skeleton_in_mesh_instance_3d=true` |
 
 ### Input Map (nur diese sechs Aktionen sind im Projekt definiert)
 
-Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Keine Maus- und keine Joypad-Events. Die Tabelle zeigt die Standardbelegung aus `project.godot`. Der Spieler kann alle sechs im Menü neu belegen; `Settings` ersetzt beim Start und nach *Übernehmen* das Tastatur-Event der Aktion in der `InputMap`.
+Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Keine Maus- und keine Joypad-Events. Die Tabelle zeigt die Standardbelegung aus `project.godot`. Der Spieler kann alle sechs in den **Optionen** (Reiter Steuerung) neu belegen, im Hauptmenü ebenso wie im Pausemenü, denn beide zeigen dieselbe Szene. `Settings` ersetzt beim Start und nach *Übernehmen* das Tastatur-Event der Aktion in der `InputMap`.
 
 | Aktion | Taste | physical_keycode | Verwendung |
 |---|---|---|---|
@@ -87,18 +101,26 @@ Alle haben `deadzone` 0.2 und genau ein Tastatur-Event (`physical_keycode`). Kei
 
 | Taste | Ort | Wirkung |
 |---|---|---|
-| F11 (`KEY_F11`) | `main_menu.gd`, `main.gd` | `Settings.toggle_fullscreen()`: schaltet das Fenster und speichert sofort. Im Menü wird zusätzlich die Vollbild-Checkbox der offenen Optionen nachgezogen. |
-| Esc | Menü | Während eine Taste neu belegt wird: bricht das Belegen ab. Sonst, wenn das Options-Panel offen ist: wie *Zurück* (bei nicht übernommenen Änderungen erst eine Warnung, beim zweiten Mal verwerfen). Sonst keine Wirkung. |
-| Esc | Spielwelt | `ui_cancel` in `player.gd` macht die Maus sichtbar. Kein Pause-Menü, kein Szenenwechsel. |
-| Mausklick | Spielwelt | Jeder gedrückte `InputEventMouseButton` setzt `MOUSE_MODE_CAPTURED`. |
+| Esc (`ui_cancel`) | Spielwelt, Menü zu | `pause_menu.gd` öffnet das Pausemenü (siehe Abschnitt 5). Das Event wird als verarbeitet markiert. |
+| Esc (`ui_cancel`) | Pausemenü, Optionen offen | Ruft `options.request_back()`, genau wie der Knopf *Zurück*: läuft eine Tastenbelegung, bricht Esc nur diese ab (`options_menu.gd` fängt die Taste in `_input`). Sonst bei offenen Änderungen erst Warnung, beim zweiten Mal verwerfen, sonst zurück zur Hauptseite. Das Spiel bleibt pausiert. |
+| Esc (`ui_cancel`) | Pausemenü, Hauptseite | Fortsetzen (schließt, fängt die Maus ein). |
+| Esc | Hauptmenü | Dasselbe `options.request_back()`, solange die Optionen offen sind. Sonst keine Wirkung. |
+| F11 (`KEY_F11`) | `main.gd` (Spiel läuft) | `Settings.toggle_fullscreen()`: schaltet das Fenster, `save_settings()` sofort. |
+| F11 (`KEY_F11`) | `pause_menu.gd` (Menü offen) | Dasselbe. Nötig, weil `main.gd` bei angehaltenem Baum keine Eingaben bekommt. |
+| F11 (`KEY_F11`) | `main_menu.gd` | Dasselbe. |
+
+Bei offenen Optionen zieht `options_menu.gd` die Vollbild-Checkbox und den Entwurf selbst nach, sobald `Settings.changed` kommt. Der Host muss dafür nichts tun.
+| Mausklick | Spielwelt | `player.gd`: jeder gedrückte `InputEventMouseButton` setzt `MOUSE_MODE_CAPTURED`, falls die Maus frei war (z. B. nach Alt-Tab). Esc gibt die Maus im Player **nicht** mehr frei, das macht das Pausemenü. |
+
+`ui_cancel` ist der Engine-Default (Esc, Joypad-B). Im Projekt nicht überschrieben.
 
 ### Controller und UI-Fokus
 
 Die Spielaktionen haben keine Gamepad-Belegung. Laufen, Sprint und Sprung sind nur Tastatur.
 
-Das Menü definiert keine eigenen UI-Aktionen. Godots eingebaute `ui_up`, `ui_down`, `ui_accept` und `ui_cancel` sind im Projekt nicht überschrieben und behalten die Engine-Defaults (Pfeiltasten, Enter, Escape, Controller-Stick, D-Pad, Joypad-Buttons). Die Menü-Buttons liegen in einer `VBoxContainer` und nehmen Fokus (`grab_focus`, zusätzlich `mouse_entered` → `grab_focus`). Damit lässt sich das Menü mit Tastatur und mit dem Controller-Fokus bedienen. Die Spielwelt nicht.
+Menüs (Haupt- und Pausemenü) definieren keine eigenen UI-Aktionen. Godots `ui_up`, `ui_down`, `ui_left`, `ui_right`, `ui_accept` und `ui_cancel` behalten die Engine-Defaults (Pfeiltasten, Enter, Esc, Stick, D-Pad, Joypad-Buttons). Das Pausemenü setzt beim Öffnen den Fokus auf *Fortsetzen*, in den Optionen auf die Tab-Leiste, nach *Zurück* auf *Optionen*. Damit sind beide Menüs mit Tastatur und Controller-Fokus bedienbar, die Spielwelt nicht.
 
-`Beenden` wird ausgeblendet, wenn `OS.has_feature("web")`. Es gibt keinen Web-Export-Preset im Repo.
+`Beenden` bzw. `Spiel beenden` wird in beiden Menüs ausgeblendet, wenn `OS.has_feature("web")`. Es gibt keinen Web-Export-Preset im Repo.
 
 ### Physik-Layer (3D)
 
@@ -107,35 +129,64 @@ Das Menü definiert keine eigenen UI-Aktionen. Godots eingebaute `ui_up`, `ui_do
 | 1 | `world` | Default der CSG-Körper (`use_collision = true`, Layer nicht gesetzt) |
 | 2 | `player` | `Player.collision_layer = 2` |
 
-`Player.collision_mask` ist nicht gesetzt und bleibt auf dem Godot-Default `1` (nur `world`). Layer 3–32 sind unbenannt.
+`Player.collision_mask` ist nicht gesetzt und bleibt auf dem Godot-Default `1` (nur `world`). Layer 3–32 sind unbenannt. Schwerkraft steht nicht in `project.godot`. `Player.gravity` liest `physics/3d/default_gravity` (Engine-Default 9.8).
 
-Schwerkraft steht nicht in `project.godot`. `Player.gravity` liest `physics/3d/default_gravity` (Engine-Default 9.8).
+---
+
+## 3. 🔊 Audio-Busse und 🖥️ Grafik-Einstellungen
+
+### Audio-Busse (`default_bus_layout.tres`)
+
+| Index | Bus | Send | Start-dB | Steuerung |
+|---|---|---|---|---|
+| 0 | `Master` | Ausgabe | 0 | `Settings.master_volume` (Standard 80 %) |
+| 1 | `Music` | `Master` | 0 | `Settings.music_volume` (Standard 100 %) |
+| 2 | `SFX` | `Master` | 0 | `Settings.sfx_volume` (Standard 100 %) |
+
+- Alle drei Regler gehen von 0 bis 100 %. Umrechnung in `Settings._apply_bus`: `linear_to_db(percent / 100)`. Bei 0 % wird der Bus auf −80 dB gesetzt und stumm geschaltet.
+- `Settings._ensure_buses()` legt `Music` und `SFX` zur Laufzeit an (Send `Master`), falls das Layout fehlt oder sie nicht enthält. `_apply_bus` ignoriert unbekannte Busse.
+- **Es gibt keine Audio-Dateien und keinen `AudioStreamPlayer`.** Die Busse sind vorbereitet. Ein späterer Player muss seine Eigenschaft `bus` auf `Music` bzw. `SFX` setzen, damit die Regler greifen.
+
+### Grafik (angewendet in `Settings.apply()`)
+
+| Einstellung | Feld | Wirkung | Wertebereich |
+|---|---|---|---|
+| Vollbild | `fullscreen` | `DisplayServer.window_set_mode(FULLSCREEN / WINDOWED)`, nur wenn sich der Zustand ändert | bool |
+| VSync | `vsync` | `DisplayServer.window_set_vsync_mode(ENABLED / DISABLED)` | bool |
+| Kantenglättung | `msaa` | `get_viewport().msaa_3d` am Root | `Viewport.MSAA`: 0 aus, 1 2×, 2 4× (Standard), 3 8× |
+| 3D-Auflösung | `render_scale` | `get_viewport().scaling_3d_scale`, nur die 3D-Szene, UI bleibt scharf | 0.5 bis 1.0 (`Settings.RENDER_SCALE_MIN`), in den Optionen als 50–100 % in 5er-Schritten |
+
+`apply()` fasst den Fenstermodus nur an, wenn Soll und Ist verschieden sind. Sonst würde jeder Slider-Schritt ein maximiertes Fenster in den Fenstermodus zurücksetzen.
 
 ### user://settings.cfg
 
-Gelesen und geschrieben vom Autoload `Settings` (`autoload/settings.gd`). Er lädt die Datei in `_ready`, also vor jeder Szene, und wendet alles an. Auch ein direkter Start von `main.tscn` (F6) bekommt so die gespeicherten Werte.
+Gelesen und geschrieben vom Autoload `Settings`. Er lädt die Datei in `_ready`, also vor jeder Szene, und wendet alles an. Auch ein direkter Start von `main.tscn` (F6) bekommt so die gespeicherten Werte. Fehlt die Datei, gelten die Standardwerte.
 
 | Schlüssel | Standard | Wirkung |
 |---|---|---|
-| `[video] fullscreen` | `false` | `DisplayServer.window_set_mode` |
-| `[video] vsync` | `true` | `DisplayServer.window_set_vsync_mode` |
-| `[audio] master_volume` | `80.0` (0–100) | Bus `Master`, `linear_to_db(value / 100)`, stumm bei `<= 0` |
+| `[video] fullscreen` | `false` | Fenstermodus |
+| `[video] vsync` | `true` | VSync |
+| `[video] msaa` | `2` (4×) | wird beim Laden auf 0–3 begrenzt |
+| `[video] render_scale` | `1.0` | wird beim Laden auf 0.5–1.0 begrenzt |
+| `[audio] master_volume` | `80.0` | Bus `Master` |
+| `[audio] music_volume` | `100.0` | Bus `Music`, begrenzt auf 0–100 |
+| `[audio] sfx_volume` | `100.0` | Bus `SFX`, begrenzt auf 0–100 |
 | `[controls] mouse_sensitivity` | `1.0` | Faktor auf `Player.mouse_sensitivity` |
 | `[controls] invert_y` | `false` | dreht die Pitch-Richtung im Player um |
 | `[keys] <aktion>` | Belegung aus `project.godot` | `physical_keycode` für `move_*`, `jump`, `sprint` |
 
-Geschrieben wird nur bei *Übernehmen* im Optionsmenü und bei F11. Fehlt die Datei, gelten die Standardwerte. Unter `assets/audio/` liegt keine Datei, und keine Szene spielt einen Ton ab.
+`save_settings()` schreibt **immer alle** Schlüssel. Geschrieben wird:
 
----|---|---|
-| `[video] fullscreen` | aktueller Fenstermodus ist bereits Vollbild | Sofort bei jedem Vollbild-Umschalten (Checkbox, F11 im Menü, F11 in der Spielwelt). Beim Öffnen des Menüs wird der gelesene Wert angewendet und dabei erneut geschrieben. |
-| `[video] vsync` | `true` | Nur in `save_preferences`, aufgerufen wenn die Optionen mit Zurück oder Esc verlassen werden. |
-| `[audio] master_volume` | `80.0` | Ebenfalls nur beim Verlassen der Optionen. |
+| Auslöser | Wo |
+|---|---|
+| *Übernehmen* in den Optionen (Hauptmenü und Pausemenü, dieselbe Szene) | `Settings.apply_values()`: setzt alle Felder, `apply()`, `save_settings()` |
+| F11 | `Settings.toggle_fullscreen()`: schaltet, `apply()`, `save_settings()` |
 
-`set_fullscreen` und `save_preferences` laden die Datei zuerst und ersetzen sie nicht leer. Ein F11 in der Spielwelt löscht Lautstärke und VSync nicht. Fehlt die Datei, liefert `ConfigFile.load` einen Fehler und die Defaults gelten. Lautstärke setzt den Bus `Master` (`linear_to_db(value / 100)`, stumm bei `<= 0`). Unter `assets/audio/` liegt keine Datei, und keine Szene spielt einen Ton ab.
+Die Optionen arbeiten in beiden Menüs mit einem **Entwurf**: Bis *Übernehmen* gedrückt wird, ändert sich nichts am Spiel, am `AudioServer`, am Viewport und an der Datei (keine Live-Vorschau). *Zurück* oder Esc mit offenem Entwurf fragt einmal nach, das zweite Mal verwirft. Nur F11 wirkt und speichert sofort.
 
 ---
 
-## 3. 🎬 Ablauf (Einbahnstraße)
+## 4. 🎬 Ablauf
 
 ```text
 F5
@@ -143,26 +194,34 @@ F5
       Maus sichtbar, Start hat Fokus (settings.cfg hat der Autoload schon angewendet)
       Start
         ├─ Glitch-Stärke 1.0 für 0,5 s (CRT-Shader-Uniform "glitch")
-        ├─ Fade (ColorRect $Fade) Alpha 0 → 1 in 0,45 s
+        ├─ Fade (ColorRect $Fade) Alpha 0 → 1 in 0,45 s  (schwarzer Bildschirm)
         └─ get_tree().change_scene_to_file(game_scene)
              Default: res://scenes/main/main.tscn
               └─ Player._ready setzt MOUSE_MODE_CAPTURED
-                   Esc gibt die Maus frei, Klick fängt sie wieder
-                   kein Button, kein Pause-Menü, kein change_scene zurück
+                   Spiel läuft, Maus gefangen
+                   │
+                   Esc ──► Pausemenü
+                   │         get_tree().paused = true, Maus sichtbar
+                   │         ├─ Fortsetzen / Esc: paused = false, Maus gefangen
+                   │         ├─ Optionen (dieselbe Szene wie im Hauptmenü): Grafik / Audio / Steuerung,
+                   │         │     Entwurf, Wirkung erst nach ÜBERNEHMEN
+                   │         ├─ Zurück zum Hauptmenü: paused = false,
+                   │         │     change_scene_to_file(main_menu_scene) ──► main_menu.tscn
+                   │         └─ Spiel beenden: get_tree().quit()
 ```
 
-`game_scene` ist `@export_file` am Menü und in der Szene nicht überschrieben. Der Szenenwechsel ersetzt den ganzen Baum. Einstellungen bleiben, weil sie im Autoload `Settings` und an `DisplayServer`, `AudioServer` und `InputMap` hängen, nicht am Menü-Knoten.
+`game_scene` (Hauptmenü) und `main_menu_scene` (Pausemenü) sind `@export_file` und in den Szenen nicht überschrieben. Der Szenenwechsel ersetzt den ganzen Baum. Einstellungen bleiben, weil sie im Autoload `Settings` und an `DisplayServer`, `AudioServer`, `InputMap` und dem Root-Viewport hängen.
 
-Es gibt keinen Rückweg ins Menü.
+Der Weg zurück ins Hauptmenü existiert, aber nur über das Pausemenü. Ein Spielstand wird nicht gespeichert, beide Ausstiege fragen nicht nach. Die beiden Ausstiege liegen auf der Hauptseite des Pausemenüs. Dorthin kommt man aus den Optionen nur über *Zurück* oder Esc, bei offenem Entwurf also erst nach der Verwerfen-Warnung.
 
 ---
 
-## 4. Szenen-Hierarchie
+## 5. 🎬 Szenen-Hierarchie
 
 ### `scenes/menu/main_menu.tscn` — Wurzel `MainMenu` (`Control`, Skript `main_menu.gd`)
 
 ```text
-MainMenu (Control)                     theme: cyber, script main_menu.gd
+MainMenu (Control)                     theme: scenes/ui/cyber_theme.tres, script main_menu.gd
 ├── Background (ColorRect)             Shader menu_background.gdshader
 ├── Margin (MarginContainer)
 │   └── Layout (VBoxContainer)
@@ -177,23 +236,37 @@ MainMenu (Control)                     theme: cyber, script main_menu.gd
 │       │   ├── %OptionsButton         "OPTIONEN"
 │       │   └── %QuitButton            "BEENDEN"
 │       └── Footer
-├── %OptionsPanel (PanelContainer)     anfangs unsichtbar, mittig; beim Öffnen werden %TitleBox und %Subtitle ausgeblendet
-│   └── Options
-│       ├── Header                     "> OPTIONEN"
-│       ├── %Tabs (TabContainer)
-│       │   ├── "ANZEIGE & AUDIO"      %FullscreenCheck, %VsyncCheck, %VolumeSlider/%VolumeValue
-│       │   └── "STEUERUNG"            %SensitivitySlider/%SensitivityValue (0.1–3.0),
-│       │                              %InvertYCheck, KeyHint, %KeyGrid (4 Spalten, Knöpfe im Code erzeugt)
-│       ├── ActionRow                  %ApplyButton "ÜBERNEHMEN" (nur aktiv bei Änderungen),
-│       │                              %DefaultsButton "STANDARD", %BackButton "ZURÜCK"
-│       └── %StatusLabel               "Ungespeicherte Änderungen" / "übernommen" / Warnung
+├── %OptionsPanel (PanelContainer)     anfangs unsichtbar, mittig (780 breit); beim Öffnen werden %TitleBox und %Subtitle ausgeblendet
+│   └── %Options                       Instanz von scenes/options/options_menu.tscn (siehe unten)
 ├── Fade (ColorRect)                   schwarz, Alpha 0, Pfad $Fade
 └── Overlay (ColorRect)                Shader crt_overlay.gdshader, Pfad $Overlay
 ```
 
-`%` bedeutet `unique_name_in_owner`. Relative Pfade im Skript: `$Overlay.material`, `$Fade`.
+`%` bedeutet `unique_name_in_owner`. Relative Pfade im Skript: `$Overlay.material`, `$Fade`. Hintergrund-Shader zeichnet Himmel, zwei Skyline-Ebenen und ein Bodengitter. CRT-Shader zeichnet Scanlines, Farbverschiebung, Vignette, Rauschen und das Uniform `glitch` (0 ruhig, 1 stark).
 
-Hintergrund-Shader zeichnet Himmel, zwei Skyline-Ebenen und ein perspektivisches Bodengitter. CRT-Shader zeichnet Scanlines, chromatische Aberration, Vignette, Rauschen und das Uniform `glitch` (0 = ruhig, 1 = stark).
+Das Hauptmenü hat keine eigenen Options-Bedienelemente mehr. Alles, was früher unter `OptionsPanel/Options` hing (Reiter, Slider, Tastenbelegung, Übernehmen/Standard/Zurück), steckt in der gemeinsamen Szene. Das Hauptmenü verbindet nur `options.closed` (Titel und Knöpfe wieder zeigen) und `options.glitch_requested` (CRT-Glitch).
+
+### `scenes/options/options_menu.tscn` — Wurzel `Options` (`VBoxContainer`, Skript `options_menu.gd`)
+
+Die einzige Options-Oberfläche des Projekts. Hauptmenü (`%Options` unter `%OptionsPanel`) und Pausemenü (`%Options` unter `Pages`) binden dieselbe Szene ein. Die Szene hat kein eigenes Theme und erbt es vom Host. Beide Hosts benutzen `scenes/ui/cyber_theme.tres`.
+
+```text
+Options (VBoxContainer)                    separation 12
+├── Header                                 "> OPTIONEN"
+├── %Tabs (TabContainer, use_hidden_tabs_for_min_size = true)
+│   ├── GRAFIK        %FullscreenCheck, %VsyncCheck,
+│   │                 %MsaaOption (OptionButton: AUS, 2x, 4x, 8x; Item-ID = Viewport.MSAA),
+│   │                 %RenderScaleSlider (50–100, Schritt 5) / %RenderScaleValue
+│   ├── AUDIO         %MasterSlider / %MasterValue, %MusicSlider / %MusicValue,
+│   │                 %SfxSlider / %SfxValue (je 0–100, Schritt 5)
+│   └── STEUERUNG     %SensitivitySlider (0.1–3.0, Schritt 0.05) / %SensitivityValue,
+│                     %InvertYCheck, KeyHint, %KeyGrid (4 Spalten, 6 Aktionen, Knöpfe im Code erzeugt)
+├── ActionRow         %ApplyButton "ÜBERNEHMEN" (nur aktiv bei Änderungen),
+│                     %DefaultsButton "STANDARD", %BackButton "ZURÜCK"
+└── %StatusLabel
+```
+
+`use_hidden_tabs_for_min_size` hält den Rahmen bei allen Reitern gleich hoch. Folge: `TabContainer` misst auch die versteckten Reiter. Ein `Label` mit `autowrap_mode` meldet dort mangels Breite eine riesige Mindesthöhe und lässt das ganze Panel in die Höhe wachsen. Deshalb hat `KeyHint` **keinen** Zeilenumbruch. Wer einem Reiter ein umbrechendes Label gibt, muss ihm eine `custom_minimum_size.x` geben.
 
 ### `scenes/main/main.tscn` — Wurzel `Main` (`Node3D`, Skript `main.gd`)
 
@@ -206,10 +279,33 @@ Main (Node3D)
 │   ├── BoxSmall (CSGBox3D)            Default-Größe 2×2×2, Position (4, 0.5, -6)
 │   ├── BoxLarge (CSGBox3D)            4×2×4, Position (-5, 1, -10)
 │   └── Ramp (CSGBox3D)                3×0.3×8, etwa 20° um X, Position (8, 0.6, 2)
-└── Player                             Instanz player.tscn, Transform nicht überschrieben
+├── Player                             Instanz player.tscn, Transform nicht überschrieben
+└── PauseMenu                          Instanz pause_menu.tscn, als letztes Kind
 ```
 
 Environment: `background_mode = 2` (Sky), `ambient_light_source = 3` (Sky), `reflected_light_source = 2` (Sky), `tonemap_mode = 2` (ACES), SSAO und Glow an. Boden `Color(0.32, 0.45, 0.3)`, Kisten `Color(0.55, 0.6, 0.68)`, Rampe `Color(0.7, 0.62, 0.45)`. Alle vier CSG-Knoten haben `use_collision = true`. `BoxSmall` ragt mit der Default-Höhe in den Boden. CSG ist Platzhalter-Geometrie.
+
+### `scenes/pause/pause_menu.tscn` — Wurzel `PauseMenu` (`CanvasLayer`, Skript `pause_menu.gd`)
+
+Szene-Eigenschaften: `layer = 10`, `visible = false`, `process_mode = ALWAYS` (3). Kinder erben ALWAYS und laufen deshalb auch bei `get_tree().paused = true`. Das Theme ist `scenes/ui/cyber_theme.tres` (dasselbe wie im Hauptmenü), gesetzt an `Root`.
+
+```text
+PauseMenu (CanvasLayer)
+└── Root (Control, Vollbild, theme = cyber_theme.tres)
+    ├── Dim (ColorRect)                      abdunkeln, schluckt Mausklicks
+    └── Center (CenterContainer)
+        └── Panel (PanelContainer, min. 780 breit, wie das Optionen-Panel im Hauptmenü)
+            └── Pages (VBoxContainer)
+                ├── %MainPage (VBoxContainer)
+                │   ├── Title "> PAUSE", Hint "// SPIEL ANGEHALTEN // ESC = FORTSETZEN // F11 = VOLLBILD"
+                │   ├── %ResumeButton      "FORTSETZEN"
+                │   ├── %OptionsButton     "OPTIONEN"
+                │   ├── %MainMenuButton    "ZURÜCK ZUM HAUPTMENÜ"
+                │   └── %QuitButton        "SPIEL BEENDEN"
+                └── %Options (Instanz von scenes/options/options_menu.tscn, anfangs unsichtbar)
+```
+
+Die Optionen im Pausemenü sind genau die Szene aus dem Hauptmenü, kein eigener Nachbau.
 
 ### `scenes/player/player.tscn` — Wurzel `Player` (`CharacterBody3D`, `class_name Player`)
 
@@ -225,21 +321,37 @@ Kein Knoten hat `unique_name_in_owner`. Zugriffe: `$Head`, `$Head/Camera3D`.
 
 ---
 
-## 5. 📜 Skripte
+## 6. 📜 Skripte
 
 ### `autoload/settings.gd` (Autoload `Settings`)
 
-- `extends Node`, kein `class_name` (der Autoload-Name ist `Settings`)
-- Signal `changed` nach jedem `apply()`
-- Konstanten `PATH := "user://settings.cfg"` und `REBINDABLE_ACTIONS` (Aktion → Anzeigename im Menü). Eine weitere Aktion belegbar machen: dort eintragen.
-- Felder: `fullscreen`, `vsync`, `master_volume`, `mouse_sensitivity`, `invert_y`, `key_bindings` (Aktion → `physical_keycode`)
-- Öffentlich: `get_values()`, `get_defaults()`, `apply_values(dict)` (übernehmen, anwenden, speichern), `apply()`, `toggle_fullscreen()`, `key_name(code)` (statisch, Name im aktuellen Tastaturlayout), `load_settings()`, `save_settings()`
-- Standard-Tastenbelegung wird in `_ready` aus der `InputMap` gelesen, bevor die Datei geladen wird
+- `extends Node`, kein `class_name`. Der Autoload-Name ist `Settings`.
+- Signal `changed`, wird am Ende jedes `apply()` gesendet.
+- Konstanten: `PATH`, `MASTER_BUS`, `MUSIC_BUS`, `SFX_BUS`, `RENDER_SCALE_MIN`, `REBINDABLE_ACTIONS` (Aktion → Anzeigename in den Optionen).
+- Felder: `fullscreen`, `vsync`, `msaa` (int), `render_scale`, `master_volume`, `music_volume`, `sfx_volume`, `mouse_sensitivity`, `invert_y`, `key_bindings` (Aktion → `physical_keycode`).
+- Öffentlich: `get_values()`, `get_defaults()`, `apply_values(dict)` (übernehmen, anwenden, speichern; neuere Schlüssel mit `values.get(..., aktuell)`), `apply()`, `toggle_fullscreen()`, `key_name(code)` (statisch; im Headless-Modus ohne Layout-Abfrage, weil `keyboard_get_keycode_from_physical` dort einen Fehler meldet), `load_settings()`, `save_settings()`.
+- Privat: `_apply_bus`, `_ensure_buses`, `_read_binding`.
+- `_ready` legt fehlende Busse an, liest die Standard-Tastenbelegung aus der `InputMap`, lädt die Datei und wendet an.
+- **Ein Änderungsweg für die Optionen:** Die gemeinsame Options-Szene bearbeitet eine Kopie (`get_values()`) und ruft bei *Übernehmen* `apply_values()`. Daneben gibt es nur F11 über `toggle_fullscreen()`. `apply()` kann jeder aufrufen, es ist idempotent.
+- `changed` hört die Options-Szene ab, um die Vollbild-Checkbox bei F11 nachzuziehen.
+
+### `scenes/pause/pause_menu.gd`
+
+- `extends CanvasLayer`, kein `class_name`. Keine eigenen `signal`-Deklarationen.
+- Export: `main_menu_scene` (`@export_file("*.tscn")`), Standard `res://scenes/menu/main_menu.tscn`.
+- Öffentlich: `open()` und `close()`. `visible` ist der Offen-Zustand.
+- `const OptionsMenu := preload("res://scenes/options/options_menu.gd")`, `@onready var options: OptionsMenu = %Options`. Das Skript hat bewusst kein `class_name`, damit auch headless Läufe ohne Editor-Cache funktionieren.
+- `open()`: `get_tree().paused = true`, `Input.mouse_mode = VISIBLE`, Optionen verstecken, Hauptseite zeigen, Fokus auf *Fortsetzen*.
+- `close()`: verstecken, `paused = false`, `Input.mouse_mode = CAPTURED`. Speichern ist nicht nötig, die Optionen speichern bei *Übernehmen* selbst.
+- `_unhandled_input`: `ui_cancel` öffnet, ruft in den Optionen `options.request_back()` oder schließt. F11 nur bei offenem Menü. Beide Fälle rufen `set_input_as_handled()`.
+- `_exit_tree`: war das Menü offen, wird `paused = false` gesetzt, damit die Pause nicht in die nächste Szene wandert.
+- Die früheren eigenen Handler für Vollbild, VSync, MSAA, 3D-Auflösung, Master, Musik, SFX, Sensitivität und Y-Invertierung sowie `_refresh()` sind entfernt. Das macht jetzt `options_menu.gd`.
+- Menü-Knöpfe: *Fortsetzen* → `close`, *Optionen* → `_show_options` (Hauptseite aus, `options.open()`), *Zurück zum Hauptmenü* → `_on_main_menu_pressed` (`paused = false`, `change_scene_to_file`), *Spiel beenden* → `_on_quit_pressed` (`quit`). `options.closed` ist mit `_show_main_page` verbunden (Hauptseite zeigen, Fokus auf *Optionen*).
+- Das Menü ist **kein** Autoload. Es existiert nur in `main.tscn`.
 
 ### `scenes/menu/main_menu.gd`
 
-- `extends Control`, kein `class_name`
-- Keine eigenen `signal`-Deklarationen. Verbindungen laufen auf Button- und Slider-Signale.
+- `extends Control`, kein `class_name`. Keine eigenen `signal`-Deklarationen.
 
 | Export | Default |
 |---|---|
@@ -248,23 +360,29 @@ Kein Knoten hat `unique_name_in_owner`. Zugriffe: `$Head`, `$Head/Camera3D`.
 | `glitch_interval_max` | `4.5` |
 | `glitch_duration` | `0.18` |
 
-Engine-Callbacks: `_ready`, `_process`, `_input` (fängt die Taste beim Neubelegen ab), `_unhandled_input`. Alles andere ist privat.
+Engine-Callbacks: `_ready`, `_process`, `_unhandled_input`. Alles andere ist privat. State: `_glitch_timer`, `_glitch_left`, `_starting` (blockiert einen zweiten Start, deaktiviert dabei die Buttons). Optionen: `const OptionsMenu := preload("res://scenes/options/options_menu.gd")`, `@onready var options: OptionsMenu = %Options`. `_show_options` blendet Titel und Knöpfe aus und ruft `options.open()`. `options.closed` → `_hide_options` (alles wieder zeigen, Fokus auf *Optionen*). `options.glitch_requested` → `_trigger_glitch`. Esc bei offenen Optionen → `options.request_back()`, F11 → `Settings.toggle_fullscreen()`. Entwurf, Tastenbelegung und Verwerfen-Warnung stecken nicht mehr hier, sondern in `options_menu.gd`.
 
-State: `_glitch_timer`, `_glitch_left`, `_starting`. `_starting` blockiert einen zweiten Start. Die Buttons werden dabei `PROCESS_MODE_DISABLED`.
+### `scenes/options/options_menu.gd`
 
-Optionen: `_draft` ist eine Kopie von `Settings.get_values()`, die die Bedienelemente ändern. *Übernehmen* ruft `Settings.apply_values(_draft)` auf, *Standard* lädt `Settings.get_defaults()` in `_draft`, *Zurück* verwirft (mit einmaliger Warnung, `_confirm_discard`). `_rebinding_action` ist die Aktion, die gerade auf eine Taste wartet; ist die neue Taste schon vergeben, tauschen die beiden Aktionen ihre Tasten.
+- `extends VBoxContainer`, kein `class_name` (Hosts laden das Skript per `preload`). Vollständig typisiert.
+- Signale: `closed` (Seite wurde verlassen) und `glitch_requested(strength: float, duration: float)` (Effektwunsch fürs Hauptmenü, das Pausemenü hört nicht zu).
+- Öffentlich: `open()` (Entwurf = `Settings.get_values()`, erster Reiter, Oberfläche füllen, zeigen, Fokus auf die Tab-Leiste) und `request_back()` (Zurück-Knopf und Esc der Hosts). Alles andere ist privat.
+- State: `_draft` (Dictionary, leer solange die Seite zu ist), `_rebinding_action`, `_key_buttons`, `_confirm_discard`.
+- *Übernehmen* → `Settings.apply_values(_draft)`, dann `_draft = Settings.get_values()`. *Standard* → `Settings.get_defaults()` in den Entwurf. `request_back()`: läuft eine Tastenbelegung, passiert nichts. Ist der Entwurf ungleich `Settings.get_values()` und noch nicht gewarnt, erscheint die Warnung. Sonst `_close()`: Entwurf leeren, verstecken, `closed` senden.
+- Der Vergleich Entwurf gegen Settings (`_same_values`) nimmt für Kommazahlen `is_equal_approx`, weil ein Slider mit Schrittweite 0.05 den gespeicherten Wert nicht immer bitgenau trifft. Der Schlüssel `key_bindings` wird als verschachteltes Dictionary verglichen.
+- Tastenbelegung: `_input` fängt während der Belegung jede Taste ab (Esc bricht nur die Belegung ab). Ist eine Taste schon vergeben, tauschen die beiden Aktionen.
+- `Settings.changed` → `_on_settings_changed`: ist die Seite offen, wird `_draft.fullscreen` auf den neuen Wert gesetzt (F11). Dadurch folgt die Checkbox, und F11 allein macht den Entwurf nicht „ungespeichert“.
+- Die MSAA-Auswahl füllt `_ready` mit den IDs `Viewport.MSAA_*`, die Zuordnung zu `Settings.msaa` ist also die Identität. Die 3D-Auflösung ist ein Slider in Prozent (50–100) und wird als `value / 100.0` in den Entwurf geschrieben.
 
 ### `scenes/main/main.gd`
 
-- `extends Node3D`, kein `class_name`
-- Keine Exports, keine Signale, keine Node-Pfade
-- Einzige Methode: `_unhandled_input` für F11 → `Settings.toggle_fullscreen()`
-- Kennt den Player nicht
+- `extends Node3D`, kein `class_name`. Keine Exports, keine Signale, keine Node-Pfade.
+- Einzige Methode: `_unhandled_input` für F11 → `Settings.toggle_fullscreen()`.
+- Kennt weder Player noch PauseMenü. Bei pausiertem Baum läuft die Methode nicht.
 
 ### `scenes/player/player.gd`
 
-- `class_name Player`
-- `extends CharacterBody3D`
+- `class_name Player`, `extends CharacterBody3D`.
 
 | Gruppe | Variable | Default |
 |---|---|---|
@@ -286,38 +404,283 @@ Keine davon ist in der `.tscn` überschrieben.
 | `head`, `camera` | `@onready` auf `$Head` und `$Head/Camera3D` |
 | `_spawn_transform` | privat, kein Marker in der Szene |
 
-Keine `signal`-Deklaration. Yaw dreht den Body, Pitch nur `Head`. Wirksame Empfindlichkeit ist `mouse_sensitivity * Settings.mouse_sensitivity`; `Settings.invert_y` dreht die Pitch-Richtung um. Unter `respawn_height` ruft `_physics_process` `respawn()` auf. Bewegung: `Input.get_vector("move_left", "move_right", "move_forward", "move_back")`, in `transform.basis` gedreht, horizontal per `lerpf`. In der Luft ist die Beschleunigung `acceleration * air_control`.
+Keine `signal`-Deklaration. Yaw dreht den Body, Pitch nur `Head`. Wirksame Empfindlichkeit ist `mouse_sensitivity * Settings.mouse_sensitivity`; `Settings.invert_y` dreht die Pitch-Richtung um. Mausbewegung wirkt nur bei `MOUSE_MODE_CAPTURED`. Der frühere Zweig, der bei `ui_cancel` die Maus freigab, ist entfernt. Unter `respawn_height` ruft `_physics_process` `respawn()` auf. Bewegung: `Input.get_vector("move_left", "move_right", "move_forward", "move_back")`, in `transform.basis` gedreht, horizontal per `lerpf`. In der Luft ist die Beschleunigung `acceleration * air_control`. Bei pausiertem Baum laufen weder Physik noch Eingabe des Players.
 
 ---
 
-## 6. 🔌 Abhängigkeiten
+## 7. 🔌 Abhängigkeiten
 
 ```text
 project.godot
   main_scene ──► scenes/menu/main_menu.tscn
-                    ├── main_menu.gd
-                    │     ├── Autoload Settings
-                    │     ├── $Overlay, $Fade, %Buttons
-                    │     └── Start ──► scenes/main/main.tscn
-                    ├── menu_background.gdshader
-                    └── crt_overlay.gdshader
-  main.tscn
-    ├── main.gd ── Autoload Settings   (nur F11)
-    └── instance scenes/player/player.tscn
-          └── player.gd
-                ├── Input Map: move_*, jump, sprint, ui_cancel
-                ├── ProjectSettings: physics/3d/default_gravity
-                ├── Autoload Settings: mouse_sensitivity, invert_y
-                └── $Head, $Head/Camera3D
+  autoload   ──► Settings (autoload/settings.gd)
+                    ├── liest/schreibt user://settings.cfg
+                    ├── wirkt auf DisplayServer, Root-Viewport (msaa_3d, scaling_3d_scale),
+                    │   AudioServer (Master, Music, SFX), InputMap
+                    └── Signal changed
+  default_bus_layout.tres ──► AudioServer (Music, SFX)
+
+scenes/ui/cyber_theme.tres ──► Theme für main_menu.tscn und pause_menu.tscn (und damit für die Optionen)
+
+scenes/options/options_menu.tscn
+  └── options_menu.gd ── Settings (get_values, get_defaults, apply_values, changed, key_name,
+                                   REBINDABLE_ACTIONS), Signale closed / glitch_requested
+
+main_menu.tscn
+  ├── theme ── scenes/ui/cyber_theme.tres
+  ├── instance scenes/options/options_menu.tscn
+  ├── main_menu.gd ── Settings.toggle_fullscreen, options.open / request_back / closed / glitch_requested
+  │     └── Start ──► scenes/main/main.tscn
+  ├── menu_background.gdshader
+  └── crt_overlay.gdshader
+
+main.tscn
+  ├── main.gd ── Settings.toggle_fullscreen (F11, nur wenn nicht pausiert)
+  ├── instance scenes/player/player.tscn
+  │     └── player.gd ── Settings.mouse_sensitivity, Settings.invert_y,
+  │                      Input Map: move_*, jump, sprint,
+  │                      ProjectSettings: physics/3d/default_gravity, $Head, $Head/Camera3D
+  └── instance scenes/pause/pause_menu.tscn
+        ├── theme ── scenes/ui/cyber_theme.tres
+        ├── instance scenes/options/options_menu.tscn
+        └── pause_menu.gd ── Settings.toggle_fullscreen, options.open / request_back / closed,
+                             SceneTree.paused, Input.mouse_mode, ui_cancel,
+                             Zurück ──► scenes/menu/main_menu.tscn
 ```
 
 ---
 
-## 7. 🚫 Nicht vorhanden
+## 8. 🚫 Nicht vorhanden
 
 - Ordner `scenes/interactive/` und Szene `interactive_box.tscn`
 - Weitere Autoloads außer `Settings`; eigene Signale außer `Settings.changed`
-- Pause-Menü, Spielziel, Gegner, Items, Rückweg ins Hauptmenü
-- Gamepad-Events an `move_*`, `jump`, `sprint` (auch das Neubelegen im Menü kennt nur Tastatur)
+- Spielziel, Gegner, Items, Spielstand
+- Bestätigungsabfrage bei *Zurück zum Hauptmenü* und *Spiel beenden*
+- Live-Vorschau in den Optionen: Änderungen wirken erst nach *Übernehmen* (Hauptmenü und Pausemenü gleich). Das Pausemenü hatte kurz eine Live-Vorschau, siehe Eintrag 7
+- Gamepad-Events an `move_*`, `jump`, `sprint`
+- Audio-Dateien und `AudioStreamPlayer`; die Busse `Music` und `SFX` sind leer
 - Dateien unter `assets/` außer `.gitkeep`
-- Audio, das die gespeicherte Lautstärke hörbar machen würde
+
+---
+
+## 9. ✅ Teststand
+
+Geprüft mit Godot 4.7.2 stable (headless und im Fenster) gegen den Stand dieses Dokuments, alle Läufe mit **isoliertem `APPDATA`** (siehe Abschnitt 10), die echte `settings.cfg` blieb dabei unangetastet (Hash vor und nach den Läufen identisch). Zahlen aus der echten Ausgabe der letzten Läufe:
+
+| Lauf | Ergebnis |
+|---|---|
+| `--headless` Start von Projekt, `main_menu.tscn`, `main.tscn`, `pause_menu.tscn`, `options_menu.tscn` je mit `--quit-after 5` | 5 von 5 ohne Zeile außer der Versionszeile, also keine Fehler und Warnungen |
+| `options_flow.gd` (Headless): dieselbe Prüfroutine einmal im Hauptmenü, einmal im Pausemenü, dazu Strukturvergleich und Übernahme der Werte vom Hauptmenü ins Spiel | **92 PASS, 0 FAIL**, keine `ERROR`/`SCRIPT`/`WARNING`-Zeilen |
+| `pause_flow.gd` (Headless): Skripte und Szenen laden, Esc, Pause, Spieler steht still, Fortsetzen, Zurück ins Hauptmenü | **28 PASS, 0 FAIL, 1 SKIP** (Player-Look braucht eine echte Maus, im Fensterlauf nachgeholt) |
+| `pause_gui.gd` (Fenster 1280×720, Vulkan Forward+, AMD Radeon RX 9070 XT) | Mausmodus nach Start 2 (gefangen), nach Esc 0 (frei), nach Fortsetzen 2. Look-Differenz −0,4 bei Erwartung −0,4, `ok=true` |
+| `options_gui.gd` (Fenster 1280×720): Screenshots der drei Reiter in beiden Menüs | Beide Panels 780 px breit, gleiche x-Position (250), gleicher Aufbau, per Bildvergleich bestanden (GRAFIK, AUDIO, STEUERUNG) |
+| `apply_test.gd` (Headless) | Master nach `_ready` −1,938 dB, nach `apply()` −6,02 dB (50 %), Music −12,04 dB (25 %), SFX −80 dB und stumm (0 %), `scaling_3d_scale` 0,7 |
+
+Inhalt von `options_flow.gd` je Menü (dieselben Prüfungen, deshalb „gleich“ belegt): 3 Reiter GRAFIK/AUDIO/STEUERUNG, ÜBERNEHMEN anfangs gesperrt, 4 Kantenglättungs-Einträge, 12 Zellen der Tastenbelegung. Änderungen nur im Entwurf (Settings, `AudioServer` unverändert, Beschriftungen folgen). Neubelegung Springen → G erst im Entwurf, Esc während der Belegung bricht nur diese ab. *Übernehmen*: MSAA 8×, 3D-Auflösung 0,7, Master 50 %, Musik 25 %, SFX stumm, Sensitivität 2,0, Y-Invert, `jump` = G in `Settings`, `InputMap` und `settings.cfg`. Esc mit offenem Entwurf: Warnung, zweites Esc verwirft. Wieder öffnen zeigt die übernommenen Werte. *Standard* lädt Standardwerte nur in den Entwurf. F11 zieht die Checkbox nach und macht den Entwurf nicht „ungespeichert“. *Zurück* ohne Änderung schließt sofort. Zusätzlich: gleiche Szene (`scene_file_path`), gleiches Theme (`resource_path`), identische Knotenstruktur (66 Knoten), im Hauptmenü übernommene Werte stehen nach *Start* im Pausemenü.
+
+Frühere Zahlen („49 Prüfungen, 48 bestanden“) stammen vom alten Pausemenü mit eigenen Optionen und gelten nicht mehr. Dieses `pause_flow.gd` gibt es so nicht mehr.
+
+Nicht geprüft:
+
+- **Echter Vollbild-Wechsel aus dem Pausemenü.** Der Headless-Modus kennt keinen Fenstermodus. Geprüft ist nur die Verkabelung (Checkbox ↔ `Settings.fullscreen` ↔ `apply()`).
+- **Hörbare Lautstärke.** Es gibt keine Audio-Wiedergabe. Geprüft ist der Wert am Bus (dB und Mute).
+- **Controller.** Der Fokus ist gesetzt, ein Gerät war nicht angeschlossen.
+- **Echte Mausklicks in den Optionen.** Die Tests lösen die Signale der Bedienelemente per Skript aus (`pressed.emit()`, `value =`) und senden Tasten per `Input.parse_input_event`. Das aufgeklappte Popup des Dropdowns *Kantenglättung* (Stil `PopupMenu` im Theme) wurde nie angezeigt, nur das geschlossene Dropdown per Screenshot.
+
+Offene Kleinigkeiten:
+
+- `scenes/pause/pause_menu.gd`, `scenes/options/options_menu.gd` und `scenes/ui/cyber_theme.tres` haben noch keine `.uid`-Datei. Godot legt sie an, sobald das Projekt im Editor geöffnet und gespeichert wird. Sie gehören dann ins Repo.
+- `user://settings.cfg` des Entwicklers: Der Inhalt ist Spielstand des Entwicklers (siehe Eintrag 7). Tests dürfen sie nicht anfassen, siehe Abschnitt 10.
+- Die Testskripte liegen nur in `%TEMP%\godot_tests\` und nicht im Repo. Wer sie wiederverwenden will, legt sie z. B. unter `tools/` ab.
+
+---
+
+## 10. 🧪 Test-Rezept (für die nächste KI)
+
+Godot liegt auf dem Entwicklerrechner unter `C:\Users\EnScapeZ\Desktop\Godot_v4.7.2-stable_win64.exe` und ist nicht im `PATH`. Unten `<godot>` und `<projekt>` entsprechend einsetzen.
+
+| Ziel | Befehl | Auswertung |
+|---|---|---|
+| Projekt startet fehlerfrei | `<godot> --headless --path <projekt> --quit-after 5` | Keine Ausgabe nach der Versionszeile = keine Fehler |
+| Einzelne Szene laden | `<godot> --headless --path <projekt> res://scenes/pause/pause_menu.tscn --quit-after 5` | wie oben |
+| Ablauf prüfen | Testskript `extends SceneTree`, Aufruf mit `--script <datei>` | `PASS`/`FAIL`-Zeilen, `quit(failures)` als Exit-Code |
+| Aussehen und Mausfang | wie oben, aber ohne `--headless`, mit `--windowed --resolution 1280x720`, Screenshot per `root.get_texture().get_image().save_png(...)` nach `await RenderingServer.frame_post_draw` | Bilder ansehen |
+
+Stolpersteine, die schon Zeit gekostet haben:
+
+- `--check-only --script res://...` meldet für **jedes** Skript, das `Settings` benutzt, fälschlich `Identifier not found: Settings`, auch für unverändert funktionierenden Code. Autoloads sind in diesem Modus nicht registriert. Stattdessen Szene oder Projekt starten.
+- Ein `--script`-Testskript wird vor den Autoloads kompiliert und kann `Settings` deshalb nicht als Bezeichner verwenden: `var s := root.get_node("Settings")`. In `_initialize()` zuerst `await process_frame`, sonst ist der Autoload noch nicht `_ready` (`is_node_ready()` ist `false`, `get_viewport()` liefert `null`).
+- Headless kennt weder Mausmodus (immer `0`, `VISIBLE`) noch Fenstermodus. Mausfang und Vollbild nur im echten Fenster prüfen.
+- Tasten simulieren: `InputEventKey` mit `keycode` **und** `physical_keycode` setzen, über `Input.parse_input_event`, danach zwei Frames warten.
+- **Tests dürfen die echte `settings.cfg` nie anfassen.** Sie liegt unter `%APPDATA%\Godot\app_userdata\Godot 3D Base\settings.cfg` und gehört dem Entwickler: Er startet das Spiel selbst und stellt dort Dinge ein. Sichern und Zurückkopieren war ein Fehler (siehe Eintrag 7): Man kann seine Einstellungen überschreiben, und der Hash-Vergleich beweist nur, dass man sich selbst zurückgeschrieben hat. Stattdessen den Testprozess auf ein Temp-Verzeichnis umlenken. Godot liest `APPDATA` aus der Umgebung des Prozesses:
+  ```powershell
+  $iso = "$env:TEMP\godot_appdata_iso"; New-Item -ItemType Directory $iso -Force | Out-Null
+  $old = $env:APPDATA
+  try { $env:APPDATA = $iso; & $godot --headless --path . --script $test } finally { $env:APPDATA = $old }
+  ```
+  Nachgewiesen: Der Testprozess meldet dann `user dir=…\Temp\godot_appdata_iso\Godot\app_userdata\Godot 3D Base`. Ohne `settings.cfg` im Temp-Verzeichnis gelten die Standardwerte (`fullscreen=false`), ein Fensterlauf springt also nicht in den Vollbildmodus. `try`/`finally` ist Pflicht, sonst bleibt `APPDATA` in der Shell verbogen, wenn der Lauf abbricht.
+- Hängt ein `--script`-Test (z. B. nach einem `SCRIPT ERROR` in `_initialize`), läuft der Prozess weiter. Mit `Start-Process -PassThru` starten, `WaitForExit(60000)` und bei Zeitüberschreitung `Stop-Process`. Ausgabe per `-RedirectStandardOutput` und `-RedirectStandardError` in Dateien holen.
+- Szenen, die der Test per `change_scene_to_file` verlässt (Start, Zurück ins Hauptmenü), werden freigegeben. Pfade und Eigenschaften vorher in Variablen lesen, sonst `previously freed`.
+- Knoten, die per Code erzeugt werden, und Engine-interne Knoten heißen `@TabBar@4`, `@Label@12` usw. Die Zahl hängt vom Erzeugungszeitpunkt ab. Beim Strukturvergleich zweier Instanzen die Zahl wegnormalisieren (`@(\w+)@\d+` → `@$1`), sonst meldet der Vergleich Unterschiede, die keine sind.
+- Ein umbrechendes `Label` in einem `TabContainer` mit `use_hidden_tabs_for_min_size` bläht den ganzen Rahmen auf, siehe Abschnitt 5. Zeigt ein Screenshot ein leeres, bildhohes Panel, zuerst danach suchen.
+- `grep`/`Select-String "^FAIL"` zählt die Zusammenfassung `FAILURES=0` mit. Auf `^FAIL ` (mit Leerzeichen) prüfen.
+
+---
+
+## 11. 📝 Änderungsprotokoll (neuester Eintrag zuerst)
+
+Vorlage für neue Einträge steht in `.cursor/rules/ai-handover.mdc`. Alle Einträge unten stammen vom selben Tag, 2026-10-25. Die Einträge 1 bis 5 sind aus dem Verlauf der Sitzung nachgetragen. Änderungen anderer Personen oder Systeme, die per `git pull` hereinkamen, sind nur anhand der Commit-Nachrichten und der Diffs beschrieben.
+
+### Eintrag 7 — Optionen in Hauptmenü und Pausemenü sind jetzt dieselbe Szene
+
+- **Auftrag:** „aber optionen menu vom hauptmenu und wenn man im spiel ist nachdem man starten gedrückt hat sollte im esc menü die optionen gleich sein“.
+- **Ausgangslage:** Zwei getrennte Implementierungen. Hauptmenü: Entwurf mit *Übernehmen*/*Standard*/*Zurück* (Verwerfen-Warnung), zwei Reiter *ANZEIGE & AUDIO* und *STEUERUNG* mit Tastenbelegung, 5 Einstellungen, kein MSAA/3D-Auflösung/Musik/SFX. Pausemenü: Live-Anwendung bei jeder Änderung, drei Reiter *GRAFIK*/*AUDIO*/*STEUERUNG*, 9 Einstellungen, keine Tastenbelegung. Zwei Theme-Kopien mit leicht unterschiedlichem Panel-Alpha (0,88 gegen 0,92), dem Hauptmenü fehlten `OptionButton` und `PopupMenu`.
+- **Neu:**
+  - `scenes/options/options_menu.tscn` und `options_menu.gd`: die gemeinsame Options-Szene (Aufbau siehe Abschnitt 5 und 6). Reiter GRAFIK / AUDIO / STEUERUNG, alle 9 Einstellungen plus Tastenbelegung, Entwurf mit *Übernehmen*, *Standard*, *Zurück*, Statuszeile. Signale `closed` und `glitch_requested`.
+  - `scenes/ui/cyber_theme.tres`: ein gemeinsames Theme, zusammengesetzt aus dem Pause-Theme (Obermenge, hat `OptionButton` und `PopupMenu`). Panel-Alpha 0,9 als Mittelwert.
+- **Geändert:**
+  - `scenes/menu/main_menu.tscn` (laut `git diff --numstat` +5/−282): Theme-Sub-Resources (144 Zeilen) entfernt, stattdessen `ext_resource` auf `cyber_theme.tres`. Der gesamte Unterbaum `OptionsPanel/Options/...` (Reiter, Slider, Tastenbelegung, Knöpfe, Statuszeile) durch eine Instanz `%Options` von `options_menu.tscn` ersetzt. `OptionsPanel` selbst (Position, 780 breit) bleibt. Hintergrund, Titel, Hauptknöpfe, Footer, Fade und CRT-Overlay unverändert. `load_steps` 22 → 11. Per `git diff` geprüft: Entfallen sind nur die Optionen-Knoten.
+  - `scenes/menu/main_menu.gd` (laut `git diff --numstat` +10/−162): Entwurf, Neubelegung, `_input`, Dirty-Prüfung, Statuszeile und alle Options-Handler entfernt. Neu: `const OptionsMenu := preload(...)`, `%Options`. `_show_options()` blendet Titel und Knöpfe aus und ruft `options.open()`. `options.closed` → `_hide_options()`. `options.glitch_requested` → `_trigger_glitch`. Esc bei offenen Optionen → `options.request_back()`. F11 → `Settings.toggle_fullscreen()`. Glitch-Logik, Start, Beenden unverändert.
+  - `scenes/pause/pause_menu.tscn`: `OptionsPage` (eigener Nachbau der Optionen) durch eine Instanz `%Options` von `options_menu.tscn` ersetzt, Theme extern, Panel-Mindestbreite 680 → 780 (wie das Optionen-Panel im Hauptmenü), damit die Seite beim Wechsel nicht springt.
+  - `scenes/pause/pause_menu.gd`: alle Options-Handler und `_refresh()` entfernt. Esc in den Optionen ruft `options.request_back()`. `Settings.save_settings()` in `close()`, `_show_main_page()`, `_on_main_menu_pressed()` und `_on_quit_pressed()` entfernt (nichts Ungespeichertes mehr, *Übernehmen* speichert selbst).
+  - `autoload/settings.gd`: Kopfkommentar und Kommentar an `apply()` (beschrieben noch zwei Änderungswege und „jeder Slider-Schritt“). Eine Logikänderung: `key_name()` fragt im Headless-Modus (`DisplayServer.get_name() == "headless"`) das Tastaturlayout nicht ab, weil `keyboard_get_keycode_from_physical` dort pro Aufruf `ERROR: Not supported by this display server` meldet. Im Fenster ändert sich nichts.
+  - `AI_HANDOVER.md`: Ist-Stand-Abschnitte 1 bis 10 auf den neuen Stand gebracht, dieser Eintrag, Korrektur in Eintrag 6.
+  - `README.md`: Aufzählungspunkte „Optionen“ und „Pausemenü“ neu formuliert (eine gemeinsame Szene, Übernehmen statt Live-Vorschau), Ordnerstruktur um `scenes/ui/` und `scenes/options/` ergänzt.
+- **Entscheidungen und Gründe:**
+  - **Eine Szene statt Angleichen zweier Nachbauten.** Nur so bleiben die Optionen dauerhaft gleich: Eine neue Einstellung wird an einer Stelle gebaut und erscheint in beiden Menüs. Das Hauptmenü war bisher bewusst nicht umgebaut worden (parallele Arbeit anderer, Merge-Risiko). Der Auftrag verlangt aber ausdrücklich Gleichheit, und der Options-Unterbaum musste ohnehin neu aufgebaut werden, daher wurde er jetzt ersetzt. Wer parallel an den Optionen im Hauptmenü gearbeitet hat, bekommt Merge-Konflikte in `main_menu.tscn` und `main_menu.gd`.
+  - **Das Hauptmenü-Modell (Entwurf, *Übernehmen*, *Standard*, Verwerfen-Warnung) gilt für beide.** Es war zuerst da (vom Projekt-Owner), und die Tastenbelegung baut darauf auf. Preis: Das Pausemenü hat **keine Live-Vorschau** mehr (vorher: Lautstärke und MSAA wirkten sofort). Die Alternative, im Hauptmenü ebenfalls live zu übernehmen, wurde nicht gebaut, weil sie das bestehende Hauptmenü-Verhalten (Verwerfen möglich) abschaffen würde. Das lässt sich ändern, es betrifft dann nur `options_menu.gd`.
+  - **Gemeinsames Theme.** Zwei Theme-Kopien würden wieder auseinanderlaufen, und das Hauptmenü brauchte `OptionButton`/`PopupMenu`. Die Panel-Transparenz weicht dadurch minimal von beiden alten Werten ab (0,9).
+  - **Reiter GRAFIK / AUDIO / STEUERUNG** (Pausemenü-Aufbau) statt *ANZEIGE & AUDIO* / *STEUERUNG*, weil er mehr Einstellungen sauber trennt. Die Tastenbelegung liegt im Reiter STEUERUNG wie vorher im Hauptmenü.
+  - **`Settings.changed` hört die Options-Szene selbst ab**, damit beide Hosts F11 nicht extra behandeln müssen. Beim Nachziehen wird nur `fullscreen` im Entwurf ersetzt, andere ungespeicherte Änderungen bleiben.
+  - **Toleranter Float-Vergleich im Dirty-Check**, weil ein Slider mit Schrittweite 0,05 den gespeicherten Wert nicht bitgenau trifft und sonst „ungespeichert“ meldet, obwohl nichts geändert wurde.
+  - **Kein `class_name` für die Options-Szene.** Hosts laden das Skript per `preload` und nutzen es als Typ. Ein `class_name` bräuchte den globalen Klassen-Cache, den Headless-Läufe ohne Editor nicht zuverlässig neu aufbauen.
+  - **Gefundener Fehler während der Arbeit:** Der erste Screenshot zeigte in GRAFIK und AUDIO ein leeres, bildhohes Panel. Ursache: `KeyHint` hatte `autowrap_mode = 3`, und `TabContainer` mit `use_hidden_tabs_for_min_size` misst auch den versteckten Reiter, dort ohne Breite. Behoben durch Entfernen des Umbruchs (Text passt in eine Zeile). Siehe Abschnitt 5.
+- **Korrektur an früheren Aussagen (Eintrag 6) – `settings.cfg`:** In Eintrag 6 stand, die Datei habe Reste eines Testlaufs enthalten, und ich habe sie auf die 66-Byte-Sicherung zurückgesetzt. Das war sehr wahrscheinlich falsch. Beobachtet wurde: Nach dem Zurücksetzen (Hash `DD0A15C3…`) hatte die Datei beim nächsten Blick wieder 265 Byte mit dem **identischen Hash `36AE68DD…`** und der Zeit 19:56:33, und es lief kein Godot-Prozess von mir. Der Inhalt (`fullscreen=false`, `vsync=false`, `msaa=3`, `master_volume=80`, sonst Standard) passt dazu, dass der Entwickler das Spiel selbst gestartet, Vollbild ausgeschaltet und im neuen Pausemenü 8× Kantenglättung gewählt hat. Seine Nachricht („nachdem man starten gedrückt hat … esc menü“) beschreibt genau diesen Ablauf. Bewiesen ist es nicht. Folge: Die 265-Byte-Datei ist sehr wahrscheinlich der **echte Stand des Entwicklers**, und mein Zurückkopieren hat ihn kurz überschrieben, bis das Spiel ihn neu schrieb. Ich habe die Datei danach **nicht mehr verändert** (Hash `36AE68DD…` vor und nach jedem Lauf dieses Eintrags gleich). Die Sicherungen liegen in `%TEMP%\godot_tests\` (`settings.cfg.backup` = 66 Byte, `settings.cfg.user_current_19-56` = 265 Byte). Bitte bestätigen oder korrigieren, ob die aktuellen Werte so gewollt sind.
+- **Getestet** (alle mit isoliertem `APPDATA`, Zahlen aus der echten Ausgabe, Details in Abschnitt 9):
+  - Start von Projekt und allen vier Szenen headless: 5 von 5 ohne Ausgabe außer der Versionszeile.
+  - `options_flow.gd`: 92 PASS, 0 FAIL, keine Fehlerzeilen. Zwei Fehlversuche auf dem Weg, beide im Test und nicht im Spielcode: ein Zugriff auf einen freigegebenen Knoten nach dem Szenenwechsel, und ein Strukturvergleich, der an automatischen Knotennamen (`@TabBar@4` gegen `@TabBar@29`, je 28 Knoten) scheiterte. Beide behoben, Nachlauf grün.
+  - `pause_flow.gd`: 28 PASS, 0 FAIL, 1 SKIP.
+  - `pause_gui.gd` (Fenster): Maus 2 → 0 → 2, Look −0,4 gegen −0,4.
+  - `options_gui.gd` (Fenster 1280×720): sechs Screenshots (drei Reiter je Menü) angesehen. Beide Panels 780 px breit bei x = 250. Höhe: Hauptmenü 588 px (durch Anker gestreckt), Pausemenü 551 px (natürliche Höhe). Das Hauptmenü hat zusätzlich sein CRT-Overlay und den animierten Hintergrund, das ist sein eigener Look.
+  - `apply_test.gd`: Master −1,938 dB beim Start, −6,02 dB bei 50 %.
+- **Nicht getestet:** Echte Mausklicks (Tests lösen Signale per Skript aus), das aufgeklappte Dropdown-Popup, Controller, Vollbild-Wechsel (headless unmöglich), Ton. Ob die gleiche Panel-Höhe (588 gegen 551 px) stört, ist Geschmackssache, ich habe sie nicht angeglichen, weil das Pausemenü auf der Hauptseite dann zu hoch wäre.
+- **Git:** Auf Anweisung des Nutzers (Diff-Tab-Aktion „Branch anlegen, committen, pushen“) neuer Branch `cursor/pause-menu-shared-options` von `main` (Stand `2117c2e`), ein Commit mit allen Änderungen aus den Einträgen 5 bis 7, danach Push nach `origin`. Der Commit-Hash steht im `git log` des Branches (er kann nicht im selben Commit stehen). Enthalten: Neu `scenes/options/`, `scenes/ui/`, `scenes/pause/`, `default_bus_layout.tres`, `.cursor/rules/ai-handover.mdc`. Geändert `AI_HANDOVER.md`, `README.md`, `autoload/settings.gd`, `scenes/main/main.gd`, `scenes/main/main.tscn`, `scenes/menu/main_menu.gd`, `scenes/menu/main_menu.tscn`, `scenes/player/player.gd`. Nichts Fremdes ausgeschlossen, weil `git status` nur diese Dateien zeigte. Godot hat beim Laufen keine `.uid`-Dateien angelegt. **Remote ist weitergelaufen:** `git fetch` zeigte `origin/main` auf `6bf1f89` (PR #4, Commit `4476473` „AI_HANDOVER: Arbeitslog mit Regel und bisherigen Arbeitsgängen“, Diff gegen `2117c2e`: `AI_HANDOVER.md` +42 Zeilen, `README.md` 1 Zeile). Der Branch baut auf `2117c2e` auf, nicht auf `6bf1f89`. Beim Zusammenführen sind Konflikte in `AI_HANDOVER.md` und `README.md` zu erwarten. Den Inhalt von `4476473` habe ich nicht gelesen und nicht eingearbeitet.
+- **Offen:** Branch mit `origin/main` (`6bf1f89`) zusammenführen und die Konflikte in `AI_HANDOVER.md` und `README.md` lösen, bevor er nach `main` geht. `.uid`-Dateien für `pause_menu.gd`, `options_menu.gd` und `cyber_theme.tres` entstehen erst im Editor. Nach dem Mergen mit paralleler Arbeit am Hauptmenü die Options-Konflikte prüfen. Die Testskripte (`options_flow.gd`, `pause_flow.gd`, `options_gui.gd`, `pause_gui.gd`, `apply_test.gd`) liegen nur in `%TEMP%\godot_tests\`.
+
+### Eintrag 6 — Pflicht zur ausführlichen Protokollierung eingeführt
+
+- **Auftrag:** „schreibe immer ausdrücklich in die ai handover was du gemacht hast ausführlich“.
+- **Neu:**
+  - `.cursor/rules/ai-handover.mdc`: Cursor-Regel mit `alwaysApply: true`. Sie verlangt nach jeder Aufgabe, die etwas im Projekt ändert, einen Eintrag oben in Abschnitt 11 und das Nachziehen der Ist-Stand-Abschnitte, und legt fest, was ein Eintrag enthält (Auftrag, Neu/Geändert/Gelöscht je Datei, Entscheidungen und Gründe, Getestet, Nicht getestet, Git, Offen).
+- **Geändert:**
+  - Außerhalb des Repos: `%APPDATA%\Godot\app_userdata\Godot 3D Base\settings.cfg` kurzzeitig auf die 66-Byte-Sicherung zurückgesetzt. Das war ein Fehler, siehe Eintrag 7.
+  - `AI_HANDOVER.md`: Hinweis zu Abschnitt 11 und zur Pflege-Regel im Kopf. Strukturbaum um `.cursor/rules/ai-handover.mdc`. Teststand mit den nachgezählten Zahlen. Neue Abschnitte 10 (Test-Rezept) und 11 (dieses Protokoll). Einträge 1 bis 5 nachgetragen.
+- **Entscheidungen und Gründe:**
+  - Die Regel liegt im Projekt (`.cursor/rules/`), nicht nur im Chat. Dadurch gilt sie in jedem neuen Chat und für alle, die das Repo mit Cursor öffnen. `.cursor/` steht nicht in der `.gitignore`.
+  - Neuester Eintrag steht oben, damit die nächste KI zuerst den aktuellen Stand sieht.
+  - Reine Fragen und Analysen ohne Änderung brauchen keinen Eintrag. Das steht so in der Regel.
+- **Korrektur an früheren Aussagen:** In der Antwort zu Eintrag 5 stand „49 Prüfungen bestanden“. Richtig ist: 49 Prüfungen, davon 48 bestanden, 0 fehlgeschlagen, 1 übersprungen. Zweimal an der echten Ausgabe nachgezählt. Dabei fiel auf, dass `Select-String "^FAIL"` die Zeile `FAILURES=0` mitzählt (siehe Abschnitt 10).
+- **Beim Prüfen des Protokolls gefunden und korrigiert:**
+  - Die Einträge 1 bis 5 wurden zunächst teilweise aus dem Gedächtnis geschrieben. Danach habe ich sie gegen `git log`, `git show --stat`, `git ls-tree`, die Szene und die Testskripte geprüft. Hashes, Dateilisten, Zeilenstatistiken, Knotenzahl (22 Knoten mit eindeutigem Namen, 47 Knoten insgesamt) und Testinhalte stimmten. Falsch oder unbelegt waren: der Alias `Settings` in Eintrag 4 (war ein lokaler Alias auf `game_settings.gd`, nicht der Autoload), der Wortlaut der 403-Meldung, zwei Aussagen zu Eintrag 2 und ein Platzhalter. Alles ist ersetzt oder entfernt.
+  - **`user://settings.cfg` des Entwicklers war nicht unverändert.** Zu Beginn der Prüfung hatte sie 265 Byte (`fullscreen=false`, `vsync=false`, `msaa=3`, alle Schlüsselgruppen). Die Sicherung vom Beginn meiner Tests hat 66 Byte (`fullscreen=true`, `vsync=false`, `master_volume=80.0`). Meine frühere Aussage „unverändert wiederhergestellt“ war damit falsch. **Meine damalige Erklärung („Reste eines Testlaufs“) und das Zurückkopieren der 66-Byte-Datei waren sehr wahrscheinlich ebenfalls falsch:** Die Datei wurde kurz danach mit identischem Inhalt neu geschrieben, ohne dass ein Testprozess von mir lief. Details und Korrektur in Eintrag 7.
+- **Getestet** (frische Läufe am Ende dieses Eintrags, jeweils mit dem Ergebnis aus der echten Ausgabe):
+  - `--headless` Start von Projekt, `main.tscn` und `pause_menu.tscn` mit `--quit-after 5`: außer der Versionszeile keine Ausgabe, also keine Fehler und keine Warnungen.
+  - `bus_test.gd`: 3 Busse (Master, Music und SFX mit Send `Master`, je 0 dB). Hinweis: `--script` läuft vor dem Autoload, deshalb zeigt dieser Test 0,0 dB. Der Startwert kommt aus `apply_test.gd`.
+  - `apply_test.gd`: Master nach `_ready` = −1,938 dB (Erwartung −1,938 für 80 %). Nach `apply()` mit 50 / 25 / 0 %: Master −6,02 dB, Music −12,04 dB, SFX −80 dB und stumm. Root-Viewport: `scaling_3d_scale` 0,7.
+  - `pause_flow.gd` (Headless): 49 Prüfungen, **48 PASS, 0 FAIL, 1 SKIP**, `FAILURES=0`.
+  - `pause_gui.gd` (Fenster, 1280×720, Vulkan Forward+, AMD Radeon RX 9070 XT): Mausmodus nach Start 2, nach Esc 0, nach Fortsetzen 2. Look-Differenz −0,4 bei Erwartung −0,4 (100 px × 0,002 × Faktor 2), `ok=true`. Fünf Screenshots (1280×720) geschrieben.
+- **Nicht getestet:** Ob Cursor die Regel in einem neuen Chat tatsächlich lädt. Das lässt sich erst im nächsten Chat sehen.
+- **Git:** nichts committet.
+- **Offen:** Die neuen Dateien (`.cursor/rules/ai-handover.mdc`, `default_bus_layout.tres`, `scenes/pause/`) und alle Änderungen aus Eintrag 5 sind noch nicht committet.
+
+### Eintrag 5 — Pausemenü, Audio-Busse und Grafik-Optionen
+
+> **Teilweise überholt durch Eintrag 7.** Beschrieben ist der Stand damals. Die eigenen Optionen des Pausemenüs (`OptionsPage`, die Einzel-Handler, `_refresh()`, die Live-Vorschau, das Speichern beim Verlassen) und die „Offen“-Punkte zum Hauptmenü (ohne MSAA, 3D-Auflösung, Musik, SFX, ohne Tastenbelegung im Pausemenü) gibt es nicht mehr. Pausemenü und Hauptmenü zeigen jetzt dieselbe Options-Szene. Die Audio-Busse, `Settings`-Felder und die Pause-Logik gelten weiter.
+
+- **Auftrag:** `git pull` und Abgleich. Ingame-Pausemenü auf Esc (`ui_cancel`) mit Grafik (Vollbild synchron mit F11 und `settings.cfg`, VSync, Auflösung/MSAA), Audio (Master, SFX, Musik, Busse vorbereiten), Steuerung (Mausempfindlichkeit) und den Aktionen Fortsetzen, Zurück zum Hauptmenü, Spiel beenden. Statisch getypter 4.7-Code. Testen. Handover um Pausemenü und Busse ergänzen.
+- **Stand nach `git pull`** (Fast-Forward `9d6c44b` → `2117c2e`, Remote-Commits `62bead4` „Optionen: Maus/Tastatur-Einstellungen und Übernehmen-Knopf“, `89a6933` „main übernehmen: GameSettings-Helfer durch Autoload Settings ersetzt“, PR #3):
+  - Neu: `autoload/settings.gd` (+ `.uid`) und der Eintrag `[autoload] Settings` in `project.godot`.
+  - `scenes/menu/main_menu.gd` und `.tscn` stark erweitert: Reiter, Tasten-Neubelegung, Entwurf mit *Übernehmen*, *Standard*, Warnung beim Verwerfen.
+  - `player.gd` liest `Settings.mouse_sensitivity` und `Settings.invert_y`. `main.gd` ruft `Settings.toggle_fullscreen()`.
+  - `scripts/game_settings.gd` (mein Helfer aus Eintrag 4) ist gelöscht, der Autoload ersetzt ihn.
+  - Die alte `AI_HANDOVER.md` enthielt nach dem Merge einen Rest der früheren Settings-Tabelle (`---|---|---|`) mitten im Text.
+- **Neu:**
+  - `scenes/pause/pause_menu.tscn`: `CanvasLayer` (`layer = 10`, `visible = false`, `process_mode = ALWAYS`). Darunter `Root` (Vollbild-`Control`, Theme), `Dim`, `Center`, `Panel`, `Pages` mit `%MainPage` (Titel, Hinweiszeile, vier Knöpfe) und `%OptionsPage` (Header, `%Tabs` mit GRAFIK, AUDIO, STEUERUNG, `%BackButton`). 22 Knoten mit `unique_name_in_owner`. Das Neon-Theme ist aus `main_menu.tscn` kopiert und um `OptionButton` und `PopupMenu` ergänzt. `%Tabs` hat `use_hidden_tabs_for_min_size = true`.
+  - `scenes/pause/pause_menu.gd`: `open()`, `close()`, Esc- und F11-Behandlung, ein Handler pro Option (Feld in `Settings` setzen, `Settings.apply()`), `_refresh()` mit `set_*_no_signal` und Anbindung an `Settings.changed`, `_exit_tree()` hebt eine offene Pause auf. Export `main_menu_scene`. Vollständig typisiert (`@onready var x: Typ = %Name`, typisierte Parameter und Rückgaben).
+  - `default_bus_layout.tres`: Busse `Music` (Index 1) und `SFX` (Index 2), je Send `Master`, 0 dB. `Master` ist implizit. Godot lädt diesen Pfad als Standard, `project.godot` bleibt unverändert.
+- **Geändert:**
+  - `autoload/settings.gd`: Konstanten `MASTER_BUS`, `MUSIC_BUS`, `SFX_BUS`, `RENDER_SCALE_MIN`. Neue Felder `msaa` (int, Standard `Viewport.MSAA_4X` = 2), `render_scale` (1.0), `music_volume` (100), `sfx_volume` (100). `get_values()` und `get_defaults()` enthalten die vier neuen Schlüssel. `apply_values()` liest sie mit `values.get(...)`. `apply()` setzt den Fenstermodus nur noch, wenn sich der Vollbild-Zustand ändert, setzt `msaa_3d` und `scaling_3d_scale` am Root-Viewport und die drei Busse über `_apply_bus`. `load_settings()` liest `[video] msaa`, `render_scale` und `[audio] music_volume`, `sfx_volume` mit Begrenzung. `save_settings()` schreibt sie. Neue private Funktionen `_apply_bus` und `_ensure_buses` (läuft als Erstes in `_ready`). Kopfkommentar beschreibt die zwei Änderungswege.
+  - `scenes/main/main.tscn`: `load_steps` 9 → 10, `ext_resource` `3_pause`, Knoten `PauseMenu` als letztes Kind von `Main`.
+  - `scenes/main/main.gd`: nur der Kommentar. Die Logik (F11 → `Settings.toggle_fullscreen()`) ist unverändert.
+  - `scenes/player/player.gd`: Der Zweig `elif event.is_action_pressed("ui_cancel"): Input.mouse_mode = VISIBLE` ist entfernt. Er hätte beim Esc die Maus freigegeben, statt das Pausemenü zu öffnen. Der Klick-Zweig, der die Maus wieder einfängt, bleibt. Kopfkommentar angepasst.
+  - `README.md`: Esc- und F11-Zeile, Ordnerstruktur (`default_bus_layout.tres`, `scenes/pause/`), Abschnitt zum Pausemenü, `Settings` um die neuen Werte ergänzt.
+  - `AI_HANDOVER.md`: komplett neu geschrieben, auch um den Merge-Rest zu entfernen.
+- **Entscheidungen und Gründe:**
+  - Das Pausemenü wirkt **live** (Feld setzen, `apply()`) und speichert beim Verlassen der Optionen. Das Hauptmenü arbeitet mit Entwurf und *Übernehmen*. Ein Pausemenü ohne Vorschau fühlt sich bei Lautstärke und Helligkeit schlecht an. Gespeichert wird nicht bei jedem Slider-Schritt, um die Datei nicht hundertfach zu schreiben.
+  - Das Hauptmenü wurde **nicht** umgebaut, und es gibt keine gemeinsame Options-Komponente. Das Hauptmenü wird parallel von anderer Seite bearbeitet, ein Umbau hätte Merge-Konflikte erzeugt. Folge: Das Theme ist doppelt vorhanden. Änderungen am Stil müssen in beiden `.tscn` gemacht werden.
+  - Keine zweite Settings-Klasse. Alles läuft über den vorhandenen Autoload.
+  - `apply()` fasst den Fenstermodus nur bei Änderung an. Sonst setzt jeder Slider-Schritt ein maximiertes Fenster auf „Fenster“ zurück. Das betrifft auch das Hauptmenü positiv.
+  - 0 % Lautstärke wird zu −80 dB plus Mute. `linear_to_db(0.0)` wäre −inf.
+  - Busse aus `default_bus_layout.tres` (sichtbar im Editor) **und** ein Laufzeit-Guard `_ensure_buses()`. Das Layout wurde von Hand geschrieben, Godot bestätigte es im Test. Der Guard schützt trotzdem, falls die Datei fehlt.
+  - MSAA wirkt am Root-Viewport und überschreibt zur Laufzeit die Projekteinstellung `anti_aliasing/quality/msaa_3d`. Die Auswahl-IDs des Dropdowns sind direkt die `Viewport.MSAA`-Werte.
+  - Das Pausemenü verarbeitet F11 selbst, weil `main.gd` bei pausiertem Baum keine Eingaben bekommt.
+  - `_exit_tree()` hebt die Pause auf, damit sie nicht in die nächste Szene wandert.
+  - Das Pausemenü ist kein Autoload, sondern Teil von `main.tscn`. So kann es im Hauptmenü nicht auftauchen.
+  - Die Rahmenhöhe sprang zwischen den Reitern, weil `TabContainer` nur den aktuellen Reiter misst. Behoben mit `use_hidden_tabs_for_min_size`.
+- **Getestet** (Godot 4.7.2 stable):
+  - `--headless` Start von Projekt, `main.tscn` und `pause_menu.tscn` je mit `--quit-after 5`: keine Fehler, keine Warnungen.
+  - Bus-Layout und `Settings`: drei Busse (Master, Music, SFX, Send Master). Beim Start liegt Master bei −1,938 dB (80 %), die gespeicherte `settings.cfg` wird gelesen.
+  - Headless-Ablauftest, 49 Prüfungen: **48 bestanden, 0 fehlgeschlagen, 1 übersprungen**. Inhalt: alle fünf Skripte kompilieren. Esc im Hauptmenü pausiert nichts. Start lädt `Main`. Esc öffnet, `paused = true`, `process_mode = ALWAYS`, Fokus auf *Fortsetzen*. Spieler steht bei Pause still (Geschwindigkeit −5 gesetzt, Y unverändert). Vollbild-Checkbox ↔ `Settings.fullscreen` in beide Richtungen, F11 im offenen Menü. VSync. MSAA 4 Einträge, 8× und Aus am Root-Viewport. 3D-Auflösung 70 % → `scaling_3d_scale` 0,7. Master 50 % = −6,02 dB, Musik 25 % = −12,04 dB, SFX 0 % stumm, SFX 100 % wieder hörbar. Sensitivität 2,0, Y-Invertierung. Esc aus den Optionen → Hauptseite, Pause bleibt. `settings.cfg` enthält danach `master_volume=50`, `music_volume=25`, `render_scale=0.7`, `msaa=0`, `mouse_sensitivity=2.0`. Esc im Hauptteil = Fortsetzen. Fortsetzen-Knopf. Zurück zum Hauptmenü lädt `MainMenu`, nicht pausiert, Fokus setzbar.
+  - Fensterlauf (1280×720, Vulkan Forward+, AMD RX 9070 XT): Mausmodus 2 → 0 → 2 (gefangen, frei, gefangen). Player-Look: Drehung −0,4 rad bei Erwartung −0,4 (100 px × 0,002 × Faktor 2). Fünf Screenshots (Spiel, Pause, drei Reiter). Dabei das Höhenproblem der Reiter gefunden und behoben, danach mit neuen Screenshots bestätigt.
+- **Nicht getestet:** echter Vollbild-Wechsel aus dem Pausemenü (Headless kennt keinen Fenstermodus), hörbare Lautstärke (keine Audio-Dateien), Bedienung mit einem Controller (keiner angeschlossen).
+- **Git:** `git pull` als Fast-Forward. Nichts committet.
+- **Offen:**
+  - `scenes/pause/pause_menu.gd` hat noch keine `.uid`-Datei. Godot legt sie an, sobald das Projekt im Editor geöffnet wird.
+  - Das Hauptmenü zeigt MSAA, 3D-Auflösung, Musik und SFX nicht. *Standard* plus *Übernehmen* setzt sie dort auf die Standardwerte zurück.
+  - *Spiel beenden* und *Zurück zum Hauptmenü* fragen nicht nach. Ein Spielstand existiert ohnehin nicht.
+  - Änderungen im Pausemenü sind erst nach dem Verlassen der Optionen auf der Platte.
+
+### Eintrag 4 — Vollbild vereinheitlicht, Handover neu geschrieben (später ersetzt)
+
+- **Auftrag:** (1) `run/main_scene` auf das Hauptmenü. (2) F11 in `main.gd` soll den Zustand wie das Menü in `user://settings.cfg` sichern. (3) `AI_HANDOVER.md` komplett neu, mit Godot 4.7, Ordnerstruktur inklusive `scenes/interactive/interactive_box.tscn`, Input Map, Settings und der Einbahnstraße.
+- **Neu:**
+  - `scripts/game_settings.gd` (`class_name GameSettings`, `RefCounted`, nur statische Funktionen `get_fullscreen`, `get_vsync`, `get_master_volume`, `set_fullscreen`, `save_preferences`). `set_fullscreen` lädt die Datei zuerst und ändert nur den Vollbild-Schlüssel, damit VSync und Lautstärke nicht verloren gehen.
+- **Geändert:**
+  - `scenes/main/main.gd` (11 Zeilen geändert): neue Konstante `const Settings := preload("res://scripts/game_settings.gd")`. Das ist ein lokaler Alias auf das Helfer-Skript und **nicht** der spätere Autoload `Settings`. F11 berechnet `enable_fullscreen` (aktueller Modus ≠ Vollbild), setzt den Fenstermodus und ruft `Settings.set_fullscreen(enable_fullscreen)`.
+  - `scenes/menu/main_menu.gd` (26 Zeilen geändert): dieselbe Alias-Konstante statt `SETTINGS_PATH`. `_on_fullscreen_toggled` ruft `Settings.set_fullscreen(on)` und speichert damit sofort. `_load_settings` nutzt `get_fullscreen`, `get_vsync`, `get_master_volume`. `_save_settings` ruft `save_preferences(fullscreen, vsync, volume)`. Die eigene `ConfigFile`-Logik im Menü ist entfernt. Kopfkommentare angepasst.
+  - `AI_HANDOVER.md`: neu geschrieben (Godot 4.7, Hauptmenü als Startszene, Ablauf als Einbahnstraße, Input Map, Speicherverhalten).
+  - `project.godot`: unverändert. `run/main_scene` zeigte nach der Konfliktlösung aus Eintrag 2 bereits auf das Menü.
+- **Entscheidungen und Gründe:**
+  - `scenes/interactive/interactive_box.tscn` existierte nicht. Die Übergabe führt sie ausdrücklich als nicht vorhanden, statt sie zu erfinden.
+  - Der Helfer war eine kleine eigene Lösung, weil keine zentrale Settings-Klasse existierte.
+- **Korrektur an früheren Aussagen:** Ich schrieb damals „Godot ist hier nicht installiert“. Das war falsch. Ich hatte nur `PATH` und `C:\Program Files\Godot` durchsucht. Die Datei liegt auf dem Desktop. Gefunden erst in Eintrag 5.
+- **Getestet:** nur durch Lesen des Quelltexts. Kein Godot-Lauf.
+- **Git:** Commit `dcb2c84` „Änderungen hinzugefügt“ (5 Dateien, +273/−166). `git pull.bat` fehlte im Arbeitsverzeichnis schon vor dem `git add .` (nicht von mir gelöscht), die Löschung wurde mit committet. Push abgelehnt (`fetch first`), weil das Remote parallel `b6335b3` „Delete git pull.bat“ hatte. `git pull` ergab den Merge `9d6c44b` ohne Konflikt, danach Push `b6335b3..9d6c44b` erfolgreich.
+- **Später ersetzt:** `scripts/game_settings.gd` wurde durch den Autoload `Settings` abgelöst (siehe Eintrag 5). Die Datei existiert nicht mehr.
+
+### Eintrag 3 — Analyse des Spielstands
+
+- **Auftrag:** „analysiere das game vom jetzigen stand“.
+- **Änderungen am Repo:** keine. Das Ergebnis liegt als Canvas außerhalb des Projekts: `C:\Users\EnScapeZ\.cursor\projects\b-AI-game-Test\canvases\game-state.canvas.tsx`.
+- **Befunde:** F11 in der Spielwelt wurde nicht gespeichert, im Menü erst beim Verlassen der Optionen. Die Lautstärke wirkte auf keinen hörbaren Ton, weil es kein Audio gibt. Die README behauptete Controller-Bedienung, obwohl die Spielaktionen nur Tastatur haben. Die `AI_HANDOVER.md` war veraltet. `BoxSmall` ragt in den Boden. Aus der Welt gab es keinen Weg zurück ins Menü.
+- **Getestet:** nur durch Lesen. Kein Godot-Lauf.
+- **Folge:** Die Befunde zu Vollbild und Handover wurden in Eintrag 4 bearbeitet, der Rückweg ins Menü in Eintrag 5.
+
+### Eintrag 2 — Hauptmenü-Merge und Konflikt in `project.godot`
+
+- **Auftrag:** `git pull`, Merge-Konflikt in `project.godot` lösen: Hauptszene vom Remote (`res://scenes/menu/main_menu.tscn`), Godot-Features vom lokalen Stand (`4.7`, `Forward Plus`), alle Konfliktmarker entfernen.
+- **Ausgangslage:** lokaler Commit `482c15e` (Eintrag 1). Remote hatte `78b70ec` „Cyberpunk-Hauptmenü als Startszene“ (PR #2, `6638006`).
+- **Konflikt:** `project.godot`, Zeilen `run/main_scene` (lokal `main.tscn`, remote `main_menu.tscn`) und `config/features` (lokal `4.7`, remote `4.4`).
+- **Geändert:** `project.godot`: `run/main_scene="res://scenes/menu/main_menu.tscn"`, `config/features=PackedStringArray("4.7", "Forward Plus")`. Per Suche bestätigt, dass `<<<<<<<`, `=======` und `>>>>>>>` nicht mehr vorkommen.
+- **Aus dem Remote ohne Konflikt übernommen:** `scenes/menu/main_menu.tscn`, `main_menu.gd`, `crt_overlay.gdshader`, `menu_background.gdshader` samt `.uid`-Dateien, außerdem Änderungen an `README.md`.
+- **Zwischenfall:** Ein `git commit` bei noch ungelöstem Konflikt wurde von Git abgelehnt, erst nach der Lösung und `git add project.godot` ging er durch.
+- **Git:** Merge-Commit `b24108d` „Änderungen hinzugefügt“ (Eltern `482c15e` und `6638006`). Gegenüber dem lokalen Stand brachte er 9 Dateien, +600/−2 Zeilen. Der Push ging an das Remote.
+- **Getestet:** nur Konfliktmarker-Suche und Sichtprüfung. Kein Godot-Lauf.
+
+### Eintrag 1 — Erstanalyse und erste Fassung der Übergabe
+
+- **Auftrag:** Das Projekt als Godot-4-3D-Systems-Engineer analysieren und `AI_HANDOVER.md` nach vorgegebenem Format anlegen: Ordnerstruktur, `project.godot` (Rendering, Input Map, Autoloads, Hauptszene), Szenen- und Skript-Hierarchie, `@export`, Signale, öffentliche Methoden, `%`- und `$`-Zugriffe.
+- **Befund damals** (Stand `23f566b`, per `git ls-tree` und `git show` belegt): zwei Szenen (`main`, `player`), zwei Skripte (`main.gd`, `player.gd`), Feature-Tag `4.4`, Hauptszene `main.tscn`, kein `[autoload]`, weder `signal` noch `.connect(` im Code, sechs Input-Aktionen (`move_forward`, `move_back`, `move_left`, `move_right`, `jump`, `sprint`), Physik-Layer-Namen gesetzt, `assets/audio|materials|models|textures` nur mit `.gitkeep`.
+- **Neu:** `AI_HANDOVER.md` (erste Fassung mit sechs Abschnitten).
+- **Git:** `git pull` und `git fetch` holten PR #1 (`23f566b`, Godot-4-3D-Grundgerüst). Commit `482c15e` „Änderungen hinzugefügt“ mit `AI_HANDOVER.md`, `git pull.bat` und zwei Änderungen, die der Godot-Editor selbst gemacht hatte (nicht von mir): `project.godot` (Feature-Tag `4.4` → `4.7`, neuer `[animation]`-Eintrag) und `icon.svg.import` (neue Import-Optionen). Die ersten Push-Versuche scheiterten mit HTTP 403, weil das Konto EnScapeZ keine Schreibrechte auf `CaptainArschbart/Test` hatte. Ein späterer Push wurde mit `fetch first` abgelehnt und ging nach `git pull` durch.
+- **Getestet:** nur durch Lesen. Kein Godot-Lauf.

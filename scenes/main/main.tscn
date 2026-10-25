@@ -1,7 +1,8 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scenes/main/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://scenes/pause/pause_menu.tscn" id="3_pause"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
 sky_horizon_color = Color(0.66, 0.72, 0.8, 1)
@@ -65,3 +66,5 @@ size = Vector3(3, 0.3, 8)
 material = SubResource("StandardMaterial3D_ramp")
 
 [node name="Player" parent="." instance=ExtResource("2_player")]
+
+[node name="PauseMenu" parent="." instance=ExtResource("3_pause")]
