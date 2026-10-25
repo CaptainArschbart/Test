@@ -1,9 +1,11 @@
 extends Control
 ## Hauptmenü im Cyberpunk-Stil: Start, Optionen, Beenden.
 ##
-## Optionen werden in user://settings.cfg gespeichert und beim Start angewendet.
+## Vollbild, VSync und Lautstärke liegen in user://settings.cfg (siehe GameSettings).
+## Vollbild wird beim Umschalten sofort geschrieben. VSync und Lautstärke
+## werden beim Verlassen der Optionen mitgeschrieben.
 
-const SETTINGS_PATH := "user://settings.cfg"
+const Settings := preload("res://scripts/game_settings.gd")
 
 ## Szene, die "Start" lädt.
 @export_file("*.tscn") var game_scene := "res://scenes/main/main.tscn"
@@ -136,6 +138,7 @@ func _on_fullscreen_toggled(on: bool) -> void:
 	DisplayServer.window_set_mode(
 		DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED
 	)
+	Settings.set_fullscreen(on)
 
 
 func _on_vsync_toggled(on: bool) -> void:
@@ -152,14 +155,11 @@ func _on_volume_changed(value: float) -> void:
 
 
 func _load_settings() -> void:
-	var config := ConfigFile.new()
-	config.load(SETTINGS_PATH)  # Fehlt die Datei, gelten die Standardwerte.
-	var fullscreen: bool = config.get_value(
-		"video", "fullscreen",
+	var fullscreen := Settings.get_fullscreen(
 		DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 	)
-	var vsync: bool = config.get_value("video", "vsync", true)
-	var volume: float = config.get_value("audio", "master_volume", 80.0)
+	var vsync := Settings.get_vsync(true)
+	var volume := Settings.get_master_volume(80.0)
 
 	fullscreen_check.button_pressed = fullscreen
 	vsync_check.button_pressed = vsync
@@ -171,8 +171,8 @@ func _load_settings() -> void:
 
 
 func _save_settings() -> void:
-	var config := ConfigFile.new()
-	config.set_value("video", "fullscreen", fullscreen_check.button_pressed)
-	config.set_value("video", "vsync", vsync_check.button_pressed)
-	config.set_value("audio", "master_volume", volume_slider.value)
-	config.save(SETTINGS_PATH)
+	Settings.save_preferences(
+		fullscreen_check.button_pressed,
+		vsync_check.button_pressed,
+		volume_slider.value
+	)
