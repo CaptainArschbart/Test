@@ -179,3 +179,19 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: Fensterbild der Leisten, Shift im echten Fenster, Controller. Echte `settings.cfg` nicht angefasst.
 - Git: Commit auf `main`, `git push origin main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-25 · First-Person-Hände an der Kamera · Cursor (für EnScapeZ) · main
+- Auftrag: Sichtbares Hände-System am Spieler, Kind der Kamera, mit Idle- und Laufbewegung als Basis für spätere Werkzeuge.
+- Entscheidung: Eigene Szene `scenes/hands/` statt Meshes direkt in `player.tscn`. Kein `AnimationPlayer`: es gibt keine Clip-Dateien, das Wackeln folgt der echten Geschwindigkeit. Platzhalter (Kapsel + Kasten), kein importiertes Arm-Modell. Schatten aus, etwas Emission, damit die Hände in der Nacht-Testmap sichtbar bleiben. Kamera-`near` auf 0,05, die Hände liegen bei z = −0,4.
+- Neu:
+  - `scenes/hands/player_hands.tscn`: Wurzel `PlayerHands` (`Node3D`). Kinder `LeftHand` und `RightHand` (`MeshInstance3D`, Kapsel) mit je `Palm` (`BoxMesh`). `load_steps` = 5 (1 ext + 3 sub + 1).
+  - `scenes/hands/player_hands.gd` (`class_name PlayerHands`). Idle atmet (`idle_frequency` 1,15, Amplitude 0,0035). Ab 0,45 m/s Gehen (`bob_frequency` 2,2, Amplitude 0,012), beim Sprint 1,65-fach Frequenz und Amplitude 0,022. Pose wird jedes Frame aus der Szenen-Mitte neu gesetzt, nicht aufaddiert.
+  - `scenes/hands/player_hands.gd.uid`.
+- Geändert:
+  - `scenes/player/player.tscn`: Instanz unter `Head/Camera3D`, `unique_name_in_owner` → `%PlayerHands`. `load_steps` 9 → 10 (6 ext + 3 sub + 1). `Camera3D.near = 0.05`.
+  - `scenes/player/player.gd`: `@onready var hands: PlayerHands = %PlayerHands`.
+- Nicht geändert: `claude_updatenotice.md`, `AI_HANDOVER.md`, `project.godot`.
+- Getestet (Godot 4.7.2 stable, headless, isoliertes APPDATA): temporäre Szene `hands_runner` (danach gelöscht) `CHECKS 20 FAILS 0` auf Testmap und `main.tscn`. `%PlayerHands` ist Kind von `Camera3D`, linke und rechte Hand plus Handflächen da, Sprint-Ausschlag größer als Gehen, Gehen größer als Idle, 80 Idle-Schritte ohne Wegdriften. `testmap.tscn --quit-after 2`: nur die Versionszeile, kein `ERROR` / `SCRIPT ERROR`.
+- Nicht getestet: Fensterbild (ob die Hände das Fadenkreuz frei lassen), Maus-Nicken im Fenster. Echte `settings.cfg` nicht angefasst.
+- Git: Commit auf `main`, `git push origin main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`

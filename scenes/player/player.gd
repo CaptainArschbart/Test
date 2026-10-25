@@ -8,6 +8,7 @@ extends CharacterBody3D
 ## Zahlentasten (belegbar als hotbar_1…9) und Mausrad wählen den Hotbar-Slot,
 ## "drop_item" wirft ein Stück davon weg. Beides gilt auch bei offenem Inventar.
 ## Sprinten verbraucht Ausdauer (PlayerStats). Ohne Hunger oder Durst sinken die HP.
+## %PlayerHands sitzt an der Kamera und wackelt bei Idle, Gehen und Sprint.
 ## "noclip" schaltet den Flugmodus um: durch Wände fliegen in Blickrichtung,
 ## "jump" hoch, "noclip_down" runter, "sprint" schneller.
 
@@ -47,6 +48,7 @@ var _noclip_label: Label
 
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
+@onready var hands: PlayerHands = %PlayerHands
 @onready var inventory: Inventory = $Inventory
 @onready var stats: PlayerStats = $PlayerStats
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
