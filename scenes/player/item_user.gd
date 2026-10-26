@@ -225,6 +225,8 @@ func _make_held(mesh: Mesh, color: Color) -> Node3D:
 	mesh.material = material
 	instance.mesh = mesh
 	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Wie die Hände: das Fülllicht der Hände beleuchtet nur diese Ebene.
+	instance.layers |= PlayerHands.VIEWMODEL_LAYER
 	root.add_child(instance)
 	return root
 

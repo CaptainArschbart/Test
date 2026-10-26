@@ -172,6 +172,24 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 - Getestet: Godot 4.7.2 unter Xvfb mit echten Maus-Events, 15/15 Prüfungen (beide Waffen aufgehoben, Pistole gezielt FOV 60 und Treffer auf 20 m, zurück auf 80, Sniper im Zielfernrohr FOV 16, Hände aus, Treffer auf 40 m mit 120 Schaden, Kamera-Kick, Hände wieder da, Hüftfeuer streut, Tafel zeigt beide Schäden, Weg von der Straße ohne Wand). Screenshots von Zielfernrohr, Pistole im Anschlag und Sniper aus der Hüfte angesehen. `testmap.tscn`/`main.tscn` ohne Skriptfehler.
 - Nicht getestet: Spielgefühl und Mausempfindlichkeit am echten PC.
 
+### 2026-10-25 · Ego-Hände und Spielerkörper neu · Claude (für Arschi) · PR #22
+- Auftrag: Die Hände sahen hässlich aus (Kapsel plus Kiste), danach auch das Playermodel überarbeiten (war eine orange Kapsel, die nur Schatten warf).
+- Hände (`scenes/hands/player_hands.gd`, `.tscn`):
+  - Modell wird in `_ready` aus Grundformen gebaut: Handfläche, Daumenballen, vier Finger mit je drei Gelenken, Daumen mit Grundgelenk, Knöchelschutz, Handrücken-Platte mit Neon, Armband mit Leuchtringen, Jackenärmel. Fingerlose Handschuhe, Kuppen in Hautfarbe.
+  - Posen als Konstanten (`POSE_RELAXED`, `POSE_GRIP_RIGHT`, `POSE_GRIP_LEFT`, `POSE_RELOAD_LEFT`) und weich überblendet. Mit Waffe: rechts am Griff, links stützt, beim Nachladen holt links das Magazin. Die Griffposen hängen an der Waffenszene im WeaponHolder, folgen also Rückstoß, Nachlade-Kippen und Zielen (`hip_offset`/ADS aus PR #20).
+  - Waffenszenen können `Marker3D` `HandGripRight` / `HandGripLeft` mitbringen, dann gelten deren Transform statt der Pistolenwerte. `sniper_view.tscn` hat beide bekommen (linke Hand am Vorderschaft).
+  - Unterarm ist ein eigener Knoten (`RightHandArm`/`LeftHandArm`), dreht beim Nachladen nicht mit der Waffe mit, nur das Handgelenk knickt.
+  - Neu: Nachziehen beim Umschauen, Einfedern beim Landen. `motion_scale` aus PR #20 dämpft alles beim Zielen.
+  - Füll-Licht nur für Hände und gehaltene Waffe (Render-Ebene 20, `VIEWMODEL_LAYER`), damit sie in der dunklen Testmap lesbar sind. Die Welt wird davon nicht beleuchtet.
+- Körper (neu `scenes/player/player_body.gd`, `.tscn`, ersetzt den Knoten `Body` in `player.tscn`, Name bleibt):
+  - Stiefel mit Neon-Sohle, Hose mit Knieschützern und Beintasche, Gürtel, Jacke mit Brustplatte und Leuchtstreifen, Schulterpanzer, Arme mit Handschuhen, Kopf mit Kapuze und pinkem Visier.
+  - Laufanimation aus der Geschwindigkeit (Beine, Knie, Arme gegengleich), in der Luft Knie angezogen.
+  - `first_person = true` (Standard): nur Beine und Stiefel sichtbar und um `first_person_leg_offset` (0,16 m) nach hinten gesetzt, damit man beim Runterschauen Knie und Stiefel sieht. Becken, Oberkörper, Arme, Kopf werfen nur Schatten. `false` zeigt alles (für eine spätere Dritte-Person-Ansicht).
+- Neu gemeinsam: `scenes/common/proc_mesh.gd` (`ProcMesh`: abgerundeter Block, Kapsel, Röhre, mit Cache) und `scenes/common/materials/*.tres` (Handschuh, Jacke, Hose, Panzer, Haut, Neon Cyan, Visier, Stoff-Normalmap). Farben dort ändern wirkt auf Hände und Körper.
+- Getestet: Godot 4.7.2, OpenGL-Kompatibilität unter Xvfb, Screenshots ohne Waffe, Pistole, Pistole zielend, Nachladen, Scharfschützengewehr, Runterschauen, Körper von außen (gehend). `testmap.tscn` und `main.tscn` ohne `SCRIPT ERROR` / `Parse Error`.
+- Nicht getestet: Forward+ (Subsurface/Clearcoat sehen dort etwas anders aus), echtes Spielgefühl beim Schießen in Bewegung.
+- Hinweis: Nach dem Pull Godot neu laden (*Projekt → Aktuelles Projekt neu laden*), weil es neue Klassen gibt (`ProcMesh`, `PlayerBody`).
+
 ### 2026-10-25 · Benutzen-Taste (E) und Item-Nutzung · Claude (für Arschi)
 - Auftrag: Benutzen-Knopf auf E, Items mit Rechtsklick verwenden, Granaten und Waffen mit Linksklick.
 - Neu:
@@ -189,3 +207,9 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 - Getestet (Godot 4.7.2, headless, isoliertes APPDATA, temporäre Runner-Szene danach gelöscht): `CHECKS 27 FAILS 0` – Drüberlaufen hebt nicht auf, E hebt 3 NeoCola auf, Automat ohne Geld kein Kauf, mit Geld +1 Cola −2 Chips, Trinken/Stim/Boost-Ende, Datenshard nicht benutzbar, Klinge trifft Zielscheibe, Granate fliegt, explodiert, trifft Scheibe, leert eigene Ausdauer. Unter Xvfb Screenshot: Prompt „[E] Synth-Nudeln kaufen (3 Credchip)“, Automaten-Fronten zur Straße, Klinge in der Hand. testmap/main/Menü starten ohne Skriptfehler (nur das bekannte „resources still in use at exit“).
 - Nach Rebase auf main mit PR #20 (Scharfschütze, `aim` auf Rechtsklick) nochmal `CHECKS 11 FAILS 0`: Sniper-Pickup per E aufgehoben, `ItemUser` fasst Schusswaffen nicht an, WeaponHolder hält den Sniper, Automat, Trinken, Granate. Rechtsklick: `aim` zielt bei Schusswaffen, `use_item` verbraucht bei Verbrauchsitems, beide auf derselben Taste ohne Überschneidung.
 - Hinweise: Neue Klassen (`ItemUser`, `ConsumableData`, `GrenadeData`, `MeleeData`, `ThrownGrenade`, `VendingMachine`) → nach dem Pull Projekt in Godot neu laden. Keine Sounds für Trinken/Granate (keine Assets da).
+
+### 2026-10-26 · PR #21 mit main (PR #22 Hände/Körper) zusammengeführt · Claude (für Arschi)
+- Problem: PR #21 hatte nach dem Merge von #22 Konflikte in `scenes/player/player.tscn` und `claude_updatenotice.md`.
+- Gelöst: `player.tscn` hat jetzt beides, `player_body.tscn` (id `13_body`) und `item_user.gd` (neue id `14_item_user`), `load_steps` 16. Updatenotice: Einträge beider Seiten behalten.
+- `scenes/player/item_user.gd`: Klinge/Granate in der Hand liegen jetzt auch auf `PlayerHands.VIEWMODEL_LAYER`, damit das Fülllicht der neuen Hände sie wie die Waffen beleuchtet.
+- Getestet (Godot 4.7.2 headless): `CHECKS 12 FAILS 0` (E-Aufheben Sniper, Automat, Trinken, Klinge in der Hand, Granate). testmap/main ohne Skriptfehler.
