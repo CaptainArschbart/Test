@@ -1,4 +1,4 @@
-[gd_scene load_steps=41 format=3]
+[gd_scene load_steps=43 format=3]
 
 [ext_resource type="Script" path="res://scenes/testmap/testmap.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
@@ -15,6 +15,8 @@
 [ext_resource type="PackedScene" path="res://scenes/testmap/shooting_range.tscn" id="98_shooting_range"]
 [ext_resource type="Script" path="res://scenes/interact/vending_machine.gd" id="99_vending"]
 [ext_resource type="Resource" path="res://scenes/items/data/noodles.tres" id="100_noodles"]
+[ext_resource type="PackedScene" path="res://scenes/testmap/movement_course.tscn" id="99_movement_course"]
+[ext_resource type="PackedScene" path="res://scenes/stealth/stealth_zone.tscn" id="100_stealth_zone"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_poster"]
 albedo_texture = ExtResource("97_poster")
@@ -2766,5 +2768,11 @@ currency = ExtResource("92_credchip")
 
 [node name="ShootingRange" parent="." instance=ExtResource("98_shooting_range")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, 5)
+
+[node name="MovementCourse" parent="." instance=ExtResource("99_movement_course")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44, 0, -79)
+
+[node name="StealthZone" parent="." instance=ExtResource("100_stealth_zone")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -60)
 
 [node name="PauseMenu" parent="." instance=ExtResource("4_pause")]

@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=18 format=3]
 
 [ext_resource type="Script" path="res://scenes/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scenes/inventory/inventory.gd" id="2_inventory"]
@@ -14,6 +14,8 @@
 [ext_resource type="Script" path="res://scenes/weapons/weapon_holder.gd" id="12_weapon"]
 [ext_resource type="PackedScene" path="res://scenes/player/player_body.tscn" id="13_body"]
 [ext_resource type="Script" path="res://scenes/player/item_user.gd" id="14_item_user"]
+[ext_resource type="Script" path="res://scenes/player/player_movement.gd" id="15_movement"]
+[ext_resource type="Script" path="res://scenes/stealth/player_stealth.gd" id="16_stealth"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.4
@@ -73,3 +75,11 @@ unique_name_in_owner = true
 bus = &"SFX"
 unit_size = 12.0
 max_distance = 24.0
+
+[node name="PlayerMovement" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("15_movement")
+
+[node name="PlayerStealth" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("16_stealth")
