@@ -214,7 +214,9 @@ func _launch() -> void:
 			_fail("Authtoken abgelehnt. Token im ngrok-Dashboard prüfen.")
 			return
 		_mark_token_applied()
-	_pid = OS.create_process(exe, PackedStringArray(["tcp", str(_port)]))
+	# Ziel ist die IPv4-Loopback, der Server lauscht auf 0.0.0.0.
+	var target := "127.0.0.1:%d" % _port
+	_pid = OS.create_process(exe, PackedStringArray(["tcp", target]))
 	if _pid <= 0:
 		_fail("ngrok konnte nicht gestartet werden.")
 		return

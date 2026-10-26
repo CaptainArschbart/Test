@@ -351,3 +351,17 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: Klick im echten Fenster, ein öffentlicher ngrok-Tunnel (kein Authtoken, würde eine Internet-Adresse öffnen), ipify, Portfreigabe am Router, Kopf-Drehung. Echte `settings.cfg` nicht angefasst.
 - Git: `pictures/maxresdefault.jpg.import` und die ungetrackte Torrent-Datei nicht mit committed. Commit auf `main`, `git push origin main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-26 · ngrok-Beitritt: Adresse, Bind und Timeout · Cursor (für EnScapeZ) · main
+- Auftrag: Clients erreichen den ngrok-Host nicht (Server nicht erreichbar oder Timeout).
+- Ursache: ngrok `tcp` leitet nur TCP weiter. ENet spricht UDP. Der Tunnel kann trotzdem „oben“ sein, die Pakete des Clients kommen nie an. Zusätzlich lauschte ENet mit dem Engine-Standard `*`, auf Windows oft nur IPv6, während ngrok per IPv4 auf `127.0.0.1` zugreift.
+- Geändert:
+  - `autoload/network_manager.gd`: direkter Host bleibt ENet, `set_bind_ip("0.0.0.0")` vor `create_server`. ngrok-Host (`create_server(port, true)` bzw. `host_map(..., true)`) nutzt `WebSocketMultiplayerPeer.create_server(port, "0.0.0.0")`. Beitritt zu einer Adresse mit `ngrok`, `tcp://` oder `ws://` geht über WebSocket an die mit `IP.resolve_hostname` aufgelöste IPv4 (`ws://ip:port`). `split_endpoint` trennt `host:port`, auch mit Leerzeichen, `tcp://` und abschließendem `/`, und setzt `explicit`. `client_connected` nach `connected_to_server`. WebSocket wird in `_process` per `poll()` bedient.
+  - `autoload/ngrok_manager.gd`: Start ist `ngrok tcp 127.0.0.1:<port>`, nicht nur die Portzahl.
+  - `scenes/menu/main_menu.gd`: Beim Verlassen des Join-Feldes und vor dem Beitritt wird `0.tcp.eu.ngrok.io:14235` in Host und Port zerlegt. Status beim ngrok-Join: `Verbinde mit ngrok-Server...` plus aufgelöste Adresse. Nach 10 Sekunden ohne Verbindung, oder bei `connection_failed`, Abbruch ohne Absturz und zwei Zeilen: Firewall für Godot und ngrok, und ob der meist 5-stellige ngrok-Port exakt im Feld steht.
+- Keine neue Input-Aktion. Keine Map-`.tscn`. `claude_updatenotice.md` nicht angefasst.
+- Getestet (Godot 4.7.2 stable, headless, isoliertes APPDATA, Prüfskripte danach gelöscht): ein Prozess `CHECKS 13 FAILS 0`. Split von `0.tcp.eu.ngrok.io:14235`, von `tcp://…:14235/` und von `…: 14235`. `localhost` → `127.0.0.1`. WebSocket-Server Port 7795 `tunnel_mode` wahr, ENet Port 7796 falsch. Lobby-Felder danach Host `0.tcp.eu.ngrok.io` und Port `14235`. Join auf `127.0.0.1:1` endet nach 10 Sekunden mit `Zeitüberschreitung nach 10 Sekunden.` und den beiden Tipps (Firewall, Port-Match). Zwei Prozesse ENet: Host `ENET HOST 0 tunnel=false`, `ENET HOST SEES 947874992`, Client `ENET CLIENT OK`. Zwei Prozesse WebSocket: `WS HOST 0 tunnel=true`, `WS HOST SEES 1911681400`, `WS CLIENT OK`. Kein `SCRIPT ERROR`.
+- Bekannt beim Beenden: `ERROR: 1 resources still in use at exit` (Musik-Stream) und `2 ObjectDB instances were leaked`.
+- Nicht getestet: ein echter ngrok-Tunnel mit Authtoken über das Internet, die Windows-Firewall-Abfrage im Fenster, ipify. Echte `settings.cfg` nicht angefasst.
+- Git: `pictures/maxresdefault.jpg.import` und die ungetrackte Torrent-Datei nicht mit committed. Commit auf `main`, `git push origin main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`

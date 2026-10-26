@@ -47,6 +47,8 @@ var _ngrok_button: Button
 var _net_status: Label
 var _share_address := ""
 var _ip_http: HTTPRequest
+var _join_timer: Timer
+var _join_pending := false
 
 @onready var overlay_material: ShaderMaterial = $Overlay.material
 @onready var title_box: Control = %TitleBox
@@ -74,6 +76,7 @@ func _ready() -> void:
 	start_button.pressed.connect(_show_maps if not maps.is_empty() else _start_game.bind(game_scene))
 	NetworkManager.connection_failed.connect(_on_net_failed)
 	NetworkManager.session_ended.connect(_on_net_ended)
+	NetworkManager.client_connected.connect(_on_client_connected)
 	NgrokManager.tunnel_ready.connect(_on_tunnel_ready)
 	NgrokManager.tunnel_failed.connect(_on_tunnel_failed)
 	options_button.pressed.connect(_show_options)
@@ -305,6 +308,8 @@ func _create_lobby() -> Control:
 	row.add_child(_play_button)
 	_ip_field = _net_field("IP, Hostname oder ngrok-Adresse", "127.0.0.1")
 	_ip_field.name = "JoinHost"
+	_ip_field.focus_exited.connect(_split_join_fields)
+	_ip_field.text_submitted.connect(func(_text: String) -> void: _split_join_fields())
 	_net_box.add_child(_ip_field)
 	_join_port = _net_field("Port zum Beitreten", "7777")
 	_join_port.name = "JoinPort"
@@ -314,6 +319,7 @@ func _create_lobby() -> Control:
 	_net_box.add_child(join)
 	_net_status = Label.new()
 	_net_status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_net_status.custom_minimum_size = Vector2(460, 0)
 	_net_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_net_status.add_theme_color_override("font_color", Color(0.0, 0.95, 1.0))
 	_net_status.text = "Bis zu %d Spieler. ngrok braucht einmalig einen Authtoken." % [NetworkManager.MAX_CLIENTS + 1]
@@ -396,7 +402,7 @@ func _on_host_port_pressed() -> void:
 	_play_button.disabled = false
 	var local := NetworkManager.local_share_address()
 	_show_share(local)
-	_set_status("Server läuft. Fürs Internet den Port am Router auf diesen Rechner weiterleiten.")
+	_set_status("Server lauscht auf 0.0.0.0. Fürs Internet den Port als UDP am Router weiterleiten.")
 	NetworkManager.show_share_banner("Port %d weiterleiten" % port)
 	_fetch_public_ip(port)
 
@@ -409,7 +415,7 @@ func _on_host_ngrok_pressed() -> void:
 	if port <= 0:
 		_set_status("Port ungültig.")
 		return
-	var err := NetworkManager.host_map(game_scene, port)
+	var err := NetworkManager.host_map(game_scene, port, true)
 	if err != OK:
 		_set_status(NetworkManager.error_text(err))
 		return
@@ -422,7 +428,7 @@ func _on_host_ngrok_pressed() -> void:
 func _on_tunnel_ready(address: String) -> void:
 	_show_share(address)
 	_play_button.disabled = false
-	_set_status("Tunnel steht. Adresse kopieren und an Freunde schicken.")
+	_set_status("Tunnel steht. Die ganze Adresse einfügen, Host und Port werden getrennt.")
 	NetworkManager.show_share_banner("Freunde: " + address)
 
 
@@ -476,22 +482,86 @@ func _on_play_online_pressed() -> void:
 	_start_game(game_scene)
 
 
+func _split_join_fields() -> void:
+	if _ip_field == null or _join_port == null:
+		return
+	var endpoint := NetworkManager.split_endpoint(_ip_field.text, -1)
+	if not bool(endpoint.get("explicit", false)):
+		return
+	var host := str(endpoint["host"])
+	var port := int(endpoint["port"])
+	if host.is_empty() or port < 1 or port > 65535:
+		return
+	_ip_field.text = host
+	_join_port.text = str(port)
+
+
 func _on_join_pressed() -> void:
+	_split_join_fields()
 	var port := _read_port(_join_port)
 	if port <= 0:
 		_set_status("Port ungültig.")
 		return
+	var host := _ip_field.text.strip_edges()
+	if host.is_empty():
+		host = "127.0.0.1"
+		_ip_field.text = host
+	var resolved := NetworkManager.resolve_host(host)
+	if resolved.is_empty():
+		_set_status(NetworkManager.error_text(ERR_CANT_RESOLVE))
+		return
+	if NetworkManager.wants_tcp_tunnel(host):
+		_set_status("Verbinde mit ngrok-Server...\n%s:%d → %s:%d" % [host, port, resolved, port])
+	else:
+		_set_status("Verbinde mit %s:%d …" % [resolved, port])
 	var err := NetworkManager.create_client(_ip_field.text, port)
 	if err != OK:
+		_join_pending = false
 		_set_status(NetworkManager.error_text(err))
 		return
-	var endpoint := NetworkManager.split_endpoint(_ip_field.text, port)
-	_set_status("Verbinde mit %s:%d …" % [str(endpoint["host"]), int(endpoint["port"])])
+	_begin_join_wait()
+
+
+func _begin_join_wait() -> void:
+	_join_pending = true
+	if _join_timer == null:
+		_join_timer = Timer.new()
+		_join_timer.one_shot = true
+		_join_timer.wait_time = 10.0
+		_join_timer.timeout.connect(_on_join_timeout)
+		add_child(_join_timer)
+	_join_timer.start()
+
+
+func _on_join_timeout() -> void:
+	if not _join_pending:
+		return
+	_join_pending = false
+	NetworkManager.stop()
+	_play_button.disabled = true
+	_set_status(_join_failure("Zeitüberschreitung nach 10 Sekunden."))
+
+
+func _on_client_connected() -> void:
+	_join_pending = false
+	if _join_timer != null:
+		_join_timer.stop()
+	_set_status("Verbunden. Die Map kommt vom Host.")
+
+
+func _join_failure(reason: String) -> String:
+	return reason + "\n1. Host prüfen: Wurde die Windows-Firewall für Godot und ngrok zugelassen?\n2. Port-Match: Stimmt der von ngrok erzeugte, meist 5-stellige Port exakt mit der Eingabe überein?"
 
 
 func _on_net_failed() -> void:
 	_play_button.disabled = true
-	_set_status("Server nicht erreichbar. Adresse, Port und Internet prüfen.")
+	if not _join_pending:
+		_set_status(_join_failure("Server nicht erreichbar."))
+		return
+	_join_pending = false
+	if _join_timer != null:
+		_join_timer.stop()
+	_set_status(_join_failure("Server nicht erreichbar."))
 
 
 func _on_net_ended() -> void:
