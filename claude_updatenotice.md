@@ -299,7 +299,7 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 - Nicht getestet: Klang der prozeduralen Sounds auf echter Soundkarte (nur Dummy-Audio), Spielgefühl mit Maus/Tastatur, Leistung der zwei Bildschirm-Shader auf schwachen Rechnern.
 - Hinweise für die Nächsten: Neue Schadensquellen bitte mit Ursache aufrufen (`stats.damage(x, &"meine_ursache")`) und den Text in `DeathScreen.CAUSES` ergänzen. Wer ein Speichersystem baut, kann „RESPAWN“ später auf den letzten Speicherpunkt umstellen (`Player.revive()`). Soll das Inventar beim Tod bleiben: `drop_items_on_death` am Player ausschalten.
 
-### 2026-10-26 · Ego-Hände: keine „gebrochenen“ Finger mehr, größer, echter Daumen · Claude (für Arschi)
+### 2026-10-26 · Ego-Hände: keine „gebrochenen“ Finger mehr, größer, echter Daumen · Claude (für Arschi) · PR #31
 - Auftrag: Im Spiel sah es aus, als bräche sich die Figur die Finger. Hände größer, Daumen realistischer, Finger besser sichtbar.
 - Ursachen:
   - Die linke Stützhand lag bei der Pistole quer über dem rechten Handrücken, ihre Finger kreuzten die rechten und beide Daumen standen seitlich ab.
