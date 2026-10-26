@@ -127,6 +127,15 @@ func use_selected() -> bool:
 	return false
 
 
+## Klinge oder Granate in der Hand (für die Griffpose der Hände), sonst null.
+func get_held_view() -> Node3D:
+	return _held
+
+
+func get_held_item() -> ItemData:
+	return _item
+
+
 ## Kurze Meldung unter dem Fadenkreuz, z. B. "NeoCola getrunken".
 func show_message(text: String, color := Color(0.0, 1.0, 0.95)) -> void:
 	_message.text = text
