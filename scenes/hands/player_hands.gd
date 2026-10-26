@@ -17,6 +17,7 @@ extends Node3D
 ## etwas nach, Landen drückt sie kurz runter. Die Pose aus der Szene bleibt die Mitte;
 ## die Abweichung wird jedes Frame neu gesetzt, nicht aufaddiert.
 ## Hängt an Camera3D, damit Drehen und Nicken die Hände mitnehmen.
+## Beim Klettern (PlayerMovement) greifen beide Hände fest an die Kante.
 
 @export var bob_frequency: float = 2.2
 @export var walk_bob_amplitude: float = 0.012
@@ -103,6 +104,22 @@ const POSE_RELOAD_LEFT := {
 	"thumb": Vector3(-6.0, 30.0, -50.0),
 	"thumb_curl": [20.0, 16.0],
 }
+
+## Hand flach auf einer Kante, Finger greifen über die Kante (Lage kommt beim Klettern aus der Welt).
+const POSE_LEDGE := {
+	"pos": Vector3.ZERO,
+	"rot": Vector3.ZERO,
+	"curl": [[38.0, 46.0, 30.0], [42.0, 50.0, 32.0], [44.0, 52.0, 32.0], [46.0, 52.0, 30.0]],
+	"spread": 6.0,
+	"thumb": Vector3(-20.0, 30.0, -40.0),
+	"thumb_curl": [16.0, 20.0],
+}
+
+## Beim Klettern bleiben die Hände mindestens so hoch und so weit vorn (Raum der Hände).
+const LEDGE_MIN_Y := -0.22
+## Hohe Kanten: Hände oben im Bild statt darüber.
+const LEDGE_MAX_Y := 0.16
+const LEDGE_MAX_Z := -0.32
 
 ## Faktor auf alle Ausschläge (WeaponHolder senkt ihn beim Zielen).
 var motion_scale: float = 1.0
@@ -206,8 +223,29 @@ func update_pose(delta: float) -> void:
 	_pose_left = _blend_pose(_pose_left, target_left, weight)
 	# Ein wenig Leben in den Fingern, auch beim Stillstehen.
 	var breath := sin(Time.get_ticks_msec() * 0.0011) * 2.0
+	# Klettern: Hände liegen fest an der Kante (Weltpunkte), egal wie sich die Kamera bewegt.
+	var grab := _player.movement.get_grab_weight() if _player.movement != null else 0.0
+	if grab > 0.001:
+		var grips := _player.movement.get_grab_transforms()
+		_apply_pose(_right, _blend_pose(_pose_right, _ledge_pose(grips[0]), grab))
+		_apply_pose(_left, _blend_pose(_pose_left, _ledge_pose(grips[1]), grab))
+		return
 	_apply_pose(_right, _pose_right, breath if view == null else 0.0)
 	_apply_pose(_left, _pose_left, breath)
+
+
+## Greifpose an einer Kante: Welt-Transform des Handgelenks in den Raum der Hände.
+func _ledge_pose(world: Transform3D) -> Dictionary:
+	var pose := _to_runtime(POSE_LEDGE)
+	var local := global_transform.affine_inverse() * world
+	# Steigt die Kamera über die Kante, rutschen die Hände sonst aus dem Bild. Dann bleiben sie
+	# unten im Bild und drücken sich ab (wie beim echten Hochstemmen). Bei hohen Kanten oben im Bild.
+	local.origin.y = clampf(local.origin.y, LEDGE_MIN_Y, LEDGE_MAX_Y)
+	local.origin.z = minf(local.origin.z, LEDGE_MAX_Z)
+	pose.pos = local.origin
+	pose.basis = local.basis.orthonormalized()
+	pose.arm_basis = pose.basis
+	return pose
 
 
 func _update_look_sway(delta: float) -> void:
