@@ -32,7 +32,23 @@ const OptionsMenu := preload("res://scenes/options/options_menu.gd")
 var _glitch_timer := 0.0
 var _glitch_left := 0.0
 var _starting := false
+var _net_launch := false
 var _map_buttons: VBoxContainer
+var _lobby: Control
+var _net_box: VBoxContainer
+var _ip_field: LineEdit
+var _host_port: LineEdit
+var _join_port: LineEdit
+var _token_field: LineEdit
+var _share_label: Label
+var _copy_button: Button
+var _play_button: Button
+var _ngrok_button: Button
+var _net_status: Label
+var _share_address := ""
+var _ip_http: HTTPRequest
+var _join_timer: Timer
+var _join_pending := false
 
 @onready var overlay_material: ShaderMaterial = $Overlay.material
 @onready var title_box: Control = %TitleBox
@@ -48,11 +64,21 @@ var _map_buttons: VBoxContainer
 
 
 func _ready() -> void:
+	# Zurück ins Menü beendet die Session. Nur die echte Menüszene.
+	if get_tree().current_scene == self:
+		NetworkManager.stop()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	options_panel.hide()
 
 	_map_buttons = _create_map_buttons()
+	_lobby = _create_lobby()
+	_add_multiplayer_button()
 	start_button.pressed.connect(_show_maps if not maps.is_empty() else _start_game.bind(game_scene))
+	NetworkManager.connection_failed.connect(_on_net_failed)
+	NetworkManager.session_ended.connect(_on_net_ended)
+	NetworkManager.client_connected.connect(_on_client_connected)
+	NgrokManager.tunnel_ready.connect(_on_tunnel_ready)
+	NgrokManager.tunnel_failed.connect(_on_tunnel_failed)
 	options_button.pressed.connect(_show_options)
 	quit_button.pressed.connect(_on_quit_pressed)
 	options.closed.connect(_hide_options)
@@ -69,6 +95,8 @@ func _ready() -> void:
 	start_button.grab_focus()
 	if OS.has_feature("web"):
 		quit_button.hide()
+		_ngrok_button.disabled = true
+		_ngrok_button.tooltip_text = "ngrok läuft im Browser nicht."
 
 
 func _process(delta: float) -> void:
@@ -99,6 +127,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel") and _map_buttons.visible and not _starting:
 		_hide_maps()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_cancel") and _lobby.visible and not _starting:
+		_hide_lobby()
 		get_viewport().set_input_as_handled()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F11:
 		# Die Optionen ziehen das Vollbild im Entwurf selbst nach (Settings.changed).
@@ -155,6 +186,7 @@ func _create_map_buttons() -> VBoxContainer:
 
 func _show_maps() -> void:
 	main_buttons.hide()
+	_lobby.hide()
 	_map_buttons.show()
 	_trigger_glitch(0.25, 0.1)
 	_map_buttons.get_child(0).grab_focus()
@@ -169,6 +201,9 @@ func _hide_maps() -> void:
 func _start_game(scene_path: String) -> void:
 	if _starting:
 		return
+	if not _net_launch:
+		NetworkManager.stop()
+	_net_launch = false
 	_starting = true
 	game_scene = scene_path
 	main_buttons.process_mode = Node.PROCESS_MODE_DISABLED
@@ -198,6 +233,7 @@ func _on_quit_pressed() -> void:
 
 func _show_options() -> void:
 	# Titel ausblenden, damit das Panel Platz hat.
+	_lobby.hide()
 	title_box.hide()
 	cursor_label.hide()
 	main_buttons.hide()
@@ -211,3 +247,323 @@ func _hide_options() -> void:
 	cursor_label.show()
 	main_buttons.show()
 	options_button.grab_focus()
+
+
+func _add_multiplayer_button() -> void:
+	var button := _net_button("MULTIPLAYER")
+	button.custom_minimum_size = start_button.custom_minimum_size
+	button.pressed.connect(_show_lobby)
+	main_buttons.add_child(button)
+	main_buttons.move_child(button, 1)
+
+
+func _create_lobby() -> Control:
+	var scroll := ScrollContainer.new()
+	scroll.name = "Lobby"
+	scroll.custom_minimum_size = Vector2(480, 520)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+	main_buttons.add_sibling(scroll)
+	scroll.hide()
+	_net_box = VBoxContainer.new()
+	_net_box.name = "NetBox"
+	_net_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_net_box.theme = main_buttons.theme
+	_net_box.add_theme_constant_override("separation", 8)
+	_net_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_net_box)
+	var back := _net_button("ZURÜCK")
+	back.pressed.connect(_hide_lobby)
+	_net_box.add_child(back)
+	_host_port = _net_field("Lokaler Port", "7777")
+	_net_box.add_child(_host_port)
+	var host_port := _net_button("HOST (PORTFREIGABE)")
+	host_port.pressed.connect(_on_host_port_pressed)
+	_net_box.add_child(host_port)
+	_ngrok_button = _net_button("HOST (NGROK)")
+	_ngrok_button.pressed.connect(_on_host_ngrok_pressed)
+	_net_box.add_child(_ngrok_button)
+	_token_field = _net_field("ngrok Authtoken, optional", "")
+	_token_field.secret = true
+	_token_field.text = NgrokManager.saved_token()
+	_net_box.add_child(_token_field)
+	_share_label = Label.new()
+	_share_label.name = "ShareAddress"
+	_share_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_share_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_share_label.add_theme_color_override("font_color", Color(0.0, 0.95, 1.0))
+	_share_label.text = "Adresse erscheint nach dem Hosten."
+	_net_box.add_child(_share_label)
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 8)
+	_net_box.add_child(row)
+	_copy_button = _net_button("KOPIEREN")
+	_copy_button.disabled = true
+	_copy_button.pressed.connect(_on_copy_pressed)
+	row.add_child(_copy_button)
+	_play_button = _net_button("SPIEL STARTEN")
+	_play_button.disabled = true
+	_play_button.pressed.connect(_on_play_online_pressed)
+	row.add_child(_play_button)
+	_ip_field = _net_field("IP, Hostname oder ngrok-Adresse", "127.0.0.1")
+	_ip_field.name = "JoinHost"
+	_ip_field.focus_exited.connect(_split_join_fields)
+	_ip_field.text_submitted.connect(func(_text: String) -> void: _split_join_fields())
+	_net_box.add_child(_ip_field)
+	_join_port = _net_field("Port zum Beitreten", "7777")
+	_join_port.name = "JoinPort"
+	_net_box.add_child(_join_port)
+	var join := _net_button("BEITRETEN")
+	join.pressed.connect(_on_join_pressed)
+	_net_box.add_child(join)
+	_net_status = Label.new()
+	_net_status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_net_status.custom_minimum_size = Vector2(460, 0)
+	_net_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_net_status.add_theme_color_override("font_color", Color(0.0, 0.95, 1.0))
+	_net_status.text = "Bis zu %d Spieler. ngrok braucht einmalig einen Authtoken." % [NetworkManager.MAX_CLIENTS + 1]
+	_net_box.add_child(_net_status)
+	_ip_http = HTTPRequest.new()
+	_ip_http.timeout = 4.0
+	_ip_http.request_completed.connect(_on_public_ip)
+	add_child(_ip_http)
+	return scroll
+
+
+func _net_button(label: String) -> Button:
+	var button := Button.new()
+	button.text = label
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.custom_minimum_size = Vector2(0, 44)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.mouse_entered.connect(_focus_if_enabled.bind(button))
+	return button
+
+
+func _net_field(placeholder: String, text: String) -> LineEdit:
+	var field := LineEdit.new()
+	field.placeholder_text = placeholder
+	field.text = text
+	field.custom_minimum_size = Vector2(0, 40)
+	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	field.mouse_filter = Control.MOUSE_FILTER_STOP
+	return field
+
+
+func _show_lobby() -> void:
+	title_box.hide()
+	main_buttons.hide()
+	_map_buttons.hide()
+	_lobby.show()
+	_trigger_glitch(0.25, 0.1)
+
+
+func _hide_lobby() -> void:
+	_ip_http.cancel_request()
+	_lobby.hide()
+	title_box.show()
+	main_buttons.show()
+	start_button.grab_focus()
+	if get_tree().current_scene == self:
+		NetworkManager.stop()
+
+
+func _read_port(field: LineEdit) -> int:
+	var text := field.text.strip_edges()
+	if not text.is_valid_int():
+		return -1
+	var port := text.to_int()
+	if port < 1 or port > 65535:
+		return -1
+	return port
+
+
+func _set_status(text: String) -> void:
+	if _net_status != null:
+		_net_status.text = text
+
+
+func _show_share(address: String) -> void:
+	_share_address = address
+	_share_label.text = address
+	_copy_button.disabled = address.is_empty()
+
+
+func _on_host_port_pressed() -> void:
+	var port := _read_port(_host_port)
+	if port <= 0:
+		_set_status("Port ungültig.")
+		return
+	var err := NetworkManager.host_map(game_scene, port)
+	if err != OK:
+		_set_status(NetworkManager.error_text(err))
+		return
+	_play_button.disabled = false
+	var local := NetworkManager.local_share_address()
+	_show_share(local)
+	_set_status("Server lauscht auf 0.0.0.0. Fürs Internet den Port als UDP am Router weiterleiten.")
+	NetworkManager.show_share_banner("Port %d weiterleiten" % port)
+	_fetch_public_ip(port)
+
+
+func _on_host_ngrok_pressed() -> void:
+	if OS.has_feature("web"):
+		_set_status("ngrok läuft im Browser nicht.")
+		return
+	var port := _read_port(_host_port)
+	if port <= 0:
+		_set_status("Port ungültig.")
+		return
+	var err := NetworkManager.host_map(game_scene, port, true)
+	if err != OK:
+		_set_status(NetworkManager.error_text(err))
+		return
+	_play_button.disabled = true
+	_copy_button.disabled = true
+	_set_status("ngrok wird geladen oder gestartet …")
+	NgrokManager.start_tunnel(port, _token_field.text)
+
+
+func _on_tunnel_ready(address: String) -> void:
+	_show_share(address)
+	_play_button.disabled = false
+	_set_status("Tunnel steht. Die ganze Adresse einfügen, Host und Port werden getrennt.")
+	NetworkManager.show_share_banner("Freunde: " + address)
+
+
+func _on_tunnel_failed(message: String) -> void:
+	_play_button.disabled = true
+	_copy_button.disabled = true
+	if NetworkManager.has_session():
+		NetworkManager.stop()
+	_set_status(message)
+
+
+func _fetch_public_ip(port: int) -> void:
+	_ip_http.set_meta("share_port", port)
+	_ip_http.cancel_request()
+	var err := _ip_http.request("https://api.ipify.org")
+	if err != OK:
+		_set_status("Öffentliche IP nicht lesbar. Lokal: %s" % _share_address)
+
+
+func _on_public_ip(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+		_set_status("Öffentliche IP nicht erreichbar. Lokal: %s. Internet prüfen." % _share_address)
+		return
+	var ip := body.get_string_from_utf8().strip_edges()
+	if not ip.is_valid_ip_address():
+		_set_status("Öffentliche IP ungültig. Lokal: %s" % _share_address)
+		return
+	var port := int(_ip_http.get_meta("share_port", NetworkManager.listen_port))
+	var address := "%s:%d" % [ip, port]
+	_show_share(address)
+	_set_status("Internet-Adresse kopieren. Port %d muss am Router weitergeleitet sein." % port)
+	NetworkManager.show_share_banner("Freunde: " + address)
+
+
+func _on_copy_pressed() -> void:
+	if _share_address.is_empty():
+		_set_status("Noch keine Adresse.")
+		return
+	if DisplayServer.get_name() == "headless":
+		_set_status(_share_address)
+		return
+	DisplayServer.clipboard_set(_share_address)
+	_set_status("Kopiert: " + _share_address)
+
+
+func _on_play_online_pressed() -> void:
+	if not NetworkManager.has_session() or not multiplayer.is_server():
+		_set_status("Erst einen Host starten.")
+		return
+	_net_launch = true
+	_start_game(game_scene)
+
+
+func _split_join_fields() -> void:
+	if _ip_field == null or _join_port == null:
+		return
+	var endpoint := NetworkManager.split_endpoint(_ip_field.text, -1)
+	if not bool(endpoint.get("explicit", false)):
+		return
+	var host := str(endpoint["host"])
+	var port := int(endpoint["port"])
+	if host.is_empty() or port < 1 or port > 65535:
+		return
+	_ip_field.text = host
+	_join_port.text = str(port)
+
+
+func _on_join_pressed() -> void:
+	_split_join_fields()
+	var port := _read_port(_join_port)
+	if port <= 0:
+		_set_status("Port ungültig.")
+		return
+	var host := _ip_field.text.strip_edges()
+	if host.is_empty():
+		host = "127.0.0.1"
+		_ip_field.text = host
+	var resolved := NetworkManager.resolve_host(host)
+	if resolved.is_empty():
+		_set_status(NetworkManager.error_text(ERR_CANT_RESOLVE))
+		return
+	if NetworkManager.wants_tcp_tunnel(host):
+		_set_status("Verbinde mit ngrok-Server...\n%s:%d → %s:%d" % [host, port, resolved, port])
+	else:
+		_set_status("Verbinde mit %s:%d …" % [resolved, port])
+	var err := NetworkManager.create_client(_ip_field.text, port)
+	if err != OK:
+		_join_pending = false
+		_set_status(NetworkManager.error_text(err))
+		return
+	_begin_join_wait()
+
+
+func _begin_join_wait() -> void:
+	_join_pending = true
+	if _join_timer == null:
+		_join_timer = Timer.new()
+		_join_timer.one_shot = true
+		_join_timer.wait_time = 10.0
+		_join_timer.timeout.connect(_on_join_timeout)
+		add_child(_join_timer)
+	_join_timer.start()
+
+
+func _on_join_timeout() -> void:
+	if not _join_pending:
+		return
+	_join_pending = false
+	NetworkManager.stop()
+	_play_button.disabled = true
+	_set_status(_join_failure("Zeitüberschreitung nach 10 Sekunden."))
+
+
+func _on_client_connected() -> void:
+	_join_pending = false
+	if _join_timer != null:
+		_join_timer.stop()
+	_set_status("Verbunden. Die Map kommt vom Host.")
+
+
+func _join_failure(reason: String) -> String:
+	return reason + "\n1. Host prüfen: Wurde die Windows-Firewall für Godot und ngrok zugelassen?\n2. Port-Match: Stimmt der von ngrok erzeugte, meist 5-stellige Port exakt mit der Eingabe überein?"
+
+
+func _on_net_failed() -> void:
+	_play_button.disabled = true
+	if not _join_pending:
+		_set_status(_join_failure("Server nicht erreichbar."))
+		return
+	_join_pending = false
+	if _join_timer != null:
+		_join_timer.stop()
+	_set_status(_join_failure("Server nicht erreichbar."))
+
+
+func _on_net_ended() -> void:
+	_play_button.disabled = true
+	_set_status("Verbindung zum Host verloren.")

@@ -93,13 +93,21 @@ func close() -> void:
 
 
 func _close_inventory() -> void:
-	var player := get_tree().get_first_node_in_group("player") as Player
+	var player := _local_player()
 	if player == null:
 		return
 	var hud := player.get_node_or_null("InventoryUI")
 	if hud != null and hud.has_method("force_close"):
 		hud.call("force_close")
 	player.input_locked = false
+
+
+func _local_player() -> Player:
+	for node: Node in get_tree().get_nodes_in_group("player"):
+		var player := node as Player
+		if player != null and player.controls_local_body():
+			return player
+	return null
 
 
 func _capture_mouse() -> void:

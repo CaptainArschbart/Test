@@ -299,6 +299,25 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 - Nicht getestet: Klang der prozeduralen Sounds auf echter Soundkarte (nur Dummy-Audio), Spielgefühl mit Maus/Tastatur, Leistung der zwei Bildschirm-Shader auf schwachen Rechnern.
 - Hinweise für die Nächsten: Neue Schadensquellen bitte mit Ursache aufrufen (`stats.damage(x, &"meine_ursache")`) und den Text in `DeathScreen.CAUSES` ergänzen. Wer ein Speichersystem baut, kann „RESPAWN“ später auf den letzten Speicherpunkt umstellen (`Player.revive()`). Soll das Inventar beim Tod bleiben: `drop_items_on_death` am Player ausschalten.
 
+### 2026-10-26 · Ego-Hände: keine „gebrochenen“ Finger mehr, größer, echter Daumen · Claude (für Arschi) · PR #31
+- Auftrag: Im Spiel sah es aus, als bräche sich die Figur die Finger. Hände größer, Daumen realistischer, Finger besser sichtbar.
+- Ursachen:
+  - Die linke Stützhand lag bei der Pistole quer über dem rechten Handrücken, ihre Finger kreuzten die rechten und beide Daumen standen seitlich ab.
+  - Der Daumen beugte sich um die falsche Achse (lockere Pose drehte ihn sogar nach außen, Euler z = −55°). Ohne Drehung um die eigene Achse kann er sich nicht zur Handmitte beugen.
+  - Klinge und Granate hatten gar keine Griffpose: das Item schwebte, die Hände hingen locker daneben.
+  - Ohne Waffe sah man nur die Handrücken, die Finger waren nach unten weggekrümmt.
+- Geändert in `scenes/hands/player_hands.gd`:
+  - Alle Posen neu. Pistole links jetzt Becher-Griff von unten. Daumen mit Gegenstellung (z = 55° um die eigene Achse, gespiegelt für links). Fingerkrümmung pro Gelenk unter 90°, Summe höchstens 210°.
+  - Neue Posen `POSE_BLADE_RIGHT` und `POSE_GRENADE_RIGHT`, die Hand folgt dem gehaltenen Item auch beim Schlag/Wurf.
+  - Posen können statt Euler-Winkeln `fingers` + `back` angeben (Fingerrichtung, Handrücken), `_hand_basis()`. Die lockere Pose nutzt das, links wird gespiegelt.
+  - `hand_scale` (1,15): sichtbares Modell hängt unter einem skalierten Knoten `Model`, Posen setzen nur den Pivot. Waffen- und Itempositionen bleiben unverändert.
+  - Finger schlanker und mit etwas Abstand, Leuchtpunkt auf jedem Grundglied, Metallkappe am Mittelgelenk, Nagel auch am Daumen. Daumen setzt näher am Handgelenk an, größerer Ballen.
+  - Fülllicht 0,7 → 1,1.
+- `scenes/hands/player_hands.tscn`: eigene Materialien für Handschuh (heller, stärkerer Rand) und Haut (dunkler, matter). Die gemeinsamen `.tres` und damit das Playermodel bleiben unverändert.
+- `scenes/player/item_user.gd`: nur zwei Getter ergänzt, `get_held_view()` und `get_held_item()`.
+- Getestet: Godot 4.7.2 unter Xvfb, Compatibility (OpenGL) und Forward+ (Vulkan über lavapipe). Screenshots aus der Spielerkamera vorher/nachher: ohne Waffe, Runterschauen, Pistole, Pistole zielend, Pistole nachladen, Sniper, Sniper zielend, Sniper nachladen, Klinge, Granate. Dazu Nahaufnahmen mit Tageslicht von hinten und vorn. `testmap.tscn` ohne `SCRIPT ERROR`.
+- Nicht getestet: echte GPU, Spielgefühl in Bewegung, Schlag- und Wurfbewegung mitten im Ablauf (nur Ruhepose angesehen).
+
 ### 2026-10-26 · Gegner ausgearbeitet und in Sektor 7 · Claude (für Arschi) · PR #30
 - Was: Neues Gegnersystem `Enemy` (ersetzt nicht die Testwachen der Testmap, die bleiben).
   - Navigation: Navmesh wird beim Start aus den statischen Kollisionen der Map gebacken (`EnemyDirector`, Monotone, ~0,3 s im Hintergrund). Eigener Pfadfolger, schwebender CharacterBody mit Boden- und Kantenstrahl: Treppen, Stege und Feuertreppen gehen, keiner fällt von Kanten.
