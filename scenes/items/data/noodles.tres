@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ConsumableData" format=3]
+
+[ext_resource type="Script" path="res://scenes/items/consumable_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+id = "noodles"
+display_name = "Synth-Nudeln"
+description = "Instant-Nudeln aus dem Automaten. Schmeckt nach Soja und Strom. Rechtsklick isst."
+glyph = "N"
+color = Color(1, 0.35, 0.55, 1)
+max_stack = 8
+food = 45.0
+use_verb = "gegessen"

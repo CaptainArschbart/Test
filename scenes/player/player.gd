@@ -11,6 +11,8 @@ extends CharacterBody3D
 ## %PlayerHands sitzt an der Kamera und wackelt bei Idle, Gehen und Sprint.
 ## %WeaponHolder darunter zeigt eine Waffe aus dem gewählten Slot und schießt ("fire", "reload",
 ## "aim" zum Zielen).
+## %ItemUser: "interact" (E) hebt Items auf und benutzt Objekte, "use_item" (Rechtsklick)
+## verbraucht Essen/Trinken/Stims, "fire" wirft Granaten und schlägt mit Nahkampfwaffen.
 ## Stufen bis max_step_height hebt der Körper an, bevor move_and_slide läuft.
 ## %Footsteps und %LandImpact spielen auf dem Bus SFX.
 ## "noclip" schaltet den Flugmodus um: durch Wände fliegen in Blickrichtung,
@@ -81,6 +83,7 @@ var _last_land: int = -1
 @onready var camera: Camera3D = $Head/Camera3D
 @onready var hands: PlayerHands = %PlayerHands
 @onready var weapon_holder: WeaponHolder = %WeaponHolder
+@onready var item_user: ItemUser = %ItemUser
 @onready var inventory: Inventory = $Inventory
 @onready var stats: PlayerStats = $PlayerStats
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
@@ -153,6 +156,7 @@ func _physics_process(delta: float) -> void:
 		input_dir = Vector2.ZERO
 	var direction := (transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
 	var speed := sprint_speed if sprinting else walk_speed
+	speed *= stats.get_speed_multiplier()
 	var accel := acceleration if is_on_floor() else acceleration * air_control
 	var weight := minf(accel * delta, 1.0)
 	velocity.x = lerpf(velocity.x, direction.x * speed, weight)

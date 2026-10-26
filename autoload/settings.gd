@@ -51,6 +51,7 @@ const REBINDABLE_ACTIONS := {
 	"jump": "Springen",
 	"sprint": "Sprinten",
 	"inventory": "Inventar",
+	"interact": "Benutzen",
 	"drop_item": "Wegwerfen",
 	"reload": "Nachladen",
 	"hotbar_1": "Slot 1",

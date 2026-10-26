@@ -189,3 +189,27 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 - Getestet: Godot 4.7.2, OpenGL-Kompatibilität unter Xvfb, Screenshots ohne Waffe, Pistole, Pistole zielend, Nachladen, Scharfschützengewehr, Runterschauen, Körper von außen (gehend). `testmap.tscn` und `main.tscn` ohne `SCRIPT ERROR` / `Parse Error`.
 - Nicht getestet: Forward+ (Subsurface/Clearcoat sehen dort etwas anders aus), echtes Spielgefühl beim Schießen in Bewegung.
 - Hinweis: Nach dem Pull Godot neu laden (*Projekt → Aktuelles Projekt neu laden*), weil es neue Klassen gibt (`ProcMesh`, `PlayerBody`).
+
+### 2026-10-25 · Benutzen-Taste (E) und Item-Nutzung · Claude (für Arschi)
+- Auftrag: Benutzen-Knopf auf E, Items mit Rechtsklick verwenden, Granaten und Waffen mit Linksklick.
+- Neu:
+  - Input-Aktionen `interact` (E, im Optionsmenü als „Benutzen“ belegbar) und `use_item` (rechte Maustaste, wie `fire` nicht belegbar).
+  - `scenes/player/item_user.gd` (`ItemUser`, Knoten `%ItemUser` unter `PlayerHands` in `player.tscn`). Strahl aus der Bildschirmmitte (2,6 m, Layer world + interact). Trifft er einen Knoten mit `interact(player)` und `get_interact_text(player)`, steht unter dem Fadenkreuz „[E] …“. Rechtsklick verbraucht `ConsumableData`, Linksklick wirft `GrenadeData` bzw. schlägt mit `MeleeData`. Zeigt Klinge/Granate in der Hand, Meldungen („NeoCola Overdrive getrunken“) und „OVERDRIVE 12s“ beim Speed-Boost.
+  - Item-Klassen: `consumable_data.gd` (heal/stamina/food/water, speed_multiplier + boost_duration), `grenade_data.gd`, `melee_data.gd`. `grenade.gd` (`ThrownGrenade`, RigidBody im Code gebaut): Bogenwurf, Zünder 1,6 s, EMP-Blitz, `take_hit` auf alles im Radius 6 m mit Sichtlinie, leert die eigene Ausdauer, wenn man selbst drinsteht.
+  - `scenes/interact/vending_machine.gd` (`VendingMachine`): Automat, E kauft `product` für `price` × `currency`. In der Testmap zwei Stück am westlichen Gehweg nahe Spawn (x −11,2, z 34 / 35,6): NeoCola für 2 Credchips, Synth-Nudeln für 3.
+  - `scenes/items/data/noodles.tres` (Synth-Nudeln, Hunger +45), ein Pickup davon auf `Spot_Plaza2`.
+- Geändert:
+  - Pickups werden nicht mehr beim Drüberlaufen eingesammelt, sondern mit E (`pickup.gd`: `interact`, `get_interact_text`; `pickup.tscn`: `collision_layer` 4 = neuer Layer 3 „interact“, `monitoring` aus).
+  - Itemdaten: NeoCola = Ausdauer voll, Durst +30, 15 s 1,3× schneller. Stim = HP +45. EMP-Granate → `GrenadeData` (30 Schaden), Monoklinge → `MeleeData` (40 Schaden, 2,2 m).
+  - `player_stats.gd`: `add_stamina`, `boost_speed`, `get_speed_multiplier`, `get_boost_left`; Boost läuft in `deplete_stats` ab, `restore_all` setzt ihn zurück. `player.gd`: Laufgeschwindigkeit × Boost, `item_user`-Referenz.
+  - `autoload/settings.gd`: `interact` in `REBINDABLE_ACTIONS`. `project.godot`: Aktionen + Layername.
+- Rechtsklick auf Schusswaffen macht nichts (`ItemUser` reagiert nur auf Verbrauchsitems), damit das Zielen über Kimme aus dem Scharfschützen-Thread dort ohne Konflikt dazukommt. Linksklick auf Schusswaffen bleibt beim `WeaponHolder`.
+- Getestet (Godot 4.7.2, headless, isoliertes APPDATA, temporäre Runner-Szene danach gelöscht): `CHECKS 27 FAILS 0` – Drüberlaufen hebt nicht auf, E hebt 3 NeoCola auf, Automat ohne Geld kein Kauf, mit Geld +1 Cola −2 Chips, Trinken/Stim/Boost-Ende, Datenshard nicht benutzbar, Klinge trifft Zielscheibe, Granate fliegt, explodiert, trifft Scheibe, leert eigene Ausdauer. Unter Xvfb Screenshot: Prompt „[E] Synth-Nudeln kaufen (3 Credchip)“, Automaten-Fronten zur Straße, Klinge in der Hand. testmap/main/Menü starten ohne Skriptfehler (nur das bekannte „resources still in use at exit“).
+- Nach Rebase auf main mit PR #20 (Scharfschütze, `aim` auf Rechtsklick) nochmal `CHECKS 11 FAILS 0`: Sniper-Pickup per E aufgehoben, `ItemUser` fasst Schusswaffen nicht an, WeaponHolder hält den Sniper, Automat, Trinken, Granate. Rechtsklick: `aim` zielt bei Schusswaffen, `use_item` verbraucht bei Verbrauchsitems, beide auf derselben Taste ohne Überschneidung.
+- Hinweise: Neue Klassen (`ItemUser`, `ConsumableData`, `GrenadeData`, `MeleeData`, `ThrownGrenade`, `VendingMachine`) → nach dem Pull Projekt in Godot neu laden. Keine Sounds für Trinken/Granate (keine Assets da).
+
+### 2026-10-26 · PR #21 mit main (PR #22 Hände/Körper) zusammengeführt · Claude (für Arschi)
+- Problem: PR #21 hatte nach dem Merge von #22 Konflikte in `scenes/player/player.tscn` und `claude_updatenotice.md`.
+- Gelöst: `player.tscn` hat jetzt beides, `player_body.tscn` (id `13_body`) und `item_user.gd` (neue id `14_item_user`), `load_steps` 16. Updatenotice: Einträge beider Seiten behalten.
+- `scenes/player/item_user.gd`: Klinge/Granate in der Hand liegen jetzt auch auf `PlayerHands.VIEWMODEL_LAYER`, damit das Fülllicht der neuen Hände sie wie die Waffen beleuchtet.
+- Getestet (Godot 4.7.2 headless): `CHECKS 12 FAILS 0` (E-Aufheben Sniper, Automat, Trinken, Klinge in der Hand, Granate). testmap/main ohne Skriptfehler.
