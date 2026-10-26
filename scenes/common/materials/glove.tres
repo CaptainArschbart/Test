@@ -1,0 +1,15 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3]
+
+[ext_resource type="NoiseTexture2D" path="res://scenes/common/materials/weave_normal.tres" id="1_weave"]
+
+[resource]
+albedo_color = Color(0.075, 0.08, 0.095, 1)
+roughness = 0.72
+normal_enabled = true
+normal_scale = 0.35
+normal_texture = ExtResource("1_weave")
+rim_enabled = true
+rim = 0.35
+rim_tint = 0.6
+uv1_scale = Vector3(3, 3, 3)
+uv1_triplanar = true
