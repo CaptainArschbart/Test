@@ -1,6 +1,9 @@
 extends Control
 ## Hauptmenü im Cyberpunk-Stil: Start, Spielstand laden, Optionen, Beenden.
 ##
+## "Start" öffnet die Map-Auswahl (Buttons aus maps, im Code erzeugt, gleicher Stil wie das
+## Hauptmenü).
+##
 ## "Spielstand laden" ist ein Platzhalter und bleibt deaktiviert, bis es ein
 ## Speichersystem gibt.
 ##
@@ -10,8 +13,14 @@ extends Control
 
 const OptionsMenu := preload("res://scenes/options/options_menu.gd")
 
-## Szene, die "Start" lädt.
+## Szene, die "Start" lädt, wenn maps leer ist.
 @export_file("*.tscn") var game_scene := "res://scenes/testmap/testmap.tscn"
+## Map-Auswahl nach "Start": Anzeigename -> Szene.
+@export var maps: Dictionary[String, String] = {
+	"SEKTOR 7 // SLUM": "res://scenes/slum/slum.tscn",
+	"NEON DISTRICT // TESTMAP": "res://scenes/testmap/testmap.tscn",
+	"TRAINING // MAIN": "res://scenes/main/main.tscn",
+}
 
 @export_group("Glitch")
 ## Zeitraum (Sekunden), in dem zufällig ein schwacher Glitch kommt.
@@ -24,6 +33,7 @@ const OptionsMenu := preload("res://scenes/options/options_menu.gd")
 var _glitch_timer := 0.0
 var _glitch_left := 0.0
 var _starting := false
+var _map_buttons: VBoxContainer
 
 @onready var overlay_material: ShaderMaterial = $Overlay.material
 @onready var title_box: Control = %TitleBox
@@ -42,7 +52,8 @@ func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	options_panel.hide()
 
-	start_button.pressed.connect(_on_start_pressed)
+	_map_buttons = _create_map_buttons()
+	start_button.pressed.connect(_show_maps if not maps.is_empty() else _start_game.bind(game_scene))
 	options_button.pressed.connect(_show_options)
 	quit_button.pressed.connect(_on_quit_pressed)
 	options.closed.connect(_hide_options)
@@ -87,6 +98,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel") and options_panel.visible:
 		options.request_back()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_cancel") and _map_buttons.visible and not _starting:
+		_hide_maps()
+		get_viewport().set_input_as_handled()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F11:
 		# Die Optionen ziehen das Vollbild im Entwurf selbst nach (Settings.changed).
 		Settings.toggle_fullscreen()
@@ -106,11 +120,60 @@ func _schedule_glitch() -> void:
 	_glitch_timer = randf_range(glitch_interval_min, glitch_interval_max)
 
 
-func _on_start_pressed() -> void:
+# --- Map-Auswahl ----------------------------------------------------------------
+
+## Zweite Button-Liste neben MainButtons, gleicher Theme und gleiche Größe.
+func _create_map_buttons() -> VBoxContainer:
+	var box := VBoxContainer.new()
+	box.name = "MapButtons"
+	box.custom_minimum_size = main_buttons.custom_minimum_size
+	box.size_flags_horizontal = main_buttons.size_flags_horizontal
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.theme = main_buttons.theme
+	box.add_theme_constant_override("separation", 16)
+	main_buttons.add_sibling(box)
+	box.hide()
+	var entries: Array = maps.keys()
+	entries.append("ZURÜCK")
+	for label: String in entries:
+		var button := Button.new()
+		button.text = label
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.custom_minimum_size = start_button.custom_minimum_size
+		if maps.has(label):
+			var path: String = maps[label]
+			button.pressed.connect(_start_game.bind(path))
+			if not ResourceLoader.exists(path):
+				button.disabled = true
+				button.tooltip_text = "Szene fehlt: " + path
+		else:
+			button.pressed.connect(_hide_maps)
+		button.mouse_entered.connect(_focus_if_enabled.bind(button))
+		button.focus_entered.connect(_trigger_glitch.bind(0.12, 0.06))
+		box.add_child(button)
+	return box
+
+
+func _show_maps() -> void:
+	main_buttons.hide()
+	_map_buttons.show()
+	_trigger_glitch(0.25, 0.1)
+	_map_buttons.get_child(0).grab_focus()
+
+
+func _hide_maps() -> void:
+	_map_buttons.hide()
+	main_buttons.show()
+	start_button.grab_focus()
+
+
+func _start_game(scene_path: String) -> void:
 	if _starting:
 		return
 	_starting = true
+	game_scene = scene_path
 	main_buttons.process_mode = Node.PROCESS_MODE_DISABLED
+	_map_buttons.process_mode = Node.PROCESS_MODE_DISABLED
 	# Kurzer, harter Glitch als Übergang, dann ins Spiel.
 	_trigger_glitch(0.6, 0.4)
 	var tween := create_tween()
@@ -124,6 +187,7 @@ func _on_start_pressed() -> void:
 		var back := create_tween()
 		back.tween_property($Fade, "color:a", 0.0, 0.3)
 		main_buttons.process_mode = Node.PROCESS_MODE_INHERIT
+		_map_buttons.process_mode = Node.PROCESS_MODE_INHERIT
 		_starting = false
 
 

@@ -1,8 +1,7 @@
-[gd_scene load_steps=43 format=3]
+[gd_scene load_steps=50 format=3]
 
 [ext_resource type="Script" path="res://scenes/testmap/testmap.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
-[ext_resource type="Shader" path="res://scenes/testmap/building_facade.gdshader" id="3_facade"]
 [ext_resource type="PackedScene" path="res://scenes/pause/pause_menu.tscn" id="4_pause"]
 [ext_resource type="PackedScene" path="res://scenes/items/pickup.tscn" id="90_pickup"]
 [ext_resource type="Resource" path="res://scenes/items/data/energy_drink.tres" id="91_energy_drink"]
@@ -15,6 +14,14 @@
 [ext_resource type="PackedScene" path="res://scenes/testmap/shooting_range.tscn" id="98_shooting_range"]
 [ext_resource type="Script" path="res://scenes/interact/vending_machine.gd" id="99_vending"]
 [ext_resource type="Resource" path="res://scenes/items/data/noodles.tres" id="100_noodles"]
+[ext_resource type="Texture2D" path="res://assets/textures/slum/asphalt.png" id="t_asphalt"]
+[ext_resource type="Texture2D" path="res://assets/textures/slum/sidewalk.png" id="t_sidewalk"]
+[ext_resource type="Texture2D" path="res://assets/textures/slum/concrete.png" id="t_concrete"]
+[ext_resource type="Texture2D" path="res://assets/textures/slum/concrete_dark.png" id="t_concrete_dark"]
+[ext_resource type="Texture2D" path="res://assets/textures/slum/metal_plate.png" id="t_metal"]
+[ext_resource type="Texture2D" path="res://assets/textures/slum/corrugated_blue.png" id="t_corrugated"]
+[ext_resource type="Texture2D" path="res://assets/textures/slum/grime.png" id="t_grime"]
+[ext_resource type="Shader" path="res://scenes/slum/slum_facade.gdshader" id="t_facade"]
 [ext_resource type="PackedScene" path="res://scenes/testmap/movement_course.tscn" id="99_movement_course"]
 [ext_resource type="PackedScene" path="res://scenes/stealth/stealth_zone.tscn" id="100_stealth_zone"]
 
@@ -33,34 +40,68 @@ material = SubResource("Mat_poster")
 size = Vector2(4.8, 2.7)
 
 [sub_resource type="StandardMaterial3D" id="Mat_asphalt"]
-albedo_color = Color(0.09, 0.09, 0.12, 1)
+albedo_color = Color(0.6, 0.6, 0.72, 1)
+albedo_texture = ExtResource("t_asphalt")
 metallic = 0.2
+metallic_specular = 0.7
 roughness = 0.3
+uv1_scale = Vector3(0.1667, 0.1667, 0.1667)
+uv1_triplanar = true
+uv1_world_triplanar = true
+uv1_triplanar_sharpness = 6.0
+texture_filter = 2
 
 [sub_resource type="StandardMaterial3D" id="Mat_sidewalk"]
-albedo_color = Color(0.15, 0.15, 0.19, 1)
-metallic = 0
-roughness = 0.8
+albedo_color = Color(0.62, 0.62, 0.75, 1)
+albedo_texture = ExtResource("t_sidewalk")
+roughness = 0.55
+uv1_scale = Vector3(0.3333, 0.3333, 0.3333)
+uv1_triplanar = true
+uv1_world_triplanar = true
+uv1_triplanar_sharpness = 6.0
+texture_filter = 2
 
 [sub_resource type="StandardMaterial3D" id="Mat_test"]
-albedo_color = Color(0.3, 0.32, 0.4, 1)
-metallic = 0
-roughness = 0.7
+albedo_color = Color(0.72, 0.76, 0.95, 1)
+albedo_texture = ExtResource("t_concrete")
+roughness = 0.8
+uv1_scale = Vector3(0.3333, 0.3333, 0.3333)
+uv1_triplanar = true
+uv1_world_triplanar = true
+uv1_triplanar_sharpness = 6.0
+texture_filter = 2
 
 [sub_resource type="StandardMaterial3D" id="Mat_test_dark"]
-albedo_color = Color(0.17, 0.18, 0.24, 1)
-metallic = 0.3
-roughness = 0.6
+albedo_color = Color(0.65, 0.68, 0.9, 1)
+albedo_texture = ExtResource("t_concrete_dark")
+metallic = 0.2
+roughness = 0.7
+uv1_scale = Vector3(0.3333, 0.3333, 0.3333)
+uv1_triplanar = true
+uv1_world_triplanar = true
+uv1_triplanar_sharpness = 6.0
+texture_filter = 2
 
 [sub_resource type="StandardMaterial3D" id="Mat_metal"]
-albedo_color = Color(0.28, 0.3, 0.36, 1)
-metallic = 0.75
-roughness = 0.35
+albedo_color = Color(0.8, 0.85, 1, 1)
+albedo_texture = ExtResource("t_metal")
+metallic = 0.6
+roughness = 0.4
+uv1_triplanar = true
+uv1_world_triplanar = true
+uv1_triplanar_sharpness = 6.0
+texture_filter = 2
 
 [sub_resource type="StandardMaterial3D" id="Mat_crate"]
-albedo_color = Color(0.1, 0.22, 0.26, 1)
-metallic = 0.2
+albedo_color = Color(0.5, 0.85, 0.9, 1)
+albedo_texture = ExtResource("t_corrugated")
+metallic = 0.3
 roughness = 0.6
+uv1_scale = Vector3(0.5, 0.5, 0.5)
+uv1_triplanar = true
+uv1_world_triplanar = true
+uv1_triplanar_sharpness = 6.0
+texture_filter = 2
 
 [sub_resource type="StandardMaterial3D" id="Mat_neon_cyan"]
 albedo_color = Color(0, 0.05, 0.06, 1)
@@ -130,13 +171,32 @@ emission_energy_multiplier = 2.5
 
 [sub_resource type="ShaderMaterial" id="Mat_facade"]
 render_priority = 0
-shader = ExtResource("3_facade")
+shader = ExtResource("t_facade")
+shader_parameter/wall_tex = ExtResource("t_concrete_dark")
+shader_parameter/grime_tex = ExtResource("t_grime")
+shader_parameter/tint = Color(0.42, 0.42, 0.58, 1)
+shader_parameter/tile_meters = 3.0
+shader_parameter/color_warm = Color(1, 0.72, 0.4, 1)
+shader_parameter/color_cool = Color(0, 0.85, 1, 1)
+shader_parameter/color_pink = Color(1, 0.2, 0.85, 1)
+shader_parameter/emission_strength = 2.5
+shader_parameter/cell_size = Vector2(2.5, 3.2)
+shader_parameter/lit_ratio = 0.35
 
 [sub_resource type="ShaderMaterial" id="Mat_facade_dense"]
 render_priority = 0
-shader = ExtResource("3_facade")
+shader = ExtResource("t_facade")
+shader_parameter/wall_tex = ExtResource("t_concrete_dark")
+shader_parameter/grime_tex = ExtResource("t_grime")
+shader_parameter/tint = Color(0.42, 0.42, 0.58, 1)
+shader_parameter/tile_meters = 3.0
+shader_parameter/color_warm = Color(1, 0.72, 0.4, 1)
+shader_parameter/color_cool = Color(0, 0.85, 1, 1)
+shader_parameter/color_pink = Color(1, 0.2, 0.85, 1)
+shader_parameter/emission_strength = 2.5
 shader_parameter/lit_ratio = 0.55
 shader_parameter/cell_size = Vector2(1.8, 2.8)
+shader_parameter/seed_offset = 17.0
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
 sky_top_color = Color(0.015, 0.01, 0.05, 1)

@@ -1,0 +1,2988 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/slum/slum.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://scenes/pause/pause_menu.tscn" id="3_pause"]
+[ext_resource type="Script" path="res://scenes/slum/kit/slum_building.gd" id="k_building"]
+[ext_resource type="Script" path="res://scenes/slum/kit/slum_prop.gd" id="k_prop"]
+[ext_resource type="Script" path="res://scenes/slum/kit/slum_street.gd" id="k_street"]
+[ext_resource type="Script" path="res://scenes/slum/kit/slum_sign.gd" id="k_sign"]
+[ext_resource type="Script" path="res://scenes/slum/kit/slum_walkway.gd" id="k_walkway"]
+[ext_resource type="Script" path="res://scenes/slum/kit/slum_cables.gd" id="k_cables"]
+[ext_resource type="PackedScene" path="res://scenes/items/pickup.tscn" id="i_pickup"]
+[ext_resource type="Script" path="res://scenes/interact/vending_machine.gd" id="i_vending"]
+[ext_resource type="Resource" path="res://scenes/items/data/credchip.tres" id="i_credchip"]
+[ext_resource type="Resource" path="res://scenes/items/data/energy_drink.tres" id="i_drink"]
+[ext_resource type="Resource" path="res://scenes/items/data/noodles.tres" id="i_noodles"]
+[ext_resource type="Resource" path="res://scenes/items/data/stim_pack.tres" id="i_stim"]
+[ext_resource type="Resource" path="res://scenes/items/data/data_shard.tres" id="i_shard"]
+[ext_resource type="Resource" path="res://scenes/items/data/mono_blade.tres" id="i_blade"]
+[ext_resource type="Resource" path="res://scenes/items/data/emp_grenade.tres" id="i_emp"]
+[ext_resource type="Resource" path="res://scenes/items/data/pistol.tres" id="i_pistol"]
+[ext_resource type="Resource" path="res://scenes/items/data/sniper.tres" id="i_sniper"]
+
+[sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
+sky_top_color = Color(0.02, 0.025, 0.05, 1)
+sky_horizon_color = Color(0.09, 0.07, 0.13, 1)
+ground_bottom_color = Color(0.02, 0.02, 0.03, 1)
+ground_horizon_color = Color(0.09, 0.07, 0.13, 1)
+sun_angle_max = 1.0
+
+[sub_resource type="Sky" id="Sky_night"]
+sky_material = SubResource("Sky_mat")
+
+[sub_resource type="Environment" id="Env_slum"]
+background_mode = 2
+sky = SubResource("Sky_night")
+ambient_light_source = 2
+ambient_light_color = Color(0.36, 0.38, 0.52, 1)
+ambient_light_energy = 1.1
+reflected_light_source = 2
+tonemap_mode = 2
+tonemap_exposure = 1.15
+ssr_enabled = true
+ssr_max_steps = 48
+ssao_enabled = true
+ssao_intensity = 1.6
+glow_enabled = true
+glow_intensity = 0.9
+glow_bloom = 0.05
+glow_blend_mode = 1
+glow_hdr_threshold = 1.1
+fog_enabled = true
+fog_light_color = Color(0.1, 0.1, 0.16, 1)
+fog_density = 0.009
+fog_sky_affect = 0.7
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.006
+volumetric_fog_albedo = Color(0.6, 0.62, 0.75, 1)
+volumetric_fog_length = 48.0
+adjustment_enabled = true
+adjustment_contrast = 1.08
+adjustment_saturation = 0.9
+
+[sub_resource type="BoxShape3D" id="Shape_bound"]
+size = Vector3(180, 60, 1)
+
+[node name="Slum" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Env_slum")
+
+[node name="Moon" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.81915, 0.46985, -0.32899, 0, 0.57358, 0.81915, 0.57358, -0.67101, 0.46985, 0, 40, 0)
+light_color = Color(0.5, 0.58, 0.85, 1)
+light_energy = 0.35
+shadow_enabled = true
+directional_shadow_max_distance = 80.0
+
+[node name="Streets" type="Node3D" parent="."]
+
+[node name="Street1" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0.0, -16.25)
+script = ExtResource("k_street")
+length = 23.5
+crosswalk_end = true
+seed_value = 5306
+
+[node name="Street2" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0.0, 16.25)
+script = ExtResource("k_street")
+length = 23.5
+crosswalk_start = true
+seed_value = 2472
+
+[node name="Street3" type="Node3D" parent="Streets"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -16.25, 0.0, 0)
+script = ExtResource("k_street")
+length = 23.5
+crosswalk_end = true
+seed_value = 6469
+
+[node name="Street4" type="Node3D" parent="Streets"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 16.25, 0.0, 0)
+script = ExtResource("k_street")
+length = 23.5
+crosswalk_start = true
+seed_value = 792
+
+[node name="Street5" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0.0, -39.75)
+script = ExtResource("k_street")
+length = 23.5
+crosswalk_end = false
+seed_value = 1187
+
+[node name="Street6" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0.0, 39.75)
+script = ExtResource("k_street")
+length = 23.5
+crosswalk_start = false
+seed_value = 8780
+
+[node name="Street7" type="Node3D" parent="Streets"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -39.75, 0.0, 0)
+script = ExtResource("k_street")
+length = 23.5
+crosswalk_end = false
+seed_value = 1543
+
+[node name="Street8" type="Node3D" parent="Streets"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 39.75, 0.0, 0)
+script = ExtResource("k_street")
+length = 23.5
+crosswalk_start = false
+seed_value = 5992
+
+[node name="Street9" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0.0, -63.25)
+script = ExtResource("k_street")
+length = 23.5
+crosswalk_end = false
+seed_value = 9549
+
+[node name="Street10" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0.0, 63.25)
+script = ExtResource("k_street")
+length = 23.5
+crosswalk_start = false
+seed_value = 951
+
+[node name="Street11" type="Node3D" parent="Streets"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -63.25, 0.0, 0)
+script = ExtResource("k_street")
+length = 23.5
+crosswalk_end = false
+seed_value = 8314
+
+[node name="Street12" type="Node3D" parent="Streets"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 63.25, 0.0, 0)
+script = ExtResource("k_street")
+length = 23.5
+crosswalk_start = false
+seed_value = 3518
+
+[node name="Intersection" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_street")
+kind = 1
+road_width = 9.0
+seed_value = 3
+
+[node name="Ground1" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -6.0, 0.0, -6.0)
+script = ExtResource("k_street")
+kind = 2
+slab_texture = "sidewalk"
+slab_size = Vector2(3.0, 3.0)
+height = 0.15
+dirt = 0.2
+seed_value = 615
+
+[node name="Ground2" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -6.0, 0.0, 6.0)
+script = ExtResource("k_street")
+kind = 2
+slab_texture = "sidewalk"
+slab_size = Vector2(3.0, 3.0)
+height = 0.15
+dirt = 0.2
+seed_value = 1409
+
+[node name="Ground3" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 6.0, 0.0, -6.0)
+script = ExtResource("k_street")
+kind = 2
+slab_texture = "sidewalk"
+slab_size = Vector2(3.0, 3.0)
+height = 0.15
+dirt = 0.2
+seed_value = 7105
+
+[node name="Ground4" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 6.0, 0.0, 6.0)
+script = ExtResource("k_street")
+kind = 2
+slab_texture = "sidewalk"
+slab_size = Vector2(3.0, 3.0)
+height = 0.15
+dirt = 0.2
+seed_value = 6852
+
+[node name="Ground5" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 44.25, 0.0, -44.25)
+script = ExtResource("k_street")
+kind = 2
+slab_texture = "concrete_dark"
+slab_size = Vector2(73.5, 73.5)
+height = 0.0
+dirt = 0.6
+seed_value = 1145
+
+[node name="Ground6" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -44.25, 0.0, -44.25)
+script = ExtResource("k_street")
+kind = 2
+slab_texture = "asphalt_old"
+slab_size = Vector2(73.5, 73.5)
+height = 0.0
+dirt = 0.7
+seed_value = 3944
+
+[node name="Ground7" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -44.25, 0.0, 44.25)
+script = ExtResource("k_street")
+kind = 2
+slab_texture = "concrete_green"
+slab_size = Vector2(73.5, 73.5)
+height = 0.0
+dirt = 0.9
+seed_value = 1487
+
+[node name="Ground8" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 44.25, 0.0, 44.25)
+script = ExtResource("k_street")
+kind = 2
+slab_texture = "concrete_dark"
+slab_size = Vector2(73.5, 73.5)
+height = 0.0
+dirt = 0.5
+seed_value = 9029
+
+[node name="Ground9" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 40, 0.0, 37)
+script = ExtResource("k_street")
+kind = 2
+slab_texture = "sidewalk_small"
+slab_size = Vector2(38, 30)
+height = 0.02
+dirt = 0.4
+seed_value = 6956
+
+[node name="ConcreteBarrier1" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0.0, -73.5)
+script = ExtResource("k_prop")
+kind = 12
+length = 8.0
+seed_value = 969
+
+[node name="StripedBarrier1" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 2, 0.0, -72.0)
+script = ExtResource("k_prop")
+kind = 13
+length = 2.5
+seed_value = 9265
+
+[node name="ConcreteBarrier2" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0.0, 73.5)
+script = ExtResource("k_prop")
+kind = 12
+length = 8.0
+seed_value = 2029
+
+[node name="StripedBarrier2" type="Node3D" parent="Streets"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 2, 0.0, 72.0)
+script = ExtResource("k_prop")
+kind = 13
+length = 2.5
+seed_value = 3658
+
+[node name="ConcreteBarrier3" type="Node3D" parent="Streets"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -73.5, 0.0, 0)
+script = ExtResource("k_prop")
+kind = 12
+length = 8.0
+seed_value = 9552
+
+[node name="StripedBarrier3" type="Node3D" parent="Streets"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -73.5, 0.0, 2)
+script = ExtResource("k_prop")
+kind = 13
+length = 2.5
+seed_value = 1014
+
+[node name="ConcreteBarrier4" type="Node3D" parent="Streets"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 73.5, 0.0, 0)
+script = ExtResource("k_prop")
+kind = 12
+length = 8.0
+seed_value = 9456
+
+[node name="StripedBarrier4" type="Node3D" parent="Streets"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 73.5, 0.0, 2)
+script = ExtResource("k_prop")
+kind = 13
+length = 2.5
+seed_value = 9594
+
+[node name="Power" type="Node3D" parent="."]
+
+[node name="PowerPole1" type="Node3D" parent="Power"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 7.0, 0.0, -66)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 6500
+
+[node name="PowerPole2" type="Node3D" parent="Power"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -7.0, 0.0, -66)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 813
+
+[node name="Cables1" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.55, -66, -7.0, 8.55, -66)
+sag = 0.9
+bundle = 3
+lanterns = false
+seed_value = 3623
+
+[node name="PowerPole3" type="Node3D" parent="Power"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 7.0, 0.0, -46)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 764
+
+[node name="PowerPole4" type="Node3D" parent="Power"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -7.0, 0.0, -46)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 9121
+
+[node name="Cables2" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.55, -46, -7.0, 8.55, -46)
+sag = 0.9
+bundle = 3
+lanterns = false
+seed_value = 2182
+
+[node name="PowerPole5" type="Node3D" parent="Power"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 7.0, 0.0, -26)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 4745
+
+[node name="PowerPole6" type="Node3D" parent="Power"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -7.0, 0.0, -26)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 6868
+
+[node name="Cables3" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.55, -26, -7.0, 8.55, -26)
+sag = 0.9
+bundle = 3
+lanterns = false
+seed_value = 2364
+
+[node name="PowerPole7" type="Node3D" parent="Power"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 7.0, 0.0, 26)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 8859
+
+[node name="PowerPole8" type="Node3D" parent="Power"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -7.0, 0.0, 26)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 1930
+
+[node name="Cables4" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.55, 26, -7.0, 8.55, 26)
+sag = 0.9
+bundle = 3
+lanterns = false
+seed_value = 9354
+
+[node name="PowerPole9" type="Node3D" parent="Power"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 7.0, 0.0, 46)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 5055
+
+[node name="PowerPole10" type="Node3D" parent="Power"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -7.0, 0.0, 46)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 9180
+
+[node name="Cables5" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.55, 46, -7.0, 8.55, 46)
+sag = 0.9
+bundle = 3
+lanterns = false
+seed_value = 2962
+
+[node name="PowerPole11" type="Node3D" parent="Power"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 7.0, 0.0, 66)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 1689
+
+[node name="PowerPole12" type="Node3D" parent="Power"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -7.0, 0.0, 66)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 9529
+
+[node name="Cables6" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.55, 66, -7.0, 8.55, 66)
+sag = 0.9
+bundle = 3
+lanterns = false
+seed_value = 9359
+
+[node name="PowerPole13" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -66, 0.0, 7.0)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 3079
+
+[node name="PowerPole14" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -46, 0.0, 7.0)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 6102
+
+[node name="PowerPole15" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -26, 0.0, 7.0)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 1597
+
+[node name="PowerPole16" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 26, 0.0, 7.0)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 8975
+
+[node name="PowerPole17" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 46, 0.0, 7.0)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 1029
+
+[node name="PowerPole18" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 66, 0.0, 7.0)
+script = ExtResource("k_prop")
+kind = 17
+seed_value = 9247
+
+[node name="Cables7" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.9, 8.55, -66, 7.9, 8.55, -46)
+sag = 1.0
+bundle = 2
+lanterns = false
+seed_value = 977
+
+[node name="Cables8" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(-6.1, 8.55, -66, -6.1, 8.55, -46)
+sag = 1.0
+bundle = 2
+lanterns = false
+seed_value = 3375
+
+[node name="Cables9" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.9, 8.55, -46, 7.9, 8.55, -26)
+sag = 1.0
+bundle = 2
+lanterns = false
+seed_value = 8134
+
+[node name="Cables10" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(-6.1, 8.55, -46, -6.1, 8.55, -26)
+sag = 1.0
+bundle = 2
+lanterns = false
+seed_value = 8712
+
+[node name="Cables11" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.9, 8.55, 26, 7.9, 8.55, 46)
+sag = 1.0
+bundle = 2
+lanterns = false
+seed_value = 7006
+
+[node name="Cables12" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(-6.1, 8.55, 26, -6.1, 8.55, 46)
+sag = 1.0
+bundle = 2
+lanterns = false
+seed_value = 5147
+
+[node name="Cables13" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.9, 8.55, 46, 7.9, 8.55, 66)
+sag = 1.0
+bundle = 2
+lanterns = false
+seed_value = 7629
+
+[node name="Cables14" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(-6.1, 8.55, 46, -6.1, 8.55, 66)
+sag = 1.0
+bundle = 2
+lanterns = false
+seed_value = 9594
+
+[node name="Cables15" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(-66.9, 8.55, 7.0, -46.9, 8.55, 7.0)
+sag = 1.0
+bundle = 2
+lanterns = false
+seed_value = 7425
+
+[node name="Cables16" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(-46.9, 8.55, 7.0, -26.9, 8.55, 7.0)
+sag = 1.0
+bundle = 2
+lanterns = false
+seed_value = 5925
+
+[node name="Cables17" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(25.1, 8.55, 7.0, 45.1, 8.55, 7.0)
+sag = 1.0
+bundle = 2
+lanterns = false
+seed_value = 4912
+
+[node name="Cables18" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(45.1, 8.55, 7.0, 65.1, 8.55, 7.0)
+sag = 1.0
+bundle = 2
+lanterns = false
+seed_value = 4071
+
+[node name="StreetProps" type="Node3D" parent="."]
+
+[node name="Hydrant1" type="Node3D" parent="StreetProps"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 6.5, 0.0, -20)
+script = ExtResource("k_prop")
+kind = 15
+seed_value = 2946
+
+[node name="Hydrant2" type="Node3D" parent="StreetProps"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -6.5, 0.0, 30)
+script = ExtResource("k_prop")
+kind = 15
+seed_value = 4000
+
+[node name="Hydrant3" type="Node3D" parent="StreetProps"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 6.3, 0.0, 55)
+script = ExtResource("k_prop")
+kind = 15
+seed_value = 1342
+
+[node name="Hydrant4" type="Node3D" parent="StreetProps"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -6.4, 0.0, -58)
+script = ExtResource("k_prop")
+kind = 15
+seed_value = 9412
+
+[node name="NewsBox1" type="Node3D" parent="StreetProps"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -6.2, 0.0, 12.0)
+script = ExtResource("k_prop")
+kind = 25
+seed_value = 4920
+
+[node name="NewsBox2" type="Node3D" parent="StreetProps"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 6.2, 0.0, -12.5)
+script = ExtResource("k_prop")
+kind = 25
+seed_value = 8605
+
+[node name="NewsBox3" type="Node3D" parent="StreetProps"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 20, 0.0, -6.3)
+script = ExtResource("k_prop")
+kind = 25
+seed_value = 8112
+
+[node name="CarWreck1" type="Node3D" parent="StreetProps"]
+transform = Transform3D(0.99027, 0, 0.13917, 0, 1, 0, -0.13917, 0, 0.99027, -2.6, 0.0, 36)
+script = ExtResource("k_prop")
+kind = 20
+variant = 0
+seed_value = 5628
+
+[node name="CarWreck2" type="Node3D" parent="StreetProps"]
+transform = Transform3D(-0.99619, 0, -0.08716, 0, 1, 0, 0.08716, 0, -0.99619, 2.8, 0.0, -52)
+script = ExtResource("k_prop")
+kind = 20
+variant = 1
+seed_value = 7354
+
+[node name="CarWreck3" type="Node3D" parent="StreetProps"]
+transform = Transform3D(-0.05234, 0, 0.99863, 0, 1, 0, -0.99863, 0, -0.05234, -38, 0.0, -2.5)
+script = ExtResource("k_prop")
+kind = 20
+variant = 2
+seed_value = 4718
+
+[node name="Cone1" type="Node3D" parent="StreetProps"]
+transform = Transform3D(0.57634, 0, 0.81721, 0, 1, 0, -0.81721, 0, 0.57634, -1.5, 0.0, 33.5)
+script = ExtResource("k_prop")
+kind = 14
+seed_value = 1200
+
+[node name="Cone2" type="Node3D" parent="StreetProps"]
+transform = Transform3D(0.98285, 0, 0.1844, 0, 1, 0, -0.1844, 0, 0.98285, -3.5, 0.0, 39.5)
+script = ExtResource("k_prop")
+kind = 14
+seed_value = 6851
+
+[node name="Cone3" type="Node3D" parent="StreetProps"]
+transform = Transform3D(0.96662, 0, 0.25623, 0, 1, 0, -0.25623, 0, 0.96662, 4.0, 0.0, -50.0)
+script = ExtResource("k_prop")
+kind = 14
+seed_value = 5605
+
+[node name="Cone4" type="Node3D" parent="StreetProps"]
+transform = Transform3D(0.97164, 0, 0.23648, 0, 1, 0, -0.23648, 0, 0.97164, -40.5, 0.0, -1.0)
+script = ExtResource("k_prop")
+kind = 14
+seed_value = 8012
+
+[node name="TrashPile1" type="Node3D" parent="StreetProps"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 6.4, 0.0, 40)
+script = ExtResource("k_prop")
+kind = 11
+seed_value = 6910
+
+[node name="TrashBags1" type="Node3D" parent="StreetProps"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -6.4, 0.0, -34)
+script = ExtResource("k_prop")
+kind = 10
+variant = 1
+seed_value = 643
+
+[node name="Dumpster1" type="Node3D" parent="StreetProps"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -6.5, 0.0, 50)
+script = ExtResource("k_prop")
+kind = 3
+variant = 2
+seed_value = 1272
+
+[node name="NorthEast" type="Node3D" parent="."]
+
+[node name="Shop1" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 12.5, 0.0, -14.5)
+script = ExtResource("k_building")
+style = 1
+footprint = Vector2(9, 9)
+floors = 3
+wall = "plaster_teal"
+ground_wall = "brick_dark"
+front_sign = "sign_ramen"
+side_sign = "sign_noodles"
+seed_value = 9144
+
+[node name="Res1" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 13.0, 0.0, -28.5)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(11, 10)
+floors = 5
+wall = "concrete"
+ground_wall = "brick"
+number = "07"
+stair_side = 2
+front_sign = "sign_24h"
+lit_ratio = 0.4
+seed_value = 9389
+
+[node name="Shop2" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 12.5, 0.0, -42.0)
+script = ExtResource("k_building")
+style = 1
+footprint = Vector2(8, 9)
+floors = 3
+wall = "brick_dark"
+front_sign = "sign_pharmacy"
+side_sign = "sign_pharmacy"
+seed_value = 5141
+
+[node name="Res2" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 13.0, 0.0, -56.5)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(12, 10)
+floors = 6
+wall = "plaster"
+ground_wall = "concrete_dark"
+stair_side = 1
+balcony_chance = 0.35
+seed_value = 5573
+
+[node name="Res3" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 12.5, 0.0, -69.0)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(9, 9)
+floors = 4
+wall = "concrete_green"
+ground_wall = "brick"
+seed_value = 5738
+
+[node name="Res4" type="Node3D" parent="NorthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 26.0, 0.0, -13.0)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(12, 10)
+floors = 7
+wall = "concrete"
+ground_wall = "brick"
+side_sign = "sign_hotel"
+front_sign = "sign_vacancy"
+lit_ratio = 0.5
+seed_value = 9739
+
+[node name="Shop3" type="Node3D" parent="NorthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 40.5, 0.0, -12.5)
+script = ExtResource("k_building")
+style = 1
+footprint = Vector2(9, 9)
+floors = 2
+wall = "plaster_pink"
+front_sign = "sign_bar"
+side_sign = "sign_open"
+seed_value = 8138
+
+[node name="Res5" type="Node3D" parent="NorthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 54.0, 0.0, -12.5)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(10, 9)
+floors = 5
+wall = "brick"
+stair_side = 1
+number = "07"
+seed_value = 9502
+
+[node name="Shop4" type="Node3D" parent="NorthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 66.5, 0.0, -12.0)
+script = ExtResource("k_building")
+style = 1
+footprint = Vector2(8, 8)
+floors = 3
+wall = "concrete_dark"
+front_sign = "sign_24h"
+seed_value = 7475
+
+[node name="Res6" type="Node3D" parent="NorthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 37.0, 0.0, -42.0)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(14, 10)
+floors = 6
+wall = "concrete"
+ground_wall = "concrete_dark"
+stair_side = 2
+balcony_chance = 0.4
+seed_value = 1127
+
+[node name="Res7" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 60.0, 0.0, -55.0)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(10, 8)
+floors = 4
+wall = "plaster_teal"
+stair_side = 1
+seed_value = 1534
+
+[node name="Shanty1" type="Node3D" parent="NorthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 26.0, 0.0, -62.0)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(6, 5)
+floors = 1
+stilt_height = 2.4
+shanty_stair = 1
+open_right = true
+seed_value = 4423
+
+[node name="Shanty2" type="Node3D" parent="NorthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 37.0, 0.0, -62.0)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(6, 5)
+floors = 1
+stilt_height = 2.4
+shanty_stair = 2
+open_left = true
+seed_value = 7768
+
+[node name="Shanty3" type="Node3D" parent="NorthEast"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 48.0, 0.0, -66.0)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(5, 4.5)
+floors = 1
+stilt_height = 0.0
+seed_value = 1065
+
+[node name="Walkway1" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 31.5, 2.4, -60.1)
+script = ExtResource("k_walkway")
+length = 5.6
+width = 1.1
+wooden = true
+lanterns = true
+
+[node name="Shanty4" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 47.5, 0.0, -30.0)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(5, 5)
+floors = 1
+stilt_height = 0.0
+seed_value = 995
+
+[node name="AcStack1" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 18.6, 0.0, -36.0)
+script = ExtResource("k_prop")
+kind = 7
+seed_value = 5073
+
+[node name="Dumpster2" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 19.0, 0.0, -22.5)
+script = ExtResource("k_prop")
+kind = 3
+seed_value = 9470
+
+[node name="Dumpster3" type="Node3D" parent="NorthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 22.0, 0.0, -27.0)
+script = ExtResource("k_prop")
+kind = 3
+variant = 1
+seed_value = 7302
+
+[node name="Generator1" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.93969, 0, 0.34202, 0, 1, 0, -0.34202, 0, 0.93969, 30.0, 0.0, -52.5)
+script = ExtResource("k_prop")
+kind = 21
+seed_value = 4663
+
+[node name="WaterTank1" type="Node3D" parent="NorthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 44.0, 0.0, -54.0)
+script = ExtResource("k_prop")
+kind = 24
+seed_value = 6321
+
+[node name="FireBarrel1" type="Node3D" parent="NorthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 32.0, 0.0, -56.0)
+script = ExtResource("k_prop")
+kind = 26
+variant = 1
+seed_value = 5686
+
+[node name="ElectricBox1" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 18.4, 0.0, -48.0)
+script = ExtResource("k_prop")
+kind = 8
+seed_value = 370
+
+[node name="Pallets1" type="Node3D" parent="NorthEast"]
+transform = Transform3D(-0.99921, 0, 0.03962, 0, 1, 0, -0.03962, 0, -0.99921, 37.773, 0.0, -42.676)
+script = ExtResource("k_prop")
+kind = 9
+variant = 0
+seed_value = 4710
+
+[node name="TrashBags2" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.86649, 0, -0.49919, 0, 1, 0, 0.49919, 0, 0.86649, 56.918, 0.0, -52.901)
+script = ExtResource("k_prop")
+kind = 10
+variant = 1
+seed_value = 1321
+
+[node name="TrashBags3" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.74336, 0, -0.66889, 0, 1, 0, 0.66889, 0, 0.74336, 42.459, 0.0, -45.627)
+script = ExtResource("k_prop")
+kind = 10
+variant = 1
+seed_value = 9015
+
+[node name="BarrelGroup1" type="Node3D" parent="NorthEast"]
+transform = Transform3D(-0.41024, 0, -0.91198, 0, 1, 0, 0.91198, 0, -0.41024, 55.32, 0.0, -24.65)
+script = ExtResource("k_prop")
+kind = 5
+variant = 1
+seed_value = 3781
+
+[node name="TrashBags4" type="Node3D" parent="NorthEast"]
+transform = Transform3D(-0.54367, 0, -0.8393, 0, 1, 0, 0.8393, 0, -0.54367, 24.149, 0.0, -64.738)
+script = ExtResource("k_prop")
+kind = 10
+variant = 0
+seed_value = 7946
+
+[node name="TrashPile2" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.60954, 0, 0.79275, 0, 1, 0, -0.79275, 0, 0.60954, 29.117, 0.0, -58.467)
+script = ExtResource("k_prop")
+kind = 11
+variant = 2
+seed_value = 6050
+
+[node name="TrashPile3" type="Node3D" parent="NorthEast"]
+transform = Transform3D(-0.36524, 0, -0.93091, 0, 1, 0, 0.93091, 0, -0.36524, 48.317, 0.0, -26.251)
+script = ExtResource("k_prop")
+kind = 11
+variant = 2
+seed_value = 885
+
+[node name="Pallets2" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.70494, 0, -0.70927, 0, 1, 0, 0.70927, 0, 0.70494, 64.977, 0.0, -34.561)
+script = ExtResource("k_prop")
+kind = 9
+variant = 2
+seed_value = 6429
+
+[node name="Pallets3" type="Node3D" parent="NorthEast"]
+transform = Transform3D(-0.66465, 0, -0.74715, 0, 1, 0, 0.74715, 0, -0.66465, 39.949, 0.0, -67.03)
+script = ExtResource("k_prop")
+kind = 9
+variant = 0
+seed_value = 3123
+
+[node name="CrateStack1" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.7708, 0, 0.63708, 0, 1, 0, -0.63708, 0, 0.7708, 69.233, 0.0, -50.85)
+script = ExtResource("k_prop")
+kind = 1
+variant = 2
+seed_value = 862
+
+[node name="CrateStack2" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.80357, 0, 0.5952, 0, 1, 0, -0.5952, 0, 0.80357, 20.012, 0.0, -64.739)
+script = ExtResource("k_prop")
+kind = 1
+variant = 1
+seed_value = 418
+
+[node name="CrateStack3" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.59513, 0, 0.80363, 0, 1, 0, -0.80363, 0, 0.59513, 63.717, 0.0, -42.525)
+script = ExtResource("k_prop")
+kind = 1
+variant = 1
+seed_value = 5692
+
+[node name="TrashPile4" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.58237, 0, -0.81293, 0, 1, 0, 0.81293, 0, 0.58237, 38.208, 0.0, -66.104)
+script = ExtResource("k_prop")
+kind = 11
+variant = 1
+seed_value = 7871
+
+[node name="Pallets4" type="Node3D" parent="NorthEast"]
+transform = Transform3D(-0.00205, 0, -1.0, 0, 1, 0, 1.0, 0, -0.00205, 35.593, 0.0, -65.082)
+script = ExtResource("k_prop")
+kind = 9
+variant = 2
+seed_value = 4338
+
+[node name="Pallets5" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.98949, 0, 0.14461, 0, 1, 0, -0.14461, 0, 0.98949, 61.443, 0.0, -64.251)
+script = ExtResource("k_prop")
+kind = 9
+variant = 2
+seed_value = 5927
+
+[node name="TrashBags5" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.05114, 0, -0.99869, 0, 1, 0, 0.99869, 0, 0.05114, 54.503, 0.0, -28.121)
+script = ExtResource("k_prop")
+kind = 10
+variant = 1
+seed_value = 1492
+
+[node name="Cables19" type="Node3D" parent="NorthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(30.0, 7.5, -37.0, 26.0, 6.0, -20.0)
+sag = 0.8
+bundle = 2
+lanterns = false
+seed_value = 4279
+
+[node name="Cables20" type="Node3D" parent="NorthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(44.0, 7.0, -37.0, 55.0, 6.5, -21.0)
+sag = 0.7
+bundle = 3
+lanterns = true
+seed_value = 8494
+
+[node name="Cables21" type="Node3D" parent="NorthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(14.0, 5.0, -24.0, 14.0, 5.5, -34.0, 14.0, 5.0, -50.0)
+sag = 0.6
+bundle = 2
+lanterns = true
+seed_value = 6009
+
+[node name="Sign1" type="Node3D" parent="NorthEast"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 18.06, 1.6, -31.0)
+script = ExtResource("k_sign")
+texture_name = "graffiti_3"
+mount = 3
+width = 3.0
+light_color = Color(0.4, 0.8, 1.0, 1)
+flicker = 0.0
+light_energy = 0.0
+
+[node name="Sign2" type="Node3D" parent="NorthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 36.0, 1.6, -36.9)
+script = ExtResource("k_sign")
+texture_name = "graffiti_1"
+mount = 3
+width = 3.0
+light_color = Color(0.7, 0.3, 1.0, 1)
+flicker = 0.0
+light_energy = 0.0
+
+[node name="Sign3" type="Node3D" parent="NorthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 37.0, 18.0, -42.0)
+script = ExtResource("k_sign")
+texture_name = "sign_ngc7"
+mount = 2
+width = 6.0
+light_color = Color(0.5, 0.55, 1.0, 1)
+flicker = 0.0
+light_energy = 2.5
+
+[node name="NorthWest" type="Node3D" parent="."]
+
+[node name="Fence1" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -8.3, 0.0, -56.5)
+script = ExtResource("k_prop")
+kind = 22
+length = 33.0
+seed_value = 2737
+
+[node name="Fence2" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -8.3, 0.0, -21.5)
+script = ExtResource("k_prop")
+kind = 22
+length = 25.0
+seed_value = 5828
+
+[node name="Fence3" type="Node3D" parent="NorthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -51.5, 0.0, -8.3)
+script = ExtResource("k_prop")
+kind = 22
+length = 43.0
+seed_value = 3651
+
+[node name="Fence4" type="Node3D" parent="NorthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -16.5, 0.0, -8.3)
+script = ExtResource("k_prop")
+kind = 22
+length = 15.0
+seed_value = 8726
+
+[node name="StripedBarrier5" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -8.6, 0.0, -37.0)
+script = ExtResource("k_prop")
+kind = 13
+length = 3.0
+seed_value = 8874
+
+[node name="StripedBarrier6" type="Node3D" parent="NorthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -27.0, 0.0, -8.6)
+script = ExtResource("k_prop")
+kind = 13
+length = 3.0
+seed_value = 8237
+
+[node name="Sign4" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, -8.4, 2.6, -40.6)
+script = ExtResource("k_sign")
+texture_name = "sign_noentry"
+mount = 0
+width = 1.6
+light_color = Color(1.0, 0.2, 0.2, 1)
+flicker = 0.0
+light_energy = 0.0
+
+[node name="Sign5" type="Node3D" parent="NorthWest"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, -24.4, 2.4, -8.5)
+script = ExtResource("k_sign")
+texture_name = "sign_beware"
+mount = 0
+width = 1.5
+light_color = Color(1.0, 0.3, 0.2, 1)
+flicker = 0.0
+light_energy = 0.0
+
+[node name="Warehouse1" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -34.0, 0.0, -52.0)
+script = ExtResource("k_building")
+style = 2
+footprint = Vector2(18, 22)
+floors = 2
+floor_height = 3.6
+wall = "corrugated_grey"
+number = "A2"
+front_sign = "sign_ngc7"
+seed_value = 5402
+
+[node name="Warehouse2" type="Node3D" parent="NorthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -62.0, 0.0, -28.0)
+script = ExtResource("k_building")
+style = 2
+footprint = Vector2(16, 18)
+floors = 2
+floor_height = 3.4
+wall = "corrugated_blue"
+number = "07"
+seed_value = 3655
+
+[node name="Warehouse3" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -63.0, 0.0, -62.0)
+script = ExtResource("k_building")
+style = 2
+footprint = Vector2(14, 16)
+floors = 2
+floor_height = 3.2
+wall = "corrugated_rust"
+seed_value = 3198
+
+[node name="Shanty5" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -13.0, 0.0, -32.0)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(3.5, 3.2)
+floors = 1
+stilt_height = 0.0
+seed_value = 3923
+
+[node name="Container1" type="Node3D" parent="NorthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -18, 0.0, -60)
+script = ExtResource("k_prop")
+kind = 18
+variant = 0
+seed_value = 6565
+
+[node name="Container2" type="Node3D" parent="NorthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -14.8, 0.0, -60)
+script = ExtResource("k_prop")
+kind = 18
+variant = 1
+seed_value = 3715
+
+[node name="Container3" type="Node3D" parent="NorthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -18, 0.0, -66.5)
+script = ExtResource("k_prop")
+kind = 18
+variant = 2
+seed_value = 3276
+
+[node name="Container4" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -22, 0.0, -22)
+script = ExtResource("k_prop")
+kind = 18
+variant = 3
+seed_value = 8481
+
+[node name="Container5" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -22, 0.0, -16.5)
+script = ExtResource("k_prop")
+kind = 18
+variant = 0
+seed_value = 8074
+
+[node name="Container6" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -44, 0.0, -20)
+script = ExtResource("k_prop")
+kind = 18
+variant = 1
+seed_value = 5826
+
+[node name="Container7" type="Node3D" parent="NorthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -18.0, 2.6, -60.0)
+script = ExtResource("k_prop")
+kind = 18
+variant = 3
+seed_value = 475
+
+[node name="Container8" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -22.0, 2.6, -19.2)
+script = ExtResource("k_prop")
+kind = 18
+variant = 2
+seed_value = 458
+
+[node name="CrateStack4" type="Node3D" parent="NorthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -15.5, 0.0, -55.6)
+script = ExtResource("k_prop")
+kind = 1
+variant = 0
+seed_value = 4578
+
+[node name="CrateStack5" type="Node3D" parent="NorthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -15.0, 2.6, -58.2)
+script = ExtResource("k_prop")
+kind = 1
+variant = 0
+seed_value = 7738
+
+[node name="MilitaryCrates1" type="Node3D" parent="NorthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -20.5, 0.0, -55.0)
+script = ExtResource("k_prop")
+kind = 2
+seed_value = 4247
+
+[node name="Pallets6" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.98481, 0, 0.17365, 0, 1, 0, -0.17365, 0, 0.98481, -26.0, 0.0, -36.0)
+script = ExtResource("k_prop")
+kind = 9
+variant = 2
+seed_value = 3173
+
+[node name="Pallets7" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.76604, 0, 0.64279, 0, 1, 0, -0.64279, 0, 0.76604, -27.5, 0.0, -38.0)
+script = ExtResource("k_prop")
+kind = 9
+variant = 1
+seed_value = 9915
+
+[node name="BarrelGroup2" type="Node3D" parent="NorthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -24.0, 0.0, -66.0)
+script = ExtResource("k_prop")
+kind = 5
+variant = 1
+seed_value = 5641
+
+[node name="BarrelGroup3" type="Node3D" parent="NorthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -50.0, 0.0, -40.0)
+script = ExtResource("k_prop")
+kind = 5
+variant = 0
+seed_value = 7328
+
+[node name="Generator2" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -48.0, 0.0, -44.0)
+script = ExtResource("k_prop")
+kind = 21
+seed_value = 5727
+
+[node name="CarWreck4" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.34202, 0, 0.93969, 0, 1, 0, -0.93969, 0, 0.34202, -40.0, 0.0, -31.0)
+script = ExtResource("k_prop")
+kind = 20
+variant = 1
+seed_value = 5975
+
+[node name="FireBarrel2" type="Node3D" parent="NorthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -30.0, 0.0, -24.0)
+script = ExtResource("k_prop")
+kind = 26
+seed_value = 1320
+
+[node name="StreetLamp1" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, -26.0, 0.0, -46.0)
+script = ExtResource("k_prop")
+kind = 16
+seed_value = 3613
+
+[node name="StreetLamp2" type="Node3D" parent="NorthWest"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, -50.0, 0.0, -14.0)
+script = ExtResource("k_prop")
+kind = 16
+variant = 2
+seed_value = 1674
+
+[node name="StreetLamp3" type="Node3D" parent="NorthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -14.0, 0.0, -70.0)
+script = ExtResource("k_prop")
+kind = 16
+variant = 1
+seed_value = 3717
+
+[node name="TrashBags6" type="Node3D" parent="NorthWest"]
+transform = Transform3D(-0.71124, 0, -0.70295, 0, 1, 0, 0.70295, 0, -0.71124, -60.198, 0.0, -59.738)
+script = ExtResource("k_prop")
+kind = 10
+variant = 2
+seed_value = 32
+
+[node name="TrashBags7" type="Node3D" parent="NorthWest"]
+transform = Transform3D(-0.62213, 0, -0.78291, 0, 1, 0, 0.78291, 0, -0.62213, -17.448, 0.0, -51.36)
+script = ExtResource("k_prop")
+kind = 10
+variant = 2
+seed_value = 1965
+
+[node name="TrashBags8" type="Node3D" parent="NorthWest"]
+transform = Transform3D(-0.99049, 0, 0.13759, 0, 1, 0, -0.13759, 0, -0.99049, -25.062, 0.0, -26.992)
+script = ExtResource("k_prop")
+kind = 10
+variant = 0
+seed_value = 7110
+
+[node name="MilitaryCrates2" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.98419, 0, -0.17714, 0, 1, 0, 0.17714, 0, 0.98419, -52.049, 0.0, -23.951)
+script = ExtResource("k_prop")
+kind = 2
+variant = 1
+seed_value = 7589
+
+[node name="TrashBags9" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.54188, 0, 0.84045, 0, 1, 0, -0.84045, 0, 0.54188, -27.399, 0.0, -66.905)
+script = ExtResource("k_prop")
+kind = 10
+variant = 0
+seed_value = 452
+
+[node name="Barrel1" type="Node3D" parent="NorthWest"]
+transform = Transform3D(-0.55762, 0, -0.8301, 0, 1, 0, 0.8301, 0, -0.55762, -36.551, 0.0, -44.079)
+script = ExtResource("k_prop")
+kind = 4
+variant = 2
+seed_value = 9763
+
+[node name="TrashBags10" type="Node3D" parent="NorthWest"]
+transform = Transform3D(-0.95362, 0, -0.301, 0, 1, 0, 0.301, 0, -0.95362, -32.564, 0.0, -50.976)
+script = ExtResource("k_prop")
+kind = 10
+variant = 0
+seed_value = 351
+
+[node name="CrateStack6" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.79866, 0, 0.60179, 0, 1, 0, -0.60179, 0, 0.79866, -24.039, 0.0, -28.418)
+script = ExtResource("k_prop")
+kind = 1
+variant = 2
+seed_value = 2282
+
+[node name="TrashBags11" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.70223, 0, -0.71195, 0, 1, 0, 0.71195, 0, 0.70223, -12.807, 0.0, -60.312)
+script = ExtResource("k_prop")
+kind = 10
+variant = 0
+seed_value = 4127
+
+[node name="Barrel2" type="Node3D" parent="NorthWest"]
+transform = Transform3D(-0.85611, 0, -0.51679, 0, 1, 0, 0.51679, 0, -0.85611, -54.422, 0.0, -57.568)
+script = ExtResource("k_prop")
+kind = 4
+variant = 1
+seed_value = 8919
+
+[node name="TrashBags12" type="Node3D" parent="NorthWest"]
+transform = Transform3D(-0.06328, 0, -0.998, 0, 1, 0, 0.998, 0, -0.06328, -21.948, 0.0, -68.346)
+script = ExtResource("k_prop")
+kind = 10
+variant = 1
+seed_value = 9558
+
+[node name="Cone5" type="Node3D" parent="NorthWest"]
+transform = Transform3D(-0.99995, 0, -0.01036, 0, 1, 0, 0.01036, 0, -0.99995, -46.762, 0.0, -16.937)
+script = ExtResource("k_prop")
+kind = 14
+variant = 2
+seed_value = 2488
+
+[node name="Cone6" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.16577, 0, -0.98616, 0, 1, 0, 0.98616, 0, 0.16577, -41.367, 0.0, -19.632)
+script = ExtResource("k_prop")
+kind = 14
+variant = 2
+seed_value = 65
+
+[node name="Barrel3" type="Node3D" parent="NorthWest"]
+transform = Transform3D(-0.15523, 0, -0.98788, 0, 1, 0, 0.98788, 0, -0.15523, -61.659, 0.0, -43.59)
+script = ExtResource("k_prop")
+kind = 4
+variant = 2
+seed_value = 1012
+
+[node name="Pallets8" type="Node3D" parent="NorthWest"]
+transform = Transform3D(-0.99395, 0, 0.10982, 0, 1, 0, -0.10982, 0, -0.99395, -31.06, 0.0, -40.156)
+script = ExtResource("k_prop")
+kind = 9
+variant = 0
+seed_value = 9180
+
+[node name="CrateStack7" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.13941, 0, -0.99023, 0, 1, 0, 0.99023, 0, 0.13941, -57.09, 0.0, -55.385)
+script = ExtResource("k_prop")
+kind = 1
+variant = 2
+seed_value = 7409
+
+[node name="Cone7" type="Node3D" parent="NorthWest"]
+transform = Transform3D(0.92178, 0, 0.38772, 0, 1, 0, -0.38772, 0, 0.92178, -70.328, 0.0, -18.359)
+script = ExtResource("k_prop")
+kind = 14
+variant = 1
+seed_value = 8283
+
+[node name="Cone8" type="Node3D" parent="NorthWest"]
+transform = Transform3D(-0.95551, 0, 0.29497, 0, 1, 0, -0.29497, 0, -0.95551, -41.27, 0.0, -30.436)
+script = ExtResource("k_prop")
+kind = 14
+variant = 2
+seed_value = 7833
+
+[node name="SouthWest" type="Node3D" parent="."]
+
+[node name="Shop5" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, -14.5, 0.0, 12.5)
+script = ExtResource("k_building")
+style = 1
+footprint = Vector2(9, 9)
+floors = 3
+wall = "brick"
+front_sign = "sign_noodles"
+side_sign = "sign_open"
+seed_value = 8320
+
+[node name="Res8" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, -28.5, 0.0, 13.0)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(10, 10)
+floors = 4
+wall = "concrete_green"
+ground_wall = "brick_dark"
+stair_side = 1
+seed_value = 4058
+
+[node name="Res9" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, -44.0, 0.0, 13.0)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(12, 10)
+floors = 5
+wall = "plaster"
+front_sign = "sign_hotel2"
+lit_ratio = 0.45
+seed_value = 8573
+
+[node name="Shop6" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, -59.0, 0.0, 12.5)
+script = ExtResource("k_building")
+style = 1
+footprint = Vector2(9, 9)
+floors = 2
+wall = "concrete"
+front_sign = "sign_shop"
+seed_value = 4254
+
+[node name="Res10" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, -70.0, 0.0, 13.0)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(8, 10)
+floors = 3
+wall = "brick"
+seed_value = 9168
+
+[node name="Res11" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -13.0, 0.0, 27.0)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(10, 10)
+floors = 4
+wall = "concrete"
+ground_wall = "brick"
+number = "07"
+stair_side = 2
+seed_value = 3320
+
+[node name="Shop7" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -12.5, 0.0, 40.0)
+script = ExtResource("k_building")
+style = 1
+footprint = Vector2(9, 9)
+floors = 2
+wall = "plaster_pink"
+front_sign = "sign_ramen"
+seed_value = 7333
+
+[node name="Res12" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -13.0, 0.0, 56.0)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(12, 10)
+floors = 6
+wall = "concrete_dark"
+side_sign = "sign_hotel"
+lit_ratio = 0.5
+seed_value = 2247
+
+[node name="Shop8" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -12.5, 0.0, 69.5)
+script = ExtResource("k_building")
+style = 1
+footprint = Vector2(8, 9)
+floors = 2
+wall = "brick_dark"
+front_sign = "sign_24h"
+seed_value = 6827
+
+[node name="Shanty6" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, -63.829, 0.0, 40.514)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(5.64, 4.71)
+floors = 1
+stilt_height = 0.0
+shanty_stair = 0
+seed_value = 7325
+
+[node name="Shanty7" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, -63.603, 0.0, 50.606)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(5.23, 5.22)
+floors = 1
+stilt_height = 0.0
+shanty_stair = 0
+seed_value = 8111
+
+[node name="Shanty8" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -64.247, 0.0, 61.5)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(5.21, 4.97)
+floors = 1
+stilt_height = 2.4
+shanty_stair = 1
+open_left = false
+open_right = true
+seed_value = 8945
+
+[node name="Shanty9" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, -55.102, 0.0, 30.335)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(5.73, 5.49)
+floors = 1
+stilt_height = 0.0
+shanty_stair = 0
+seed_value = 8302
+
+[node name="Shanty10" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -54.794, 0.0, 40.5)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(6.49, 4.9)
+floors = 1
+stilt_height = 2.4
+shanty_stair = 2
+open_left = false
+open_right = false
+seed_value = 3526
+
+[node name="Shanty11" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -55.181, 0.0, 51.0)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(6.08, 4.52)
+floors = 1
+stilt_height = 2.4
+shanty_stair = 1
+open_left = false
+open_right = true
+seed_value = 3762
+
+[node name="Shanty12" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -54.797, 0.0, 61.5)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(5.58, 5.02)
+floors = 1
+stilt_height = 2.4
+shanty_stair = 0
+open_left = true
+open_right = true
+seed_value = 5615
+
+[node name="Shanty13" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, -46.387, 0.0, 29.699)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(6.38, 4.73)
+floors = 1
+stilt_height = 0.0
+shanty_stair = 0
+seed_value = 6631
+
+[node name="Shanty14" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -46.234, 0.0, 40.989)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(5.06, 5.28)
+floors = 1
+stilt_height = 0.0
+shanty_stair = 0
+seed_value = 2127
+
+[node name="Shanty15" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -45.68, 0.0, 51.0)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(6.27, 5.18)
+floors = 1
+stilt_height = 2.4
+shanty_stair = 2
+open_left = true
+open_right = false
+seed_value = 234
+
+[node name="Shanty16" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -46.351, 0.0, 61.5)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(6.38, 5.07)
+floors = 1
+stilt_height = 2.4
+shanty_stair = 2
+open_left = true
+open_right = false
+seed_value = 1159
+
+[node name="Shanty17" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -37.221, 0.0, 30.125)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(6.2, 4.68)
+floors = 1
+stilt_height = 0.0
+shanty_stair = 0
+seed_value = 7058
+
+[node name="Shanty18" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -36.562, 0.0, 40.5)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(5.95, 5.3)
+floors = 1
+stilt_height = 2.4
+shanty_stair = 1
+open_left = false
+open_right = false
+seed_value = 908
+
+[node name="Shanty19" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, -37.236, 0.0, 61.084)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(5.18, 4.51)
+floors = 1
+stilt_height = 0.0
+shanty_stair = 0
+seed_value = 8290
+
+[node name="Shanty20" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -27.573, 0.0, 30.0)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(5.4, 4.63)
+floors = 1
+stilt_height = 2.4
+shanty_stair = 2
+open_left = false
+open_right = false
+seed_value = 9811
+
+[node name="Shanty21" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -27.562, 0.0, 40.5)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(6.45, 4.76)
+floors = 1
+stilt_height = 2.4
+shanty_stair = 1
+open_left = false
+open_right = false
+seed_value = 4802
+
+[node name="Shanty22" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -27.871, 0.0, 51.0)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(5.8, 4.71)
+floors = 1
+stilt_height = 2.4
+shanty_stair = 1
+open_left = false
+open_right = false
+seed_value = 7528
+
+[node name="Shanty23" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -28.229, 0.0, 61.5)
+script = ExtResource("k_building")
+style = 3
+footprint = Vector2(6.21, 5.49)
+floors = 1
+stilt_height = 2.4
+shanty_stair = 1
+open_left = false
+open_right = false
+seed_value = 2582
+
+[node name="Walkway2" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -59.614, 2.4, 63.385)
+script = ExtResource("k_walkway")
+length = 4.66
+width = 1.1
+wooden = true
+lanterns = true
+
+[node name="Walkway3" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -50.478, 2.4, 52.66)
+script = ExtResource("k_walkway")
+length = 3.93
+width = 1.1
+wooden = true
+lanterns = true
+
+[node name="Walkway4" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -50.774, 2.4, 63.41)
+script = ExtResource("k_walkway")
+length = 3.07
+width = 1.1
+wooden = true
+lanterns = true
+
+[node name="Cables22" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(-68.0, 5.2, 35.25, -48.0, 5.6, 35.75, -28.0, 5.0, 34.95)
+sag = 0.7
+bundle = 1
+lanterns = true
+seed_value = 5390
+
+[node name="Cables23" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(-68.0, 5.2, 45.75, -48.0, 5.6, 46.25, -28.0, 5.0, 45.45)
+sag = 0.7
+bundle = 1
+lanterns = true
+seed_value = 8964
+
+[node name="Cables24" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(-68.0, 5.2, 56.25, -48.0, 5.6, 56.75, -28.0, 5.0, 55.95)
+sag = 0.7
+bundle = 1
+lanterns = true
+seed_value = 5301
+
+[node name="Cables25" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(-68.0, 5.2, 66.75, -48.0, 5.6, 67.25, -28.0, 5.0, 66.45)
+sag = 0.7
+bundle = 1
+lanterns = true
+seed_value = 4006
+
+[node name="FireBarrel3" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -50, 0.0, 37)
+script = ExtResource("k_prop")
+kind = 26
+variant = 0
+seed_value = 5072
+
+[node name="FireBarrel4" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -32, 0.0, 58)
+script = ExtResource("k_prop")
+kind = 26
+variant = 0
+seed_value = 5843
+
+[node name="FireBarrel5" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -60, 0.0, 66)
+script = ExtResource("k_prop")
+kind = 26
+variant = 0
+seed_value = 18
+
+[node name="FireBarrel6" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -40, 0.0, 24)
+script = ExtResource("k_prop")
+kind = 26
+variant = 1
+seed_value = 6253
+
+[node name="MarketStall1" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -24.0, 0.0, 34.0)
+script = ExtResource("k_prop")
+kind = 19
+variant = 0
+seed_value = 1375
+
+[node name="MarketStall2" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -24.0, 0.0, 38.0)
+script = ExtResource("k_prop")
+kind = 19
+variant = 2
+seed_value = 7777
+
+[node name="WaterTank2" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -70.0, 0.0, 72.0)
+script = ExtResource("k_prop")
+kind = 24
+seed_value = 4570
+
+[node name="Generator3" type="Node3D" parent="SouthWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -42.0, 0.0, 70.0)
+script = ExtResource("k_prop")
+kind = 21
+seed_value = 8238
+
+[node name="BarrelGroup4" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.99952, 0, 0.0311, 0, 1, 0, -0.0311, 0, 0.99952, -59.951, 0.0, 48.227)
+script = ExtResource("k_prop")
+kind = 5
+variant = 1
+seed_value = 1471
+
+[node name="TrashBags13" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.99003, 0, 0.14086, 0, 1, 0, -0.14086, 0, 0.99003, -50.024, 0.0, 26.0)
+script = ExtResource("k_prop")
+kind = 10
+variant = 1
+seed_value = 3815
+
+[node name="TrashPile5" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.0034, 0, -0.99999, 0, 1, 0, 0.99999, 0, 0.0034, -40.721, 0.0, 49.401)
+script = ExtResource("k_prop")
+kind = 11
+variant = 2
+seed_value = 9775
+
+[node name="Crate1" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-0.99933, 0, 0.03649, 0, 1, 0, -0.03649, 0, -0.99933, -31.784, 0.0, 58.593)
+script = ExtResource("k_prop")
+kind = 0
+variant = 1
+seed_value = 2372
+
+[node name="TrashPile6" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-0.99668, 0, -0.08147, 0, 1, 0, 0.08147, 0, -0.99668, -28.757, 0.0, 58.321)
+script = ExtResource("k_prop")
+kind = 11
+variant = 1
+seed_value = 8283
+
+[node name="TrashBags14" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-0.90885, 0, -0.41712, 0, 1, 0, 0.41712, 0, -0.90885, -24.506, 0.0, 60.138)
+script = ExtResource("k_prop")
+kind = 10
+variant = 0
+seed_value = 9570
+
+[node name="BarrelGroup5" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.1257, 0, 0.99207, 0, 1, 0, -0.99207, 0, 0.1257, -35.855, 0.0, 57.28)
+script = ExtResource("k_prop")
+kind = 5
+variant = 0
+seed_value = 686
+
+[node name="TrashBags15" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-0.71426, 0, 0.69988, 0, 1, 0, -0.69988, 0, -0.71426, -38.144, 0.0, 70.057)
+script = ExtResource("k_prop")
+kind = 10
+variant = 1
+seed_value = 9151
+
+[node name="TrashPile7" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-0.422, 0, -0.9066, 0, 1, 0, 0.9066, 0, -0.422, -38.612, 0.0, 54.059)
+script = ExtResource("k_prop")
+kind = 11
+variant = 1
+seed_value = 4322
+
+[node name="TrashPile8" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.91142, 0, -0.41149, 0, 1, 0, 0.41149, 0, 0.91142, -47.153, 0.0, 27.365)
+script = ExtResource("k_prop")
+kind = 11
+variant = 2
+seed_value = 1507
+
+[node name="BarrelGroup6" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-0.98654, 0, 0.16351, 0, 1, 0, -0.16351, 0, -0.98654, -43.7, 0.0, 59.795)
+script = ExtResource("k_prop")
+kind = 5
+variant = 0
+seed_value = 4351
+
+[node name="TrashBags16" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-0.06387, 0, -0.99796, 0, 1, 0, 0.99796, 0, -0.06387, -33.533, 0.0, 33.85)
+script = ExtResource("k_prop")
+kind = 10
+variant = 1
+seed_value = 8093
+
+[node name="Crate2" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-0.23234, 0, 0.97263, 0, 1, 0, -0.97263, 0, -0.23234, -66.163, 0.0, 67.702)
+script = ExtResource("k_prop")
+kind = 0
+variant = 0
+seed_value = 3249
+
+[node name="TrashPile9" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-0.57996, 0, -0.81465, 0, 1, 0, 0.81465, 0, -0.57996, -40.015, 0.0, 39.925)
+script = ExtResource("k_prop")
+kind = 11
+variant = 2
+seed_value = 4988
+
+[node name="Pallets9" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.92824, 0, 0.37198, 0, 1, 0, -0.37198, 0, 0.92824, -41.612, 0.0, 24.599)
+script = ExtResource("k_prop")
+kind = 9
+variant = 1
+seed_value = 1631
+
+[node name="BarrelGroup7" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-0.25555, 0, -0.96679, 0, 1, 0, 0.96679, 0, -0.25555, -59.115, 0.0, 47.501)
+script = ExtResource("k_prop")
+kind = 5
+variant = 1
+seed_value = 7614
+
+[node name="Crate3" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.78498, 0, -0.61952, 0, 1, 0, 0.61952, 0, 0.78498, -46.683, 0.0, 29.688)
+script = ExtResource("k_prop")
+kind = 0
+variant = 0
+seed_value = 5107
+
+[node name="TrashPile10" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-0.96695, 0, 0.25495, 0, 1, 0, -0.25495, 0, -0.96695, -23.187, 0.0, 24.84)
+script = ExtResource("k_prop")
+kind = 11
+variant = 2
+seed_value = 7364
+
+[node name="Barrel4" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.90626, 0, -0.42273, 0, 1, 0, 0.42273, 0, 0.90626, -50.658, 0.0, 67.995)
+script = ExtResource("k_prop")
+kind = 4
+variant = 0
+seed_value = 9527
+
+[node name="TrashPile11" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.95624, 0, -0.2926, 0, 1, 0, 0.2926, 0, 0.95624, -62.913, 0.0, 49.155)
+script = ExtResource("k_prop")
+kind = 11
+variant = 0
+seed_value = 9886
+
+[node name="BarrelGroup8" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-0.28901, 0, -0.95733, 0, 1, 0, 0.95733, 0, -0.28901, -44.563, 0.0, 66.569)
+script = ExtResource("k_prop")
+kind = 5
+variant = 0
+seed_value = 8158
+
+[node name="Crate4" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.95098, 0, -0.30926, 0, 1, 0, 0.30926, 0, 0.95098, -50.296, 0.0, 31.635)
+script = ExtResource("k_prop")
+kind = 0
+variant = 2
+seed_value = 7386
+
+[node name="Crate5" type="Node3D" parent="SouthWest"]
+transform = Transform3D(-0.55667, 0, 0.83074, 0, 1, 0, -0.83074, 0, -0.55667, -54.902, 0.0, 30.754)
+script = ExtResource("k_prop")
+kind = 0
+variant = 1
+seed_value = 1981
+
+[node name="Barrel5" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.5311, 0, -0.84731, 0, 1, 0, 0.84731, 0, 0.5311, -69.913, 0.0, 60.035)
+script = ExtResource("k_prop")
+kind = 4
+variant = 0
+seed_value = 3208
+
+[node name="Sign6" type="Node3D" parent="SouthWest"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, -17.06, 1.6, 40.0)
+script = ExtResource("k_sign")
+texture_name = "graffiti_2"
+mount = 3
+width = 3.0
+light_color = Color(1.0, 0.3, 0.4, 1.0)
+flicker = 0.0
+light_energy = 1.6
+
+[node name="SouthEast" type="Node3D" parent="."]
+
+[node name="Res13" type="Node3D" parent="SouthEast"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 14.0, 0.0, 16.0)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(12, 12)
+floors = 9
+wall = "concrete_dark"
+ground_wall = "tiles_dark"
+side_sign = "sign_hotel"
+front_sign = "sign_hotel2"
+lit_ratio = 0.55
+stair_side = 1
+seed_value = 193
+
+[node name="Shop9" type="Node3D" parent="SouthEast"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 12.5, 0.0, 30.5)
+script = ExtResource("k_building")
+style = 1
+footprint = Vector2(9, 9)
+floors = 2
+wall = "brick_dark"
+front_sign = "sign_bar"
+side_sign = "sign_24h"
+seed_value = 4749
+
+[node name="Shop10" type="Node3D" parent="SouthEast"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 12.5, 0.0, 41.0)
+script = ExtResource("k_building")
+style = 1
+footprint = Vector2(8, 9)
+floors = 3
+wall = "plaster_teal"
+front_sign = "sign_shop"
+seed_value = 4149
+
+[node name="Res14" type="Node3D" parent="SouthEast"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 13.0, 0.0, 54.0)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(12, 10)
+floors = 5
+wall = "brick"
+stair_side = 2
+number = "07"
+seed_value = 6099
+
+[node name="Shop11" type="Node3D" parent="SouthEast"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 12.5, 0.0, 67.5)
+script = ExtResource("k_building")
+style = 1
+footprint = Vector2(9, 9)
+floors = 2
+wall = "concrete"
+front_sign = "sign_pharmacy"
+side_sign = "sign_pharmacy"
+seed_value = 1065
+
+[node name="Shop12" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 28.0, 0.0, 12.5)
+script = ExtResource("k_building")
+style = 1
+footprint = Vector2(9, 9)
+floors = 3
+wall = "plaster_pink"
+front_sign = "sign_ramen"
+side_sign = "sign_noodles"
+seed_value = 6438
+
+[node name="Res15" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 42.0, 0.0, 13.0)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(12, 10)
+floors = 4
+wall = "concrete_green"
+ground_wall = "brick"
+seed_value = 6393
+
+[node name="Shop13" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 56.0, 0.0, 12.5)
+script = ExtResource("k_building")
+style = 1
+footprint = Vector2(9, 9)
+floors = 2
+wall = "brick"
+front_sign = "sign_open"
+seed_value = 9654
+
+[node name="Res16" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 68.0, 0.0, 13.0)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(9, 10)
+floors = 6
+wall = "concrete"
+side_sign = "sign_hotel"
+seed_value = 1252
+
+[node name="Res17" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 30.0, 0.0, 60.0)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(12, 10)
+floors = 5
+wall = "plaster"
+ground_wall = "brick_dark"
+front_sign = "sign_bar"
+stair_side = 2
+seed_value = 5910
+
+[node name="Shop14" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 44.0, 0.0, 59.0)
+script = ExtResource("k_building")
+style = 1
+footprint = Vector2(9, 9)
+floors = 3
+wall = "brick"
+front_sign = "sign_24h"
+side_sign = "sign_open"
+seed_value = 7014
+
+[node name="Res18" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 58.0, 0.0, 60.0)
+script = ExtResource("k_building")
+style = 0
+footprint = Vector2(11, 10)
+floors = 7
+wall = "concrete_dark"
+side_sign = "sign_hotel"
+lit_ratio = 0.5
+seed_value = 4509
+
+[node name="Warehouse4" type="Node3D" parent="SouthEast"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 66.0, 0.0, 34.0)
+script = ExtResource("k_building")
+style = 2
+footprint = Vector2(14, 14)
+floors = 2
+floor_height = 3.3
+wall = "corrugated_green"
+seed_value = 791
+
+[node name="MarketStall3" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 26.0, 0.0, 29.0)
+script = ExtResource("k_prop")
+kind = 19
+variant = 0
+seed_value = 4598
+
+[node name="MarketStall4" type="Node3D" parent="SouthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 26.0, 0.0, 44.0)
+script = ExtResource("k_prop")
+kind = 19
+variant = 1
+seed_value = 1667
+
+[node name="MarketStall5" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 31.5, 0.0, 29.0)
+script = ExtResource("k_prop")
+kind = 19
+variant = 1
+seed_value = 846
+
+[node name="MarketStall6" type="Node3D" parent="SouthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 31.5, 0.0, 44.0)
+script = ExtResource("k_prop")
+kind = 19
+variant = 2
+seed_value = 4680
+
+[node name="MarketStall7" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 37.0, 0.0, 29.0)
+script = ExtResource("k_prop")
+kind = 19
+variant = 2
+seed_value = 2440
+
+[node name="MarketStall8" type="Node3D" parent="SouthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 37.0, 0.0, 44.0)
+script = ExtResource("k_prop")
+kind = 19
+variant = 0
+seed_value = 4085
+
+[node name="MarketStall9" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 42.5, 0.0, 29.0)
+script = ExtResource("k_prop")
+kind = 19
+variant = 0
+seed_value = 4354
+
+[node name="MarketStall10" type="Node3D" parent="SouthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 42.5, 0.0, 44.0)
+script = ExtResource("k_prop")
+kind = 19
+variant = 1
+seed_value = 7148
+
+[node name="MarketStall11" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 48.0, 0.0, 29.0)
+script = ExtResource("k_prop")
+kind = 19
+variant = 1
+seed_value = 8372
+
+[node name="MarketStall12" type="Node3D" parent="SouthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 48.0, 0.0, 44.0)
+script = ExtResource("k_prop")
+kind = 19
+variant = 2
+seed_value = 5171
+
+[node name="Cables26" type="Node3D" parent="SouthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(22.0, 5.0, 31.5, 40.0, 5.5, 32.0, 56.0, 5.0, 31.5)
+sag = 0.6
+bundle = 1
+lanterns = true
+seed_value = 3111
+
+[node name="Cables27" type="Node3D" parent="SouthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(22.0, 5.0, 36.5, 40.0, 5.5, 37.0, 56.0, 5.0, 36.5)
+sag = 0.6
+bundle = 1
+lanterns = true
+seed_value = 6117
+
+[node name="Cables28" type="Node3D" parent="SouthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(22.0, 5.0, 41.5, 40.0, 5.5, 42.0, 56.0, 5.0, 41.5)
+sag = 0.6
+bundle = 1
+lanterns = true
+seed_value = 7009
+
+[node name="Bench1" type="Node3D" parent="SouthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 24.0, 0.0, 36.5)
+script = ExtResource("k_prop")
+kind = 23
+seed_value = 6555
+
+[node name="Bench2" type="Node3D" parent="SouthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 36.0, 0.0, 36.5)
+script = ExtResource("k_prop")
+kind = 23
+seed_value = 1321
+
+[node name="Bench3" type="Node3D" parent="SouthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 48.0, 0.0, 36.5)
+script = ExtResource("k_prop")
+kind = 23
+seed_value = 6732
+
+[node name="FireBarrel7" type="Node3D" parent="SouthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 54.0, 0.0, 37.0)
+script = ExtResource("k_prop")
+kind = 26
+seed_value = 7387
+
+[node name="StreetLamp4" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 20.5, 0.0, 52.0)
+script = ExtResource("k_prop")
+kind = 16
+seed_value = 2271
+
+[node name="StreetLamp5" type="Node3D" parent="SouthEast"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 54.0, 0.0, 50.5)
+script = ExtResource("k_prop")
+kind = 16
+variant = 2
+seed_value = 4690
+
+[node name="Dumpster4" type="Node3D" parent="SouthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 36.5, 0.0, 53.0)
+script = ExtResource("k_prop")
+kind = 3
+seed_value = 7956
+
+[node name="Dumpster5" type="Node3D" parent="SouthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 51.0, 0.0, 52.5)
+script = ExtResource("k_prop")
+kind = 3
+variant = 1
+seed_value = 803
+
+[node name="TrashPile12" type="Node3D" parent="SouthEast"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 22.0, 0.0, 54.0)
+script = ExtResource("k_prop")
+kind = 11
+seed_value = 9013
+
+[node name="AcStack2" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 22.0, 0.0, 22.0)
+script = ExtResource("k_prop")
+kind = 7
+seed_value = 2086
+
+[node name="TrashBags17" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-0.29567, 0, 0.95529, 0, 1, 0, -0.95529, 0, -0.29567, 38.887, 0.0, 32.028)
+script = ExtResource("k_prop")
+kind = 10
+variant = 2
+seed_value = 4263
+
+[node name="Crate6" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-0.93584, 0, -0.35243, 0, 1, 0, 0.35243, 0, -0.93584, 46.24, 0.0, 30.529)
+script = ExtResource("k_prop")
+kind = 0
+variant = 1
+seed_value = 1962
+
+[node name="TrashBags18" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-0.99999, 0, -0.0038, 0, 1, 0, 0.0038, 0, -0.99999, 45.728, 0.0, 22.631)
+script = ExtResource("k_prop")
+kind = 10
+variant = 1
+seed_value = 9018
+
+[node name="TrashBags19" type="Node3D" parent="SouthEast"]
+transform = Transform3D(0.05807, 0, -0.99831, 0, 1, 0, 0.99831, 0, 0.05807, 38.119, 0.0, 31.649)
+script = ExtResource("k_prop")
+kind = 10
+variant = 1
+seed_value = 2288
+
+[node name="Cone9" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-0.54616, 0, 0.83768, 0, 1, 0, -0.83768, 0, -0.54616, 27.696, 0.0, 23.175)
+script = ExtResource("k_prop")
+kind = 14
+variant = 0
+seed_value = 5232
+
+[node name="TrashBags20" type="Node3D" parent="SouthEast"]
+transform = Transform3D(0.29619, 0, 0.95513, 0, 1, 0, -0.95513, 0, 0.29619, 34.732, 0.0, 48.328)
+script = ExtResource("k_prop")
+kind = 10
+variant = 0
+seed_value = 6764
+
+[node name="Crate7" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-0.71535, 0, 0.69877, 0, 1, 0, -0.69877, 0, -0.71535, 36.555, 0.0, 38.346)
+script = ExtResource("k_prop")
+kind = 0
+variant = 1
+seed_value = 1017
+
+[node name="Crate8" type="Node3D" parent="SouthEast"]
+transform = Transform3D(0.70321, 0, 0.71098, 0, 1, 0, -0.71098, 0, 0.70321, 31.101, 0.0, 53.869)
+script = ExtResource("k_prop")
+kind = 0
+variant = 2
+seed_value = 8671
+
+[node name="TrashBags21" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-0.74828, 0, 0.66338, 0, 1, 0, -0.66338, 0, -0.74828, 23.704, 0.0, 51.388)
+script = ExtResource("k_prop")
+kind = 10
+variant = 2
+seed_value = 7305
+
+[node name="Crate9" type="Node3D" parent="SouthEast"]
+transform = Transform3D(0.69767, 0, -0.71641, 0, 1, 0, 0.71641, 0, 0.69767, 58.158, 0.0, 49.704)
+script = ExtResource("k_prop")
+kind = 0
+variant = 0
+seed_value = 2085
+
+[node name="Sign7" type="Node3D" parent="SouthEast"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 40.0, 15.0, 36.0)
+script = ExtResource("k_sign")
+texture_name = "sign_bar"
+mount = 2
+width = 5.0
+light_color = Color(1.0, 0.2, 0.25, 1)
+flicker = 0.15
+light_energy = 2.5
+
+[node name="Skyline" type="Node3D" parent="."]
+
+[node name="Tower1" type="Node3D" parent="Skyline"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -80.871, 0.0, -94.744)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(14.257947947096817, 15.05476307558109)
+floors = 20
+wall = "concrete_green"
+lit_ratio = 0.37
+front_sign = ""
+seed_value = 6415
+
+[node name="Tower2" type="Node3D" parent="Skyline"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -60.204, 0.0, -95.6)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(21.425285686587642, 15.42185069525693)
+floors = 17
+wall = "concrete"
+lit_ratio = 0.45
+front_sign = ""
+seed_value = 2530
+
+[node name="Tower3" type="Node3D" parent="Skyline"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -37.723, 0.0, -94.77)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(21.775100152616204, 15.765962237876515)
+floors = 10
+wall = "plaster"
+lit_ratio = 0.27
+front_sign = "sign_bar"
+seed_value = 648
+
+[node name="Tower4" type="Node3D" parent="Skyline"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -18.83, 0.0, -94.422)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(15.005214168582965, 15.679680437969914)
+floors = 18
+wall = "brick_dark"
+lit_ratio = 0.49
+front_sign = "sign_24h"
+seed_value = 4126
+
+[node name="Tower5" type="Node3D" parent="Skyline"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -0.757, 0.0, -90.506)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(17.499444228326198, 12.448530736549042)
+floors = 21
+wall = "concrete_green"
+lit_ratio = 0.49
+front_sign = ""
+seed_value = 6359
+
+[node name="Tower6" type="Node3D" parent="Skyline"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 19.307, 0.0, -91.227)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(20.323897576395325, 12.041846559568533)
+floors = 9
+wall = "plaster"
+lit_ratio = 0.32
+front_sign = ""
+seed_value = 3971
+
+[node name="Tower7" type="Node3D" parent="Skyline"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 39.096, 0.0, -91.706)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(15.878144773662223, 12.117123423833078)
+floors = 12
+wall = "brick_dark"
+lit_ratio = 0.26
+front_sign = ""
+seed_value = 8165
+
+[node name="Tower8" type="Node3D" parent="Skyline"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 59.336, 0.0, -93.184)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(19.177346850634567, 13.029024488563552)
+floors = 10
+wall = "brick_dark"
+lit_ratio = 0.31
+front_sign = ""
+seed_value = 5539
+
+[node name="Tower9" type="Node3D" parent="Skyline"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 79.67, 0.0, -93.584)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(16.898559134159484, 12.792318552933736)
+floors = 15
+wall = "concrete_green"
+lit_ratio = 0.27
+front_sign = "sign_ngc7"
+seed_value = 3284
+
+[node name="Tower10" type="Node3D" parent="Skyline"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, -77.72, 0.0, 91.99)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(20.560035955544308, 13.86045629446038)
+floors = 12
+wall = "brick_dark"
+lit_ratio = 0.28
+front_sign = "sign_shop"
+seed_value = 8123
+
+[node name="Tower11" type="Node3D" parent="Skyline"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, -54.829, 0.0, 93.495)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(21.171809448201902, 13.668116328430056)
+floors = 16
+wall = "concrete_green"
+lit_ratio = 0.29
+front_sign = "sign_ngc7"
+seed_value = 891
+
+[node name="Tower12" type="Node3D" parent="Skyline"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, -32.314, 0.0, 93.67)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(21.792957639463374, 13.66153973495485)
+floors = 11
+wall = "concrete"
+lit_ratio = 0.35
+front_sign = "sign_24h"
+seed_value = 5148
+
+[node name="Tower13" type="Node3D" parent="Skyline"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, -8.096, 0.0, 91.401)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(21.980238442382884, 13.31697103949438)
+floors = 11
+wall = "concrete_green"
+lit_ratio = 0.44
+front_sign = ""
+seed_value = 5109
+
+[node name="Tower14" type="Node3D" parent="Skyline"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 13.57, 0.0, 93.74)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(17.02895533079666, 15.939931521764322)
+floors = 14
+wall = "concrete_dark"
+lit_ratio = 0.25
+front_sign = ""
+seed_value = 1324
+
+[node name="Tower15" type="Node3D" parent="Skyline"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 34.285, 0.0, 94.157)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(21.644118659804622, 14.244515656360125)
+floors = 10
+wall = "plaster"
+lit_ratio = 0.34
+front_sign = "sign_bar"
+seed_value = 5058
+
+[node name="Tower16" type="Node3D" parent="Skyline"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 56.392, 0.0, 92.193)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(17.459594672188775, 14.821025951905966)
+floors = 9
+wall = "concrete_green"
+lit_ratio = 0.48
+front_sign = ""
+seed_value = 5298
+
+[node name="Tower17" type="Node3D" parent="Skyline"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 77.12, 0.0, 92.255)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(21.17594691959228, 14.526648503863866)
+floors = 9
+wall = "plaster"
+lit_ratio = 0.26
+front_sign = ""
+seed_value = 7604
+
+[node name="Tower18" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 90.641, 0.0, -77.32)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(21.360613767028088, 12.77976580701133)
+floors = 13
+wall = "concrete_green"
+lit_ratio = 0.33
+front_sign = ""
+seed_value = 5489
+
+[node name="Tower19" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 94.251, 0.0, -54.277)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(18.93582785389337, 14.985751560826174)
+floors = 13
+wall = "brick_dark"
+lit_ratio = 0.32
+front_sign = "sign_24h"
+seed_value = 9758
+
+[node name="Tower20" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 90.984, 0.0, -32.482)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(19.071840342669947, 12.097026819766114)
+floors = 10
+wall = "plaster"
+lit_ratio = 0.43
+front_sign = "sign_ngc7"
+seed_value = 6333
+
+[node name="Tower21" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 94.699, 0.0, -9.818)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(21.308351721163874, 13.97389537491522)
+floors = 22
+wall = "concrete"
+lit_ratio = 0.25
+front_sign = "sign_24h"
+seed_value = 4970
+
+[node name="Tower22" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 93.917, 0.0, 13.485)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(20.1824750394413, 12.94457004451155)
+floors = 18
+wall = "plaster"
+lit_ratio = 0.34
+front_sign = "sign_bar"
+seed_value = 9761
+
+[node name="Tower23" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 91.951, 0.0, 32.063)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(15.578494333725297, 12.639749534347878)
+floors = 21
+wall = "concrete_dark"
+lit_ratio = 0.37
+front_sign = "sign_shop"
+seed_value = 5338
+
+[node name="Tower24" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 93.035, 0.0, 49.46)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(17.412434153763925, 15.951295318370015)
+floors = 10
+wall = "concrete_dark"
+lit_ratio = 0.3
+front_sign = "sign_ngc7"
+seed_value = 8168
+
+[node name="Tower25" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 92.136, 0.0, 72.026)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(21.776933219847862, 12.936785195259189)
+floors = 11
+wall = "concrete_green"
+lit_ratio = 0.47
+front_sign = ""
+seed_value = 8824
+
+[node name="Tower26" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 92.735, 0.0, 95.189)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(19.3154017781953, 15.119002367284034)
+floors = 10
+wall = "brick_dark"
+lit_ratio = 0.39
+front_sign = ""
+seed_value = 4163
+
+[node name="Tower27" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -91.313, 0.0, -80.203)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(15.593520727121696, 12.742945678393253)
+floors = 12
+wall = "brick_dark"
+lit_ratio = 0.47
+front_sign = "sign_shop"
+seed_value = 3085
+
+[node name="Tower28" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -91.94, 0.0, -62.506)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(17.16855676482044, 14.029298052975797)
+floors = 12
+wall = "concrete_dark"
+lit_ratio = 0.41
+front_sign = ""
+seed_value = 1677
+
+[node name="Tower29" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -95.339, 0.0, -42.88)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(21.06260018462555, 15.362225456485067)
+floors = 12
+wall = "concrete_dark"
+lit_ratio = 0.47
+front_sign = ""
+seed_value = 1954
+
+[node name="Tower30" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -94.887, 0.0, -22.32)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(18.80394649344475, 14.332775062148619)
+floors = 22
+wall = "brick_dark"
+lit_ratio = 0.38
+front_sign = ""
+seed_value = 7359
+
+[node name="Tower31" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -92.315, 0.0, -0.811)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(20.199985669718757, 15.782808333824264)
+floors = 19
+wall = "concrete_green"
+lit_ratio = 0.43
+front_sign = ""
+seed_value = 3566
+
+[node name="Tower32" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -91.428, 0.0, 18.243)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(16.720132478557197, 12.815905749794059)
+floors = 9
+wall = "concrete_green"
+lit_ratio = 0.43
+front_sign = ""
+seed_value = 187
+
+[node name="Tower33" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -91.619, 0.0, 37.786)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(17.271959166426644, 12.740580398470573)
+floors = 14
+wall = "concrete"
+lit_ratio = 0.26
+front_sign = "sign_ngc7"
+seed_value = 8980
+
+[node name="Tower34" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -92.991, 0.0, 56.764)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(17.265360361420377, 13.581186850786997)
+floors = 21
+wall = "concrete_green"
+lit_ratio = 0.27
+front_sign = ""
+seed_value = 6518
+
+[node name="Tower35" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -93.007, 0.0, 76.274)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(17.27831137110226, 14.671243766176573)
+floors = 13
+wall = "concrete_dark"
+lit_ratio = 0.33
+front_sign = "sign_shop"
+seed_value = 5853
+
+[node name="Tower36" type="Node3D" parent="Skyline"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -93.448, 0.0, 93.521)
+script = ExtResource("k_building")
+style = 4
+footprint = Vector2(14.145705453410528, 15.986481422252059)
+floors = 21
+wall = "concrete"
+lit_ratio = 0.35
+front_sign = "sign_ngc7"
+seed_value = 3337
+
+[node name="Bounds" type="Node3D" parent="."]
+
+[node name="North" type="StaticBody3D" parent="Bounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 30, -80)
+
+[node name="Shape" type="CollisionShape3D" parent="Bounds/North"]
+shape = SubResource("Shape_bound")
+
+[node name="South" type="StaticBody3D" parent="Bounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 30, 80)
+
+[node name="Shape" type="CollisionShape3D" parent="Bounds/South"]
+shape = SubResource("Shape_bound")
+
+[node name="East" type="StaticBody3D" parent="Bounds"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 80, 30, 0)
+
+[node name="Shape" type="CollisionShape3D" parent="Bounds/East"]
+shape = SubResource("Shape_bound")
+
+[node name="West" type="StaticBody3D" parent="Bounds"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -80, 30, 0)
+
+[node name="Shape" type="CollisionShape3D" parent="Bounds/West"]
+shape = SubResource("Shape_bound")
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 62)
+
+[node name="PauseMenu" parent="." instance=ExtResource("3_pause")]
+
+[node name="Pickups" type="Node3D" parent="."]
+
+[node name="SpawnPoints" type="Node3D" parent="Pickups"]
+
+[node name="Spot_Street" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0, 0.0, 56.0)
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Street" instance=ExtResource("i_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("i_credchip")
+count = 20
+
+[node name="Spot_Kiosk" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.0, 0.15, 44.0)
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Kiosk" instance=ExtResource("i_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("i_drink")
+count = 2
+
+[node name="Spot_Market" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40.0, 0.02, 36.5)
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Market" instance=ExtResource("i_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("i_noodles")
+count = 2
+
+[node name="Spot_Bar" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.0, 0.04, 30.5)
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Bar" instance=ExtResource("i_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("i_stim")
+count = 1
+
+[node name="Spot_Warehouse" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -33.0, 0.04, -55.0)
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Warehouse" instance=ExtResource("i_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("i_pistol")
+count = 1
+
+[node name="Spot_Container" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.0, 5.2, -60.0)
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Container" instance=ExtResource("i_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("i_shard")
+count = 3
+
+[node name="Spot_HotelRoof" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.0, 27.1, 16.0)
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_HotelRoof" instance=ExtResource("i_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("i_sniper")
+count = 1
+
+[node name="Spot_Courtyard" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32.0, 0.0, -50.0)
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Courtyard" instance=ExtResource("i_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("i_emp")
+count = 2
+
+[node name="Spot_Roof07" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.0, 15.1, -28.5)
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Roof07" instance=ExtResource("i_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("i_credchip")
+count = 40
+
+[node name="Spot_Alley" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.0, 0.0, 66.0)
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Alley" instance=ExtResource("i_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("i_drink")
+count = 1
+
+[node name="Spot_Gate" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.0, 0.0, -38.0)
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Gate" instance=ExtResource("i_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("i_credchip")
+count = 10
+
+[node name="Spot_Shanty" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26.37, 2.4, 31.71)
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Shanty" instance=ExtResource("i_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("i_blade")
+count = 1
+
+[node name="Vending" type="Node3D" parent="."]
+
+[node name="ColaMachine" type="StaticBody3D" parent="Vending"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 7.0, 0.15, 47.6)
+script = ExtResource("i_vending")
+product = ExtResource("i_drink")
+price = 2
+currency = ExtResource("i_credchip")
+
+[node name="NoodleMachine" type="StaticBody3D" parent="Vending"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 7.0, 0.15, 49.0)
+script = ExtResource("i_vending")
+product = ExtResource("i_noodles")
+price = 3
+currency = ExtResource("i_credchip")
+
+[node name="StimMachine" type="StaticBody3D" parent="Vending"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -24.8, 0.0, 30.0)
+script = ExtResource("i_vending")
+product = ExtResource("i_stim")
+price = 6
+currency = ExtResource("i_credchip")

@@ -2,8 +2,9 @@ class_name PlayerHands
 extends Node3D
 ## First-Person-Hände unter der Kamera: Cyber-Handschuhe mit Jackenärmel.
 ##
-## Das Modell wird beim Start aus Grundformen gebaut (Handfläche, Fingerglieder,
-## Daumen, Knöchelschutz, Handrücken-Platte, Armband mit Neon, Ärmel). Jeder Finger
+## Das Modell wird beim Start aus Grundformen gebaut (Handfläche mit Griffpolster, Fingerglieder
+## mit Nägeln an den freien Kuppen, Daumen, Knöchelschutz mit Nieten, Klettriemen, Handrücken-Platte,
+## Armband mit Neon, Unterarmschiene (links mit Display), hochgeschobener Ärmel mit Falten). Jeder Finger
 ## hat drei Gelenke, der Daumen zwei; Posen setzen nur Winkel, keine Meshes.
 ##
 ## Posen: ohne Waffe hängen die Hände locker unten. Mit Waffe greift die rechte Hand
@@ -119,6 +120,10 @@ var _look_offset := Vector2.ZERO
 var _land_dip: float = 0.0
 var _was_on_floor := true
 var _lit_view: Node3D
+var _metal_material: StandardMaterial3D
+var _rubber_material: StandardMaterial3D
+var _nail_material: StandardMaterial3D
+var _screen_material: StandardMaterial3D
 
 
 
@@ -328,9 +333,21 @@ func _build_hand(side: float) -> Dictionary:
 		Vector3(0.012 * side, 0.0212, -0.054), Vector3(-0.06, 0.0, 0.0))
 	_part(root, ProcMesh.rounded_box(Vector3(0.004, 0.003, 0.03), 0.5), neon_material,
 		Vector3(-0.006 * side, 0.0212, -0.06), Vector3(-0.06, 0.0, 0.0))
-	# Knöchelschutz quer über die Grundgelenke.
+	# Knöchelschutz quer über die Grundgelenke, mit Nieten über jedem Knöchel.
 	_part(root, ProcMesh.rounded_box(Vector3(0.08, 0.012, 0.016), 0.35), plate_material,
 		Vector3(0.0, 0.012, -0.091), Vector3(0.0, 0.0, 0.0))
+	for knuckle: Vector3 in KNUCKLES:
+		_part(root, ProcMesh.tube(0.0035, 0.0045, 0.004), _metal_material,
+			Vector3(knuckle.x * side, 0.0185, -0.091), Vector3.ZERO)
+	# Klettriemen mit Schnalle über dem Handrücken, Griffpolster in der Handfläche.
+	_part(root, ProcMesh.rounded_box(Vector3(0.088, 0.012, 0.017), 0.3), _rubber_material,
+		Vector3(0.0, 0.006, -0.014), Vector3.ZERO)
+	_part(root, ProcMesh.rounded_box(Vector3(0.016, 0.005, 0.02), 0.3), _metal_material,
+		Vector3(0.03 * side, 0.0125, -0.014), Vector3.ZERO)
+	_part(root, ProcMesh.rounded_box(Vector3(0.066, 0.008, 0.05), 0.4), _rubber_material,
+		Vector3(0.004 * side, -0.0135, -0.06), Vector3.ZERO)
+	_part(root, ProcMesh.rounded_box(Vector3(0.03, 0.007, 0.03), 0.45), _rubber_material,
+		Vector3(-0.026 * side, -0.016, -0.026), Vector3(0.0, 0.25 * side, 0.0))
 
 	var fingers := []
 	for i in 4:
@@ -363,6 +380,32 @@ func _build_hand(side: float) -> Dictionary:
 		Vector3(0.0, 0.0, 0.064), Vector3(PI * 0.5, 0.0, 0.0), Vector3(1.0, 1.0, 0.82))
 	_part(arm, ProcMesh.tube(0.062, 0.048, 0.42), sleeve_material,
 		Vector3(0.0, 0.0, 0.29), Vector3(PI * 0.5, 0.0, 0.0), Vector3(1.0, 1.0, 0.85))
+	# Hochgeschobener Ärmel: Wulst am Bündchen und Falten.
+	_part(arm, ProcMesh.tube(0.053, 0.053, 0.03), sleeve_material,
+		Vector3(0.0, 0.0, 0.1), Vector3(PI * 0.5, 0.0, 0.0), Vector3(1.0, 1.0, 0.86))
+	for i in 3:
+		var z := 0.17 + i * 0.075
+		var r := 0.05 + z * 0.028
+		_part(arm, ProcMesh.tube(r, r, 0.018), sleeve_material,
+			Vector3(0.0, -0.002 * i, z), Vector3(PI * 0.5 + 0.12 * (i - 1), 0.0, 0.0), Vector3(1.0, 1.0, 0.86))
+	# Unterarmschiene über dem Handgelenk.
+	_part(arm, ProcMesh.rounded_box(Vector3(0.05, 0.012, 0.05), 0.3), plate_material,
+		Vector3(0.0, 0.031, 0.06), Vector3(-0.05, 0.0, 0.0))
+	if side < 0.0:
+		# Links: Handgelenk-Display mit Rahmen und Anzeige.
+		_part(arm, ProcMesh.rounded_box(Vector3(0.04, 0.006, 0.034), 0.25), _rubber_material,
+			Vector3(0.0, 0.039, 0.06), Vector3(-0.05, 0.0, 0.0))
+		_part(arm, ProcMesh.rounded_box(Vector3(0.032, 0.002, 0.026), 0.2), _screen_material,
+			Vector3(0.0, 0.0425, 0.06), Vector3(-0.05, 0.0, 0.0))
+		for i in 3:
+			_part(arm, ProcMesh.rounded_box(Vector3(0.006 + i * 0.006, 0.001, 0.003), 0.5), neon_material,
+				Vector3(-0.008 + i * 0.003, 0.0445, 0.052 + i * 0.007), Vector3(-0.05, 0.0, 0.0))
+	else:
+		# Rechts: Leuchtschlitz und ein Kabel von der Schiene in den Ärmel.
+		_part(arm, ProcMesh.rounded_box(Vector3(0.004, 0.002, 0.034), 0.5), neon_material,
+			Vector3(0.012, 0.038, 0.06), Vector3(-0.05, 0.0, 0.0))
+		_part(arm, ProcMesh.tube(0.0045, 0.0045, 0.07), _rubber_material,
+			Vector3(-0.016, 0.034, 0.105), Vector3(PI * 0.5 - 0.15, 0.0, 0.0))
 
 	var thumb_chain: Array = thumb_joints
 	return {"root": root, "arm": arm, "side": side, "fingers": fingers, "thumb": thumb_chain}
@@ -388,6 +431,10 @@ func _build_chain(parent: Node3D, start: Vector3, lengths: Array, radius: float,
 			# Kleine Panzerplatte auf dem Grundglied.
 			_part(joint, ProcMesh.rounded_box(Vector3(r * 1.7, r * 0.7, length * 0.62), 0.3), plate_material,
 				Vector3(0.0, r * 0.82, -length * 0.5), Vector3.ZERO)
+		if last and finger:
+			# Fingernagel auf der freien Kuppe.
+			_part(joint, ProcMesh.rounded_box(Vector3(r * 1.15, r * 0.3, length * 0.48), 0.45), _nail_material,
+				Vector3(0.0, r * 0.86, -length * 0.66), Vector3(0.05, 0.0, 0.0))
 		if last:
 			# Abschlussring des Handschuhs vor der Fingerkuppe.
 			_part(joint, ProcMesh.tube(r * 1.12, r * 1.12, 0.0045), glove_material,
@@ -437,8 +484,16 @@ func _set_viewmodel_layer(node: Node) -> void:
 		_set_viewmodel_layer(child)
 
 
-## Fehlt ein Material in der Szene, gibt es einfache Ersatzfarben.
+## Fehlt ein Material in der Szene, gibt es einfache Ersatzfarben. Nieten, Gummi, Nägel und
+## das Display am linken Handgelenk kommen immer aus dem Code.
 func _ensure_materials() -> void:
+	_metal_material = _flat(Color(0.55, 0.57, 0.6), 0.9, 0.3)
+	_rubber_material = _flat(Color(0.03, 0.03, 0.035), 0.0, 0.9)
+	_nail_material = _flat(Color(0.86, 0.68, 0.62), 0.0, 0.35)
+	_screen_material = _flat(Color(0.05, 0.02, 0.06), 0.2, 0.15)
+	_screen_material.emission_enabled = true
+	_screen_material.emission = Color(1.0, 0.15, 0.55)
+	_screen_material.emission_energy_multiplier = 0.9
 	if glove_material == null:
 		glove_material = _flat(Color(0.07, 0.075, 0.09), 0.0, 0.75)
 	if plate_material == null:
