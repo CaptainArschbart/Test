@@ -2,9 +2,11 @@ class_name PlayerBody
 extends Node3D
 ## Körper der Spielfigur im selben Cyberpunk-Look wie die Ego-Hände.
 ##
-## Aufbau aus Grundformen (ProcMesh): Stiefel mit Neon-Sohle, Hose mit Knieschützern,
-## Gürtel, Jacke mit Brustplatte und Schulterpanzern, Arme mit Handschuhen, Kopf mit
-## Kapuze und Leuchtvisier. Füße stehen auf y = 0, Blick nach -Z.
+## Aufbau aus Grundformen (ProcMesh): Stiefel mit Riemen, Kappe und Profilsohle mit Neonkante,
+## Hose mit Knieschützern, Schienbeinplatten und Beinholster, Gürtel mit Taschen, Mantel mit
+## Schößen, hohem Kragen und Gurtzeug mit Brustplatte, Akku-Pack am Rücken, zweilagige
+## Schulterpanzer, Unterarmschienen (links mit Display), Hände mit Daumen, Kopf mit Kapuze,
+## Visier mit Rahmen, Atemmaske mit Filtern und Ohrstück mit Antenne. Füße stehen auf y = 0, Blick nach -Z.
 ##
 ## Ego-Sicht: Beine und Stiefel sieht man beim Runterschauen, Becken, Oberkörper, Arme und Kopf
 ## werfen nur Schatten (sonst steckt die Kamera im Kopf). first_person = false zeigt alles,
@@ -43,6 +45,9 @@ var _legs: Array[Dictionary] = []
 var _arms: Array[Dictionary] = []
 var _spine: Node3D
 var _hips: Node3D
+var _strap_material: StandardMaterial3D
+var _rubber_material: StandardMaterial3D
+var _metal_material: StandardMaterial3D
 
 
 func _ready() -> void:
@@ -109,16 +114,34 @@ func _build() -> void:
 	hips.position = Vector3(0.0, 0.95, 0.0)
 	add_child(hips)
 	_hips = hips
-	# Becken und Gürtel mit Schnalle. Gehört zum Oberkörper: von oben würde es die Beine verdecken.
+	# Becken, Gürtel mit Schnalle und Taschen. Gehört zum Oberkörper: von oben würde es die
+	# Beine verdecken.
 	var pelvis := [
 		_part(hips, ProcMesh.rounded_box(Vector3(0.34, 0.2, 0.21), 0.4), pants_material,
 			Vector3(0.0, 0.0, 0.0)),
-		_part(hips, ProcMesh.rounded_box(Vector3(0.355, 0.05, 0.225), 0.25), armor_material,
+		_part(hips, ProcMesh.rounded_box(Vector3(0.355, 0.045, 0.225), 0.25), _strap_material,
 			Vector3(0.0, 0.08, 0.0)),
-		_part(hips, ProcMesh.rounded_box(Vector3(0.06, 0.04, 0.02), 0.3), neon_material,
-			Vector3(0.0, 0.08, -0.112)),
+		_part(hips, ProcMesh.rounded_box(Vector3(0.07, 0.05, 0.022), 0.3), armor_material,
+			Vector3(0.0, 0.08, -0.114)),
+		_part(hips, ProcMesh.rounded_box(Vector3(0.04, 0.012, 0.01), 0.4), neon_material,
+			Vector3(0.0, 0.08, -0.126)),
 	]
-	for side in [1.0, -1.0]:
+	for side: float in [1.0, -1.0]:
+		# Gürteltaschen vorn seitlich und eine flache am Rücken.
+		pelvis.append(_part(hips, ProcMesh.rounded_box(Vector3(0.07, 0.08, 0.045), 0.35), armor_material,
+			Vector3(0.12 * side, 0.05, -0.1), Vector3(0.0, 0.25 * side, 0.0)))
+		pelvis.append(_part(hips, ProcMesh.rounded_box(Vector3(0.072, 0.02, 0.048), 0.3), _strap_material,
+			Vector3(0.12 * side, 0.085, -0.1), Vector3(0.0, 0.25 * side, 0.0)))
+	pelvis.append(_part(hips, ProcMesh.rounded_box(Vector3(0.16, 0.07, 0.045), 0.35), armor_material,
+		Vector3(0.0, 0.05, 0.12)))
+	# Mantelschöße: hinten zwei Bahnen, an den Seiten je eine, bis knapp übers Knie.
+	for i in 4:
+		var angle := [0.42, -0.42, 1.65, -1.65][i] as float
+		var dir := Vector3(sin(angle), 0.0, cos(angle))
+		var flap := _part(hips, ProcMesh.rounded_box(Vector3(0.15, 0.42, 0.018), 0.2), jacket_material,
+			dir * 0.125 + Vector3(0.0, -0.17, 0.0), Vector3(0.1, angle, 0.0))
+		pelvis.append(flap)
+	for side: float in [1.0, -1.0]:
 		_legs.append(_build_leg(hips, side))
 
 	_spine = Node3D.new()
@@ -126,32 +149,83 @@ func _build() -> void:
 	_spine.position = Vector3(0.0, 0.075, 0.0)
 	hips.add_child(_spine)
 	var upper := pelvis.duplicate()
-	# Jacke: Bauch, Brust, Kragen; dazu Brustplatte und Leuchtstreifen.
-	upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.33, 0.24, 0.2), 0.45), jacket_material,
+	# Jacke: Bauch, Brust (oben breiter), Kragen hoch und offen, Reißverschluss mit Leuchtlinie.
+	upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.32, 0.24, 0.2), 0.45), jacket_material,
 		Vector3(0.0, 0.14, 0.0)))
 	upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.44, 0.3, 0.24), 0.4), jacket_material,
 		Vector3(0.0, 0.38, 0.0)))
-	upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.3, 0.2, 0.05), 0.3), armor_material,
-		Vector3(0.0, 0.38, -0.115), Vector3(0.08, 0.0, 0.0)))
-	upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.012, 0.16, 0.012), 0.5), neon_material,
-		Vector3(0.09, 0.37, -0.142)))
-	upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.012, 0.16, 0.012), 0.5), neon_material,
-		Vector3(-0.09, 0.37, -0.142)))
-	upper.append(_part(_spine, ProcMesh.tube(0.09, 0.12, 0.09), jacket_material,
-		Vector3(0.0, 0.56, 0.01)))
-	# Kopf: Hals, Kopf, Kapuze, Visier.
+	upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.48, 0.1, 0.22), 0.5), jacket_material,
+		Vector3(0.0, 0.5, 0.005)))
+	upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.008, 0.4, 0.008), 0.5), neon_material,
+		Vector3(-0.03, 0.27, -0.121)))
+	for side: float in [1.0, -1.0]:
+		upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.11, 0.12, 0.022), 0.3), jacket_material,
+			Vector3(0.075 * side, 0.6, -0.065), Vector3(-0.25, 0.45 * side, 0.12 * side)))
+		upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.12, 0.022, 0.15), 0.3), jacket_material,
+			Vector3(0.09 * side, 0.59, 0.03), Vector3(0.0, 0.0, -0.3 * side)))
+		# Brusttaschen mit Klappe.
+		upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.09, 0.07, 0.025), 0.3), jacket_material,
+			Vector3(0.1 * side, 0.18, -0.104)))
+		upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.095, 0.02, 0.03), 0.3), _strap_material,
+			Vector3(0.1 * side, 0.215, -0.106)))
+	# Brustplatte am Gurtzeug: Schultergurte, Querriemen, Platte mit zwei Leuchtschlitzen.
+	upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.24, 0.17, 0.045), 0.3), armor_material,
+		Vector3(0.05, 0.39, -0.122), Vector3(0.08, 0.0, 0.0)))
+	for x: float in [0.0, 0.1]:
+		upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.01, 0.12, 0.01), 0.5), neon_material,
+			Vector3(x, 0.39, -0.148)))
+	for side: float in [1.0, -1.0]:
+		upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.045, 0.32, 0.012), 0.3), _strap_material,
+			Vector3(0.13 * side, 0.4, -0.118), Vector3(0.05, 0.0, 0.0)))
+		upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.045, 0.3, 0.012), 0.3), _strap_material,
+			Vector3(0.13 * side, 0.4, 0.122)))
+		upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.045, 0.014, 0.25), 0.3), _strap_material,
+			Vector3(0.13 * side, 0.545, 0.0)))
+	upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.4, 0.04, 0.012), 0.3), _strap_material,
+		Vector3(0.0, 0.25, -0.112)))
+	# Rücken: Akku-Pack mit Leuchtzellen und zwei Kabeln zum Nacken.
+	upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.22, 0.26, 0.08), 0.3), armor_material,
+		Vector3(0.0, 0.33, 0.15)))
+	for i in 3:
+		upper.append(_part(_spine, ProcMesh.rounded_box(Vector3(0.05, 0.012, 0.01), 0.5), neon_material,
+			Vector3(0.0, 0.26 + i * 0.05, 0.193)))
+	for side: float in [1.0, -1.0]:
+		upper.append(_part(_spine, ProcMesh.tube(0.009, 0.009, 0.2), _rubber_material,
+			Vector3(0.07 * side, 0.52, 0.15), Vector3(-0.35, 0.0, 0.0)))
+		upper.append(_part(_spine, ProcMesh.tube(0.03, 0.03, 0.025), _metal_material,
+			Vector3(0.07 * side, 0.45, 0.193), Vector3(PI * 0.5, 0.0, 0.0)))
+	# Kopf: Hals, Gesicht, Kapuze mit Schirm, Visier mit Rahmen, Atemmaske, Ohrstück mit Antenne.
 	var head := Node3D.new()
 	head.name = "Head"
 	head.position = Vector3(0.0, 0.6, 0.0)
 	_spine.add_child(head)
 	upper.append(_part(head, ProcMesh.tube(0.05, 0.055, 0.1), skin_material, Vector3(0.0, 0.02, 0.0)))
-	upper.append(_part(head, ProcMesh.rounded_box(Vector3(0.18, 0.23, 0.21), 0.6), skin_material,
+	upper.append(_part(head, ProcMesh.rounded_box(Vector3(0.17, 0.23, 0.2), 0.62), skin_material,
 		Vector3(0.0, 0.16, -0.01)))
 	upper.append(_part(head, ProcMesh.rounded_box(Vector3(0.23, 0.27, 0.25), 0.62), jacket_material,
-		Vector3(0.0, 0.18, 0.025)))
-	upper.append(_part(head, ProcMesh.rounded_box(Vector3(0.19, 0.045, 0.06), 0.35), visor_material,
-		Vector3(0.0, 0.18, -0.105)))
-	for side in [1.0, -1.0]:
+		Vector3(0.0, 0.18, 0.03)))
+	upper.append(_part(head, ProcMesh.rounded_box(Vector3(0.21, 0.03, 0.09), 0.4), jacket_material,
+		Vector3(0.0, 0.29, -0.08), Vector3(-0.2, 0.0, 0.0)))
+	upper.append(_part(head, ProcMesh.rounded_box(Vector3(0.205, 0.055, 0.07), 0.35), armor_material,
+		Vector3(0.0, 0.185, -0.085)))
+	upper.append(_part(head, ProcMesh.rounded_box(Vector3(0.18, 0.036, 0.02), 0.35), visor_material,
+		Vector3(0.0, 0.185, -0.118)))
+	upper.append(_part(head, ProcMesh.rounded_box(Vector3(0.12, 0.08, 0.07), 0.5), armor_material,
+		Vector3(0.0, 0.085, -0.095), Vector3(0.15, 0.0, 0.0)))
+	upper.append(_part(head, ProcMesh.rounded_box(Vector3(0.06, 0.03, 0.02), 0.4), _rubber_material,
+		Vector3(0.0, 0.09, -0.132)))
+	for side: float in [1.0, -1.0]:
+		upper.append(_part(head, ProcMesh.tube(0.022, 0.024, 0.04), _metal_material,
+			Vector3(0.055 * side, 0.07, -0.115), Vector3(PI * 0.5, 0.0, 0.6 * side)))
+		upper.append(_part(head, ProcMesh.tube(0.016, 0.016, 0.006), _rubber_material,
+			Vector3(0.066 * side, 0.066, -0.132), Vector3(PI * 0.5, 0.0, 0.6 * side)))
+	upper.append(_part(head, ProcMesh.tube(0.028, 0.028, 0.03), armor_material,
+		Vector3(0.118, 0.17, -0.02), Vector3(0.0, 0.0, PI * 0.5)))
+	upper.append(_part(head, ProcMesh.tube(0.004, 0.003, 0.16), _metal_material,
+		Vector3(0.13, 0.25, -0.0), Vector3(0.1, 0.0, -0.15)))
+	upper.append(_part(head, ProcMesh.rounded_box(Vector3(0.012, 0.012, 0.012), 0.6), visor_material,
+		Vector3(0.142, 0.33, 0.008)))
+	for side: float in [1.0, -1.0]:
 		var arm := _build_arm(_spine, side)
 		_arms.append(arm)
 		upper.append_array(arm.parts)
@@ -164,27 +238,55 @@ func _build_leg(hips: Node3D, side: float) -> Dictionary:
 	hip.position = Vector3(0.095 * side, -0.05, 0.0)
 	hips.add_child(hip)
 	_part(hip, ProcMesh.capsule(0.078, 0.48), pants_material, Vector3(0.0, -0.21, 0.0))
-	# Oberschenkeltasche rechts.
 	if side > 0.0:
-		_part(hip, ProcMesh.rounded_box(Vector3(0.05, 0.12, 0.1), 0.35), armor_material,
-			Vector3(0.075, -0.2, 0.0))
+		# Rechts: Beinholster mit Pistolengriff und zwei Riemen.
+		_part(hip, ProcMesh.rounded_box(Vector3(0.05, 0.17, 0.1), 0.3), armor_material,
+			Vector3(0.078, -0.21, 0.0))
+		_part(hip, ProcMesh.rounded_box(Vector3(0.035, 0.08, 0.04), 0.35), _rubber_material,
+			Vector3(0.08, -0.09, 0.03), Vector3(0.0, 0.0, 0.1))
+		_part(hip, ProcMesh.rounded_box(Vector3(0.008, 0.06, 0.008), 0.5), neon_material,
+			Vector3(0.105, -0.21, 0.0))
+	else:
+		# Links: Oberschenkeltasche.
+		_part(hip, ProcMesh.rounded_box(Vector3(0.045, 0.11, 0.09), 0.35), pants_material,
+			Vector3(-0.078, -0.24, 0.0))
+		_part(hip, ProcMesh.rounded_box(Vector3(0.05, 0.03, 0.095), 0.3), _strap_material,
+			Vector3(-0.079, -0.18, 0.0))
+	for y: float in [-0.16, -0.3]:
+		_part(hip, ProcMesh.tube(0.083 - y * 0.03, 0.083 - y * 0.03, 0.022), _strap_material,
+			Vector3(0.0, y, 0.0))
 	var knee := Node3D.new()
 	knee.position = Vector3(0.0, -0.43, 0.0)
 	hip.add_child(knee)
 	_part(knee, ProcMesh.capsule(0.062, 0.46), pants_material, Vector3(0.0, -0.2, 0.0))
+	# Knieschützer, Schienbeinplatte mit Leuchtstreifen.
 	_part(knee, ProcMesh.rounded_box(Vector3(0.1, 0.11, 0.05), 0.35), armor_material,
 		Vector3(0.0, -0.03, -0.055))
 	_part(knee, ProcMesh.rounded_box(Vector3(0.05, 0.012, 0.012), 0.5), neon_material,
 		Vector3(0.0, -0.03, -0.082))
+	_part(knee, ProcMesh.rounded_box(Vector3(0.075, 0.2, 0.03), 0.3), armor_material,
+		Vector3(0.0, -0.2, -0.058), Vector3(0.06, 0.0, 0.0))
+	_part(knee, ProcMesh.rounded_box(Vector3(0.008, 0.12, 0.008), 0.5), neon_material,
+		Vector3(0.0, -0.2, -0.075), Vector3(0.06, 0.0, 0.0))
 	var ankle := Node3D.new()
 	ankle.position = Vector3(0.0, -0.42, 0.0)
 	knee.add_child(ankle)
-	# Stiefel mit Schaft, Kappe und leuchtender Sohlenkante.
-	_part(ankle, ProcMesh.tube(0.068, 0.072, 0.13), armor_material, Vector3(0.0, 0.03, 0.0))
+	# Stiefel: Schaft mit Riemen und Schnallen, Kappe, dicke Profilsohle mit Leuchtkante.
+	_part(ankle, ProcMesh.tube(0.068, 0.072, 0.15), armor_material, Vector3(0.0, 0.04, 0.0))
+	for y: float in [0.08, 0.02]:
+		_part(ankle, ProcMesh.tube(0.075, 0.075, 0.018), _strap_material, Vector3(0.0, y, 0.0))
+		_part(ankle, ProcMesh.rounded_box(Vector3(0.012, 0.024, 0.02), 0.3), _metal_material,
+			Vector3(0.074 * side, y, -0.01))
 	_part(ankle, ProcMesh.rounded_box(Vector3(0.12, 0.09, 0.27), 0.35), armor_material,
-		Vector3(0.0, -0.045, -0.05))
-	_part(ankle, ProcMesh.rounded_box(Vector3(0.125, 0.018, 0.275), 0.3), neon_material,
-		Vector3(0.0, -0.085, -0.05))
+		Vector3(0.0, -0.04, -0.05))
+	_part(ankle, ProcMesh.rounded_box(Vector3(0.1, 0.03, 0.12), 0.3), _strap_material,
+		Vector3(0.0, 0.0, -0.1), Vector3(0.35, 0.0, 0.0))
+	_part(ankle, ProcMesh.rounded_box(Vector3(0.112, 0.06, 0.07), 0.5), _metal_material,
+		Vector3(0.0, -0.05, -0.16))
+	_part(ankle, ProcMesh.rounded_box(Vector3(0.13, 0.03, 0.285), 0.25), _rubber_material,
+		Vector3(0.0, -0.095, -0.05))
+	_part(ankle, ProcMesh.rounded_box(Vector3(0.132, 0.008, 0.287), 0.3), neon_material,
+		Vector3(0.0, -0.083, -0.05))
 	return {"hip": hip, "knee": knee, "ankle": ankle}
 
 
@@ -193,17 +295,41 @@ func _build_arm(spine: Node3D, side: float) -> Dictionary:
 	var shoulder := Node3D.new()
 	shoulder.position = Vector3(0.25 * side, 0.48, 0.0)
 	spine.add_child(shoulder)
-	parts.append(_part(shoulder, ProcMesh.rounded_box(Vector3(0.14, 0.08, 0.15), 0.45), armor_material,
-		Vector3(0.015 * side, 0.03, 0.0), Vector3(0.0, 0.0, -0.25 * side)))
+	# Zweilagiger Schulterpanzer mit Leuchtkante.
+	parts.append(_part(shoulder, ProcMesh.rounded_box(Vector3(0.15, 0.07, 0.16), 0.45), armor_material,
+		Vector3(0.018 * side, 0.035, 0.0), Vector3(0.0, 0.0, -0.25 * side)))
+	parts.append(_part(shoulder, ProcMesh.rounded_box(Vector3(0.12, 0.05, 0.14), 0.45), armor_material,
+		Vector3(0.05 * side, -0.02, 0.0), Vector3(0.0, 0.0, -0.55 * side)))
+	parts.append(_part(shoulder, ProcMesh.rounded_box(Vector3(0.11, 0.008, 0.008), 0.5), neon_material,
+		Vector3(0.04 * side, 0.025, -0.081), Vector3(0.0, 0.0, -0.3 * side)))
 	parts.append(_part(shoulder, ProcMesh.capsule(0.058, 0.33), jacket_material, Vector3(0.0, -0.14, 0.0)))
+	parts.append(_part(shoulder, ProcMesh.tube(0.063, 0.063, 0.025), _strap_material, Vector3(0.0, -0.12, 0.0)))
 	var elbow := Node3D.new()
 	elbow.position = Vector3(0.0, -0.29, 0.0)
 	shoulder.add_child(elbow)
+	parts.append(_part(elbow, ProcMesh.rounded_box(Vector3(0.07, 0.07, 0.05), 0.5), armor_material,
+		Vector3(0.0, 0.0, 0.045)))
 	parts.append(_part(elbow, ProcMesh.capsule(0.05, 0.3), jacket_material, Vector3(0.0, -0.13, 0.0)))
+	# Unterarmschiene, links mit Handgelenk-Display.
+	parts.append(_part(elbow, ProcMesh.rounded_box(Vector3(0.075, 0.13, 0.08), 0.35), armor_material,
+		Vector3(0.0, -0.17, 0.0)))
+	if side < 0.0:
+		parts.append(_part(elbow, ProcMesh.rounded_box(Vector3(0.012, 0.07, 0.05), 0.3), visor_material,
+			Vector3(-0.04, -0.18, 0.0)))
+	else:
+		parts.append(_part(elbow, ProcMesh.rounded_box(Vector3(0.008, 0.09, 0.008), 0.5), neon_material,
+			Vector3(0.039, -0.17, -0.02)))
 	parts.append(_part(elbow, ProcMesh.tube(0.042, 0.042, 0.05), armor_material, Vector3(0.0, -0.25, 0.0)))
 	parts.append(_part(elbow, ProcMesh.tube(0.044, 0.044, 0.006), neon_material, Vector3(0.0, -0.235, 0.0)))
-	parts.append(_part(elbow, ProcMesh.rounded_box(Vector3(0.05, 0.1, 0.085), 0.45), glove_material,
-		Vector3(0.0, -0.33, -0.005)))
+	# Hand: Handfläche, Finger als ein gekrümmter Block, Daumen.
+	parts.append(_part(elbow, ProcMesh.rounded_box(Vector3(0.035, 0.085, 0.08), 0.4), glove_material,
+		Vector3(0.0, -0.315, -0.005)))
+	parts.append(_part(elbow, ProcMesh.rounded_box(Vector3(0.03, 0.07, 0.075), 0.5), glove_material,
+		Vector3(-0.004 * side, -0.38, -0.008), Vector3(0.25, 0.0, 0.0)))
+	parts.append(_part(elbow, ProcMesh.capsule(0.012, 0.06), glove_material,
+		Vector3(-0.01 * side, -0.33, -0.05), Vector3(0.6, 0.0, 0.0)))
+	parts.append(_part(elbow, ProcMesh.rounded_box(Vector3(0.012, 0.04, 0.05), 0.3), armor_material,
+		Vector3(0.019 * side, -0.31, -0.005)))
 	return {"shoulder": shoulder, "elbow": elbow, "parts": parts}
 
 
@@ -219,9 +345,21 @@ func _part(parent: Node3D, mesh: Mesh, material: Material, pos: Vector3,
 
 
 func _ensure_materials() -> void:
+	# Riemen, Gummisohlen und blankes Metall (Schnallen, Filter) kommen aus dem Code.
+	_strap_material = _flat(Color(0.035, 0.032, 0.03), 0.0, 0.6)
+	_rubber_material = _flat(Color(0.02, 0.02, 0.022), 0.0, 0.92)
+	_metal_material = _flat(Color(0.5, 0.52, 0.56), 0.9, 0.32)
 	var fallback := StandardMaterial3D.new()
 	fallback.albedo_color = Color(0.1, 0.1, 0.12)
 	for property in ["jacket_material", "pants_material", "armor_material", "glove_material",
 			"skin_material", "neon_material", "visor_material"]:
 		if get(property) == null:
 			set(property, fallback)
+
+
+static func _flat(color: Color, metallic: float, roughness: float) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.metallic = metallic
+	material.roughness = roughness
+	return material
