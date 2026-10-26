@@ -19,7 +19,10 @@ extends CharacterBody3D
 ## %PlayerMovement: Hocken ("crouch"), Rutschen aus dem Sprint und Klettern an Kanten ("jump" vor einer Kante).
 ## %PlayerStealth: Sichtbarkeit und Geräuschpegel für Gegner (Schleichen).
 ## "noclip" schaltet den Flugmodus um: durch Wände fliegen in Blickrichtung,
-## "jump" hoch, "noclip_down" runter, "sprint" schneller.
+## "jump" hoch, "noclip_down" runter, "sprint" schneller. Im Noclip gibt es keinen HP-Verlust.
+## Low-Health-Effekte (LowHealthFx) und der Death-Screen „FLATLINE“ (DeathScreen) werden im Code
+## erzeugt. Bei HP 0 wird der Player angehalten (process_mode DISABLED), der Death-Screen bietet
+## Respawn (revive()), Mission neu laden und Hauptmenü.
 
 @export_group("Bewegung")
 @export var walk_speed := 5.0
@@ -76,7 +79,16 @@ extends CharacterBody3D
 @export var land_speed_threshold := 6.5
 @export var land_volume_db := 1.0
 
+@export_group("Tod")
+## Beim Tod fällt das Inventar als Beute an die Todesstelle, man respawnt mit leeren Taschen.
+## Aus: Inventar bleibt beim Respawn erhalten.
+@export var drop_items_on_death := true
+
 const PICKUP_SCENE := preload("res://scenes/items/pickup.tscn")
+const LowHealthFxScript := preload("res://scenes/survival/low_health_fx.gd")
+const DeathScreenScript := preload("res://scenes/survival/death_screen.gd")
+
+signal revived
 
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 ## Wird vom Inventar-Fenster gesetzt: keine Bewegung, kein Umschauen.
@@ -84,6 +96,10 @@ var input_locked := false
 
 ## Flugmodus ohne Kollision und Schwerkraft (umschalten mit set_noclip).
 var noclip := false
+## true zwischen Tod und Respawn. Der Player ist dann angehalten.
+var dead := false
+var low_health_fx: LowHealthFxScript
+var death_screen: DeathScreenScript
 
 var _spawn_transform: Transform3D
 var _noclip_label: Label
@@ -95,6 +111,7 @@ var _last_land: int = -1
 var _stair_grace: float = 0.0
 var _view_step_offset: float = 0.0
 var _head_height: float = 1.6
+var _life_started_msec := 0
 
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
@@ -120,7 +137,12 @@ func _ready() -> void:
 	input_locked = false
 	_ensure_play_input()
 	stats.died.connect(_on_stats_died)
+	_life_started_msec = Time.get_ticks_msec()
+	low_health_fx = LowHealthFxScript.new()
+	add_child(low_health_fx)
 	_create_noclip_label()
+	death_screen = DeathScreenScript.new()
+	add_child(death_screen)
 	if footsteps == null or land_impact == null:
 		push_error("Player braucht %Footsteps und %LandImpact.")
 
@@ -241,8 +263,65 @@ func respawn() -> void:
 
 
 func _on_stats_died() -> void:
-	respawn()
+	if dead:
+		return
+	dead = true
+	movement.cancel()
+	_stop_sounds()
+	velocity = Vector3.ZERO
+	var inventory_ui := get_node_or_null(^"InventoryUI")
+	if inventory_ui != null and inventory_ui.has_method("force_close"):
+		inventory_ui.call("force_close")
+	input_locked = true
+	if drop_items_on_death:
+		_drop_all_items()
+	# Alles am Player steht still (Bewegung, Waffe, Inventar, Stats). LowHealthFx und
+	# DeathScreen haben eigene Prozessmodi und laufen weiter.
+	set_deferred("process_mode", Node.PROCESS_MODE_DISABLED)
+	var alive_for := (Time.get_ticks_msec() - _life_started_msec) / 1000.0
+	death_screen.show_death(stats.last_damage_cause, alive_for)
+
+
+## Zurück ins Leben am Spawnpunkt: Vitals voll, Boost/Zustände weg, Kamera gerade, Gegner beruhigt.
+func revive() -> void:
+	dead = false
+	process_mode = Node.PROCESS_MODE_INHERIT
+	if noclip:
+		set_noclip(false)
 	stats.restore_all()
+	movement.cancel()
+	respawn()
+	head.position.y = _head_height
+	head.rotation = Vector3.ZERO
+	camera.h_offset = 0.0
+	camera.v_offset = 0.0
+	input_locked = false
+	low_health_fx.reset()
+	_life_started_msec = Time.get_ticks_msec()
+	for listener: Node in get_tree().get_nodes_in_group(StealthNoise.GROUP):
+		if listener.has_method("reset_alert"):
+			listener.call("reset_alert")
+	revived.emit()
+
+
+## Wirft alles aus dem Inventar rund um die Todesstelle (wie drop_item, nur ohne Blickrichtung).
+func _drop_all_items() -> void:
+	var dropped := 0
+	for index: int in inventory.get_size():
+		var item := inventory.get_item(index)
+		var count := inventory.get_count(index)
+		if item == null or count <= 0:
+			continue
+		var removed := inventory.remove_at(index, count)
+		var angle := dropped * 2.39996
+		var spread := Vector3(cos(angle), 0.0, sin(angle))
+		var pickup: ItemPickup = PICKUP_SCENE.instantiate()
+		pickup.item = item
+		pickup.count = removed
+		get_parent().add_child(pickup)
+		pickup.global_position = global_position + Vector3.UP * 0.6 + spread * 0.3
+		pickup.throw(spread * (1.2 + 0.25 * (dropped % 3)) + Vector3.UP * 2.0, 0.5)
+		dropped += 1
 
 
 ## Wirft `amount` Stück aus einem Inventar-Slot vor den Spieler.
@@ -288,6 +367,8 @@ func _handle_hotbar_input(event: InputEvent) -> bool:
 ## Schaltet den Flugmodus ein oder aus.
 func set_noclip(enabled: bool) -> void:
 	noclip = enabled
+	# Im Flugmodus stirbt man nicht (auch nicht an Hunger/Durst).
+	stats.invulnerable = enabled
 	collision_shape.disabled = enabled
 	velocity = Vector3.ZERO
 	# Kein Fallschaden für Geschwindigkeit von vor dem Flug.
@@ -458,7 +539,7 @@ func _update_footsteps(delta: float, sprinting: bool, target_speed: float) -> vo
 func _apply_fall_damage() -> void:
 	var amount := fall_damage_for_speed(-_fall_speed)
 	if amount > 0.0 and stats.is_alive():
-		stats.damage(amount)
+		stats.damage(amount, PlayerStats.CAUSE_FALL)
 
 
 func fall_damage_for_speed(speed: float) -> float:

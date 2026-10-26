@@ -312,7 +312,7 @@ func _alert(delta: float) -> void:
 
 func _attack() -> void:
 	_attack_cooldown = attack_interval
-	_player.stats.damage(attack_damage)
+	_player.stats.damage(attack_damage, PlayerStats.CAUSE_GUARD)
 	if _arms.size() > 1:
 		var arm := _arms[1]
 		var tween := create_tween()
@@ -355,6 +355,17 @@ func _turn_towards(target: Vector3, delta: float) -> void:
 
 func _flat_distance(a: Vector3, b: Vector3) -> float:
 	return Vector2(a.x - b.x, a.z - b.z).length()
+
+
+## Spieler ist nach dem Tod respawnt: vergessen, was war, und zurück auf Streife.
+func reset_alert() -> void:
+	if state == State.DOWN:
+		return
+	awareness = 0.0
+	_sees_player = false
+	_attack_cooldown = 0.0
+	target_position = _home_position
+	_set_state(State.PATROL)
 
 
 func _set_state(new_state: State) -> void:

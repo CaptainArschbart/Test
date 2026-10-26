@@ -16,6 +16,12 @@ const STAT_STAMINA := "stamina"
 const STAT_HUNGER := "hunger"
 const STAT_THIRST := "thirst"
 
+## Todesursachen für den Death-Screen (last_damage_cause). Leer = unbekannt.
+const CAUSE_FALL := &"fall"
+const CAUSE_GUARD := &"guard"
+const CAUSE_HUNGER := &"hunger"
+const CAUSE_THIRST := &"thirst"
+
 @export var max_hp: float = 100.0
 @export var max_stamina: float = 100.0
 @export var max_hunger: float = 100.0
@@ -41,6 +47,11 @@ var hp: float = 100.0
 var stamina: float = 100.0
 var hunger: float = 100.0
 var thirst: float = 100.0
+
+## Kein HP-Verlust, solange gesetzt (Noclip). Hunger und Durst sinken weiter, töten aber nicht.
+var invulnerable := false
+## Woher der letzte HP-Verlust kam (CAUSE_*), für den Death-Screen.
+var last_damage_cause: StringName = &""
 
 var _sprinting := false
 var _regen_delay := 0.0
@@ -90,8 +101,10 @@ func deplete_stats(delta: float) -> void:
 			rate *= 0.5
 		_add(STAT_STAMINA, rate * delta)
 	if hunger <= 0.0:
+		last_damage_cause = CAUSE_HUNGER
 		_add(STAT_HP, -starve_hp_per_second * delta)
 	if thirst <= 0.0:
+		last_damage_cause = CAUSE_THIRST
 		_add(STAT_HP, -dehydrate_hp_per_second * delta)
 
 
@@ -111,7 +124,11 @@ func is_alive() -> bool:
 	return not _dead
 
 
-func damage(amount: float) -> void:
+## `cause` (CAUSE_*) steht später auf dem Death-Screen.
+func damage(amount: float, cause: StringName = &"") -> void:
+	if invulnerable or _dead:
+		return
+	last_damage_cause = cause
 	_add(STAT_HP, -absf(amount))
 
 
@@ -160,6 +177,7 @@ func restore_all() -> void:
 	_regen_delay = 0.0
 	_speed_multiplier = 1.0
 	_boost_left = 0.0
+	last_damage_cause = &""
 	hp = max_hp
 	stamina = max_stamina
 	hunger = max_hunger
@@ -171,6 +189,8 @@ func restore_all() -> void:
 
 
 func _add(stat_name: String, amount: float) -> void:
+	if stat_name == STAT_HP and amount < 0.0 and invulnerable:
+		return
 	var current := _value(stat_name)
 	var maximum := _maximum(stat_name)
 	var next := clamp_value(current + amount, maximum)
