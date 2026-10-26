@@ -213,3 +213,15 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 - Gelöst: `player.tscn` hat jetzt beides, `player_body.tscn` (id `13_body`) und `item_user.gd` (neue id `14_item_user`), `load_steps` 16. Updatenotice: Einträge beider Seiten behalten.
 - `scenes/player/item_user.gd`: Klinge/Granate in der Hand liegen jetzt auch auf `PlayerHands.VIEWMODEL_LAYER`, damit das Fülllicht der neuen Hände sie wie die Waffen beleuchtet.
 - Getestet (Godot 4.7.2 headless): `CHECKS 12 FAILS 0` (E-Aufheben Sniper, Automat, Trinken, Klinge in der Hand, Granate). testmap/main ohne Skriptfehler.
+
+### 2026-10-26 · Vitals-HUD grafisch neu · Claude (für Arschi) · PR #23
+- Auftrag: Das Vitals-HUD (HP, Ausdauer, Hunger, Durst) optisch komplett überarbeiten, passend zum Cyberpunk-Hauptmenü. Funktion bleibt.
+- Vorher: Unter OpenGL-Kompatibilität zeichnete der Leisten-Shader (`hud_bar.gdshader`) weiße Kästen statt Farbe, die Leisten waren kaum lesbar.
+- Neu: `scenes/survival/vital_bar.gd` (`class_name VitalBar`, erbt von `ProgressBar`, + `.uid`). Zeichnet in `_draw` selbst: Kürzel links, zehn schräge Segmente mit Schein und heller Oberkante, Zahl rechts. Fällt der Wert, bleibt 0,45 s eine rosa Schadensspur stehen und läuft dann nach. Unter 20 % blinken Kürzel und Zahl rot. Exporte: `accent`, `caption`, `segments`, `slant`, `bar_height`, `caption_width`, `number_width`, `caption_size`, `number_size`, `warn_ratio`.
+- Geändert:
+  - `scenes/survival/survival_hud.tscn`: komplett neu, `load_steps` 3 (2 ext + 1). `Frame` ist jetzt ein `Control` (16,56 bis 316,204, vorher ab y 40, damit NOCLIP frei bleibt). Kopfzeile `Header` „VITALS“, `SubHeader` „// BIOMONITOR“, `%Status`. Leisten bleiben `%HPBar` `%StaminaBar` `%HungerBar` `%DurstBar` (weiter `ProgressBar`, `step = 0`, Maus `Ignore`). Farben: HP Cyan, Ausdauer Neon-Gelb, Hunger Orange, Durst Blau (vorher Rot).
+  - `scenes/survival/survival_hud.gd`: zeichnet den Rahmen über `Frame.draw` (abgeschrägte Ecken, Cyan-Rand mit Schein, Magenta-Streifen wie die Menüknöpfe, Scanlines, Trennlinie). `%Status` zeigt STABIL oder den dringendsten Mangel (KRITISCH, DEHYDRIERT, UNTERVERSORGT, ERSCHÖPFT) blinkend. `fade_color` / `_fade` (Ausgrauen unter 20 %) und die Signal-Anbindung an `PlayerStats` sind unverändert.
+- Entfernt: `scenes/survival/hud_bar.gdshader` (+ `.uid`), wird nirgends mehr benutzt.
+- Nicht geändert: `player_stats.gd`, `player.tscn`, `project.godot`. Keine neue Input-Aktion.
+- Getestet: Godot 4.7.2 unter Xvfb (OpenGL-Kompatibilität). Prüfskript in Testmap und `main.tscn` 0 Fehler: Layer 2, vier `VitalBar` mit Maus `Ignore`, Überschrift VITALS, HP folgt nach Schaden, Spur bleibt und holt auf, Status DEHYDRIERT bei Durst 5, nach `restore_all` STABIL. Screenshots voll, nach Treffer, gemischt, kritisch angesehen. Keine `SCRIPT ERROR` / `Parse Error`.
+- Nicht getestet: Forward+ am echten PC, 4K (Rahmen skaliert über den Stretch der 1280×720-Basis mit).
