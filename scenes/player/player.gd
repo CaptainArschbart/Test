@@ -57,6 +57,8 @@ extends CharacterBody3D
 @export_range(1, 16, 1) var slide_count := 8
 ## Wie weit nach vorn die Kapsel eine Stufe abtastet (etwa der Kapselradius).
 @export var stair_probe := 0.46
+## Wie schnell die Kamera nach einer Stufe nachzieht (höher = härter).
+@export var step_smooth_speed := 18.0
 
 @export_group("Geräusche")
 @export var footstep_sounds: Array[AudioStream] = []
@@ -87,6 +89,10 @@ var _step_timer: float = 0.0
 var _fall_speed: float = 0.0
 var _last_footstep: int = -1
 var _last_land: int = -1
+## Kurz nach einem Stufenschritt gilt der Spieler noch als am Boden (Kapsel liegt auf der Kante).
+var _stair_grace: float = 0.0
+var _view_step_offset: float = 0.0
+var _head_height: float = 1.6
 
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
@@ -103,6 +109,7 @@ var _last_land: int = -1
 func _ready() -> void:
 	add_to_group("player")
 	_spawn_transform = global_transform
+	_head_height = head.position.y
 	floor_snap_length = max_step_height
 	floor_max_angle = deg_to_rad(floor_angle_degrees)
 	max_slides = slide_count
@@ -150,15 +157,17 @@ func _physics_process(delta: float) -> void:
 		_noclip_move(delta, sprinting)
 		return
 
-	var grounded_before := is_on_floor()
+	_stair_grace = maxf(_stair_grace - delta, 0.0)
+	var grounded_before := is_on_floor() or _stair_grace > 0.0
 	if not grounded_before:
 		_fall_speed = minf(_fall_speed, velocity.y)
 
-	if not is_on_floor():
+	if not grounded_before:
 		velocity.y -= gravity * delta
 
-	if Input.is_action_just_pressed("jump") and is_on_floor() and not input_locked:
+	if Input.is_action_just_pressed("jump") and grounded_before and not input_locked:
 		velocity.y = jump_velocity
+		_stair_grace = 0.0
 
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	if input_locked:
@@ -166,15 +175,22 @@ func _physics_process(delta: float) -> void:
 	var direction := (transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
 	var speed := sprint_speed if sprinting else walk_speed
 	speed *= stats.get_speed_multiplier()
-	var accel := acceleration if is_on_floor() else acceleration * air_control
+	var accel := acceleration if grounded_before else acceleration * air_control
 	var weight := minf(accel * delta, 1.0)
 	velocity.x = lerpf(velocity.x, direction.x * speed, weight)
 	velocity.z = lerpf(velocity.z, direction.z * speed, weight)
 
+	var y_before := global_position.y
 	if not _move_with_stairs(delta):
 		move_and_slide()
+		# Floor-Snap beim Treppab: Kamera rutscht weich mit statt zu springen.
+		var snapped_down := y_before - global_position.y
+		if grounded_before and is_on_floor() and snapped_down > 0.06 \
+				and get_floor_normal().angle_to(Vector3.UP) < deg_to_rad(8.0):
+			_add_view_step(-snapped_down)
+	_update_view_step(delta)
 
-	if is_on_floor():
+	if is_on_floor() or _stair_grace > 0.0:
 		if not grounded_before:
 			if _fall_speed <= -land_speed_threshold:
 				_play_land()
@@ -207,6 +223,8 @@ func _ensure_play_input() -> void:
 func respawn() -> void:
 	global_transform = _spawn_transform
 	velocity = Vector3.ZERO
+	_view_step_offset = 0.0
+	_stair_grace = 0.0
 	_fall_speed = 0.0
 	_stop_sounds()
 
@@ -303,60 +321,75 @@ func _create_noclip_label() -> void:
 	layer.add_child(_noclip_label)
 
 
-## Hebt die Kapsel auf eine Stufe, wenn vorne eine niedrige Kante blockt und oben Platz ist.
+## Steigt eine Stufe hoch, wenn vorne eine niedrige Kante blockt und dahinter eine flache Trittfläche liegt.
+## Bewegt nach vorn nur so weit wie in diesem Frame gelaufen, also Stufe für Stufe. Die runde
+## Kapselunterseite rollt dabei über die Kante (meist 2–4 Frames pro Stufe), die Kamera federt nach.
 ## Gibt true zurück, wenn die Bewegung dieses Frames schon ausgeführt wurde.
 func _move_with_stairs(delta: float) -> bool:
-	if not is_on_floor() or velocity.y > 0.1:
+	if velocity.y > 0.1:
+		return false
+	if not is_on_floor() and _stair_grace <= 0.0:
 		return false
 	var horiz := Vector3(velocity.x, 0.0, velocity.z)
 	if horiz.length() < 0.25:
 		return false
 	var direction := horiz.normalized()
-	var probe := direction * maxf(horiz.length() * delta, stair_probe)
+	var motion := horiz * delta
+	# Kante früh erkennen (stair_probe), damit man nicht erst abgebremst wird. Bewegt wird nur motion.
+	var probe := direction * maxf(motion.length(), stair_probe * 0.25)
 	var unstuck := global_transform
-	unstuck.origin.y += 0.03
+	unstuck.origin.y += 0.01
 	var wall_hit := KinematicCollision3D.new()
 	if not test_move(unstuck, probe, wall_hit):
 		return false
-	if not _hit_is_riser(wall_hit):
+	var riser_normal := _riser_normal(wall_hit)
+	if riser_normal == Vector3.ZERO:
 		return false
-	var tread := _find_tread(direction)
-	var rise := tread.x
-	if rise < 0.0:
-		return false
-	var lift := minf(rise + 0.05, max_step_height)
-	if test_move(global_transform, Vector3.UP * lift):
+	# Rampen und hohe Kanten ausschließen: hinter der Kante muss eine flache Trittfläche in Stufenhöhe
+	# liegen. Gesucht wird quer zur Kante, auch wenn man schräg läuft oder schon an ihr entlangrutscht.
+	if _find_tread(direction).x < 0.0 and _find_tread(-riser_normal).x < 0.0:
 		return false
 	var start := global_position
-	var keep := Vector3(velocity.x, 0.0, velocity.z)
+	var up := KinematicCollision3D.new()
+	var lift := max_step_height
+	if test_move(global_transform, Vector3.UP * lift, up) and up.get_collision_count() > 0:
+		lift = up.get_travel().y
+	if lift < 0.02:
+		return false
 	global_position.y += lift
-	var climb := direction * tread.y
 	var forward := KinematicCollision3D.new()
-	if test_move(global_transform, climb, forward) and forward.get_collision_count() > 0:
+	if test_move(global_transform, motion, forward) and forward.get_collision_count() > 0:
 		global_position += forward.get_travel()
 	else:
-		global_position += climb
+		global_position += motion
+	var moved := Vector2(global_position.x - start.x, global_position.z - start.z).length()
 	var drop := KinematicCollision3D.new()
-	if test_move(global_transform, Vector3.DOWN * (lift + 0.08), drop) and drop.get_collision_count() > 0:
+	if test_move(global_transform, Vector3.DOWN * (lift + 0.05), drop) and drop.get_collision_count() > 0:
 		global_position += drop.get_travel()
-	# Ohne echten Höhengewinn war es keine Stufe. Zurück, sonst rutscht die Kapsel durch.
-	if global_position.y < start.y + rise * 0.5:
+	else:
+		global_position.y -= lift
+	var rise := global_position.y - start.y
+	# Kein Höhengewinn oder kein Vorwärtskommen: war keine Stufe, alles zurück.
+	if rise < 0.004 or rise > max_step_height + 0.01 or moved < motion.length() * 0.3:
 		global_position = start
 		return false
-	apply_floor_snap()
-	velocity.x = keep.x
-	velocity.z = keep.z
+	_stair_grace = 0.12
+	_add_view_step(rise)
 	velocity.y = 0.0
 	return true
 
 
-func _hit_is_riser(hit: KinematicCollision3D) -> bool:
+## Waagerechte Normale der Stufenkante (zeigt zum Spieler) oder ZERO, wenn der Treffer keine Kante ist.
+func _riser_normal(hit: KinematicCollision3D) -> Vector3:
 	# Kantenkontakt der Kapsel liegt oft bei 40–50°, also noch im begehbaren Winkel.
 	var stair_angle := deg_to_rad(36.0)
 	for i: int in hit.get_collision_count():
-		if hit.get_normal(i).angle_to(Vector3.UP) > stair_angle:
-			return true
-	return false
+		var normal := hit.get_normal(i)
+		if normal.angle_to(Vector3.UP) > stair_angle:
+			var flat := Vector3(normal.x, 0.0, normal.z)
+			if flat.length() > 0.01:
+				return flat.normalized()
+	return Vector3.ZERO
 
 
 ## Strahl nach vorn unten. x = Anhebung, y = Reichweite bis zur flachen Trittfläche.
@@ -375,9 +408,21 @@ func _find_tread(direction: Vector3) -> Vector2:
 			continue
 		var point: Vector3 = hit.position
 		var rise := point.y - global_position.y
-		if rise >= 0.05 and rise <= max_step_height:
+		# Klein ab 0,004 m: beim Rollen über die Kante ist der Rest der Stufe nur noch wenige mm.
+		if rise >= 0.004 and rise <= max_step_height:
 			return Vector2(rise, reach)
 	return Vector2(-1.0, 0.0)
+
+
+## Kamera springt bei Stufen nicht mit, sondern federt in step_smooth_speed nach.
+func _add_view_step(rise: float) -> void:
+	_view_step_offset = clampf(_view_step_offset - rise, -max_step_height * 1.5, max_step_height * 1.5)
+
+
+func _update_view_step(delta: float) -> void:
+	_view_step_offset = move_toward(_view_step_offset, 0.0,
+			maxf(absf(_view_step_offset) * step_smooth_speed, 0.4) * delta)
+	head.position.y = _head_height + _view_step_offset
 
 
 func _update_footsteps(delta: float, sprinting: bool, target_speed: float) -> void:
