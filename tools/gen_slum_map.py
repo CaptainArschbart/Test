@@ -57,6 +57,8 @@ def val(v) -> str:
         return f"Vector2({v[0]}, {v[1]})"
     if isinstance(v, tuple) and len(v) == 4:
         return f"Color({v[0]}, {v[1]}, {v[2]}, {v[3]})"
+    if isinstance(v, list) and all(isinstance(p, int) for p in v):
+        return f"PackedInt32Array({', '.join(str(p) for p in v)})"
     if isinstance(v, list):
         inner = ", ".join(f"{p[0]}, {p[1]}, {p[2]}" for p in v)
         return f"PackedVector3Array({inner})"
@@ -102,9 +104,12 @@ def walkway(parent: str, x: float, y: float, z: float, yaw: float, length: float
     node(uname("Walkway"), parent, "k_walkway", x, y, z, yaw, length=length, **props)
 
 
-def cables(parent: str, pts: list, sag: float = 0.6, bundle: int = 3, lanterns: bool = False) -> None:
-    node(uname("Cables"), parent, "k_cables", 0, 0, 0, 0, points=pts, sag=sag, bundle=bundle, lanterns=lanterns,
-         seed_value=rnd.randint(1, 9999))
+def cables(parent: str, pts: list, sag: float = 0.6, bundle: int = 3, lanterns: bool = False, **props) -> None:
+    """Jeder Punkt muss halten: an einer Wand (Wandhalter), an einem Strommast (wall_brackets=False)
+    oder an einem eigenen Mast (poles=[Indizes], ggf. pole_ground)."""
+    if "seed_value" not in props:
+        props["seed_value"] = rnd.randint(1, 9999)
+    node(uname("Cables"), parent, "k_cables", 0, 0, 0, 0, points=pts, sag=sag, bundle=bundle, lanterns=lanterns, **props)
 
 
 def scatter(parent: str, kinds: list[str], x0: float, x1: float, z0: float, z1: float, count: int) -> None:
@@ -154,17 +159,24 @@ for (x, z, yaw) in ((0, -73.5, 0), (0, 73.5, 0), (-73.5, 0, 90), (73.5, 0, 90)):
 # Strommasten an den Straßen mit Kabeln quer drüber
 nodes.append('[node name="Power" type="Node3D" parent="."]')
 pole_pts = []
+TOP_ARM = 8.65  # Oberkante der Isolatoren am oberen Querträger
+LOW_ARM = 7.75  # am unteren
 for z in (-66, -46, -26, 26, 46, 66):
     prop("Power", "POWER_POLE", 7.0, z, 90)
     prop("Power", "POWER_POLE", -7.0, z, 90)
-    cables("Power", [(7.0, 8.55, z), (-7.0, 8.55, z)], 0.9, 3)
+    # Quer über die Straße: zwei Leitungen an den äußeren Isolatoren, dazu eine an einem inneren.
+    # Ein Zufallswert für alle drei, damit der Rest der Map dieselben Zufallszahlen bekommt wie vorher.
+    seed = rnd.randint(1, 9999)
+    for k, (dz, sag) in enumerate(((-0.9, 0.9), (0.9, 0.9), (0.3, 1.05))):
+        cables("Power", [(7.0, TOP_ARM, z + dz), (-7.0, TOP_ARM, z + dz)], sag, 1, wall_brackets=False, seed_value=seed + k)
 for x in (-66, -46, -26, 26, 46, 66):
     prop("Power", "POWER_POLE", x, 7.0, 0)
+# Entlang der Straße: vom Ende des unteren Querträgers zum Anfang des nächsten
 for z_a, z_b in ((-66, -46), (-46, -26), (26, 46), (46, 66)):
-    cables("Power", [(7.9, 8.55, z_a), (7.9, 8.55, z_b)], 1.0, 2)
-    cables("Power", [(-6.1, 8.55, z_a), (-6.1, 8.55, z_b)], 1.0, 2)
+    for px in (7.0, -7.0):
+        cables("Power", [(px, LOW_ARM, z_a + 0.9), (px, LOW_ARM, z_b - 0.9)], 1.0, 1, wall_brackets=False)
 for x_a, x_b in ((-66, -46), (-46, -26), (26, 46), (46, 66)):
-    cables("Power", [(x_a - 0.9, 8.55, 7.0), (x_b - 0.9, 8.55, 7.0)], 1.0, 2)
+    cables("Power", [(x_a + 0.9, LOW_ARM, 7.0), (x_b - 0.9, LOW_ARM, 7.0)], 1.0, 1, wall_brackets=False)
 
 # Straßen-Kleinkram auf den Gehwegen
 nodes.append('[node name="StreetProps" type="Node3D" parent="."]')
@@ -197,7 +209,8 @@ building(NE, "shop", B + 4.5, -42.0, "W", 8, 9, 3, wall="brick_dark", front_sign
          side_sign="sign_pharmacy")
 building(NE, "res", B + 5.0, -56.5, "W", 12, 10, 6, wall="plaster", ground_wall="concrete_dark",
          stair_side=SIDE["left"], balcony_chance=0.35)
-building(NE, "res", B + 4.5, -69.0, "W", 9, 9, 4, wall="concrete_green", ground_wall="brick")
+# 2,5 m Abstand zum Nachbarn: dort steht dessen Feuertreppe (2,35 m breit)
+building(NE, "res", B + 4.5, -69.5, "W", 9, 9, 4, wall="concrete_green", ground_wall="brick")
 # Reihe an der Querstraße, Front nach Süden
 building(NE, "res", 26.0, -B - 5.0, "S", 12, 10, 7, wall="concrete", ground_wall="brick", side_sign="sign_hotel",
          front_sign="sign_vacancy", lit_ratio=0.5)
@@ -221,9 +234,9 @@ prop(NE, "WATER_TANK", 44.0, -54.0, 0)
 prop(NE, "FIRE_BARREL", 32.0, -56.0, 0, variant=1)
 prop(NE, "ELECTRIC_BOX", 18.4, -48.0, 90)
 scatter(NE, ["CRATE_STACK", "TRASH_BAGS", "BARREL_GROUP", "PALLETS", "TRASH_PILE"], 20, 70, -72, -24, 16)
-cables(NE, [(30.0, 7.5, -37.0), (26.0, 6.0, -20.0)], 0.8, 2)
-cables(NE, [(44.0, 7.0, -37.0), (55.0, 6.5, -21.0)], 0.7, 3, True)
-cables(NE, [(14.0, 5.0, -24.0), (14.0, 5.5, -34.0), (14.0, 5.0, -50.0)], 0.6, 2, True)
+cables(NE, [(30.0, 7.5, -37.0), (26.0, 6.0, -18.05)], 0.8, 2)
+cables(NE, [(44.0, 7.0, -37.0), (55.0, 6.5, -17.05)], 0.7, 3, True)
+cables(NE, [(14.0, 5.0, -24.0), (14.0, 5.5, -34.0), (14.0, 5.0, -50.45)], 0.6, 2, True)
 for (x, z, tex, col) in ((18.06, -31.0, "graffiti_3", (0.4, 0.8, 1.0, 1)), (36.0, -36.9, "graffiti_1", (0.7, 0.3, 1.0, 1))):
     sign(NE, tex, x, 1.6, z, 90 if x < 20 else 0, "decal", 3.0, col, 0.0, 0.0)
 sign(NE, "sign_ngc7", 37.0, 18.0, -42.0, 0, "roof", 6.0, (0.5, 0.55, 1.0, 1), 0.0, 2.5)
@@ -240,8 +253,8 @@ for (x0, x1) in ((-73.0, -30.0), (-24.0, -9.0)):
     prop(NW, "FENCE", (x0 + x1) / 2, -8.3, 0, length=abs(x1 - x0))
 prop(NW, "STRIPED_BARRIER", -8.6, -37.0, 90, length=3.0)
 prop(NW, "STRIPED_BARRIER", -27.0, -8.6, 0, length=3.0)
-sign(NW, "sign_noentry", -8.4, 2.6, -40.6, -90, "wall", 1.6, (1.0, 0.2, 0.2, 1), 0.0, 0.0)
-sign(NW, "sign_beware", -24.4, 2.4, -8.5, 180, "wall", 1.5, (1.0, 0.3, 0.2, 1), 0.0, 0.0)
+sign(NW, "sign_noentry", -8.24, 1.45, -42.0, 90, "wall", 1.6, (1.0, 0.2, 0.2, 1), 0.0, 0.0)
+sign(NW, "sign_beware", -21.0, 1.45, -8.24, 0, "wall", 1.5, (1.0, 0.3, 0.2, 1), 0.0, 0.0)
 building(NW, "warehouse", -34.0, -52.0, "E", 18, 22, 2, floor_height=3.6, wall="corrugated_grey", number="A2",
          front_sign="sign_ngc7")
 building(NW, "warehouse", -62.0, -28.0, "S", 16, 18, 2, floor_height=3.4, wall="corrugated_blue", number="07")
@@ -253,7 +266,7 @@ for i, (x, z, yaw, v) in enumerate(((-18, -60, 0, 0), (-14.8, -60, 0, 1), (-18, 
                                      (-22, -16.5, 90, 0), (-44, -20, 90, 1))):
     prop(NW, "CONTAINER", x, z, yaw, variant=v)
 prop(NW, "CONTAINER", -18.0, -60.0, 0, y=2.6, variant=3)
-prop(NW, "CONTAINER", -22.0, -19.2, 90, y=2.6, variant=2)
+prop(NW, "CONTAINER", -22.0, -19.2, 0, y=2.6, variant=2)
 prop(NW, "CRATE_STACK", -15.5, -55.6, 0, variant=0)
 prop(NW, "CRATE_STACK", -15.0, -58.2, 0, y=2.6, variant=0)  # Zwischenstufe auf den oberen Container
 prop(NW, "MILITARY_CRATES", -20.5, -55.0, 0)
@@ -328,7 +341,8 @@ for (x, z, length) in bridges:
 # Lampion-Ketten über den Gassen
 for gz in range(4):
     z = 30.0 + gz * 10.5 + 5.25
-    cables(SW, [(-68.0, 5.2, z), (-48.0, 5.6, z + 0.5), (-28.0, 5.0, z - 0.3)], 0.7, 1, True)
+    cables(SW, [(-68.0, 5.2, z), (-48.0, 5.6, z + 0.5), (-28.0, 5.0, z - 0.3)], 0.7, 1, True, poles=[0, 1, 2],
+           wooden_poles=True)
 for (x, z) in ((-50, 37), (-32, 58), (-60, 66), (-40, 24)):
     prop(SW, "FIRE_BARREL", x, z, 0, variant=rnd.randint(0, 1))
 prop(SW, "MARKET_STALL", -24.0, 34.0, 90, variant=0)
@@ -366,7 +380,7 @@ for i in range(5):
     prop(SE, "MARKET_STALL", 26.0 + i * 5.5, 29.0, 180, variant=i % 3)
     prop(SE, "MARKET_STALL", 26.0 + i * 5.5, 44.0, 0, variant=(i + 1) % 3)
 for z in (31.5, 36.5, 41.5):
-    cables(SE, [(22.0, 5.0, z), (40.0, 5.5, z + 0.5), (56.0, 5.0, z)], 0.6, 1, True)
+    cables(SE, [(22.0, 5.0, z), (40.0, 5.5, z + 0.5), (56.0, 5.0, z)], 0.6, 1, True, poles=[0, 1, 2], pole_ground=0.02)
 for (x, z) in ((24.0, 36.5), (36.0, 36.5), (48.0, 36.5)):
     prop(SE, "BENCH", x, z, rnd.choice([0, 180]))
 prop(SE, "FIRE_BARREL", 54.0, 37.0, 0)
@@ -377,7 +391,7 @@ prop(SE, "DUMPSTER", 51.0, 52.5, 0, variant=1)
 prop(SE, "TRASH_PILE", 22.0, 54.0, 0)
 prop(SE, "AC_STACK", 22.0, 22.0, 180)
 scatter(SE, ["CRATE_STACK", "TRASH_BAGS", "BARREL", "CRATE", "CONE"], 20, 60, 20, 55, 10)
-sign(SE, "sign_bar", 40.0, 15.0, 36.0, 180, "roof", 5.0, (1.0, 0.2, 0.25, 1), 0.15, 2.5)
+sign(SE, "sign_bar", 29.0, 15.06, 58.0, 180, "roof", 5.0, (1.0, 0.2, 0.25, 1), 0.15, 2.5)
 
 # =====================================================================================
 # Rand: Hochhäuser (Hintergrund) und unsichtbare Wände
@@ -527,8 +541,8 @@ SPOTS = [
     ("Spot_Street", (2.0, 0.0, 56.0), "i_credchip", 20),
     ("Spot_Kiosk", (-6.0, 0.15, 44.0), "i_drink", 2),
     ("Spot_Market", (40.0, 0.02, 36.5), "i_noodles", 2),
-    ("Spot_Bar", (12.0, 0.04, 30.5), "i_stim", 1),
-    ("Spot_Warehouse", (-33.0, 0.04, -55.0), "i_pistol", 1),
+    ("Spot_Bar", (12.0, 0.08, 30.5), "i_stim", 1),
+    ("Spot_Warehouse", (-33.0, 0.08, -55.0), "i_pistol", 1),
     ("Spot_Container", (-18.0, 5.2, -60.0), "i_shard", 3),
     ("Spot_HotelRoof", (14.0, 27.1, 16.0), "i_sniper", 1),
     ("Spot_Courtyard", (32.0, 0.0, -50.0), "i_emp", 2),

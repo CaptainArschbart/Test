@@ -2,7 +2,7 @@ class_name Player
 extends CharacterBody3D
 ## Spielfigur: WASD-Bewegung, Sprint, Sprung und Maus-Kamera (First Person).
 ##
-## Escape öffnet das Pausemenü (PauseMenu in testmap.tscn und main.tscn), das auch die
+## Escape öffnet das Pausemenü (PauseMenu in testmap.tscn und slum.tscn), das auch die
 ## Maus freigibt und wieder einfängt. Ist das Inventar offen, schließt Escape zuerst das.
 ## Ein Klick ins Fenster fängt eine freie Maus ebenfalls ein, etwa nach Alt-Tab.
 ## Zahlentasten (belegbar als hotbar_1…9) und Mausrad wählen den Hotbar-Slot,

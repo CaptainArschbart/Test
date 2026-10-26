@@ -95,6 +95,15 @@ enum Side { NONE, LEFT, RIGHT }
 		open_right = v
 		queue_rebuild()
 
+## Abstand der Decals vor der Wand. Jede Art hat einen eigenen Abstand, damit überlappende Decals
+## nicht in derselben Ebene liegen (Z-Fighting). Mindestens 2 cm, sonst flackert es auf Entfernung.
+const DECAL_OPENING := 0.025  # Fenster, Türen, Gerätefronten, Schilder vor ihrem Rahmen
+const DECAL_VENT := 0.035
+const DECAL_STENCIL := 0.04
+const DECAL_GRAFFITI := 0.045
+const DECAL_TAG := 0.05
+const DECAL_POSTER := 0.055
+
 var _w := 10.0
 var _d := 8.0
 var _h := 12.0
@@ -126,7 +135,7 @@ func _residential(b: SlumBuilder) -> void:
 	var ground := SlumMats.surface(ground_wall, wall_tint) if ground_wall != "" else _wall_mat
 	b.box(Vector3(0, floor_height * 0.5, 0), Vector3(_w, floor_height, _d), ground)
 	if floors > 1:
-		b.box(Vector3(0, floor_height + (_h - floor_height) * 0.5, 0), Vector3(_w, _h - floor_height, _d), _wall_mat)
+		b.box_on(Vector3(0, floor_height + (_h - floor_height) * 0.5, 0), Vector3(_w, _h - floor_height, _d), _wall_mat)
 	_plinth(b)
 	_ledges(b, 1)
 	_roof(b, _gap_for_stairs())
@@ -139,14 +148,15 @@ func _residential(b: SlumBuilder) -> void:
 	if rooftop_clutter:
 		_rooftop(b)
 	if number != "":
-		b.quad(Vector3(-_w * 0.5 + 1.0, _h - 1.4, _d * 0.5 + 0.03), Vector3.BACK, 1.4, 1.05,
+		b.quad(Vector3(-_w * 0.5 + 1.0, _h - 1.4, _d * 0.5 + DECAL_STENCIL), Vector3.BACK, 1.4, 1.05,
 				SlumMats.decal("stencil_" + number.to_lower()))
 	if side_sign != "":
 		_vertical_sign(b, Vector3(_w * 0.5 - 0.7, minf(_h - 2.5, 7.0), _d * 0.5), side_sign)
 
 
 func _plinth(b: SlumBuilder) -> void:
-	b.box(Vector3(0, 0.25, 0), Vector3(_w + 0.12, 0.5, _d + 0.12), _trim_mat, false)
+	# Nur 1,5 cm vor der Wand: Türen und Decals (ab 2,5 cm) liegen davor, nicht in derselben Ebene.
+	b.box(Vector3(0, 0.25, 0), Vector3(_w + 0.03, 0.5, _d + 0.03), _trim_mat, false)
 
 
 func _ledges(b: SlumBuilder, from_floor: int) -> void:
@@ -157,12 +167,12 @@ func _ledges(b: SlumBuilder, from_floor: int) -> void:
 ## Dach mit Brüstung. gap = [Seite, z_von, z_bis] lässt eine Lücke für die Außentreppe.
 func _roof(b: SlumBuilder, gap: Array) -> void:
 	var tar := SlumMats.surface("roof_tar")
-	b.box(Vector3(0, _h + 0.03, 0), Vector3(_w - 0.1, 0.06, _d - 0.1), tar)
+	b.box_on(Vector3(0, _h + 0.03, 0), Vector3(_w - 0.1, 0.06, _d - 0.1), tar)
 	var ph := 0.9
 	var t := 0.22
 	var y := _h + ph * 0.5
-	b.box(Vector3(0, y, _d * 0.5 - t * 0.5), Vector3(_w, ph, t), _wall_mat)
-	b.box(Vector3(0, y, -_d * 0.5 + t * 0.5), Vector3(_w, ph, t), _wall_mat)
+	b.box_on(Vector3(0, y, _d * 0.5 - t * 0.5), Vector3(_w, ph, t), _wall_mat)
+	b.box_on(Vector3(0, y, -_d * 0.5 + t * 0.5), Vector3(_w, ph, t), _wall_mat)
 	for side: float in [-1.0, 1.0]:
 		var x := side * (_w * 0.5 - t * 0.5)
 		if not gap.is_empty() and gap[0] == side:
@@ -171,7 +181,7 @@ func _roof(b: SlumBuilder, gap: Array) -> void:
 			_wall_z(b, x, -_d * 0.5 + t, z0, y, ph, t)
 			_wall_z(b, x, z1, _d * 0.5 - t, y, ph, t)
 		else:
-			b.box(Vector3(x, y, 0), Vector3(t, ph, _d - 2 * t), _wall_mat)
+			b.box_on(Vector3(x, y, 0), Vector3(t, ph, _d - 2 * t), _wall_mat)
 	# Abdeckung der Brüstung
 	b.box(Vector3(0, _h + ph + 0.04, _d * 0.5 - t * 0.5), Vector3(_w + 0.06, 0.08, t + 0.08), _trim_mat, false)
 	b.box(Vector3(0, _h + ph + 0.04, -_d * 0.5 + t * 0.5), Vector3(_w + 0.06, 0.08, t + 0.08), _trim_mat, false)
@@ -180,7 +190,7 @@ func _roof(b: SlumBuilder, gap: Array) -> void:
 func _wall_z(b: SlumBuilder, x: float, z0: float, z1: float, y: float, h: float, t: float) -> void:
 	if z1 - z0 < 0.05:
 		return
-	b.box(Vector3(x, y, (z0 + z1) * 0.5), Vector3(t, h, z1 - z0), _wall_mat)
+	b.box_on(Vector3(x, y, (z0 + z1) * 0.5), Vector3(t, h, z1 - z0), _wall_mat)
 
 
 func _window_mat() -> Material:
@@ -215,7 +225,7 @@ func _facade_windows(b: SlumBuilder, from_floor: int, sides: Array) -> void:
 				var p := n * (depth * 0.5) + along * u + Vector3.UP * y
 				if rng.randf() < 0.08:
 					continue  # zugemauert
-				b.quad(p + n * 0.025, n, 1.1, 1.38, _window_mat())
+				b.quad(p + n * DECAL_OPENING, n, 1.1, 1.38, _window_mat())
 				# Sims und Sturz geben Tiefe
 				b.box_x(SlumBuilder.facing(p + n * 0.06 + Vector3.DOWN * 0.74, n), Vector3(1.3, 0.08, 0.14), _trim_mat, false)
 				b.box_x(SlumBuilder.facing(p + n * 0.04 + Vector3.UP * 0.74, n), Vector3(1.24, 0.1, 0.08), _trim_mat, false)
@@ -223,12 +233,16 @@ func _facade_windows(b: SlumBuilder, from_floor: int, sides: Array) -> void:
 				if roll < balcony_chance and n.z > 0.0 and f > 0:
 					_balcony(b, p, n, along)
 				elif roll < balcony_chance + 0.15:
-					_ac_unit(b, p + Vector3.DOWN * 1.15 + n * 0.22 + along * rng.randf_range(-0.3, 0.3), n)
-				elif roll < balcony_chance + 0.2 and f < floors - 1:
+					_ac_unit(b, p + Vector3.DOWN * 1.15 + n * 0.19 + along * rng.randf_range(-0.3, 0.3), n)
+				elif roll < balcony_chance + 0.2 and f < floors - 1 and c < cols - 1:
 					# Wäscheleine zwischen zwei Fenstern
 					var cable := SlumMats.color(Color(0.05, 0.05, 0.05))
 					var a := p + n * 0.6 + Vector3.UP * 0.6
-					b.cable(a, a + along * spacing, 0.25, cable, 0.012, 6)
+					var e := a + along * spacing
+					b.cable(a, e, 0.25, cable, 0.012, 6)
+					# Halter aus der Wand, an denen die Leine hängt
+					for end: Vector3 in [a, e]:
+						b.tube(end - n * 0.6, end + Vector3.UP * 0.02, 0.012, _metal, 4)
 					for k: int in 3:
 						var cloth := SlumMats.color(pick([Color(0.6, 0.1, 0.1), Color(0.2, 0.3, 0.6), Color(0.8, 0.8, 0.7), Color(0.3, 0.5, 0.3)]), 0.0, 0.9)
 						b.quad(a + along * (spacing * (0.25 + k * 0.25)) + Vector3.DOWN * 0.45, n, 0.35, 0.5, cloth)
@@ -257,7 +271,7 @@ func _ac_unit(b: SlumBuilder, at: Vector3, n: Vector3) -> void:
 	var xf := SlumBuilder.facing(at, n)
 	var body := SlumMats.color(Color(0.6, 0.61, 0.58), 0.0, 0.6)
 	b.box_x(xf, Vector3(0.8, 0.55, 0.36), body, false)
-	b.quad_x(xf * Transform3D(Basis.IDENTITY, Vector3(0.1, 0, 0.185)), 0.48, 0.48, SlumMats.decal("ac_front"))
+	b.quad_x(xf * Transform3D(Basis.IDENTITY, Vector3(0.1, 0, 0.18 + DECAL_OPENING)), 0.48, 0.48, SlumMats.decal("ac_front"))
 	b.box_x(xf * Transform3D(Basis.IDENTITY, Vector3(0, -0.3, -0.05)), Vector3(0.85, 0.04, 0.45), _metal, false)
 	# Kondenswasser-Rohr
 	var drip := xf * Vector3(0.35, -0.28, 0)
@@ -267,7 +281,7 @@ func _ac_unit(b: SlumBuilder, at: Vector3, n: Vector3) -> void:
 func _ground_floor_front(b: SlumBuilder) -> void:
 	var front := Vector3(0, 0, _d * 0.5)
 	var door_x := rng.randf_range(-_w * 0.25, _w * 0.25)
-	var door := Vector3(door_x, 1.1, _d * 0.5 + 0.025)
+	var door := Vector3(door_x, 1.1, _d * 0.5 + DECAL_OPENING)
 	b.quad(door, Vector3.BACK, 1.1, 2.2, SlumMats.decal(pick(["door_metal", "door_security", "door_wood"])))
 	# Türrahmen und Vordach mit Lampe
 	b.box(Vector3(door_x, 2.32, _d * 0.5 + 0.06), Vector3(1.4, 0.12, 0.12), _trim_mat, false)
@@ -281,10 +295,10 @@ func _ground_floor_front(b: SlumBuilder) -> void:
 	for x: float in [-_w * 0.5 + 1.4, _w * 0.5 - 1.4]:
 		if absf(x - door_x) < 1.8:
 			continue
-		b.quad(front + Vector3(x, 1.6, 0.025), Vector3.BACK, 1.2, 1.0, SlumMats.decal("window_bars"))
+		b.quad(front + Vector3(x, 1.6, DECAL_OPENING), Vector3.BACK, 1.2, 1.0, SlumMats.decal("window_bars"))
 	_ground_decals(b, Vector3.BACK, _w, _d, door_x)
 	if front_sign != "":
-		_flat_sign(b, Vector3(door_x, 3.3 if floors > 1 else 2.9, _d * 0.5 + 0.12), Vector3.BACK, front_sign, 2.4)
+		_flat_sign(b, Vector3(door_x, 3.3 if floors > 1 else 2.9, _d * 0.5 + 0.18), Vector3.BACK, front_sign, 2.4)
 
 
 ## Graffiti, Poster und Tags im Erdgeschoss.
@@ -297,17 +311,17 @@ func _ground_decals(b: SlumBuilder, n: Vector3, span: float, depth: float, avoid
 		var u := -span * 0.5 + slot_w * (i + 0.5)
 		if absf(u - avoid_x) < 1.6 or rng.randf() < 0.35:
 			continue
-		var p := n * (depth * 0.5 + 0.03) + along * u
+		var p := n * (depth * 0.5) + along * u
 		var r := rng.randf()
 		if r < 0.35:
-			b.quad(p + Vector3.UP * rng.randf_range(0.9, 1.3), n, minf(2.4, slot_w - 0.2), minf(1.2, slot_w * 0.5 - 0.1),
+			b.quad(p + n * DECAL_GRAFFITI + Vector3.UP * rng.randf_range(0.9, 1.3), n, minf(2.4, slot_w - 0.2), minf(1.2, slot_w * 0.5 - 0.1),
 					SlumMats.decal(pick(["graffiti_1", "graffiti_2", "graffiti_3"])))
 		elif r < 0.7:
 			for k: int in rng.randi_range(1, 3):
-				b.quad(p + along * (k * 0.5 - 0.5) + n * 0.003 * k + Vector3.UP * rng.randf_range(1.2, 1.7), n, 0.45, 0.68,
+				b.quad(p + along * (k * 0.5 - 0.5) + n * (DECAL_POSTER + 0.01 * k) + Vector3.UP * rng.randf_range(1.2, 1.7), n, 0.45, 0.68,
 						SlumMats.decal(pick(["poster_1", "poster_2", "poster_3", "poster_4"])))
 		else:
-			b.quad(p + Vector3.UP * rng.randf_range(0.6, 1.6), n, 1.4, 0.7, SlumMats.decal(pick(["tag_1", "tag_2"])))
+			b.quad(p + n * DECAL_TAG + Vector3.UP * rng.randf_range(0.6, 1.6), n, 1.4, 0.7, SlumMats.decal(pick(["tag_1", "tag_2"])))
 
 
 func _pipes(b: SlumBuilder) -> void:
@@ -333,7 +347,7 @@ func _pipes(b: SlumBuilder) -> void:
 	var box_z := rng.randf_range(-_d * 0.3, _d * 0.3)
 	var ebox := SlumBuilder.facing(Vector3(x0 + sx * 0.18, 1.3, box_z), Vector3(sx, 0, 0))
 	b.box_x(ebox, Vector3(0.7, 1.0, 0.3), SlumMats.color(Color(0.34, 0.38, 0.34), 0.0, 0.7, 0.2), false)
-	b.quad_x(ebox * Transform3D(Basis.IDENTITY, Vector3(0, 0, 0.16)), 0.6, 0.78, SlumMats.decal("electric_box"))
+	b.quad_x(ebox * Transform3D(Basis.IDENTITY, Vector3(0, 0, 0.15 + DECAL_OPENING)), 0.6, 0.78, SlumMats.decal("electric_box"))
 
 
 ## Lüftungsgitter, Klimageräte und Kabel an Seiten- und Rückwand.
@@ -344,12 +358,15 @@ func _wall_clutter(b: SlumBuilder) -> void:
 		var span := _w if n.z != 0.0 else _d
 		var depth := _d if n.z != 0.0 else _w
 		var along := Vector3(-n.z, 0, n.x)
-		for i: int in 2:
-			var p := n * (depth * 0.5 + 0.03) + along * rng.randf_range(-span * 0.4, span * 0.4) + Vector3.UP * rng.randf_range(0.6, 2.2)
+		# Zwei Lüfter links und rechts oben, Graffiti in der Mitte unten: feste Bereiche, damit sich
+		# nichts überdeckt. Dazu eigene Abstände zur Wand (DECAL_*), falls doch.
+		for side: float in [-1.0, 1.0]:
+			var u := side * rng.randf_range(span * 0.25, span * 0.4)
+			var p := n * (depth * 0.5 + DECAL_VENT) + along * u + Vector3.UP * rng.randf_range(2.3, 2.6)
 			b.quad(p, n, 0.6, 0.6, SlumMats.decal(pick(["vent_grille", "vent_louver"])))
 		if rng.randf() < 0.6:
-			var p := n * (depth * 0.5 + 0.03) + along * rng.randf_range(-span * 0.35, span * 0.35)
-			b.quad(p + Vector3.UP * 1.3, n, 2.2, 1.1, SlumMats.decal(pick(["graffiti_1", "graffiti_2", "graffiti_3", "tag_1"])))
+			var p := n * (depth * 0.5 + DECAL_GRAFFITI) + along * rng.randf_range(-span * 0.12, span * 0.12)
+			b.quad(p + Vector3.UP * 1.05, n, minf(2.2, span * 0.4), 1.1, SlumMats.decal(pick(["graffiti_1", "graffiti_2", "graffiti_3", "tag_1"])))
 
 
 ## Außentreppe (Feuertreppe) an einer Seite: zwei Spuren im Wechsel, damit niemand an der
@@ -445,10 +462,11 @@ func _rooftop(b: SlumBuilder) -> void:
 	# Klimageräte in Reihe
 	var ac_count := rng.randi_range(1, 4)
 	for i: int in ac_count:
-		var p := Vector3(rng.randf_range(-_w * 0.35, _w * 0.35), y, rng.randf_range(-_d * 0.35, 0.0))
+		# Klimageräte im hinteren Teil, die Dachhütte steht vorn (nicht ineinander)
+		var p := Vector3(rng.randf_range(-_w * 0.35, _w * 0.35), y, rng.randf_range(-_d * 0.38, -_d * 0.18))
 		var body := SlumMats.color(Color(0.55, 0.56, 0.54), 0.0, 0.6)
 		b.box(p + Vector3.UP * 0.35, Vector3(1.0, 0.7, 0.8), body)
-		b.quad(p + Vector3(0, 0.35, 0.41), Vector3.BACK, 0.6, 0.6, SlumMats.decal("ac_front"))
+		b.quad(p + Vector3(0, 0.35, 0.4 + DECAL_OPENING), Vector3.BACK, 0.6, 0.6, SlumMats.decal("ac_front"))
 	# Antennen und Satellitenschüssel
 	for i: int in rng.randi_range(1, 3):
 		var p := Vector3(rng.randf_range(-_w * 0.4, _w * 0.4), y, rng.randf_range(-_d * 0.4, _d * 0.4))
@@ -469,7 +487,7 @@ func _rooftop(b: SlumBuilder) -> void:
 		b.cylinder(t + Vector3.UP * 1.3, 0.75, 1.4, tank, 10, true)
 	# Shanty-Anbau auf dem Dach
 	if _w >= 8.0 and rng.randf() < 0.65:
-		_roof_shack(b, Vector3(_w * 0.5 - 2.0 - rng.randf_range(0, 1.0), y, rng.randf_range(-0.5, _d * 0.5 - 2.2)))
+		_roof_shack(b, Vector3(_w * 0.5 - 2.0 - rng.randf_range(0, 1.0), y, maxf(0.9, rng.randf_range(0.9, _d * 0.5 - 1.6))))
 
 
 func _roof_shack(b: SlumBuilder, at: Vector3) -> void:
@@ -478,17 +496,17 @@ func _roof_shack(b: SlumBuilder, at: Vector3) -> void:
 	var h := 2.3
 	var mats := ["corrugated_blue", "corrugated_rust", "corrugated_green", "wood", "corrugated_grey"]
 	b.box(at + Vector3(0, h * 0.5, -d * 0.5 + 0.03), Vector3(w, h, 0.06), SlumMats.surface(pick(mats)))
-	b.box(at + Vector3(-w * 0.5 + 0.03, h * 0.5, 0), Vector3(0.06, h, d), SlumMats.surface(pick(mats)))
-	b.box(at + Vector3(w * 0.5 - 0.03, h * 0.5, 0), Vector3(0.06, h, d), SlumMats.surface(pick(mats)))
+	b.box(at + Vector3(-w * 0.5 + 0.03, h * 0.5, 0), Vector3(0.06, h, d - 0.12), SlumMats.surface(pick(mats)))
+	b.box(at + Vector3(w * 0.5 - 0.03, h * 0.5, 0), Vector3(0.06, h, d - 0.12), SlumMats.surface(pick(mats)))
 	# Front mit Tür-Öffnung
 	b.box(at + Vector3(-w * 0.25 - 0.25, h * 0.5, d * 0.5 - 0.03), Vector3(w * 0.5 - 0.5, h, 0.06), SlumMats.surface(pick(mats)))
 	b.box(at + Vector3(w * 0.25 + 0.25, h * 0.5, d * 0.5 - 0.03), Vector3(w * 0.5 - 0.5, h, 0.06), SlumMats.surface(pick(mats)))
 	b.box(at + Vector3(0, h - 0.2, d * 0.5 - 0.03), Vector3(1.0, 0.4, 0.06), SlumMats.surface(pick(mats)), false)
 	var roof := Transform3D(Basis(Vector3.RIGHT, deg_to_rad(8)), at + Vector3(0, h + 0.15, 0.1))
 	b.box_x(roof, Vector3(w + 0.5, 0.05, d + 0.8), SlumMats.surface("corrugated_rust"))
-	b.quad(at + Vector3(0.9, 1.3, d * 0.5 + 0.01), Vector3.BACK, 0.6, 0.5, SlumMats.decal("window_lit", "window_emit", Color(1.0, 0.7, 0.4), 1.4))
+	b.quad(at + Vector3(0.9, 1.3, d * 0.5 + DECAL_OPENING), Vector3.BACK, 0.6, 0.5, SlumMats.decal("window_lit", "window_emit", Color(1.0, 0.7, 0.4), 1.4))
 	var tarp := SlumMats.surface("tarp_blue")
-	b.box(at + Vector3(-w * 0.5 - 0.02, h * 0.55, 0.3), Vector3(0.02, h * 0.8, 1.4), tarp, false)
+	b.box(at + Vector3(-w * 0.5 - 0.04, h * 0.55, 0.3), Vector3(0.02, h * 0.8, 1.4), tarp, false)
 	add_light(at + Vector3(0, h - 0.4, 0), Color(1.0, 0.7, 0.4), 0.9, 4.0, 0.2)
 
 
@@ -508,17 +526,17 @@ func _shop(b: SlumBuilder) -> void:
 	b.box(Vector3(-_w * 0.5 + side_w * 0.5, fh * 0.5, _d * 0.5 - t * 0.5), Vector3(side_w, fh, t), ground)
 	b.box(Vector3(_w * 0.5 - side_w * 0.5, fh * 0.5, _d * 0.5 - t * 0.5), Vector3(side_w, fh, t), ground)
 	b.box(Vector3(0, fh - 0.3, _d * 0.5 - t * 0.5), Vector3(open_w, 0.6, t), ground)
-	b.box(Vector3(0, 0.02, 0), Vector3(_w - 2 * t, 0.04, _d - 2 * t), floor_mat)
-	# Decke + Obergeschosse
-	b.box(Vector3(0, fh - 0.1, 0), Vector3(_w, 0.2, _d), _trim_mat)
+	b.box(Vector3(0, 0.04, 0), Vector3(_w - 2 * t, 0.08, _d - 2 * t), floor_mat)
+	# Decke zwischen den Wänden, darüber die Obergeschosse
+	b.box(Vector3(0, fh - 0.1, 0), Vector3(_w - 2 * t, 0.2, _d - 2 * t), SlumMats.surface("concrete", Color(0.75, 0.75, 0.78)))
 	if floors > 1:
-		b.box(Vector3(0, fh + (_h - fh) * 0.5, 0), Vector3(_w, _h - fh, _d), _wall_mat)
+		b.box_on(Vector3(0, fh + (_h - fh) * 0.5, 0), Vector3(_w, _h - fh, _d), _wall_mat)
 		_ledges(b, 1)
 		_facade_windows(b, 1, [Vector3.BACK, Vector3.FORWARD, Vector3.LEFT, Vector3.RIGHT])
 	_roof(b, [])
 	_plinth_front(b, open_w)
 	# Rollladen halb hoch, darunter Licht von innen
-	b.quad(Vector3(0, fh - 0.88, _d * 0.5 + 0.01), Vector3.BACK, open_w, 0.56, SlumMats.decal("door_security"), Rect2(0, 0, 1, 0.3))
+	b.quad(Vector3(0, fh - 0.88, _d * 0.5 + DECAL_OPENING), Vector3.BACK, open_w, 0.56, SlumMats.decal("door_security"), Rect2(0, 0, 1, 0.3))
 	b.box(Vector3(0, fh - 0.62, _d * 0.5 + 0.12), Vector3(open_w + 0.2, 0.2, 0.25), _metal, false)
 	# Markise
 	var awn := SlumMats.surface(pick(["tarp_red", "tarp_blue"]))
@@ -540,7 +558,7 @@ func _shop(b: SlumBuilder) -> void:
 	b.box(Vector3(0, fh - 0.24, 0), Vector3(1.6, 0.05, 0.12), SlumMats.color(neon_col, 6.0), false, false)
 	add_light(Vector3(0, fh - 0.6, 0.3), neon_col.lerp(Color(1.0, 0.85, 0.7), 0.5), 2.2, 7.0, 0.05)
 	if front_sign != "":
-		_flat_sign(b, Vector3(0, fh + 0.7, _d * 0.5 + 0.15), Vector3.BACK, front_sign, minf(open_w + 0.6, 4.2))
+		_flat_sign(b, Vector3(0, fh + 0.7, _d * 0.5 + 0.18), Vector3.BACK, front_sign, minf(open_w + 0.6, 4.2))
 	if side_sign != "":
 		_vertical_sign(b, Vector3(_w * 0.5 - 0.7, fh + 2.2, _d * 0.5), side_sign)
 	_ground_decals(b, Vector3.LEFT, _d, _w, 99.0)
@@ -576,7 +594,7 @@ func _flat_sign(b: SlumBuilder, at: Vector3, n: Vector3, tex: String, width: flo
 	if t != null:
 		aspect = float(t.get_width()) / float(t.get_height())
 	var h := width / aspect
-	b.box_x(SlumBuilder.facing(at - n * 0.06, n), Vector3(width + 0.12, h + 0.12, 0.1), _dark_metal, false)
+	b.box_x(SlumBuilder.facing(at - n * (0.05 + DECAL_OPENING), n), Vector3(width + 0.12, h + 0.12, 0.1), _dark_metal, false)
 	var mat := SlumMats.sign_mat(tex, 3.0)
 	b.quad(at, n, width, h, mat)
 	var light_col := _sign_color(tex)
@@ -597,8 +615,8 @@ func _vertical_sign(b: SlumBuilder, at: Vector3, tex: String) -> void:
 		b.box(Vector3(at.x, at.y + y, at.z + 0.15), Vector3(0.06, 0.06, 0.3), _metal, false)
 	b.box(c, Vector3(0.12, h + 0.1, w + 0.1), _dark_metal, false)
 	var mat := SlumMats.sign_mat(tex, 3.5)
-	b.quad_x(Transform3D(Basis(Vector3.UP, PI * 0.5), c + Vector3(0.065, 0, 0)), w, h, mat)
-	b.quad_x(Transform3D(Basis(Vector3.UP, -PI * 0.5), c + Vector3(-0.065, 0, 0)), w, h, mat)
+	b.quad_x(Transform3D(Basis(Vector3.UP, PI * 0.5), c + Vector3(0.06 + DECAL_OPENING, 0, 0)), w, h, mat)
+	b.quad_x(Transform3D(Basis(Vector3.UP, -PI * 0.5), c + Vector3(-0.06 - DECAL_OPENING, 0, 0)), w, h, mat)
 	add_light(c + Vector3(0.8, 0, 0), _sign_color(tex), 1.5, 6.0, 0.2 if rng.randf() < 0.4 else 0.0)
 	add_light(c + Vector3(-0.8, 0, 0), _sign_color(tex), 1.0, 4.0)
 
@@ -631,21 +649,22 @@ func _warehouse(b: SlumBuilder) -> void:
 	var gate_w := minf(4.6, _w - 3.0)
 	var gate_h := minf(4.5, h - 1.2)
 	var gx := -_w * 0.12
-	var left := (_w * 0.5 + gx - gate_w * 0.5)
-	var right := (_w * 0.5 - gx - gate_w * 0.5)
+	# Frontteile reichen nur bis an die Seitenwände (sonst liegen ihre Flächen in denen der Seitenwände).
+	var left := (_w * 0.5 + gx - gate_w * 0.5) - t
+	var right := (_w * 0.5 - gx - gate_w * 0.5) - t
 	var fz := _d * 0.5 - t * 0.5
-	b.box(Vector3(-_w * 0.5 + left * 0.5, h * 0.5, fz), Vector3(left, h, t), corr)
-	b.box(Vector3(_w * 0.5 - right * 0.5, h * 0.5, fz), Vector3(right, h, t), corr)
+	b.box(Vector3(-_w * 0.5 + t + left * 0.5, h * 0.5, fz), Vector3(left, h, t), corr)
+	b.box(Vector3(_w * 0.5 - t - right * 0.5, h * 0.5, fz), Vector3(right, h, t), corr)
 	b.box(Vector3(gx, gate_h + (h - gate_h) * 0.5, fz), Vector3(gate_w, h - gate_h, t), corr)
 	# Rolltor halb offen
 	var open := 2.6
 	b.box(Vector3(gx, gate_h - (gate_h - open) * 0.5, fz), Vector3(gate_w, gate_h - open, 0.08), SlumMats.surface("shutter"), true)
 	b.box(Vector3(gx, gate_h + 0.25, fz + 0.3), Vector3(gate_w + 0.3, 0.5, 0.5), _metal, false)
 	for s: float in [-1.0, 1.0]:
-		b.box(Vector3(gx + s * (gate_w * 0.5 + 0.1), gate_h * 0.5, fz + 0.18), Vector3(0.2, gate_h, 0.12), SlumMats.surface("hazard"), false)
+		b.box(Vector3(gx + s * (gate_w * 0.5 + 0.12), gate_h * 0.5, fz + 0.18), Vector3(0.2, gate_h, 0.12), SlumMats.surface("hazard"), false)
 	# Kleine Tür rechts
-	var dx := _w * 0.5 - right * 0.5
-	b.quad(Vector3(dx, 1.1, _d * 0.5 + 0.01), Vector3.BACK, 1.1, 2.2, SlumMats.decal("door_metal"))
+	var dx := _w * 0.5 - t - right * 0.5
+	b.quad(Vector3(dx, 1.1, _d * 0.5 + DECAL_OPENING), Vector3.BACK, 1.1, 2.2, SlumMats.decal("door_metal"))
 	b.box(Vector3(dx, 0.08, _d * 0.5 + 0.4), Vector3(1.6, 0.16, 0.8), base)
 	# Dach (flach mit Oberlichtern), Dachrand
 	b.box(Vector3(0, h + 0.1, 0), Vector3(_w + 0.3, 0.2, _d + 0.3), SlumMats.surface("corrugated_grey", Color(0.7, 0.7, 0.7)))
@@ -664,19 +683,19 @@ func _warehouse(b: SlumBuilder) -> void:
 	b.tube(Vector3(_w * 0.5 + 0.2, 1.2, _d * 0.3), Vector3(_w * 0.5 + 0.2, h - 0.5, _d * 0.3), 0.12, pipe, 8)
 	# Beschriftung und Lampen
 	if number != "":
-		b.quad(Vector3(gx, gate_h + (h - gate_h) * 0.5 + 0.1, _d * 0.5 + 0.02), Vector3.BACK, 2.4, 1.8,
+		b.quad(Vector3(gx, gate_h + (h - gate_h) * 0.5 + 0.1, _d * 0.5 + DECAL_STENCIL), Vector3.BACK, 2.4, 1.8,
 				SlumMats.decal("stencil_" + number.to_lower()))
-	b.quad(Vector3(dx, 2.8, _d * 0.5 + 0.02), Vector3.BACK, 1.4, 0.47, SlumMats.decal("sign_beware"))
+	b.quad(Vector3(dx, 2.8, _d * 0.5 + DECAL_STENCIL), Vector3.BACK, 1.4, 0.47, SlumMats.decal("sign_beware"))
 	for lx: float in [gx - gate_w * 0.5 - 0.5, dx]:
 		b.box(Vector3(lx, gate_h + 0.4, _d * 0.5 + 0.25), Vector3(0.4, 0.12, 0.3), _metal, false)
 		b.box(Vector3(lx, gate_h + 0.33, _d * 0.5 + 0.25), Vector3(0.3, 0.03, 0.2), SlumMats.color(Color(1.0, 0.85, 0.6), 5.0), false, false)
 		add_light(Vector3(lx, gate_h + 0.1, _d * 0.5 + 0.8), Color(1.0, 0.8, 0.55), 2.0, 9.0, 0.0)
 	if front_sign != "":
-		_flat_sign(b, Vector3(dx, gate_h + 0.9, _d * 0.5 + 0.15), Vector3.BACK, front_sign, 1.8)
+		_flat_sign(b, Vector3(dx, gate_h + 0.9, _d * 0.5 + 0.18), Vector3.BACK, front_sign, 1.8)
 	_ground_decals(b, Vector3.LEFT, _d, _w, 99.0)
 	_ground_decals(b, Vector3.FORWARD, _w, _d, 99.0)
 	# Innen: Boden, Laufsteg an der Rückwand mit Treppe, Lampen
-	b.box(Vector3(0, 0.02, 0), Vector3(_w - 2 * t, 0.04, _d - 2 * t), SlumMats.surface("concrete_dark", Color(0.8, 0.8, 0.8)))
+	b.box(Vector3(0, 0.04, 0), Vector3(_w - 2 * t, 0.08, _d - 2 * t), SlumMats.surface("concrete_dark", Color(0.8, 0.8, 0.8)))
 	var deck_h := minf(3.4, h - 2.2)
 	var deck_d := 1.6
 	var plate := SlumMats.surface("metal_plate")
@@ -732,7 +751,7 @@ func _shanty(b: SlumBuilder) -> void:
 	# Plane über einem Teil
 	var tarp := SlumMats.surface(pick(["tarp_blue", "tarp_red"]))
 	b.box_x(roof * Transform3D(Basis(Vector3.FORWARD, deg_to_rad(4)), Vector3(hut_w * 0.25, 0.06, 0)), Vector3(hut_w * 0.55, 0.02, hut_d + 1.0), tarp, false)
-	b.box(base + Vector3(hut_w * 0.5 + 0.03, hh * 0.45, hut_d * 0.25), Vector3(0.02, hh * 0.8, 1.2), tarp, false)
+	b.box(base + Vector3(hut_w * 0.5 + 0.1, hh * 0.45, hut_d * 0.25), Vector3(0.02, hh * 0.8, 1.2), tarp, false)
 	# Licht innen + Glühbirne
 	var col: Color = pick([Color(1.0, 0.7, 0.4), Color(1.0, 0.55, 0.3), Color(0.6, 0.9, 1.0)])
 	b.box(base + Vector3(0, hh - 0.35, 0), Vector3(0.08, 0.1, 0.08), SlumMats.color(col, 8.0), false, false)
@@ -790,7 +809,7 @@ func _patch_wall(b: SlumBuilder, center: Vector3, dir: Vector3, length: float, h
 	var n := dir.cross(Vector3.UP).normalized()
 	for i: int in count:
 		var u := -length * 0.5 + seg * (i + 0.5)
-		var p := center + dir * u + Vector3.UP * h * 0.5
+		var p := center + dir * u + Vector3.UP * h * 0.5 + n * (0.02 * (i % 2))
 		var size := Vector3(seg + 0.04, h + rng.randf_range(-0.1, 0.1), 0.06)
 		if door and i == count / 2:
 			# Türöffnung: nur Sturz
@@ -798,11 +817,12 @@ func _patch_wall(b: SlumBuilder, center: Vector3, dir: Vector3, length: float, h
 			b.box_x(lintel, Vector3(seg + 0.04, 0.5, 0.06), SlumMats.surface(pick(mats)), false)
 			continue
 		var xf := SlumBuilder.facing(p, n)
-		b.box_x(xf, size, SlumMats.surface(pick(mats)))
+		# Steht auf der Plattform: keine Unterseite (läge in der Plattform-Oberseite)
+		b.box_x(xf, size, SlumMats.surface(pick(mats)), true, true, 0.0, true, true)
 		if window and i == 0:
-			b.quad_x(xf * Transform3D(Basis.IDENTITY, Vector3(0, 0.2, 0.04)), 0.7, 0.6,
+			b.quad_x(xf * Transform3D(Basis.IDENTITY, Vector3(0, 0.2, 0.03 + DECAL_OPENING)), 0.7, 0.6,
 					SlumMats.decal("window_lit2", "window_emit", Color(1.0, 0.7, 0.4), 1.4))
-			b.quad_x(xf * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 0.2, -0.04)), 0.7, 0.6, SlumMats.decal("window_dark"))
+			b.quad_x(xf * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 0.2, -0.03 - DECAL_OPENING)), 0.7, 0.6, SlumMats.decal("window_dark"))
 
 
 # ================================================================== Hochhaus (Hintergrund)

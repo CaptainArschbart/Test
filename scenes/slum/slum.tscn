@@ -333,11 +333,32 @@ seed_value = 813
 [node name="Cables1" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(7.0, 8.55, -66, -7.0, 8.55, -66)
+points = PackedVector3Array(7.0, 8.65, -66.9, -7.0, 8.65, -66.9)
 sag = 0.9
-bundle = 3
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 3623
+
+[node name="Cables2" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.65, -65.1, -7.0, 8.65, -65.1)
+sag = 0.9
+bundle = 1
+lanterns = false
+wall_brackets = false
+seed_value = 3624
+
+[node name="Cables3" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.65, -65.7, -7.0, 8.65, -65.7)
+sag = 1.05
+bundle = 1
+lanterns = false
+wall_brackets = false
+seed_value = 3625
 
 [node name="PowerPole3" type="Node3D" parent="Power"]
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 7.0, 0.0, -46)
@@ -351,14 +372,35 @@ script = ExtResource("k_prop")
 kind = 17
 seed_value = 9121
 
-[node name="Cables2" type="Node3D" parent="Power"]
+[node name="Cables4" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(7.0, 8.55, -46, -7.0, 8.55, -46)
+points = PackedVector3Array(7.0, 8.65, -46.9, -7.0, 8.65, -46.9)
 sag = 0.9
-bundle = 3
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 2182
+
+[node name="Cables5" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.65, -45.1, -7.0, 8.65, -45.1)
+sag = 0.9
+bundle = 1
+lanterns = false
+wall_brackets = false
+seed_value = 2183
+
+[node name="Cables6" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.65, -45.7, -7.0, 8.65, -45.7)
+sag = 1.05
+bundle = 1
+lanterns = false
+wall_brackets = false
+seed_value = 2184
 
 [node name="PowerPole5" type="Node3D" parent="Power"]
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 7.0, 0.0, -26)
@@ -372,14 +414,35 @@ script = ExtResource("k_prop")
 kind = 17
 seed_value = 6868
 
-[node name="Cables3" type="Node3D" parent="Power"]
+[node name="Cables7" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(7.0, 8.55, -26, -7.0, 8.55, -26)
+points = PackedVector3Array(7.0, 8.65, -26.9, -7.0, 8.65, -26.9)
 sag = 0.9
-bundle = 3
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 2364
+
+[node name="Cables8" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.65, -25.1, -7.0, 8.65, -25.1)
+sag = 0.9
+bundle = 1
+lanterns = false
+wall_brackets = false
+seed_value = 2365
+
+[node name="Cables9" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.65, -25.7, -7.0, 8.65, -25.7)
+sag = 1.05
+bundle = 1
+lanterns = false
+wall_brackets = false
+seed_value = 2366
 
 [node name="PowerPole7" type="Node3D" parent="Power"]
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 7.0, 0.0, 26)
@@ -393,14 +456,35 @@ script = ExtResource("k_prop")
 kind = 17
 seed_value = 1930
 
-[node name="Cables4" type="Node3D" parent="Power"]
+[node name="Cables10" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(7.0, 8.55, 26, -7.0, 8.55, 26)
+points = PackedVector3Array(7.0, 8.65, 25.1, -7.0, 8.65, 25.1)
 sag = 0.9
-bundle = 3
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 9354
+
+[node name="Cables11" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.65, 26.9, -7.0, 8.65, 26.9)
+sag = 0.9
+bundle = 1
+lanterns = false
+wall_brackets = false
+seed_value = 9355
+
+[node name="Cables12" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.65, 26.3, -7.0, 8.65, 26.3)
+sag = 1.05
+bundle = 1
+lanterns = false
+wall_brackets = false
+seed_value = 9356
 
 [node name="PowerPole9" type="Node3D" parent="Power"]
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 7.0, 0.0, 46)
@@ -414,14 +498,35 @@ script = ExtResource("k_prop")
 kind = 17
 seed_value = 9180
 
-[node name="Cables5" type="Node3D" parent="Power"]
+[node name="Cables13" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(7.0, 8.55, 46, -7.0, 8.55, 46)
+points = PackedVector3Array(7.0, 8.65, 45.1, -7.0, 8.65, 45.1)
 sag = 0.9
-bundle = 3
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 2962
+
+[node name="Cables14" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.65, 46.9, -7.0, 8.65, 46.9)
+sag = 0.9
+bundle = 1
+lanterns = false
+wall_brackets = false
+seed_value = 2963
+
+[node name="Cables15" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.65, 46.3, -7.0, 8.65, 46.3)
+sag = 1.05
+bundle = 1
+lanterns = false
+wall_brackets = false
+seed_value = 2964
 
 [node name="PowerPole11" type="Node3D" parent="Power"]
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 7.0, 0.0, 66)
@@ -435,14 +540,35 @@ script = ExtResource("k_prop")
 kind = 17
 seed_value = 9529
 
-[node name="Cables6" type="Node3D" parent="Power"]
+[node name="Cables16" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(7.0, 8.55, 66, -7.0, 8.55, 66)
+points = PackedVector3Array(7.0, 8.65, 65.1, -7.0, 8.65, 65.1)
 sag = 0.9
-bundle = 3
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 9359
+
+[node name="Cables17" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.65, 66.9, -7.0, 8.65, 66.9)
+sag = 0.9
+bundle = 1
+lanterns = false
+wall_brackets = false
+seed_value = 9360
+
+[node name="Cables18" type="Node3D" parent="Power"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
+script = ExtResource("k_cables")
+points = PackedVector3Array(7.0, 8.65, 66.3, -7.0, 8.65, 66.3)
+sag = 1.05
+bundle = 1
+lanterns = false
+wall_brackets = false
+seed_value = 9361
 
 [node name="PowerPole13" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -66, 0.0, 7.0)
@@ -480,112 +606,124 @@ script = ExtResource("k_prop")
 kind = 17
 seed_value = 9247
 
-[node name="Cables7" type="Node3D" parent="Power"]
+[node name="Cables19" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(7.9, 8.55, -66, 7.9, 8.55, -46)
+points = PackedVector3Array(7.0, 7.75, -65.1, 7.0, 7.75, -46.9)
 sag = 1.0
-bundle = 2
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 977
 
-[node name="Cables8" type="Node3D" parent="Power"]
+[node name="Cables20" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(-6.1, 8.55, -66, -6.1, 8.55, -46)
+points = PackedVector3Array(-7.0, 7.75, -65.1, -7.0, 7.75, -46.9)
 sag = 1.0
-bundle = 2
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 3375
 
-[node name="Cables9" type="Node3D" parent="Power"]
+[node name="Cables21" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(7.9, 8.55, -46, 7.9, 8.55, -26)
+points = PackedVector3Array(7.0, 7.75, -45.1, 7.0, 7.75, -26.9)
 sag = 1.0
-bundle = 2
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 8134
 
-[node name="Cables10" type="Node3D" parent="Power"]
+[node name="Cables22" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(-6.1, 8.55, -46, -6.1, 8.55, -26)
+points = PackedVector3Array(-7.0, 7.75, -45.1, -7.0, 7.75, -26.9)
 sag = 1.0
-bundle = 2
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 8712
 
-[node name="Cables11" type="Node3D" parent="Power"]
+[node name="Cables23" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(7.9, 8.55, 26, 7.9, 8.55, 46)
+points = PackedVector3Array(7.0, 7.75, 26.9, 7.0, 7.75, 45.1)
 sag = 1.0
-bundle = 2
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 7006
 
-[node name="Cables12" type="Node3D" parent="Power"]
+[node name="Cables24" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(-6.1, 8.55, 26, -6.1, 8.55, 46)
+points = PackedVector3Array(-7.0, 7.75, 26.9, -7.0, 7.75, 45.1)
 sag = 1.0
-bundle = 2
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 5147
 
-[node name="Cables13" type="Node3D" parent="Power"]
+[node name="Cables25" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(7.9, 8.55, 46, 7.9, 8.55, 66)
+points = PackedVector3Array(7.0, 7.75, 46.9, 7.0, 7.75, 65.1)
 sag = 1.0
-bundle = 2
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 7629
 
-[node name="Cables14" type="Node3D" parent="Power"]
+[node name="Cables26" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(-6.1, 8.55, 46, -6.1, 8.55, 66)
+points = PackedVector3Array(-7.0, 7.75, 46.9, -7.0, 7.75, 65.1)
 sag = 1.0
-bundle = 2
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 9594
 
-[node name="Cables15" type="Node3D" parent="Power"]
+[node name="Cables27" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(-66.9, 8.55, 7.0, -46.9, 8.55, 7.0)
+points = PackedVector3Array(-65.1, 7.75, 7.0, -46.9, 7.75, 7.0)
 sag = 1.0
-bundle = 2
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 7425
 
-[node name="Cables16" type="Node3D" parent="Power"]
+[node name="Cables28" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(-46.9, 8.55, 7.0, -26.9, 8.55, 7.0)
+points = PackedVector3Array(-45.1, 7.75, 7.0, -26.9, 7.75, 7.0)
 sag = 1.0
-bundle = 2
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 5925
 
-[node name="Cables17" type="Node3D" parent="Power"]
+[node name="Cables29" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(25.1, 8.55, 7.0, 45.1, 8.55, 7.0)
+points = PackedVector3Array(26.9, 7.75, 7.0, 45.1, 7.75, 7.0)
 sag = 1.0
-bundle = 2
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 4912
 
-[node name="Cables18" type="Node3D" parent="Power"]
+[node name="Cables30" type="Node3D" parent="Power"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(45.1, 8.55, 7.0, 65.1, 8.55, 7.0)
+points = PackedVector3Array(46.9, 7.75, 7.0, 65.1, 7.75, 7.0)
 sag = 1.0
-bundle = 2
+bundle = 1
 lanterns = false
+wall_brackets = false
 seed_value = 4071
 
 [node name="StreetProps" type="Node3D" parent="."]
@@ -749,7 +887,7 @@ balcony_chance = 0.35
 seed_value = 5573
 
 [node name="Res3" type="Node3D" parent="NorthEast"]
-transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 12.5, 0.0, -69.0)
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 12.5, 0.0, -69.5)
 script = ExtResource("k_building")
 style = 0
 footprint = Vector2(9, 9)
@@ -1029,28 +1167,28 @@ kind = 10
 variant = 1
 seed_value = 1492
 
-[node name="Cables19" type="Node3D" parent="NorthEast"]
+[node name="Cables31" type="Node3D" parent="NorthEast"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(30.0, 7.5, -37.0, 26.0, 6.0, -20.0)
+points = PackedVector3Array(30.0, 7.5, -37.0, 26.0, 6.0, -18.05)
 sag = 0.8
 bundle = 2
 lanterns = false
 seed_value = 4279
 
-[node name="Cables20" type="Node3D" parent="NorthEast"]
+[node name="Cables32" type="Node3D" parent="NorthEast"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(44.0, 7.0, -37.0, 55.0, 6.5, -21.0)
+points = PackedVector3Array(44.0, 7.0, -37.0, 55.0, 6.5, -17.05)
 sag = 0.7
 bundle = 3
 lanterns = true
 seed_value = 8494
 
-[node name="Cables21" type="Node3D" parent="NorthEast"]
+[node name="Cables33" type="Node3D" parent="NorthEast"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
-points = PackedVector3Array(14.0, 5.0, -24.0, 14.0, 5.5, -34.0, 14.0, 5.0, -50.0)
+points = PackedVector3Array(14.0, 5.0, -24.0, 14.0, 5.5, -34.0, 14.0, 5.0, -50.45)
 sag = 0.6
 bundle = 2
 lanterns = true
@@ -1131,7 +1269,7 @@ length = 3.0
 seed_value = 8237
 
 [node name="Sign4" type="Node3D" parent="NorthWest"]
-transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, -8.4, 2.6, -40.6)
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -8.24, 1.45, -42.0)
 script = ExtResource("k_sign")
 texture_name = "sign_noentry"
 mount = 0
@@ -1141,7 +1279,7 @@ flicker = 0.0
 light_energy = 0.0
 
 [node name="Sign5" type="Node3D" parent="NorthWest"]
-transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, -24.4, 2.4, -8.5)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -21.0, 1.45, -8.24)
 script = ExtResource("k_sign")
 texture_name = "sign_beware"
 mount = 0
@@ -1242,7 +1380,7 @@ variant = 3
 seed_value = 475
 
 [node name="Container8" type="Node3D" parent="NorthWest"]
-transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -22.0, 2.6, -19.2)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -22.0, 2.6, -19.2)
 script = ExtResource("k_prop")
 kind = 18
 variant = 2
@@ -1784,40 +1922,48 @@ width = 1.1
 wooden = true
 lanterns = true
 
-[node name="Cables22" type="Node3D" parent="SouthWest"]
+[node name="Cables34" type="Node3D" parent="SouthWest"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
 points = PackedVector3Array(-68.0, 5.2, 35.25, -48.0, 5.6, 35.75, -28.0, 5.0, 34.95)
 sag = 0.7
 bundle = 1
 lanterns = true
+poles = PackedInt32Array(0, 1, 2)
+wooden_poles = true
 seed_value = 5390
 
-[node name="Cables23" type="Node3D" parent="SouthWest"]
+[node name="Cables35" type="Node3D" parent="SouthWest"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
 points = PackedVector3Array(-68.0, 5.2, 45.75, -48.0, 5.6, 46.25, -28.0, 5.0, 45.45)
 sag = 0.7
 bundle = 1
 lanterns = true
+poles = PackedInt32Array(0, 1, 2)
+wooden_poles = true
 seed_value = 8964
 
-[node name="Cables24" type="Node3D" parent="SouthWest"]
+[node name="Cables36" type="Node3D" parent="SouthWest"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
 points = PackedVector3Array(-68.0, 5.2, 56.25, -48.0, 5.6, 56.75, -28.0, 5.0, 55.95)
 sag = 0.7
 bundle = 1
 lanterns = true
+poles = PackedInt32Array(0, 1, 2)
+wooden_poles = true
 seed_value = 5301
 
-[node name="Cables25" type="Node3D" parent="SouthWest"]
+[node name="Cables37" type="Node3D" parent="SouthWest"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
 points = PackedVector3Array(-68.0, 5.2, 66.75, -48.0, 5.6, 67.25, -28.0, 5.0, 66.45)
 sag = 0.7
 bundle = 1
 lanterns = true
+poles = PackedInt32Array(0, 1, 2)
+wooden_poles = true
 seed_value = 4006
 
 [node name="FireBarrel3" type="Node3D" parent="SouthWest"]
@@ -2266,31 +2412,37 @@ kind = 19
 variant = 2
 seed_value = 5171
 
-[node name="Cables26" type="Node3D" parent="SouthEast"]
+[node name="Cables38" type="Node3D" parent="SouthEast"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
 points = PackedVector3Array(22.0, 5.0, 31.5, 40.0, 5.5, 32.0, 56.0, 5.0, 31.5)
 sag = 0.6
 bundle = 1
 lanterns = true
+poles = PackedInt32Array(0, 1, 2)
+pole_ground = 0.02
 seed_value = 3111
 
-[node name="Cables27" type="Node3D" parent="SouthEast"]
+[node name="Cables39" type="Node3D" parent="SouthEast"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
 points = PackedVector3Array(22.0, 5.0, 36.5, 40.0, 5.5, 37.0, 56.0, 5.0, 36.5)
 sag = 0.6
 bundle = 1
 lanterns = true
+poles = PackedInt32Array(0, 1, 2)
+pole_ground = 0.02
 seed_value = 6117
 
-[node name="Cables28" type="Node3D" parent="SouthEast"]
+[node name="Cables40" type="Node3D" parent="SouthEast"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 0, 0, 0)
 script = ExtResource("k_cables")
 points = PackedVector3Array(22.0, 5.0, 41.5, 40.0, 5.5, 42.0, 56.0, 5.0, 41.5)
 sag = 0.6
 bundle = 1
 lanterns = true
+poles = PackedInt32Array(0, 1, 2)
+pole_ground = 0.02
 seed_value = 7009
 
 [node name="Bench1" type="Node3D" parent="SouthEast"]
@@ -2426,7 +2578,7 @@ variant = 0
 seed_value = 2085
 
 [node name="Sign7" type="Node3D" parent="SouthEast"]
-transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 40.0, 15.0, 36.0)
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 29.0, 15.06, 58.0)
 script = ExtResource("k_sign")
 texture_name = "sign_bar"
 mount = 2
@@ -2893,7 +3045,7 @@ item = ExtResource("i_noodles")
 count = 2
 
 [node name="Spot_Bar" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.0, 0.04, 30.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.0, 0.08, 30.5)
 
 [node name="Pickup" parent="Pickups/SpawnPoints/Spot_Bar" instance=ExtResource("i_pickup")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
@@ -2901,7 +3053,7 @@ item = ExtResource("i_stim")
 count = 1
 
 [node name="Spot_Warehouse" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -33.0, 0.04, -55.0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -33.0, 0.08, -55.0)
 
 [node name="Pickup" parent="Pickups/SpawnPoints/Spot_Warehouse" instance=ExtResource("i_pickup")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)

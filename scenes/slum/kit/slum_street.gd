@@ -69,6 +69,13 @@ enum Kind { ROAD, INTERSECTION, SLAB }
 		queue_rebuild()
 
 const CURB_H := 0.15
+## Höhe der Bodenmarkierungen über der Fläche. Jede Art eine eigene Ebene, mindestens 1 cm
+## auseinander, damit Überlappungen (Linie unter Zebrastreifen, Pfütze über Gully) nicht flackern.
+const LAYER_LINE := 0.015
+const LAYER_CROSSWALK := 0.025
+const LAYER_MANHOLE := 0.035
+const LAYER_PUDDLE := 0.045
+const LAYER_TRASH := 0.055
 
 
 func _build(b: SlumBuilder) -> void:
@@ -89,23 +96,23 @@ func _road(b: SlumBuilder) -> void:
 		var dash := 3.0
 		var z := -length * 0.5 + 1.0
 		while z + dash <= length * 0.5 - 0.5:
-			b.quad_x(Transform3D(Basis(Vector3.RIGHT, -PI * 0.5), Vector3(0, 0.01, z + dash * 0.5)), 0.15, dash, yellow)
+			b.quad_x(Transform3D(Basis(Vector3.RIGHT, -PI * 0.5), Vector3(0, LAYER_LINE, z + dash * 0.5)), 0.15, dash, yellow)
 			z += dash * 2.0
 	# Randlinien
 	var white := SlumMats.decal("line_white")
 	for side: float in [-1.0, 1.0]:
-		b.quad_x(Transform3D(Basis(Vector3.RIGHT, -PI * 0.5), Vector3(side * (hw - 0.35), 0.01, 0)), 0.12, length,
+		b.quad_x(Transform3D(Basis(Vector3.RIGHT, -PI * 0.5), Vector3(side * (hw - 0.35), LAYER_LINE, 0)), 0.12, length,
 				white, Rect2(0, 0, 1, length / 4.0))
 	if crosswalk_start:
-		_crosswalk(b, Vector3(0, 0.012, -length * 0.5 + 2.0), road_width, false)
+		_crosswalk(b, Vector3(0, LAYER_CROSSWALK, -length * 0.5 + 2.0), road_width, false)
 	if crosswalk_end:
-		_crosswalk(b, Vector3(0, 0.012, length * 0.5 - 2.0), road_width, false)
+		_crosswalk(b, Vector3(0, LAYER_CROSSWALK, length * 0.5 - 2.0), road_width, false)
 	# Gullydeckel und Pfützen
 	var manhole := SlumMats.decal("manhole")
 	for i: int in int(length / 12.0) + 1:
-		var p := Vector3(rng.randf_range(-hw * 0.5, hw * 0.5), 0.011, rng.randf_range(-length * 0.45, length * 0.45))
+		var p := Vector3(rng.randf_range(-hw * 0.5, hw * 0.5), LAYER_MANHOLE, rng.randf_range(-length * 0.45, length * 0.45))
 		b.quad_x(Transform3D(Basis(Vector3.RIGHT, -PI * 0.5), p), 0.8, 0.8, manhole)
-	_dirt(b, Vector2(road_width, length), 0.013)
+	_dirt(b, Vector2(road_width, length), 0.0)
 	# Laternen
 	if lamp_spacing > 0.0:
 		var count := int(length / lamp_spacing)
@@ -136,7 +143,7 @@ func _sidewalk(b: SlumBuilder, side: float, width: float) -> void:
 	# Gelbe Bordsteinkante
 	var paint := SlumMats.decal("line_yellow")
 	# Quad schaut zur Fahrbahn (-side), läuft entlang Z.
-	b.quad_x(Transform3D(Basis(Vector3.UP, -side * PI * 0.5), Vector3(side * (hw - 0.002), CURB_H * 0.5, 0)),
+	b.quad_x(Transform3D(Basis(Vector3.UP, -side * PI * 0.5), Vector3(side * (hw - 0.015), CURB_H * 0.5, 0)),
 			length, CURB_H, paint, Rect2(0, 0, length / 2.0, 1))
 
 
@@ -144,12 +151,12 @@ func _intersection(b: SlumBuilder) -> void:
 	var asphalt := SlumMats.wet("asphalt_old")
 	b.box(Vector3(0, -0.25, 0), Vector3(road_width, 0.5, road_width), asphalt)
 	var hw := road_width * 0.5
-	_crosswalk(b, Vector3(0, 0.012, -hw + 1.6), road_width - 1.0, false)
-	_crosswalk(b, Vector3(0, 0.012, hw - 1.6), road_width - 1.0, false)
-	_crosswalk(b, Vector3(-hw + 1.6, 0.012, 0), road_width - 1.0, true)
-	_crosswalk(b, Vector3(hw - 1.6, 0.012, 0), road_width - 1.0, true)
-	b.quad_x(Transform3D(Basis(Vector3.RIGHT, -PI * 0.5), Vector3(1.2, 0.011, -0.8)), 0.8, 0.8, SlumMats.decal("manhole"))
-	_dirt(b, Vector2(road_width * 0.6, road_width * 0.6), 0.013)
+	_crosswalk(b, Vector3(0, LAYER_CROSSWALK, -hw + 1.6), road_width - 1.0, false)
+	_crosswalk(b, Vector3(0, LAYER_CROSSWALK, hw - 1.6), road_width - 1.0, false)
+	_crosswalk(b, Vector3(-hw + 1.6, LAYER_CROSSWALK, 0), road_width - 1.0, true)
+	_crosswalk(b, Vector3(hw - 1.6, LAYER_CROSSWALK, 0), road_width - 1.0, true)
+	b.quad_x(Transform3D(Basis(Vector3.RIGHT, -PI * 0.5), Vector3(1.2, LAYER_MANHOLE, -0.8)), 0.8, 0.8, SlumMats.decal("manhole"))
+	_dirt(b, Vector2(road_width * 0.6, road_width * 0.6), 0.0)
 
 
 ## Zebrastreifen quer zur Fahrtrichtung. rotated = Streifen laufen entlang Z statt X.
@@ -169,18 +176,20 @@ func _slab(b: SlumBuilder) -> void:
 	var mat := SlumMats.wet(slab_texture) if slab_texture.begins_with("asphalt") or slab_texture.begins_with("sidewalk") \
 			else SlumMats.surface(slab_texture)
 	b.box(Vector3(0, height - 0.25, 0), Vector3(slab_size.x, 0.5, slab_size.y), mat)
-	_dirt(b, slab_size * 0.8, height + 0.013)
+	_dirt(b, slab_size * 0.8, height)
 
 
+## Pfützen und Müll auf der Fläche mit Oberkante y. Alle Pfützen liegen in genau einer Ebene
+## (gleiches Material, überlappend flackert das nicht), Müll eine Ebene darüber.
 func _dirt(b: SlumBuilder, area: Vector2, y: float) -> void:
 	var puddle := SlumMats.decal("puddle")
 	var trash := SlumMats.decal("trash")
 	var n := int(area.x * area.y / 60.0 * dirt)
 	for i: int in n:
-		var p := Vector3(rng.randf_range(-area.x * 0.5, area.x * 0.5), y + i * 0.0005, rng.randf_range(-area.y * 0.5, area.y * 0.5))
+		var p := Vector3(rng.randf_range(-area.x * 0.5, area.x * 0.5), y, rng.randf_range(-area.y * 0.5, area.y * 0.5))
 		var basis := Basis(Vector3.UP, rng.randf() * TAU) * Basis(Vector3.RIGHT, -PI * 0.5)
 		if rng.randf() < 0.6:
 			var s := rng.randf_range(1.0, 2.8)
-			b.quad_x(Transform3D(basis, p), s, s * 0.7, puddle)
+			b.quad_x(Transform3D(basis, p + Vector3.UP * LAYER_PUDDLE), s, s * 0.7, puddle)
 		else:
-			b.quad_x(Transform3D(basis, p), 1.2, 1.2, trash)
+			b.quad_x(Transform3D(basis, p + Vector3.UP * LAYER_TRASH), 1.2, 1.2, trash)

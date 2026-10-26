@@ -19,7 +19,6 @@ const OptionsMenu := preload("res://scenes/options/options_menu.gd")
 @export var maps: Dictionary[String, String] = {
 	"SEKTOR 7 // SLUM": "res://scenes/slum/slum.tscn",
 	"NEON DISTRICT // TESTMAP": "res://scenes/testmap/testmap.tscn",
-	"TRAINING // MAIN": "res://scenes/main/main.tscn",
 }
 
 @export_group("Glitch")
