@@ -111,6 +111,9 @@ func try_fire() -> bool:
 	_flash_left = flash_time
 	_set_flash(true)
 	_play(_weapon.fire_sound, randf_range(0.95, 1.05))
+	# Gegner hören den Schuss.
+	if _player.stealth != null:
+		_player.stealth.make_noise(_weapon.noise_radius, StealthNoise.SHOT)
 	_shoot_ray()
 	# Kamera springt erst nach dem Strahl hoch, sonst ginge der Schuss daneben.
 	_player.head.rotation.x = clampf(_player.head.rotation.x + deg_to_rad(_weapon.view_kick_degrees),

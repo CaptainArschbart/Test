@@ -16,6 +16,8 @@ extends CharacterBody3D
 ## Stufen bis max_step_height hebt der Körper an, bevor move_and_slide läuft.
 ## %Footsteps und %LandImpact spielen auf dem Bus SFX.
 ## Fällt der Spieler tiefer als fall_damage_min_height, zieht die Landung HP ab (PlayerStats.damage).
+## %PlayerMovement: Hocken ("crouch"), Rutschen aus dem Sprint und Klettern an Kanten ("jump" vor einer Kante).
+## %PlayerStealth: Sichtbarkeit und Geräuschpegel für Gegner (Schleichen).
 ## "noclip" schaltet den Flugmodus um: durch Wände fliegen in Blickrichtung,
 ## "jump" hoch, "noclip_down" runter, "sprint" schneller.
 
@@ -104,6 +106,8 @@ var _head_height: float = 1.6
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var footsteps: AudioStreamPlayer3D = %Footsteps
 @onready var land_impact: AudioStreamPlayer3D = %LandImpact
+@onready var movement: PlayerMovement = %PlayerMovement
+@onready var stealth: PlayerStealth = %PlayerStealth
 
 
 func _ready() -> void:
@@ -148,9 +152,15 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	_ensure_play_input()
-	var sprinting := not input_locked and Input.is_action_pressed("sprint") and stats.is_alive()
+	var sprinting := not input_locked and Input.is_action_pressed("sprint") and stats.is_alive() \
+			and not movement.blocks_sprint()
 	stats.set_sprinting(sprinting)
 	sprinting = stats.is_sprinting()
+	# Klettern und Rutschen bewegen den Spieler selbst.
+	if not noclip and movement.physics_step(delta, sprinting):
+		if global_position.y < respawn_height:
+			respawn()
+		return
 	if Input.is_action_just_pressed("noclip") and not input_locked:
 		set_noclip(not noclip)
 	if noclip:
@@ -174,6 +184,7 @@ func _physics_process(delta: float) -> void:
 		input_dir = Vector2.ZERO
 	var direction := (transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
 	var speed := sprint_speed if sprinting else walk_speed
+	speed = movement.adjust_speed(speed)
 	speed *= stats.get_speed_multiplier()
 	var accel := acceleration if grounded_before else acceleration * air_control
 	var weight := minf(accel * delta, 1.0)

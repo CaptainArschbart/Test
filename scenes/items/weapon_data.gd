@@ -48,6 +48,10 @@ extends ItemData
 ## Wie weit die Kamera beim Schuss nach oben springt (Grad).
 @export var view_kick_degrees := 0.0
 
+@export_group("Schleichen")
+## Hörweite des Schusses für Gegner (Meter).
+@export var noise_radius := 35.0
+
 @export_group("Sounds")
 @export var fire_sound: AudioStream
 @export var reload_sound: AudioStream
