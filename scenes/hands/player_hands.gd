@@ -33,8 +33,11 @@ extends Node3D
 @export var pose_speed: float = 9.0
 ## Schwaches Licht nur für Hände und Waffe, damit sie in dunklen Gassen lesbar bleiben.
 ## Leuchtet über eine eigene Render-Ebene, die Welt bekommt davon nichts ab.
-@export var fill_light_energy: float = 0.7
+@export var fill_light_energy: float = 1.1
 @export var fill_light_color := Color(0.75, 0.85, 1.0)
+
+## Größe der Hände gegenüber einer echten Hand (Größe M). Etwas größer liest sich im Bild besser.
+@export var hand_scale: float = 1.15
 
 @export_group("Materialien")
 @export var glove_material: Material
@@ -51,16 +54,18 @@ const FINGER_LENGTHS := [
 	[0.044, 0.027, 0.021],
 	[0.035, 0.021, 0.019],
 ]
-const FINGER_RADII := [0.0094, 0.0098, 0.0092, 0.0082]
+## Etwas schlanker als echt, damit zwischen den Fingern Luft bleibt und sie einzeln lesbar sind.
+const FINGER_RADII := [0.0086, 0.009, 0.0085, 0.0075]
 ## Knöchel relativ zum Handgelenk: x zur Daumenseite negativ (rechte Hand), z nach vorn negativ.
 const KNUCKLES := [
-	Vector3(-0.029, 0.002, -0.094),
-	Vector3(-0.009, 0.003, -0.099),
-	Vector3(0.011, 0.002, -0.096),
-	Vector3(0.029, 0.0, -0.088),
+	Vector3(-0.0305, 0.002, -0.094),
+	Vector3(-0.0102, 0.003, -0.099),
+	Vector3(0.0102, 0.002, -0.096),
+	Vector3(0.0295, 0.0, -0.088),
 ]
-const THUMB_LENGTHS := [0.036, 0.03, 0.025]
-const THUMB_RADIUS := 0.0108
+## Daumen: Mittelhandknochen (im Ballen), Grund- und Endglied.
+const THUMB_LENGTHS := [0.04, 0.032, 0.027]
+const THUMB_RADIUS := 0.0112
 
 ## Render-Ebene 20: nur Hände und gehaltene Waffe (Ebene 1 bleibt, Weltlicht wirkt weiter).
 const VIEWMODEL_LAYER := 1 << 19
@@ -68,39 +73,67 @@ const VIEWMODEL_LAYER := 1 << 19
 ## Posen: Lage der Hand (Handgelenk), Fingerkrümmung je Gelenk in Grad,
 ## Daumen (Grundgelenk als Euler-Winkel in Grad, dann Krümmung der zwei Glieder).
 ## Die Hand zeigt mit den Fingern nach -Z, der Handrücken nach +Y.
+## Drehung entweder als "rot" (Euler in Grad) oder als "fingers" + "back": Richtung, in die
+## die gestreckten Finger zeigen, und Richtung des Handrückens (wird rechtwinklig gemacht).
+## Daumen: x = zur Handfläche hin (negativ), y = vom Zeigefinger weg gespreizt,
+## z = Drehung um die eigene Achse, damit er sich zur Handmitte hin beugt (Gegenstellung).
+## Die Fingerkrümmung bleibt pro Gelenk unter 90° und in der Summe bei höchstens 210° (Faust),
+## sonst knickt der Finger sichtbar durch die eigene Hand.
 const POSE_RELAXED := {
-	"pos": Vector3(0.22, -0.23, -0.34),
-	"rot": Vector3(18.0, 12.0, 28.0),
-	"curl": [[22.0, 28.0, 18.0], [26.0, 32.0, 20.0], [30.0, 36.0, 22.0], [34.0, 40.0, 24.0]],
-	"spread": 4.0,
-	"thumb": Vector3(-10.0, 38.0, -55.0),
-	"thumb_curl": [12.0, 18.0],
+	"pos": Vector3(0.2, -0.195, -0.3),
+	"fingers": Vector3(-0.18, 0.06, -1.0),
+	"back": Vector3(0.7, 0.75, 0.0),
+	"curl": [[16.0, 22.0, 12.0], [20.0, 26.0, 14.0], [25.0, 30.0, 16.0], [30.0, 34.0, 18.0]],
+	"spread": 5.0,
+	"thumb": Vector3(-22.0, 30.0, 55.0),
+	"thumb_curl": [10.0, 12.0],
 }
 ## Rechte Hand am Pistolengriff, im Raum der Waffenszene.
 const POSE_GRIP_RIGHT := {
-	"pos": Vector3(0.032, -0.056, 0.07),
+	"pos": Vector3(0.033, -0.056, 0.072),
 	"rot": Vector3(15.0, 8.0, -92.0),
-	"curl": [[48.0, 58.0, 26.0], [80.0, 82.0, 40.0], [84.0, 84.0, 42.0], [86.0, 84.0, 44.0]],
-	"spread": 0.0,
-	"thumb": Vector3(-52.0, 10.0, 0.0),
-	"thumb_curl": [14.0, 10.0],
+	"curl": [[40.0, 52.0, 22.0], [72.0, 76.0, 34.0], [76.0, 78.0, 36.0], [78.0, 78.0, 38.0]],
+	"spread": 1.5,
+	"thumb": Vector3(-40.0, 14.0, 55.0),
+	"thumb_curl": [18.0, 12.0],
 }
-## Linke Hand umfasst die rechte von links (Daumen nach vorn an der Waffe).
+## Linke Hand stützt von unten (Becher-Griff): Handfläche nach oben unter dem Griff,
+## Finger legen sich vorn um die rechten Finger, Daumen an der linken Seite.
 const POSE_GRIP_LEFT := {
-	"pos": Vector3(-0.048, -0.075, 0.085),
-	"rot": Vector3(28.0, -14.0, 80.0),
-	"curl": [[58.0, 62.0, 30.0], [62.0, 66.0, 32.0], [66.0, 70.0, 34.0], [70.0, 72.0, 34.0]],
-	"spread": 0.0,
-	"thumb": Vector3(-40.0, 6.0, 0.0),
+	"pos": Vector3(-0.045, -0.112, 0.07),
+	"fingers": Vector3(0.38, 0.42, -0.82),
+	"back": Vector3(-0.55, -1.0, 0.0),
+	"curl": [[28.0, 46.0, 20.0], [32.0, 50.0, 22.0], [36.0, 54.0, 24.0], [40.0, 56.0, 24.0]],
+	"spread": 2.0,
+	"thumb": Vector3(8.0, 18.0, 55.0),
 	"thumb_curl": [6.0, 4.0],
 }
 ## Linke Hand unten am Griff (Magazin).
 const POSE_RELOAD_LEFT := {
 	"pos": Vector3(-0.01, -0.15, 0.05),
 	"rot": Vector3(25.0, -10.0, 175.0),
-	"curl": [[40.0, 50.0, 26.0], [44.0, 52.0, 28.0], [48.0, 56.0, 30.0], [52.0, 58.0, 30.0]],
-	"spread": 2.0,
-	"thumb": Vector3(-6.0, 30.0, -50.0),
+	"curl": [[34.0, 44.0, 22.0], [38.0, 46.0, 24.0], [42.0, 50.0, 26.0], [46.0, 52.0, 26.0]],
+	"spread": 3.0,
+	"thumb": Vector3(-20.0, 32.0, 55.0),
+	"thumb_curl": [16.0, 14.0],
+}
+## Rechte Hand an Klinge und Granate (Raum des gehaltenen Items im %ItemUser).
+## Klinge: Faust um das hintere Ende, die Klinge kommt oben aus der Faust nach vorn.
+const POSE_BLADE_RIGHT := {
+	"pos": Vector3(0.034, -0.02, 0.085),
+	"rot": Vector3(15.0, 8.0, -92.0),
+	"curl": [[68.0, 78.0, 38.0], [76.0, 82.0, 40.0], [78.0, 84.0, 42.0], [80.0, 84.0, 42.0]],
+	"spread": 1.0,
+	"thumb": Vector3(-50.0, 10.0, 55.0),
+	"thumb_curl": [30.0, 24.0],
+}
+## Granate liegt in der Handfläche, die Finger umschließen sie locker.
+const POSE_GRENADE_RIGHT := {
+	"pos": Vector3(0.07, -0.04, 0.06),
+	"rot": Vector3(10.0, 12.0, -78.0),
+	"curl": [[46.0, 46.0, 24.0], [50.0, 48.0, 26.0], [54.0, 50.0, 26.0], [56.0, 50.0, 26.0]],
+	"spread": 5.0,
+	"thumb": Vector3(-30.0, 22.0, 55.0),
 	"thumb_curl": [20.0, 16.0],
 }
 
@@ -201,12 +234,21 @@ func update_pose(delta: float) -> void:
 		target_left = _pose_in_space(left_pose, space, arm_space, left_marker)
 		# Der Griff sitzt fest: die rechte Hand folgt der Waffe sofort (Rückstoß).
 		_pose_right = _blend_pose(_pose_right, target_right, maxf(weight, 0.6))
+	elif _held_item() != null:
+		# Klinge oder Granate: rechte Hand greift, linke bleibt locker unten.
+		var held := _held_item()
+		var item_user: Node3D = _player.item_user
+		var space := item_user.transform * held.transform
+		var arm_space := item_user.transform * Transform3D(Basis.IDENTITY, held.position)
+		var pose := POSE_GRENADE_RIGHT if _player.item_user.get_held_item() is GrenadeData else POSE_BLADE_RIGHT
+		target_right = _pose_in_space(pose, space, arm_space, null)
+		_pose_right = _blend_pose(_pose_right, target_right, maxf(weight, 0.6))
 	else:
 		_pose_right = _blend_pose(_pose_right, target_right, weight)
 	_pose_left = _blend_pose(_pose_left, target_left, weight)
 	# Ein wenig Leben in den Fingern, auch beim Stillstehen.
 	var breath := sin(Time.get_ticks_msec() * 0.0011) * 2.0
-	_apply_pose(_right, _pose_right, breath if view == null else 0.0)
+	_apply_pose(_right, _pose_right, breath if view == null and _held_item() == null else 0.0)
 	_apply_pose(_left, _pose_left, breath)
 
 
@@ -238,11 +280,30 @@ func _weapon_view() -> Node3D:
 	return null
 
 
+## Klinge oder Granate in der Hand (vom %ItemUser), sonst null.
+func _held_item() -> Node3D:
+	if _player.item_user == null:
+		return null
+	var held := _player.item_user.get_held_view()
+	if held == null or held.is_queued_for_deletion():
+		return null
+	return held
+
+
 func _resting_pose(side: float) -> Dictionary:
 	var pose := POSE_RELAXED.duplicate()
-	pose.pos = Vector3(pose.pos.x * side, pose.pos.y, pose.pos.z)
-	pose.rot = Vector3(pose.rot.x, pose.rot.y * side, pose.rot.z * side)
+	var mirror := Vector3(side, 1.0, 1.0)
+	pose.pos = pose.pos * mirror
+	pose.fingers = pose.fingers * mirror
+	pose.back = pose.back * mirror
 	return _to_runtime(pose)
+
+
+## Basis aus Fingerrichtung und Handrücken-Richtung (siehe Posen oben).
+static func _hand_basis(fingers: Vector3, back: Vector3) -> Basis:
+	var z := -fingers.normalized()
+	var y := (back - z * back.dot(z)).normalized()
+	return Basis(y.cross(z), y, z)
 
 
 ## Pose aus dem Raum der Waffe in den Raum der Hände. Ein Marker ersetzt Lage und Drehung.
@@ -260,11 +321,16 @@ func _pose_in_space(pose: Dictionary, space: Transform3D, arm_space: Transform3D
 
 
 func _to_runtime(pose: Dictionary) -> Dictionary:
-	var r: Vector3 = pose.rot
+	var basis: Basis
+	if pose.has("fingers"):
+		basis = _hand_basis(pose.fingers, pose.back)
+	else:
+		var r: Vector3 = pose.rot
+		basis = Basis.from_euler(Vector3(deg_to_rad(r.x), deg_to_rad(r.y), deg_to_rad(r.z)))
 	return {
 		"pos": pose.pos,
-		"basis": Basis.from_euler(Vector3(deg_to_rad(r.x), deg_to_rad(r.y), deg_to_rad(r.z))),
-		"arm_basis": Basis.from_euler(Vector3(deg_to_rad(r.x), deg_to_rad(r.y), deg_to_rad(r.z))),
+		"basis": basis,
+		"arm_basis": basis,
 		"curl": pose.curl,
 		"spread": pose.spread,
 		"thumb": pose.thumb,
@@ -316,16 +382,21 @@ func _apply_pose(hand: Dictionary, pose: Dictionary, extra_curl := 0.0) -> void:
 
 ## Baut eine Hand. side 1 = rechts, -1 = links (gespiegelt über x).
 func _build_hand(side: float) -> Dictionary:
+	var pivot := Node3D.new()
+	pivot.name = "RightHand" if side > 0.0 else "LeftHand"
+	add_child(pivot)
+	# Alles Sichtbare hängt unter einem skalierten Knoten; Posen setzen nur den Pivot.
 	var root := Node3D.new()
-	root.name = "RightHand" if side > 0.0 else "LeftHand"
-	add_child(root)
+	root.name = "Model"
+	root.scale = Vector3.ONE * hand_scale
+	pivot.add_child(root)
 
 	# Handfläche: weich abgerundeter Block, zum kleinen Finger hin etwas schmaler.
 	_part(root, ProcMesh.rounded_box(Vector3(0.084, 0.03, 0.094), 0.32), glove_material,
 		Vector3(0.0, 0.0, -0.048), Vector3(0.0, 0.0, 0.0))
 	# Daumenballen.
-	_part(root, ProcMesh.rounded_box(Vector3(0.03, 0.026, 0.05), 0.5), glove_material,
-		Vector3(-0.03 * side, -0.006, -0.028), Vector3(0.0, 0.25 * side, 0.0))
+	_part(root, ProcMesh.rounded_box(Vector3(0.034, 0.028, 0.056), 0.55), glove_material,
+		Vector3(-0.028 * side, -0.008, -0.03), Vector3(0.0, 0.3 * side, 0.0))
 	# Handrücken-Panzerplatte mit Neon-Schlitz.
 	_part(root, ProcMesh.rounded_box(Vector3(0.066, 0.008, 0.056), 0.22), plate_material,
 		Vector3(0.0, 0.0165, -0.052), Vector3(-0.06, 0.0, 0.0))
@@ -356,20 +427,25 @@ func _build_hand(side: float) -> Dictionary:
 		var joints := _build_chain(root, knuckle, FINGER_LENGTHS[i], FINGER_RADII[i], true)
 		fingers.append(joints)
 
-	# Daumen: Grundgelenk an der Handkante, zeigt schräg nach vorn-außen.
+	# Daumen: Sattelgelenk an der Handkante nahe dem Handgelenk, auf der Seite der Handfläche.
+	# Das erste Glied (Mittelhandknochen) steckt im Daumenballen, Grund- und Endglied sind frei.
 	var thumb_base := Node3D.new()
-	thumb_base.position = Vector3(-0.036 * side, -0.006, -0.03)
+	thumb_base.position = Vector3(-0.03 * side, -0.009, -0.018)
 	root.add_child(thumb_base)
 	var thumb_joints := [thumb_base]
 	thumb_joints.append_array(_build_chain(thumb_base, Vector3.ZERO, THUMB_LENGTHS, THUMB_RADIUS, false).slice(1))
 	# Das erste Glied liegt im Grundgelenk selbst (Mittelhandknochen des Daumens).
-	_segment(thumb_base, THUMB_LENGTHS[0], THUMB_RADIUS * 1.08, glove_material)
+	_segment(thumb_base, THUMB_LENGTHS[0], THUMB_RADIUS * 1.18, glove_material)
 
 	# Handgelenk: Armband mit Leuchtring, dann Jackenärmel mit Bündchen. Der Unterarm ist
 	# ein eigener Knoten, damit das Handgelenk abknicken kann (Nachladen kippt nur die Hand).
+	var arm_pivot := Node3D.new()
+	arm_pivot.name = pivot.name + "Arm"
+	add_child(arm_pivot)
 	var arm := Node3D.new()
-	arm.name = root.name + "Arm"
-	add_child(arm)
+	arm.name = "Model"
+	arm.scale = Vector3.ONE * hand_scale
+	arm_pivot.add_child(arm)
 	_part(arm, ProcMesh.tube(0.036, 0.034, 0.05), plate_material,
 		Vector3(0.0, 0.0, 0.018), Vector3(PI * 0.5, 0.0, 0.0), Vector3(1.0, 1.0, 0.72))
 	_part(arm, ProcMesh.tube(0.0372, 0.0372, 0.005), neon_material,
@@ -408,7 +484,7 @@ func _build_hand(side: float) -> Dictionary:
 			Vector3(-0.016, 0.034, 0.105), Vector3(PI * 0.5 - 0.15, 0.0, 0.0))
 
 	var thumb_chain: Array = thumb_joints
-	return {"root": root, "arm": arm, "side": side, "fingers": fingers, "thumb": thumb_chain}
+	return {"root": pivot, "arm": arm_pivot, "side": side, "fingers": fingers, "thumb": thumb_chain}
 
 
 ## Gelenkkette entlang -Z. Gibt die Gelenke zurück (Index 0 = Grundgelenk).
@@ -428,14 +504,19 @@ func _build_chain(parent: Node3D, start: Vector3, lengths: Array, radius: float,
 		if finger or j > 0:
 			_segment(joint, length, r, skin_material if last else glove_material)
 		if finger and j == 0:
-			# Kleine Panzerplatte auf dem Grundglied.
+			# Kleine Panzerplatte auf dem Grundglied mit Leuchtpunkt, damit jeder Finger einzeln lesbar ist.
 			_part(joint, ProcMesh.rounded_box(Vector3(r * 1.7, r * 0.7, length * 0.62), 0.3), plate_material,
 				Vector3(0.0, r * 0.82, -length * 0.5), Vector3.ZERO)
-		if last and finger:
+			_part(joint, ProcMesh.rounded_box(Vector3(r * 0.5, r * 0.2, length * 0.3), 0.5), neon_material,
+				Vector3(0.0, r * 1.18, -length * 0.5), Vector3.ZERO)
+		if finger and j == 1:
+			# Metallkappe auf dem Mittelgelenk (heller Knöchel).
+			_part(joint, ProcMesh.rounded_box(Vector3(r * 1.5, r * 0.6, r * 1.3), 0.45), _metal_material,
+				Vector3(0.0, r * 0.78, -r * 0.2), Vector3.ZERO)
+		if last:
 			# Fingernagel auf der freien Kuppe.
 			_part(joint, ProcMesh.rounded_box(Vector3(r * 1.15, r * 0.3, length * 0.48), 0.45), _nail_material,
 				Vector3(0.0, r * 0.86, -length * 0.66), Vector3(0.05, 0.0, 0.0))
-		if last:
 			# Abschlussring des Handschuhs vor der Fingerkuppe.
 			_part(joint, ProcMesh.tube(r * 1.12, r * 1.12, 0.0045), glove_material,
 				Vector3(0.0, 0.0, -0.002), Vector3(PI * 0.5, 0.0, 0.0))
