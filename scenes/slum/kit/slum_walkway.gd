@@ -50,6 +50,9 @@ func _build(b: SlumBuilder) -> void:
 				b.box(Vector3(x, -support_height * 0.5, z), Vector3(0.12, support_height, 0.12), rail, true)
 	if lanterns:
 		var cable := SlumMats.color(Color(0.03, 0.03, 0.03))
+		# Die Kette hängt an zwei Stangen, die am Geländer hochgezogen sind.
+		for z: float in [-hl, hl]:
+			b.tube(Vector3(-hw, 0, z), Vector3(-hw, 1.98, z), 0.025, rail, 4)
 		b.cable(Vector3(-hw, 1.9, -hl), Vector3(-hw, 1.9, hl), 0.4, cable, 0.012)
 		for i: int in int(length / 1.5):
 			var t := (i + 0.5) / int(length / 1.5)

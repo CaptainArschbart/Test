@@ -60,14 +60,20 @@ const _FACES := [
 ]
 
 
+## Unterseiten, die höchstens so hoch liegen (lokal zum Bauteil), liegen auf dem Boden und
+## werden weggelassen. Alles darüber (Decken, Dächer, Vordächer, Podeste) bekommt eine Unterseite.
+const GROUND_SKIP := 0.05
+
+
 ## Box mit beliebiger Lage. uv_tiles: 0 = jede Seite 0..1 (Kisten), sonst Meter pro UV-Kachel.
+## skip_bottom: Unterseite weglassen, wenn sie auf dem Boden liegt (siehe GROUND_SKIP).
 func box_x(xform: Transform3D, size: Vector3, mat: Material, collide := true, shadow := true,
-		uv_tiles := 0.0, skip_bottom := true) -> void:
+		uv_tiles := 0.0, skip_bottom := true, resting := false) -> void:
 	var st := _tool(mat, shadow)
 	var h := size * 0.5
 	for f: Array in _FACES:
 		var n: Vector3 = f[0]
-		if skip_bottom and n == Vector3.DOWN:
+		if n == Vector3.DOWN and (resting or (skip_bottom and (xform * (n * h.y)).y <= GROUND_SKIP)):
 			continue
 		var u: Vector3 = f[1]
 		var v: Vector3 = f[2]
@@ -93,6 +99,12 @@ func box(center: Vector3, size: Vector3, mat: Material, collide := true, shadow 
 		rot_y := 0.0, uv_tiles := 0.0) -> void:
 	var xf := Transform3D(Basis(Vector3.UP, deg_to_rad(rot_y)), center)
 	box_x(xf, size, mat, collide, shadow, uv_tiles)
+
+
+## Box, die auf einer anderen aufliegt (Obergeschoss, Dachhaut, Brüstung): ohne Unterseite, die läge
+## verdeckt in derselben Ebene wie die Oberseite darunter.
+func box_on(center: Vector3, size: Vector3, mat: Material, collide := true, shadow := true) -> void:
+	box_x(Transform3D(Basis.IDENTITY, center), size, mat, collide, shadow, 0.0, true, true)
 
 
 ## Box zwischen zwei Ecken (min/max), praktisch für Wände und Böden.

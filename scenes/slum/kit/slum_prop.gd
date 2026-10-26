@@ -156,8 +156,8 @@ func _ac(b: SlumBuilder, at: Vector3, rot: float) -> void:
 	var body := SlumMats.color(Color(0.62, 0.63, 0.6), 0.0, 0.6)
 	var xf := Transform3D(Basis(Vector3.UP, deg_to_rad(rot)), at)
 	b.box_x(xf * Transform3D(Basis.IDENTITY, Vector3(0, 0.3, 0)), Vector3(0.85, 0.6, 0.38), body)
-	b.quad_x(xf * Transform3D(Basis.IDENTITY, Vector3(0.1, 0.3, 0.195)), 0.5, 0.5, SlumMats.decal("ac_front"))
-	b.quad_x(xf * Transform3D(Basis.IDENTITY, Vector3(-0.31, 0.3, 0.195)), 0.16, 0.5, SlumMats.decal("vent_louver"))
+	b.quad_x(xf * Transform3D(Basis.IDENTITY, Vector3(0.1, 0.3, 0.215)), 0.5, 0.5, SlumMats.decal("ac_front"))
+	b.quad_x(xf * Transform3D(Basis.IDENTITY, Vector3(-0.31, 0.3, 0.215)), 0.16, 0.5, SlumMats.decal("vent_louver"))
 
 
 func _ac_stack(b: SlumBuilder) -> void:
@@ -174,7 +174,7 @@ func _ac_stack(b: SlumBuilder) -> void:
 func _electric_box(b: SlumBuilder) -> void:
 	var body := SlumMats.color(Color(0.36, 0.4, 0.36), 0.0, 0.7, 0.2)
 	b.box(Vector3(0, 0.75, 0), Vector3(0.8, 1.5, 0.35), body)
-	b.quad(Vector3(0, 0.95, 0.18), Vector3.BACK, 0.7, 0.9, SlumMats.decal("electric_box"))
+	b.quad(Vector3(0, 0.95, 0.2), Vector3.BACK, 0.7, 0.9, SlumMats.decal("electric_box"))
 	b.box(Vector3(0, 1.53, 0.02), Vector3(0.9, 0.06, 0.45), body, false)
 	var cable := SlumMats.color(Color(0.04, 0.04, 0.04))
 	for i: int in 3:
@@ -189,8 +189,8 @@ func _generator(b: SlumBuilder) -> void:
 	var dark := SlumMats.color(Color(0.1, 0.1, 0.1), 0.0, 0.6, 0.5)
 	b.box(Vector3(0, 0.1, 0), Vector3(1.6, 0.2, 0.9), dark)
 	b.box(Vector3(0, 0.6, 0), Vector3(1.4, 0.8, 0.8), body)
-	b.quad(Vector3(-0.3, 0.6, 0.41), Vector3.BACK, 0.5, 0.5, SlumMats.decal("vent_grille"))
-	b.quad(Vector3(0.35, 0.6, 0.41), Vector3.BACK, 0.45, 0.3, SlumMats.decal("sign_beware"))
+	b.quad(Vector3(-0.3, 0.6, 0.425), Vector3.BACK, 0.5, 0.5, SlumMats.decal("vent_grille"))
+	b.quad(Vector3(0.35, 0.6, 0.425), Vector3.BACK, 0.45, 0.3, SlumMats.decal("sign_beware"))
 	b.tube(Vector3(0.5, 1.0, -0.2), Vector3(0.5, 1.6, -0.2), 0.05, dark)
 	b.cable(Vector3(-0.7, 0.4, 0), Vector3(-2.5, 0.02, 1.0), 0.05, dark, 0.03, 5)
 
@@ -239,7 +239,7 @@ func _concrete_barrier(b: SlumBuilder) -> void:
 		b.box(Vector3(x, 0.15, 0), Vector3(2.0, 0.3, 0.6), mat)
 		b.box(Vector3(x, 0.55, 0), Vector3(2.0, 0.5, 0.36), mat, true, true, 0)
 		b.box(Vector3(x, 0.92, 0), Vector3(2.0, 0.24, 0.22), mat)
-		b.quad(Vector3(x, 0.55, 0.185), Vector3.BACK, 1.6, 0.25, SlumMats.decal("hazard") if rng.randf() < 0.3 else SlumMats.decal("tag_1"))
+		b.quad(Vector3(x, 0.55, 0.205), Vector3.BACK, 1.6, 0.25, SlumMats.decal("hazard") if rng.randf() < 0.3 else SlumMats.decal("tag_1"))
 
 
 func _striped_barrier(b: SlumBuilder) -> void:
@@ -278,8 +278,8 @@ func _hydrant(b: SlumBuilder) -> void:
 func _news_box(b: SlumBuilder) -> void:
 	var body := SlumMats.color(Color(0.1, 0.25, 0.45), 0.0, 0.5, 0.3)
 	b.box(Vector3(0, 0.55, 0), Vector3(0.5, 1.1, 0.45), body)
-	b.quad(Vector3(0, 0.8, 0.23), Vector3.BACK, 0.4, 0.3, SlumMats.decal("window_dark"))
-	b.quad(Vector3(0, 0.4, 0.23), Vector3.BACK, 0.4, 0.5, SlumMats.decal(pick(["poster_1", "poster_3"])))
+	b.quad(Vector3(0, 0.8, 0.25), Vector3.BACK, 0.4, 0.3, SlumMats.decal("window_dark"))
+	b.quad(Vector3(0, 0.4, 0.25), Vector3.BACK, 0.4, 0.5, SlumMats.decal(pick(["poster_1", "poster_3"])))
 
 
 func _street_lamp(b: SlumBuilder) -> void:
@@ -318,7 +318,7 @@ func _power_pole(b: SlumBuilder) -> void:
 	var insul := SlumMats.color(Color(0.5, 0.55, 0.5), 0.0, 0.4)
 	b.cylinder(Vector3.ZERO, 0.16, 9.0, wood, 8, true)
 	for y: float in [7.6, 8.5]:
-		b.box(Vector3(0, y, 0), Vector3(2.2, 0.14, 0.14), wood, false)
+		b.box(Vector3(0, y, 0), Vector3(2.2, 0.14, 0.14), wood)
 		for x: float in [-0.9, -0.3, 0.3, 0.9]:
 			b.cylinder(Vector3(x, y + 0.07, 0), 0.05, 0.16, insul, 6)
 	# Trafo-Tonne
