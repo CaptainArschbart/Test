@@ -241,8 +241,8 @@ func _make_held(mesh: Mesh, color: Color) -> Node3D:
 
 
 func _can_use() -> bool:
-	return not _player.input_locked and not _player.noclip \
-		and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not get_tree().paused
+	return _player.controls_local_body() and not _player.input_locked and not _player.noclip \
+			and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not get_tree().paused
 
 
 ## Name der ersten Taste einer Aktion, z. B. "E".
