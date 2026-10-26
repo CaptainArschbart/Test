@@ -15,6 +15,7 @@ extends CharacterBody3D
 ## verbraucht Essen/Trinken/Stims, "fire" wirft Granaten und schlägt mit Nahkampfwaffen.
 ## Stufen bis max_step_height hebt der Körper an, bevor move_and_slide läuft.
 ## %Footsteps und %LandImpact spielen auf dem Bus SFX.
+## Fällt der Spieler tiefer als fall_damage_min_height, zieht die Landung HP ab (PlayerStats.damage).
 ## "noclip" schaltet den Flugmodus um: durch Wände fliegen in Blickrichtung,
 ## "jump" hoch, "noclip_down" runter, "sprint" schneller.
 
@@ -34,6 +35,14 @@ extends CharacterBody3D
 @export_group("Respawn")
 ## Fällt der Spieler unter diese Höhe, wird er zum Startpunkt zurückgesetzt.
 @export var respawn_height := -30.0
+
+@export_group("Fallschaden")
+## Fallhöhe in Metern, ab der Schaden entsteht. Sprünge, Treppen und Parkour bleiben darunter.
+@export var fall_damage_min_height := 5.0
+## HP pro Meter über fall_damage_min_height (Dach der Parkour-Zone 7,2 m = 15 HP, 10 m = 35 HP, 15 m = 70 HP).
+@export var fall_damage_per_meter := 7.0
+## Obergrenze pro Landung. Unter max_hp heißt: ein Sturz allein tötet nicht aus voller Gesundheit.
+@export var fall_damage_max := 95.0
 
 @export_group("Noclip")
 @export var noclip_speed := 10.0
@@ -166,8 +175,10 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 
 	if is_on_floor():
-		if not grounded_before and _fall_speed <= -land_speed_threshold:
-			_play_land()
+		if not grounded_before:
+			if _fall_speed <= -land_speed_threshold:
+				_play_land()
+			_apply_fall_damage()
 		_fall_speed = 0.0
 		_update_footsteps(delta, sprinting, speed)
 	else:
@@ -250,6 +261,8 @@ func set_noclip(enabled: bool) -> void:
 	noclip = enabled
 	collision_shape.disabled = enabled
 	velocity = Vector3.ZERO
+	# Kein Fallschaden für Geschwindigkeit von vor dem Flug.
+	_fall_speed = 0.0
 	_noclip_label.visible = enabled
 	if enabled:
 		_stop_sounds()
@@ -383,6 +396,23 @@ func _update_footsteps(delta: float, sprinting: bool, target_speed: float) -> vo
 	var pitch := sprint_pitch if sprinting else 1.0
 	pitch *= randf_range(0.97, 1.03)
 	_last_footstep = _play_on(footsteps, footstep_sounds, _last_footstep, volume, pitch)
+
+
+## Schaden aus der Aufprallgeschwindigkeit: Höhe = v² / 2g.
+func _apply_fall_damage() -> void:
+	var amount := fall_damage_for_speed(-_fall_speed)
+	if amount > 0.0 and stats.is_alive():
+		stats.damage(amount)
+
+
+func fall_damage_for_speed(speed: float) -> float:
+	if speed <= 0.0 or gravity <= 0.0:
+		return 0.0
+	var height := speed * speed / (2.0 * gravity)
+	var excess := height - fall_damage_min_height
+	if excess <= 0.0:
+		return 0.0
+	return minf(excess * fall_damage_per_meter, fall_damage_max)
 
 
 func _play_land() -> void:

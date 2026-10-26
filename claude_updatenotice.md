@@ -225,3 +225,13 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 - Nicht geändert: `player_stats.gd`, `player.tscn`, `project.godot`. Keine neue Input-Aktion.
 - Getestet: Godot 4.7.2 unter Xvfb (OpenGL-Kompatibilität). Prüfskript in Testmap und `main.tscn` 0 Fehler: Layer 2, vier `VitalBar` mit Maus `Ignore`, Überschrift VITALS, HP folgt nach Schaden, Spur bleibt und holt auf, Status DEHYDRIERT bei Durst 5, nach `restore_all` STABIL. Screenshots voll, nach Treffer, gemischt, kritisch angesehen. Keine `SCRIPT ERROR` / `Parse Error`.
 - Nicht getestet: Forward+ am echten PC, 4K (Rahmen skaliert über den Stretch der 1280×720-Basis mit).
+
+### 2026-10-26 · Fallschaden (moderat) · Claude (für Arschi) · PR #24
+- Auftrag: Fallschaden einbauen, aber nicht zu stark. Normale Sprünge und Parkour ohne Schaden, Noclip ohne Schaden.
+- Geändert: nur `scenes/player/player.gd`.
+  - Neue Exportgruppe „Fallschaden“: `fall_damage_min_height` 5,0 m, `fall_damage_per_meter` 7,0, `fall_damage_max` 95 (ein Sturz allein tötet aus voller Gesundheit nicht).
+  - Bei der Landung rechnet `fall_damage_for_speed()` aus der schon vorhandenen `_fall_speed` die Fallhöhe (v² / 2g) und zieht über `stats.damage()` ab. Das Vitals-HUD zeigt dadurch automatisch die rosa Schadensspur. Landegeräusch (`_play_land`) unverändert.
+  - `set_noclip()` setzt `_fall_speed` auf 0, damit nach dem Fliegen kein alter Fall zählt. Im Noclip selbst gibt es keine Landung.
+- Werte (gemessen): 4,6 m (Sprung von der 3,6-m-Plattform) 0 HP, 7,2 m (Parkour-Dach) ca. 14 HP, 10 m ca. 34 HP, 16 m ca. 76 HP, 25 m 95 HP (Deckel).
+- Getestet: Godot 4.7.2 headless, temporäres Prüfskript in der Testmap (danach gelöscht), echte Fälle wie oben, Noclip-Abbruch mitten im Fall knapp über Boden 0 Schaden. `main.tscn` ohne `SCRIPT ERROR` / `Parse Error`.
+- Hinweise: Zu stark/zu schwach → die drei Werte im Inspector am Player anpassen. Kein eigener Schmerz-Sound oder Bildschirmeffekt.
