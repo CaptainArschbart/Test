@@ -299,6 +299,25 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 - Nicht getestet: Klang der prozeduralen Sounds auf echter Soundkarte (nur Dummy-Audio), Spielgefühl mit Maus/Tastatur, Leistung der zwei Bildschirm-Shader auf schwachen Rechnern.
 - Hinweise für die Nächsten: Neue Schadensquellen bitte mit Ursache aufrufen (`stats.damage(x, &"meine_ursache")`) und den Text in `DeathScreen.CAUSES` ergänzen. Wer ein Speichersystem baut, kann „RESPAWN“ später auf den letzten Speicherpunkt umstellen (`Player.revive()`). Soll das Inventar beim Tod bleiben: `drop_items_on_death` am Player ausschalten.
 
+### 2026-10-26 · Ego-Hände: keine „gebrochenen“ Finger mehr, größer, echter Daumen · Claude (für Arschi) · PR #31
+- Auftrag: Im Spiel sah es aus, als bräche sich die Figur die Finger. Hände größer, Daumen realistischer, Finger besser sichtbar.
+- Ursachen:
+  - Die linke Stützhand lag bei der Pistole quer über dem rechten Handrücken, ihre Finger kreuzten die rechten und beide Daumen standen seitlich ab.
+  - Der Daumen beugte sich um die falsche Achse (lockere Pose drehte ihn sogar nach außen, Euler z = −55°). Ohne Drehung um die eigene Achse kann er sich nicht zur Handmitte beugen.
+  - Klinge und Granate hatten gar keine Griffpose: das Item schwebte, die Hände hingen locker daneben.
+  - Ohne Waffe sah man nur die Handrücken, die Finger waren nach unten weggekrümmt.
+- Geändert in `scenes/hands/player_hands.gd`:
+  - Alle Posen neu. Pistole links jetzt Becher-Griff von unten. Daumen mit Gegenstellung (z = 55° um die eigene Achse, gespiegelt für links). Fingerkrümmung pro Gelenk unter 90°, Summe höchstens 210°.
+  - Neue Posen `POSE_BLADE_RIGHT` und `POSE_GRENADE_RIGHT`, die Hand folgt dem gehaltenen Item auch beim Schlag/Wurf.
+  - Posen können statt Euler-Winkeln `fingers` + `back` angeben (Fingerrichtung, Handrücken), `_hand_basis()`. Die lockere Pose nutzt das, links wird gespiegelt.
+  - `hand_scale` (1,15): sichtbares Modell hängt unter einem skalierten Knoten `Model`, Posen setzen nur den Pivot. Waffen- und Itempositionen bleiben unverändert.
+  - Finger schlanker und mit etwas Abstand, Leuchtpunkt auf jedem Grundglied, Metallkappe am Mittelgelenk, Nagel auch am Daumen. Daumen setzt näher am Handgelenk an, größerer Ballen.
+  - Fülllicht 0,7 → 1,1.
+- `scenes/hands/player_hands.tscn`: eigene Materialien für Handschuh (heller, stärkerer Rand) und Haut (dunkler, matter). Die gemeinsamen `.tres` und damit das Playermodel bleiben unverändert.
+- `scenes/player/item_user.gd`: nur zwei Getter ergänzt, `get_held_view()` und `get_held_item()`.
+- Getestet: Godot 4.7.2 unter Xvfb, Compatibility (OpenGL) und Forward+ (Vulkan über lavapipe). Screenshots aus der Spielerkamera vorher/nachher: ohne Waffe, Runterschauen, Pistole, Pistole zielend, Pistole nachladen, Sniper, Sniper zielend, Sniper nachladen, Klinge, Granate. Dazu Nahaufnahmen mit Tageslicht von hinten und vorn. `testmap.tscn` ohne `SCRIPT ERROR`.
+- Nicht getestet: echte GPU, Spielgefühl in Bewegung, Schlag- und Wurfbewegung mitten im Ablauf (nur Ruhepose angesehen).
+
 ### 2026-10-26 · Klettern flüssig, Hocken unabhängig vom Blickwinkel · Claude (für Arschi) · PR #29
 - Auftrag: Das Klettern aus PR #26 wirkte wie ein Teleport, es soll eine echte, flüssige Bewegung sein. Bug: Beim Hocken mit Blick nach unten „duckte“ man sich nach hinten.
 - Hocken-Bug (`scenes/player/player_movement.gd`): Die Absenkung lag auf `Camera3D.position.y`, die Kamera hängt aber am nickenden `Head`. Beim Runterschauen zeigte ihr lokales Y nach hinten. Jetzt `_apply_camera_drop()`: die Absenkung wird als Welt-Senkrechte in den Raum des Kopfes zurückgerechnet, jedes Physik-Frame und zusätzlich in `_process` (der Blick ändert sich zwischen Physik-Frames). Gemessen bei Pitch 0°, −80°, +80°: 0,000 m Versatz in X/Z, 0,620 m in Y; Nicken im Hocken verschiebt die Kamera nicht. Rutsch-Neigung (Rollen um die Blickachse), Kletter-Nicken (`Camera3D.rotation.x`), Treppen-Federung (`Head.position.y`, #25) und Low-Health-Wackeln (`h_offset`/`v_offset`, #28) hängen nicht an der Kameraposition und waren nicht betroffen.
@@ -312,4 +331,5 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
   - Exporte neu: `climb_grab_time`, `climb_pull_base_time`, `climb_pull_time_per_meter`, `climb_vault_time`, `climb_exit_speed` (ersetzen `climb_base_time`/`climb_time_per_meter`).
 - Geändert: `scenes/player/player_movement.gd`, `scenes/hands/player_hands.gd`. Nicht angefasst: `player.gd`, Treppen, Fallschaden, Noclip, Rutschen, Lärmwerte.
 - Getestet: Godot 4.7.2 headless, temporäres Prüfskript (danach gelöscht). Testmap `CHECKS 70 FAILS 0`: Hocken bei drei Blickwinkeln, Mauern 1,2/1,8/2,3, Kiste → Container → Dach: oben angekommen, größter Schritt pro Frame unter 0,10 m, beim Hochziehen nie Absacken, nie in Wand/Decke (Kapsel-Überlappung jedes Frame geprüft), Dauer 45–57 Frames, Hände an der Kante (Abw. unter 3 cm) und immer im Bild; 3,0 m nein, 60° schräg nein, dünne 4-m-Wand mit Plattform dahinter nein, Kante unter Vordach nein, dünne Mauer ohne Fläche nein, Loslassen mit S, Greifen aus dem Sprung; Treppe 25 cm, Rutschen unters Rohr, Fallschaden 12 m (47 HP), Noclip. Sektor 7: 40 Wände im ganzen Viertel abgetastet (Kanten 0,7–1,6 m, Container, Dächer, Brüstungen), 38 hochgeklettert, größter Schritt 0,089 m, nie in Geometrie; die 2 übrigen sind 0,7-m-Dachbrüstungen an einer Ecke, wo der Weg nach oben an einem Pfosten anstößt, dort wird bewusst nicht geklettert (eine davon schafft man normal springend). Bildfolge unter Xvfb (OpenGL-Kompatibilität) angesehen.
-- Nicht getestet: Gefühl mit echter Maus/Tastatur und bei anderen Bildraten als 60 Hz Physik, Forward+.
+- Mit dem neuen main (neue Ego-Hände, Multiplayer) zusammengeführt: Kletterpose nutzt die neue Daumen-Gegenstellung (z = 55°), beide Prüfläufe danach erneut grün (Testmap 70/70, Sektor 7 38 von 40).
+- Nicht getestet: Gefühl mit echter Maus/Tastatur und bei anderen Bildraten als 60 Hz Physik, Forward+, Klettern einer fremden Figur im Multiplayer (die Kletterbewegung wird über die normale Positions-Synchronisierung übertragen, Hände nur lokal).

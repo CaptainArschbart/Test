@@ -135,6 +135,9 @@ func _ready() -> void:
 	floor_max_angle = deg_to_rad(floor_angle_degrees)
 	max_slides = slide_count
 	input_locked = false
+	if not controls_local_body():
+		_configure_puppet()
+		return
 	_ensure_play_input()
 	stats.died.connect(_on_stats_died)
 	_life_started_msec = Time.get_ticks_msec()
@@ -148,6 +151,8 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not controls_local_body():
+		return
 	# Echo würde beim Halten von "drop_item" den ganzen Stapel leeren.
 	if event.is_echo():
 		return
@@ -173,6 +178,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if not controls_local_body():
+		return
 	_ensure_play_input()
 	var sprinting := not input_locked and Input.is_action_pressed("sprint") and stats.is_alive() \
 			and not movement.blocks_sprint()
@@ -235,6 +242,40 @@ func _physics_process(delta: float) -> void:
 
 	if global_position.y < respawn_height:
 		respawn()
+
+
+## Offline ist jeder Spieler lokal. Online nur der Peer mit Autorität.
+## Ohne Peer wirft is_multiplayer_authority() einen Fehler und liefert falsch.
+func controls_local_body() -> bool:
+	var peer := multiplayer.multiplayer_peer
+	if peer == null or peer.get_connection_status() == MultiplayerPeer.CONNECTION_DISCONNECTED:
+		return true
+	return is_multiplayer_authority()
+
+
+## Fremde Figuren: keine Steuerung, keine Kamera, kein HUD. Der Synchronizer bleibt an.
+func _configure_puppet() -> void:
+	set_physics_process(false)
+	set_process_unhandled_input(false)
+	camera.current = false
+	var layers: Array[Node] = find_children("*", "CanvasLayer", true, false)
+	for node: Node in layers:
+		var layer := node as CanvasLayer
+		if layer != null:
+			layer.visible = false
+	if item_user != null:
+		item_user.set_physics_process(false)
+		item_user.set_process(false)
+		item_user.set_process_unhandled_input(false)
+	if weapon_holder != null:
+		weapon_holder.set_physics_process(false)
+		weapon_holder.set_process(false)
+		weapon_holder.set_process_unhandled_input(false)
+	if stats != null:
+		stats.set_process(false)
+	if stealth != null:
+		stealth.set_physics_process(false)
+		stealth.set_process(false)
 
 
 ## Spiel läuft: kein Menü-Fokus, Maus gefangen. Pause und offenes Inventar bleiben unberührt.

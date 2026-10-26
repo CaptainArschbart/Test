@@ -268,8 +268,8 @@ func _set_flash(on: bool) -> void:
 
 
 func _can_use() -> bool:
-	return not _player.input_locked and not _player.noclip \
-		and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not get_tree().paused
+	return _player.controls_local_body() and not _player.input_locked and not _player.noclip \
+			and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not get_tree().paused
 
 
 func _play(stream: AudioStream, pitch := 1.0) -> void:

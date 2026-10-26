@@ -32,7 +32,11 @@ const OptionsMenu := preload("res://scenes/options/options_menu.gd")
 var _glitch_timer := 0.0
 var _glitch_left := 0.0
 var _starting := false
+var _net_launch := false
 var _map_buttons: VBoxContainer
+var _net_box: VBoxContainer
+var _ip_field: LineEdit
+var _net_status: Label
 
 @onready var overlay_material: ShaderMaterial = $Overlay.material
 @onready var title_box: Control = %TitleBox
@@ -48,11 +52,17 @@ var _map_buttons: VBoxContainer
 
 
 func _ready() -> void:
+	# Zurück ins Menü beendet die Session. Nur die echte Menüszene.
+	if get_tree().current_scene == self:
+		NetworkManager.stop()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	options_panel.hide()
 
 	_map_buttons = _create_map_buttons()
+	_net_box = _create_net_box()
 	start_button.pressed.connect(_show_maps if not maps.is_empty() else _start_game.bind(game_scene))
+	NetworkManager.connection_failed.connect(_on_net_failed)
+	NetworkManager.session_ended.connect(_on_net_ended)
 	options_button.pressed.connect(_show_options)
 	quit_button.pressed.connect(_on_quit_pressed)
 	options.closed.connect(_hide_options)
@@ -69,6 +79,7 @@ func _ready() -> void:
 	start_button.grab_focus()
 	if OS.has_feature("web"):
 		quit_button.hide()
+		_net_box.hide()
 
 
 func _process(delta: float) -> void:
@@ -155,6 +166,7 @@ func _create_map_buttons() -> VBoxContainer:
 
 func _show_maps() -> void:
 	main_buttons.hide()
+	_net_box.hide()
 	_map_buttons.show()
 	_trigger_glitch(0.25, 0.1)
 	_map_buttons.get_child(0).grab_focus()
@@ -163,12 +175,16 @@ func _show_maps() -> void:
 func _hide_maps() -> void:
 	_map_buttons.hide()
 	main_buttons.show()
+	_net_box.show()
 	start_button.grab_focus()
 
 
 func _start_game(scene_path: String) -> void:
 	if _starting:
 		return
+	if not _net_launch:
+		NetworkManager.stop()
+	_net_launch = false
 	_starting = true
 	game_scene = scene_path
 	main_buttons.process_mode = Node.PROCESS_MODE_DISABLED
@@ -187,6 +203,7 @@ func _start_game(scene_path: String) -> void:
 		back.tween_property($Fade, "color:a", 0.0, 0.3)
 		main_buttons.process_mode = Node.PROCESS_MODE_INHERIT
 		_map_buttons.process_mode = Node.PROCESS_MODE_INHERIT
+		_net_box.show()
 		_starting = false
 
 
@@ -198,6 +215,7 @@ func _on_quit_pressed() -> void:
 
 func _show_options() -> void:
 	# Titel ausblenden, damit das Panel Platz hat.
+	_net_box.hide()
 	title_box.hide()
 	cursor_label.hide()
 	main_buttons.hide()
@@ -210,4 +228,71 @@ func _hide_options() -> void:
 	title_box.show()
 	cursor_label.show()
 	main_buttons.show()
+	_net_box.show()
 	options_button.grab_focus()
+
+
+func _create_net_box() -> VBoxContainer:
+	var box := VBoxContainer.new()
+	box.name = "NetBox"
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.theme = main_buttons.theme
+	box.add_theme_constant_override("separation", 10)
+	main_buttons.add_sibling(box)
+	var host := Button.new()
+	host.text = "HOST"
+	host.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	host.custom_minimum_size = start_button.custom_minimum_size
+	host.pressed.connect(_on_host_pressed)
+	host.mouse_entered.connect(_focus_if_enabled.bind(host))
+	box.add_child(host)
+	_ip_field = LineEdit.new()
+	_ip_field.text = "127.0.0.1"
+	_ip_field.placeholder_text = "IP-Adresse"
+	_ip_field.custom_minimum_size = Vector2(start_button.custom_minimum_size.x, 48.0)
+	_ip_field.mouse_filter = Control.MOUSE_FILTER_STOP
+	box.add_child(_ip_field)
+	var join := Button.new()
+	join.text = "JOIN"
+	join.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	join.custom_minimum_size = start_button.custom_minimum_size
+	join.pressed.connect(_on_join_pressed)
+	join.mouse_entered.connect(_focus_if_enabled.bind(join))
+	box.add_child(join)
+	_net_status = Label.new()
+	_net_status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_net_status.add_theme_color_override("font_color", Color(0.0, 0.95, 1.0))
+	_net_status.text = "Port %d  ·  bis zu %d Spieler" % [NetworkManager.PORT, NetworkManager.MAX_CLIENTS + 1]
+	box.add_child(_net_status)
+	return box
+
+
+func _on_host_pressed() -> void:
+	var err := NetworkManager.host_map(game_scene)
+	if err != OK:
+		_net_status.text = "Host fehlgeschlagen (%d)" % err
+		return
+	_net_status.text = "Host auf Port %d" % NetworkManager.PORT
+	_net_launch = true
+	_start_game(game_scene)
+
+
+func _on_join_pressed() -> void:
+	var ip := _ip_field.text.strip_edges()
+	if ip.is_empty():
+		ip = "127.0.0.1"
+	var err := NetworkManager.create_client(ip)
+	if err != OK:
+		_net_status.text = "Join fehlgeschlagen (%d)" % err
+		return
+	_net_status.text = "Verbinde mit %s …" % ip
+
+
+func _on_net_failed() -> void:
+	if _net_status != null:
+		_net_status.text = "Verbindung fehlgeschlagen"
+
+
+func _on_net_ended() -> void:
+	if _net_status != null:
+		_net_status.text = "Getrennt"
