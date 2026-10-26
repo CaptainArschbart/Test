@@ -55,6 +55,7 @@ func _physics_process(delta: float) -> void:
 func explode() -> void:
 	set_physics_process(false)
 	var center := global_position
+	StealthNoise.emit(get_tree(), center, 40.0, self, StealthNoise.EXPLOSION)
 	var space := get_world_3d().direct_space_state
 	var query := PhysicsShapeQueryParameters3D.new()
 	var sphere := SphereShape3D.new()

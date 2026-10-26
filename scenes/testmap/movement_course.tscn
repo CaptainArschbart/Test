@@ -1,0 +1,316 @@
+[gd_scene load_steps=8 format=3]
+
+[sub_resource type="StandardMaterial3D" id="Mat_block"]
+albedo_color = Color(0.3, 0.32, 0.4, 1)
+roughness = 0.7
+
+[sub_resource type="StandardMaterial3D" id="Mat_dark"]
+albedo_color = Color(0.17, 0.18, 0.24, 1)
+metallic = 0.3
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_metal"]
+albedo_color = Color(0.28, 0.3, 0.36, 1)
+metallic = 0.75
+roughness = 0.35
+
+[sub_resource type="StandardMaterial3D" id="Mat_crate"]
+albedo_color = Color(0.1, 0.22, 0.26, 1)
+metallic = 0.2
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_neon_cyan"]
+albedo_color = Color(0, 0.05, 0.06, 1)
+roughness = 0.8
+emission_enabled = true
+emission = Color(0, 0.9, 1, 1)
+emission_energy_multiplier = 4
+
+[sub_resource type="StandardMaterial3D" id="Mat_neon_magenta"]
+albedo_color = Color(0.06, 0, 0.05, 1)
+roughness = 0.8
+emission_enabled = true
+emission = Color(1, 0.16, 0.84, 1)
+emission_energy_multiplier = 4
+
+[sub_resource type="StandardMaterial3D" id="Mat_neon_yellow"]
+albedo_color = Color(0.06, 0.05, 0, 1)
+roughness = 0.8
+emission_enabled = true
+emission = Color(1, 0.82, 0.1, 1)
+emission_energy_multiplier = 3.5
+
+[node name="MovementCourse" type="Node3D"]
+
+[node name="Title" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.2, 8)
+billboard = 1
+modulate = Color(0, 0.9, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "KLETTERHOF"
+font_size = 150
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Hint" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.5, 8)
+billboard = 1
+modulate = Color(0.9, 0.95, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "Leertaste vor Kante = hochziehen · Strg = hocken · Sprint + Strg = rutschen"
+font_size = 48
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Mantle" type="Node3D" parent="."]
+
+[node name="Wall" type="CSGBox3D" parent="Mantle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.6, 5)
+use_collision = true
+size = Vector3(2.5, 1.2, 2)
+material = SubResource("Mat_block")
+
+[node name="WallEdge" type="CSGBox3D" parent="Mantle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 1.215, 5.94)
+cast_shadow = 0
+size = Vector3(2.5, 0.03, 0.12)
+material = SubResource("Mat_neon_magenta")
+
+[node name="Label" type="Label3D" parent="Mantle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 2.1, 5)
+billboard = 1
+modulate = Color(1, 0.16, 0.84, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "1,2 m"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Wall2" type="CSGBox3D" parent="Mantle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 0.9, 5)
+use_collision = true
+size = Vector3(2.5, 1.8, 2)
+material = SubResource("Mat_block")
+
+[node name="Wall2Edge" type="CSGBox3D" parent="Mantle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 1.815, 5.94)
+cast_shadow = 0
+size = Vector3(2.5, 0.03, 0.12)
+material = SubResource("Mat_neon_magenta")
+
+[node name="Label2" type="Label3D" parent="Mantle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 2.7, 5)
+billboard = 1
+modulate = Color(1, 0.16, 0.84, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "1,8 m"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Wall3" type="CSGBox3D" parent="Mantle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.15, 5)
+use_collision = true
+size = Vector3(2.5, 2.3, 2)
+material = SubResource("Mat_block")
+
+[node name="Wall3Edge" type="CSGBox3D" parent="Mantle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.315, 5.94)
+cast_shadow = 0
+size = Vector3(2.5, 0.03, 0.12)
+material = SubResource("Mat_neon_magenta")
+
+[node name="Label3" type="Label3D" parent="Mantle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.2, 5)
+billboard = 1
+modulate = Color(1, 0.16, 0.84, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "2,3 m"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="TooHigh" type="CSGBox3D" parent="Mantle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 1.5, 5)
+use_collision = true
+size = Vector3(2.5, 3, 2)
+material = SubResource("Mat_dark")
+
+[node name="TooHighLabel" type="Label3D" parent="Mantle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 3.9, 5)
+billboard = 1
+modulate = Color(1, 0.1, 0.15, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "3,0 m (zu hoch)"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Crawl" type="Node3D" parent="."]
+
+[node name="WallLeft" type="CSGBox3D" parent="Crawl"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.8, 4.5)
+use_collision = true
+size = Vector3(0.3, 1.6, 5)
+material = SubResource("Mat_dark")
+
+[node name="WallRight" type="CSGBox3D" parent="Crawl"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0.8, 4.5)
+use_collision = true
+size = Vector3(0.3, 1.6, 5)
+material = SubResource("Mat_dark")
+
+[node name="Roof" type="CSGBox3D" parent="Crawl"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 1.45, 4.5)
+use_collision = true
+size = Vector3(2.3, 0.3, 5)
+material = SubResource("Mat_metal")
+
+[node name="Neon" type="CSGBox3D" parent="Crawl"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 1.28, 6.95)
+cast_shadow = 0
+size = Vector3(1.7, 0.04, 0.06)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Light" type="OmniLight3D" parent="Crawl"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 1, 4.5)
+light_color = Color(1, 0.82, 0.1, 1)
+light_energy = 0.4
+omni_range = 3.5
+omni_attenuation = 1.5
+
+[node name="Label" type="Label3D" parent="Crawl"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 2.2, 7.2)
+billboard = 1
+modulate = Color(1, 0.82, 0.1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "KRIECHEN 1,3 m"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="SlideBar" type="Node3D" parent="."]
+
+[node name="PostLeft" type="CSGBox3D" parent="SlideBar"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.9, 12)
+use_collision = true
+size = Vector3(0.3, 1.8, 0.3)
+material = SubResource("Mat_metal")
+
+[node name="PostRight" type="CSGBox3D" parent="SlideBar"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.9, 12)
+use_collision = true
+size = Vector3(0.3, 1.8, 0.3)
+material = SubResource("Mat_metal")
+
+[node name="Pipe" type="CSGBox3D" parent="SlideBar"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 1.45, 12)
+use_collision = true
+size = Vector3(5.3, 0.6, 0.5)
+material = SubResource("Mat_dark")
+
+[node name="Neon" type="CSGBox3D" parent="SlideBar"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 1.14, 12.26)
+cast_shadow = 0
+size = Vector3(4.7, 0.04, 0.04)
+material = SubResource("Mat_neon_magenta")
+
+[node name="Label" type="Label3D" parent="SlideBar"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 2.3, 12)
+billboard = 1
+modulate = Color(1, 0.16, 0.84, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "RUTSCHEN 1,15 m"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Roofs" type="Node3D" parent="."]
+
+[node name="Crate" type="CSGBox3D" parent="Roofs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.7, 0.5)
+use_collision = true
+size = Vector3(2, 1.4, 2)
+material = SubResource("Mat_crate")
+
+[node name="CrateEdge" type="CSGBox3D" parent="Roofs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 1.415, 1.44)
+cast_shadow = 0
+size = Vector3(2, 0.03, 0.12)
+material = SubResource("Mat_neon_cyan")
+
+[node name="Container" type="CSGBox3D" parent="Roofs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 1.4, -2.5)
+use_collision = true
+size = Vector3(3, 2.8, 4)
+material = SubResource("Mat_metal")
+
+[node name="ContainerEdge" type="CSGBox3D" parent="Roofs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 2.815, -0.56)
+cast_shadow = 0
+size = Vector3(3, 0.03, 0.12)
+material = SubResource("Mat_neon_cyan")
+
+[node name="RoofA" type="CSGBox3D" parent="Roofs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 2.15, -5.5)
+use_collision = true
+size = Vector3(5, 4.3, 6)
+material = SubResource("Mat_dark")
+
+[node name="RoofAEdge" type="CSGBox3D" parent="Roofs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 4.315, -2.56)
+cast_shadow = 0
+size = Vector3(5, 0.03, 0.12)
+material = SubResource("Mat_neon_cyan")
+
+[node name="RoofB" type="CSGBox3D" parent="Roofs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 2.15, -5.5)
+use_collision = true
+size = Vector3(5, 4.3, 6)
+material = SubResource("Mat_dark")
+
+[node name="RoofBEdge" type="CSGBox3D" parent="Roofs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 4.315, -2.56)
+cast_shadow = 0
+size = Vector3(5, 0.03, 0.12)
+material = SubResource("Mat_neon_cyan")
+
+[node name="RoofBRim" type="CSGBox3D" parent="Roofs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 4.6, -8.4)
+use_collision = true
+size = Vector3(5, 0.6, 0.2)
+material = SubResource("Mat_dark")
+
+[node name="Label" type="Label3D" parent="Roofs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 5.4, -3)
+billboard = 1
+modulate = Color(0, 0.9, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "DACHROUTE 4,3 m"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="GapLabel" type="Label3D" parent="Roofs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.25, 5, -5.5)
+billboard = 1
+modulate = Color(0, 0.9, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "LÜCKE 2,5 m"
+font_size = 80
+outline_size = 18
+pixel_size = 0.004
+
+[node name="WallLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 4.5, 8)
+light_color = Color(0.9, 0.9, 1, 1)
+light_energy = 1.2
+omni_range = 9
+omni_attenuation = 1.5
+
+[node name="RoofLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 7, -5)
+light_color = Color(0, 0.9, 1, 1)
+light_energy = 1
+omni_range = 8
+omni_attenuation = 1.5

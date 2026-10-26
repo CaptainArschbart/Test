@@ -9,6 +9,7 @@
 [resource]
 script = ExtResource("1_weapon")
 damage = 120.0
+noise_radius = 55.0
 magazine_size = 5
 fire_interval = 1.1
 reload_time = 2.4

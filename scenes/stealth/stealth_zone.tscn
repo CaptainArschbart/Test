@@ -1,0 +1,180 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scenes/stealth/stealth_guard.gd" id="1_guard"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_block"]
+albedo_color = Color(0.3, 0.32, 0.4, 1)
+roughness = 0.7
+
+[sub_resource type="StandardMaterial3D" id="Mat_dark"]
+albedo_color = Color(0.17, 0.18, 0.24, 1)
+metallic = 0.3
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_metal"]
+albedo_color = Color(0.28, 0.3, 0.36, 1)
+metallic = 0.75
+roughness = 0.35
+
+[sub_resource type="StandardMaterial3D" id="Mat_crate"]
+albedo_color = Color(0.1, 0.22, 0.26, 1)
+metallic = 0.2
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_neon_cyan"]
+albedo_color = Color(0, 0.05, 0.06, 1)
+roughness = 0.8
+emission_enabled = true
+emission = Color(0, 0.9, 1, 1)
+emission_energy_multiplier = 4
+
+[sub_resource type="StandardMaterial3D" id="Mat_neon_magenta"]
+albedo_color = Color(0.06, 0, 0.05, 1)
+roughness = 0.8
+emission_enabled = true
+emission = Color(1, 0.16, 0.84, 1)
+emission_energy_multiplier = 4
+
+[sub_resource type="StandardMaterial3D" id="Mat_neon_yellow"]
+albedo_color = Color(0.06, 0.05, 0, 1)
+roughness = 0.8
+emission_enabled = true
+emission = Color(1, 0.82, 0.1, 1)
+emission_energy_multiplier = 3.5
+
+[node name="StealthZone" type="Node3D"]
+
+[node name="Title" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.9, 23)
+billboard = 1
+modulate = Color(1, 0.82, 0.1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "SCHLEICH-ZONE"
+font_size = 150
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Hint" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.3, 23)
+billboard = 1
+modulate = Color(0.9, 0.95, 1, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "Strg = hocken (leiser, kleiner) · Licht macht sichtbar · Sprinten und Schüsse hört man weit"
+font_size = 48
+outline_size = 18
+pixel_size = 0.004
+
+[node name="Cover" type="Node3D" parent="."]
+
+[node name="Low" type="CSGBox3D" parent="Cover"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.55, 12)
+use_collision = true
+size = Vector3(4, 1.1, 0.8)
+material = SubResource("Mat_block")
+
+[node name="LowEdge" type="CSGBox3D" parent="Cover"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1.115, 12.34)
+cast_shadow = 0
+size = Vector3(4, 0.03, 0.12)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Low2" type="CSGBox3D" parent="Cover"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.55, 10)
+use_collision = true
+size = Vector3(4, 1.1, 0.8)
+material = SubResource("Mat_block")
+
+[node name="Low2Edge" type="CSGBox3D" parent="Cover"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 1.115, 10.34)
+cast_shadow = 0
+size = Vector3(4, 0.03, 0.12)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Low3" type="CSGBox3D" parent="Cover"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 0.55, -8)
+use_collision = true
+size = Vector3(0.8, 1.1, 4)
+material = SubResource("Mat_block")
+
+[node name="Low3Edge" type="CSGBox3D" parent="Cover"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 1.115, -6.06)
+cast_shadow = 0
+size = Vector3(0.8, 0.03, 0.12)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Low4" type="CSGBox3D" parent="Cover"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 0.55, -9)
+use_collision = true
+size = Vector3(0.8, 1.1, 4)
+material = SubResource("Mat_block")
+
+[node name="Low4Edge" type="CSGBox3D" parent="Cover"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 1.115, -7.06)
+cast_shadow = 0
+size = Vector3(0.8, 0.03, 0.12)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Low5" type="CSGBox3D" parent="Cover"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.55, -17)
+use_collision = true
+size = Vector3(5, 1.1, 0.8)
+material = SubResource("Mat_block")
+
+[node name="Low5Edge" type="CSGBox3D" parent="Cover"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 1.115, -16.66)
+cast_shadow = 0
+size = Vector3(5, 0.03, 0.12)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Low6" type="CSGBox3D" parent="Cover"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.55, -17)
+use_collision = true
+size = Vector3(3, 1.1, 0.8)
+material = SubResource("Mat_block")
+
+[node name="Low6Edge" type="CSGBox3D" parent="Cover"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1.115, -16.66)
+cast_shadow = 0
+size = Vector3(3, 0.03, 0.12)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Low7" type="CSGBox3D" parent="Cover"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0.55, 4)
+use_collision = true
+size = Vector3(0.8, 1.1, 5)
+material = SubResource("Mat_block")
+
+[node name="Low7Edge" type="CSGBox3D" parent="Cover"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1.115, 6.44)
+cast_shadow = 0
+size = Vector3(0.8, 0.03, 0.12)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Low8" type="CSGBox3D" parent="Cover"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0.55, 2)
+use_collision = true
+size = Vector3(0.8, 1.1, 5)
+material = SubResource("Mat_block")
+
+[node name="Low8Edge" type="CSGBox3D" parent="Cover"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1.115, 4.44)
+cast_shadow = 0
+size = Vector3(0.8, 0.03, 0.12)
+material = SubResource("Mat_neon_yellow")
+
+[node name="Guards" type="Node3D" parent="."]
+
+
+[node name="GuardHolo" type="CharacterBody3D" parent="Guards"]
+transform = Transform3D(-1, 0, -1.2246e-16, 0, 1, 0, 1.2246e-16, 0, -1, 9, 0, 9)
+script = ExtResource("1_guard")
+patrol_points = PackedVector3Array(9, 0, 9, -9, 0, 9, -9, 0, -9, 9, 0, -9)
+
+[node name="GuardWest" type="CharacterBody3D" parent="Guards"]
+transform = Transform3D(6.1232e-17, 0, 1, 0, 1, 0, -1, 0, 6.1232e-17, -22, 0, -12)
+script = ExtResource("1_guard")
+
+[node name="GuardEast" type="CharacterBody3D" parent="Guards"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 18, 0, -14)
+script = ExtResource("1_guard")
+patrol_points = PackedVector3Array(18, 0, -14, 18, 0, 8)

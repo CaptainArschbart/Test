@@ -50,6 +50,7 @@ const REBINDABLE_ACTIONS := {
 	"move_right": "Rechts",
 	"jump": "Springen",
 	"sprint": "Sprinten",
+	"crouch": "Hocken",
 	"inventory": "Inventar",
 	"interact": "Benutzen",
 	"drop_item": "Wegwerfen",
