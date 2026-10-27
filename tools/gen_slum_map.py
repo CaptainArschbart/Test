@@ -445,6 +445,7 @@ HEAD = """[gd_scene format=3]
 [ext_resource type="Resource" path="res://scenes/items/data/emp_grenade.tres" id="i_emp"]
 [ext_resource type="Resource" path="res://scenes/items/data/pistol.tres" id="i_pistol"]
 [ext_resource type="Resource" path="res://scenes/items/data/sniper.tres" id="i_sniper"]
+[ext_resource type="PackedScene" path="res://scenes/slum/slum_enemies.tscn" id="e_enemies"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
 sky_top_color = Color(0.02, 0.025, 0.05, 1)
@@ -571,6 +572,8 @@ def items() -> str:
         out.append(f'[node name="{name}" type="StaticBody3D" parent="Vending"]\ntransform = {xform(x, 0.15 if abs(x) < 8 else 0.0, z, yaw)}\n'
                    f'script = ExtResource("i_vending")\nproduct = ExtResource("{product}")\nprice = {price}\n'
                    f'currency = ExtResource("i_credchip")')
+    # Gegner, Streifenwege und Navmesh-Director (scenes/slum/slum_enemies.tscn, im Editor bearbeiten)
+    out.append('[node name="SlumEnemies" parent="." instance=ExtResource("e_enemies")]')
     return "\n\n".join(out)
 
 

@@ -317,3 +317,21 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 - `scenes/player/item_user.gd`: nur zwei Getter ergänzt, `get_held_view()` und `get_held_item()`.
 - Getestet: Godot 4.7.2 unter Xvfb, Compatibility (OpenGL) und Forward+ (Vulkan über lavapipe). Screenshots aus der Spielerkamera vorher/nachher: ohne Waffe, Runterschauen, Pistole, Pistole zielend, Pistole nachladen, Sniper, Sniper zielend, Sniper nachladen, Klinge, Granate. Dazu Nahaufnahmen mit Tageslicht von hinten und vorn. `testmap.tscn` ohne `SCRIPT ERROR`.
 - Nicht getestet: echte GPU, Spielgefühl in Bewegung, Schlag- und Wurfbewegung mitten im Ablauf (nur Ruhepose angesehen).
+
+### 2026-10-26 · Gegner ausgearbeitet und in Sektor 7 · Claude (für Arschi) · PR #30
+- Was: Neues Gegnersystem `Enemy` (ersetzt nicht die Testwachen der Testmap, die bleiben).
+  - Navigation: Navmesh wird beim Start aus den statischen Kollisionen der Map gebacken (`EnemyDirector`, Monotone, ~0,3 s im Hintergrund). Eigener Pfadfolger, schwebender CharacterBody mit Boden- und Kantenstrahl: Treppen, Stege und Feuertreppen gehen, keiner fällt von Kanten.
+  - Zustände: Streife (Wegpunkte, Warten, Blickrichtung), Verdacht, Nachsehen, Kampf, Suche, Rückkehr, betäubt, tot. Nutzt Licht/Ducken (`PlayerStealth`), Geräusche (`StealthNoise`), Kollegen hören Rufe und Schüsse, Leichen lösen Suche aus, Respawn setzt alles zurück.
+  - Kampf: Nahkampf (Ausholen), Pistole/Gewehr mit Trefferchance (Abstand, Bewegung, Ducken, Licht), Deckung suchen, Abstand halten, Seitschritte, Nachladen, höchstens 3 Schützen gleichzeitig. Kopfschuss ×2, Hinterhalt ×3 mit Niederschlagen, EMP betäubt. Tod mit Umfallen, Beute als Pickups, neue Todesursachen im Death-Screen.
+  - Typen als Profile (`scenes/enemies/profiles/*.tres`): Gang-Schläger, Gang-Pistole, Sicherheitsdienst (Taschenlampe, bessere Sicht), Elite-Scharfschütze (Laser, bleibt auf Posten), Polizist. Low-Poly-Modelle prozedural mit Gelenken und groben Animationen.
+  - Audio prozedural: Funkstimme mit Formanten, Schritte aus den vorhandenen wavs, Schüsse, Schlag, Zap.
+  - Leistung: LOD im Director (12 voll nah, sonst 5 Hz, hinter 110 m schlafend außer im Alarm), Taschenlampen nur bis 45 m. 16 Gegner voll ≈ 1,7 ms pro Physik-Frame headless.
+  - Platzierung `scenes/slum/slum_enemies.tscn`: 16 Gegner mit 10 Routen (Lagerhof, Lager, Nordwest-Straße, Hinterhof, zwei Dachstreifen mit Scharfschütze, Shanty-Steg, Gasse SW, Markt, Kreuzung mit einem Polizisten). Spawn und einige Ecken bleiben ruhig.
+- Dateien: neu `scenes/enemies/*` (enemy, enemy_model, enemy_sounds, enemy_director, enemy_profile, patrol_route, enemy.tscn, profiles/), `scenes/slum/slum_enemies.tscn`. Geändert `scenes/slum/slum.tscn` (nur eine Instanz am Ende, keine Geometrie), `tools/gen_slum_map.py` (dieselbe Instanz, erzeugt die Datei weiter exakt), `scenes/survival/death_screen.gd` (Todesursachen), `scenes/items/grenade.gd` (EMP ruft `emp_hit`).
+- Wichtig für die Nächsten:
+  - Neue Klassen (`Enemy`, `EnemyDirector`, `PatrolRoute`, `EnemyProfile`): Projekt im Editor einmal neu laden.
+  - Werte (Schaden, Sicht, Treffsicherheit, Beute) stehen in den Profilen, nicht im Skript. Route = `PatrolRoute` mit Marker3D-Kindern, Metadaten `wait`/`look` am Marker.
+  - Nicht erreichbar übers Navmesh: Feuertreppen Res2 und Res8 und die Shanty-Plattformen 18, 20, 21, 22. Dort keine Routen hinlegen.
+  - Multiplayer: Gegner laufen auf jedem Rechner für sich und jagen die eigene Figur, sie sind nicht synchronisiert.
+- Getestet: Godot 4.7.2 headless, Prüfskript 49 Checks (Streife, Sicht, Alarm, Fernkampf, Nahkampf, Hören, Feuertreppe aufs 15-m-Dach, Kantensicherheit, Tod, Beute, Leiche, Kopfschuss, EMP, Hinterhalt, Respawn, LOD) 4 von 5 Läufen grün, einmal 1 Fehler (Timing, nicht reproduziert). Screenshots unter Xvfb (OpenGL). Slum, Testmap und Menü ohne `SCRIPT ERROR`.
+- Nicht getestet: echte GPU und Forward+, Spielgefühl mit Maus, Ton (nur Dummy-Audio), Multiplayer mit Gegnern, Ragdoll gibt es nicht (Umfallen per Tween).
