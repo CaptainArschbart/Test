@@ -1,5 +1,7 @@
 extends Node
-## Host oder Client über ENet. Offline (kein Peer) bleibt Einzelspieler.
+## Host oder Client. Offline (kein Peer) bleibt Einzelspieler.
+## Direkte IP nutzt ENet (UDP) und lauscht auf 0.0.0.0.
+## ngrok kann nur TCP. Dafür läuft dieselbe API über WebSocket.
 ##
 ## Der Host merkt sich die Map. Beitretende laden dieselbe Szene. Die fest
 ## platzierte Player-Instanz wird entfernt. Figuren spawnt der
@@ -17,8 +19,13 @@ signal peer_joined(id: int)
 signal peer_left(id: int)
 signal connection_failed
 signal session_ended
+signal client_connected
 
 var map_path := ""
+var listen_port := PORT
+var tunnel_mode := false
+
+var _banner: CanvasLayer
 
 var _spawner: MultiplayerSpawner
 var _players: Node3D
@@ -50,6 +57,9 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
+	var active := multiplayer.multiplayer_peer
+	if active is WebSocketMultiplayerPeer:
+		(active as WebSocketMultiplayerPeer).poll()
 	if not has_session():
 		_handled_scene = 0
 		return
@@ -72,37 +82,145 @@ func has_session() -> bool:
 	return peer.get_connection_status() != MultiplayerPeer.CONNECTION_DISCONNECTED
 
 
-func create_server() -> Error:
+func create_server(port: int = -1, tcp_tunnel: bool = false) -> Error:
+	var use_port := PORT if port <= 0 else port
 	stop()
+	if tcp_tunnel:
+		var ws := WebSocketMultiplayerPeer.new()
+		var ws_err := ws.create_server(use_port, "0.0.0.0")
+		if ws_err != OK:
+			ws.close()
+			return ws_err
+		listen_port = use_port
+		tunnel_mode = true
+		_bind_peer(ws)
+		return OK
 	var peer := ENetMultiplayerPeer.new()
-	var err := peer.create_server(PORT, MAX_CLIENTS)
+	# "*" trifft auf Windows oft nur IPv6. ngrok verbindet sich per IPv4 mit 127.0.0.1.
+	peer.set_bind_ip("0.0.0.0")
+	var err := peer.create_server(use_port, MAX_CLIENTS)
 	if err != OK:
 		peer.close()
 		return err
+	listen_port = use_port
+	tunnel_mode = false
 	_bind_peer(peer)
 	return OK
 
 
-func create_client(address: String) -> Error:
-	var host := address.strip_edges()
+func create_client(address: String, port: int = -1) -> Error:
+	var fallback := PORT if port <= 0 else port
+	var tcp_tunnel := wants_tcp_tunnel(address)
+	var endpoint := split_endpoint(address, fallback)
+	var host := str(endpoint["host"])
+	var use_port := int(endpoint["port"])
 	if host.is_empty():
 		host = "127.0.0.1"
+	# ENet löst Hostnamen auf manchen Systemen nicht selbst auf.
+	var resolved := resolve_host(host)
+	if resolved.is_empty():
+		return ERR_CANT_RESOLVE
 	stop()
+	if tcp_tunnel:
+		var ws := WebSocketMultiplayerPeer.new()
+		var ws_err := ws.create_client(_websocket_url(resolved, use_port))
+		if ws_err != OK:
+			ws.close()
+			return ws_err
+		tunnel_mode = true
+		_bind_peer(ws)
+		return OK
 	var peer := ENetMultiplayerPeer.new()
-	var err := peer.create_client(host, PORT)
+	var err := peer.create_client(resolved, use_port)
 	if err != OK:
 		peer.close()
 		return err
+	tunnel_mode = false
 	_bind_peer(peer)
 	return OK
 
 
-func host_map(path: String) -> Error:
-	var err := create_server()
+func host_map(path: String, port: int = -1, tcp_tunnel: bool = false) -> Error:
+	var err := create_server(port, tcp_tunnel)
 	if err != OK:
 		return err
 	map_path = path
 	return OK
+
+
+static func wants_tcp_tunnel(address: String) -> bool:
+	var raw := address.strip_edges().to_lower()
+	return raw.contains("ngrok") or raw.begins_with("tcp://") or raw.begins_with("ws://") or raw.begins_with("wss://")
+
+
+static func split_endpoint(address: String, fallback_port: int) -> Dictionary:
+	var raw := address.strip_edges()
+	for prefix: String in ["tcp://", "udp://", "ws://", "wss://"]:
+		if raw.to_lower().begins_with(prefix):
+			raw = raw.substr(prefix.length())
+			break
+	raw = raw.trim_suffix("/").strip_edges()
+	var colon := raw.rfind(":")
+	if colon > 0 and not raw.contains("::"):
+		var tail := raw.substr(colon + 1).strip_edges()
+		if tail.is_valid_int():
+			return {"host": raw.substr(0, colon).strip_edges(), "port": tail.to_int(), "explicit": true}
+	return {"host": raw, "port": fallback_port, "explicit": false}
+
+
+static func resolve_host(host: String) -> String:
+	var clean := host.strip_edges()
+	if clean.is_empty():
+		return ""
+	if clean.is_valid_ip_address():
+		return clean
+	var resolved := IP.resolve_hostname(clean, IP.TYPE_IPV4)
+	if resolved.is_empty():
+		resolved = IP.resolve_hostname(clean)
+	return resolved
+
+
+static func _websocket_url(ip: String, port: int) -> String:
+	var literal := ip
+	if ip.contains(":"):
+		literal = "[%s]" % ip
+	return "ws://%s:%d" % [literal, port]
+
+
+func local_share_address() -> String:
+	var best := "127.0.0.1"
+	for raw: String in IP.get_local_addresses():
+		if raw.is_valid_ip_address() and not raw.contains(":") and raw != "127.0.0.1":
+			best = raw
+			break
+	return "%s:%d" % [best, listen_port]
+
+
+func error_text(err: Error) -> String:
+	if err == ERR_CANT_RESOLVE:
+		return "Hostname nicht auflösbar. Internet und Adresse prüfen."
+	if err == ERR_ALREADY_IN_USE or err == ERR_CANT_CREATE:
+		return "Port ist belegt."
+	if err == ERR_CANT_CONNECT:
+		return "Keine Verbindung. Internet, IP und Port prüfen."
+	return "Netzwerkfehler (%d)." % err
+
+
+func show_share_banner(text: String) -> void:
+	if _banner == null:
+		_banner = CanvasLayer.new()
+		_banner.layer = 40
+		_banner.name = "ShareBanner"
+		var label := Label.new()
+		label.name = "ShareLabel"
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		label.position = Vector2(16, 8)
+		label.add_theme_color_override("font_color", Color(0.0, 0.95, 1.0))
+		_banner.add_child(label)
+		add_child(_banner)
+	var share := _banner.get_node("ShareLabel") as Label
+	if share != null:
+		share.text = text
 
 
 func stop() -> void:
@@ -119,7 +237,14 @@ func stop() -> void:
 	_next_slot = 0
 	_slots.clear()
 	_pending_spawns.clear()
+	tunnel_mode = false
 	_clear_players()
+	if _banner != null:
+		_banner.queue_free()
+		_banner = null
+	var ngrok := get_node_or_null("/root/NgrokManager")
+	if ngrok != null and ngrok.has_method("stop_tunnel"):
+		ngrok.call("stop_tunnel")
 	_stopping = false
 
 
@@ -167,7 +292,7 @@ func _on_peer_disconnected(id: int) -> void:
 
 
 func _on_connected_to_server() -> void:
-	pass
+	client_connected.emit()
 
 
 func _on_connection_failed() -> void:
@@ -204,7 +329,7 @@ func _setup_map(scene: Node) -> void:
 		_spawn_player(id)
 
 
-func _bind_peer(peer: ENetMultiplayerPeer) -> void:
+func _bind_peer(peer: MultiplayerPeer) -> void:
 	multiplayer.multiplayer_peer = peer
 	# Spawner neu einhängen, damit er den Peer kennt. Der Pfad ist auf jedem
 	# Rechner /root/NetworkManager/PlayerSpawner, auch schon im Menü.

@@ -75,6 +75,9 @@ func explode() -> void:
 		if collider == thrower and data.drains_stamina:
 			thrower.stats.add_stamina(-thrower.stats.max_stamina)
 			thrower.item_user.show_message("EMP! Ausdauer leer", data.color)
+		elif data.drains_stamina and collider.has_method("emp_hit"):
+			# Gegner mit Elektronik (Enemy): Schaden und Betäubung.
+			collider.emp_hit(data.damage, target, (center - target).normalized())
 		elif collider.has_method("take_hit"):
 			var normal := (center - target).normalized()
 			collider.take_hit(data.damage, target, normal)

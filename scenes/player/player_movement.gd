@@ -393,6 +393,9 @@ func find_ledge(forward: Vector3, on_floor: bool) -> Dictionary:
 		var hit := space.intersect_ray(query)
 		if hit.is_empty():
 			continue
+		# Gegner und lose Gegenstände sind keine Wände (Gegner liegen auf der Welt-Ebene).
+		if _is_moving_body(hit.collider):
+			continue
 		var normal: Vector3 = hit.normal
 		# Nur steile Flächen sind Wände.
 		if absf(normal.y) > 0.35:
@@ -454,7 +457,13 @@ func _ray_down(space: PhysicsDirectSpaceState3D, xz: Vector3, from_y: float, to_
 	var hit := space.intersect_ray(query)
 	if hit.is_empty() or (hit.normal as Vector3).angle_to(Vector3.UP) > deg_to_rad(30.0):
 		return {}
+	if _is_moving_body(hit.collider):
+		return {}
 	return hit
+
+
+func _is_moving_body(collider: Object) -> bool:
+	return collider is CharacterBody3D or collider is RigidBody3D
 
 
 func _capsule_fits(feet: Vector3, height: float) -> bool:

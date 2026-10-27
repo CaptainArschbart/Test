@@ -1,0 +1,273 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/enemies/enemy_director.gd" id="1_director"]
+[ext_resource type="Script" path="res://scenes/enemies/patrol_route.gd" id="2_route"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/enemy.tscn" id="3_enemy"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/gangster_melee.tres" id="p_gm"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/gangster_pistol.tres" id="p_gp"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/security.tres" id="p_sec"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/sniper.tres" id="p_sn"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/cop.tres" id="p_cop"]
+
+[node name="SlumEnemies" type="Node3D"]
+
+[node name="Director" type="Node3D" parent="."]
+script = ExtResource("1_director")
+source_root = NodePath("../..")
+
+[node name="Routes" type="Node3D" parent="."]
+
+[node name="R_Yard" type="Node3D" parent="Routes"]
+script = ExtResource("2_route")
+loop = true
+wait_time = 3.0
+
+[node name="P1" type="Marker3D" parent="Routes/R_Yard"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, -12, 0, -46)
+
+[node name="P2" type="Marker3D" parent="Routes/R_Yard"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, -11, 0, -68)
+metadata/look = true
+
+[node name="P3" type="Marker3D" parent="Routes/R_Yard"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, -27, 0, -70)
+
+[node name="P4" type="Marker3D" parent="Routes/R_Yard"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, -28, 0, -45)
+metadata/look = true
+
+[node name="R_Warehouse" type="Node3D" parent="Routes"]
+script = ExtResource("2_route")
+loop = false
+wait_time = 3.5
+
+[node name="P1" type="Marker3D" parent="Routes/R_Warehouse"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, -30, 0, -28)
+
+[node name="P2" type="Marker3D" parent="Routes/R_Warehouse"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, -22, 0, -52)
+
+[node name="P3" type="Marker3D" parent="Routes/R_Warehouse"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -34, 0, -52)
+metadata/look = true
+
+[node name="P4" type="Marker3D" parent="Routes/R_Warehouse"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, -40, 0, -58)
+metadata/look = true
+
+[node name="R_NWWest" type="Node3D" parent="Routes"]
+script = ExtResource("2_route")
+loop = true
+wait_time = 2.5
+
+[node name="P1" type="Marker3D" parent="Routes/R_NWWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, -48, 0, -14)
+
+[node name="P2" type="Marker3D" parent="Routes/R_NWWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, -66, 0, -10)
+
+[node name="P3" type="Marker3D" parent="Routes/R_NWWest"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, -70, 0, -45)
+metadata/look = true
+
+[node name="P4" type="Marker3D" parent="Routes/R_NWWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, -52, 0, -74)
+
+[node name="P5" type="Marker3D" parent="Routes/R_NWWest"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, -46, 0, -36)
+
+[node name="R_Courtyard" type="Node3D" parent="Routes"]
+script = ExtResource("2_route")
+loop = true
+wait_time = 2.5
+
+[node name="P1" type="Marker3D" parent="Routes/R_Courtyard"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, 20, 0, -25)
+
+[node name="P2" type="Marker3D" parent="Routes/R_Courtyard"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, 20, 0, -48)
+
+[node name="P3" type="Marker3D" parent="Routes/R_Courtyard"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, -0.0, 0, -1.0, 46, 0, -50)
+metadata/look = true
+
+[node name="P4" type="Marker3D" parent="Routes/R_Courtyard"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, 46, 0, -27)
+
+[node name="R_RoofSniper" type="Node3D" parent="Routes"]
+script = ExtResource("2_route")
+loop = false
+wait_time = 6.0
+
+[node name="P1" type="Marker3D" parent="Routes/R_RoofSniper"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 11, 15.2, -26)
+metadata/look = true
+
+[node name="P2" type="Marker3D" parent="Routes/R_RoofSniper"]
+transform = Transform3D(0.37139, 0, 0.92848, 0, 1, 0, -0.92848, 0, 0.37139, 15, 15.2, -31)
+metadata/look = true
+
+[node name="R_RoofCourt" type="Node3D" parent="Routes"]
+script = ExtResource("2_route")
+loop = false
+wait_time = 4.0
+
+[node name="P1" type="Marker3D" parent="Routes/R_RoofCourt"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 32, 18.2, -44)
+metadata/look = true
+
+[node name="P2" type="Marker3D" parent="Routes/R_RoofCourt"]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, -0.0, 0, -1.0, 42, 18.2, -39)
+metadata/look = true
+
+[node name="R_Shanty" type="Node3D" parent="Routes"]
+script = ExtResource("2_route")
+loop = false
+wait_time = 3.0
+
+[node name="P1" type="Marker3D" parent="Routes/R_Shanty"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -64.2, 2.5, 61.5)
+metadata/look = true
+
+[node name="P2" type="Marker3D" parent="Routes/R_Shanty"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -54.8, 2.5, 61.5)
+
+[node name="P3" type="Marker3D" parent="Routes/R_Shanty"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -46.4, 2.5, 61.5)
+metadata/look = true
+
+[node name="R_SWStreet" type="Node3D" parent="Routes"]
+script = ExtResource("2_route")
+loop = false
+wait_time = 3.0
+
+[node name="P1" type="Marker3D" parent="Routes/R_SWStreet"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, -62, 0, 25)
+metadata/look = true
+
+[node name="P2" type="Marker3D" parent="Routes/R_SWStreet"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, -30, 0, 24)
+metadata/look = true
+
+[node name="R_Market" type="Node3D" parent="Routes"]
+script = ExtResource("2_route")
+loop = true
+wait_time = 3.0
+
+[node name="P1" type="Marker3D" parent="Routes/R_Market"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, 22, 0, 33)
+
+[node name="P2" type="Marker3D" parent="Routes/R_Market"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, 52, 0, 33)
+
+[node name="P3" type="Marker3D" parent="Routes/R_Market"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 52, 0, 46)
+metadata/look = true
+
+[node name="P4" type="Marker3D" parent="Routes/R_Market"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, 30, 0, 46)
+
+[node name="R_Crossing" type="Node3D" parent="Routes"]
+script = ExtResource("2_route")
+loop = true
+wait_time = 4.0
+
+[node name="P1" type="Marker3D" parent="Routes/R_Crossing"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, 6, 0.15, -6)
+
+[node name="P2" type="Marker3D" parent="Routes/R_Crossing"]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 6, 0.15, 6)
+metadata/look = true
+
+[node name="P3" type="Marker3D" parent="Routes/R_Crossing"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, -6, 0.15, 6)
+
+[node name="P4" type="Marker3D" parent="Routes/R_Crossing"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, -6, 0.15, -6)
+metadata/look = true
+
+[node name="Enemies" type="Node3D" parent="."]
+
+[node name="NW_GateGuard" parent="Enemies" instance=ExtResource("3_enemy")]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, -12, 0, -37)
+profile = ExtResource("p_sec")
+
+[node name="NW_YardPatrol" parent="Enemies" instance=ExtResource("3_enemy")]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, -12, 0, -46)
+profile = ExtResource("p_sec")
+route = NodePath("../../Routes/R_Yard")
+start_point = 0
+
+[node name="NW_WarehousePatrol" parent="Enemies" instance=ExtResource("3_enemy")]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, -22, 0, -52)
+profile = ExtResource("p_sec")
+route = NodePath("../../Routes/R_Warehouse")
+start_point = 1
+
+[node name="NW_WestPatrol" parent="Enemies" instance=ExtResource("3_enemy")]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, -48, 0, -14)
+profile = ExtResource("p_sec")
+route = NodePath("../../Routes/R_NWWest")
+start_point = 0
+
+[node name="NE_Smoker" parent="Enemies" instance=ExtResource("3_enemy")]
+transform = Transform3D(0.44721, 0, -0.89443, 0, 1, 0, 0.89443, 0, 0.44721, 30, 0, -55)
+profile = ExtResource("p_gm")
+
+[node name="NE_Lookout" parent="Enemies" instance=ExtResource("3_enemy")]
+transform = Transform3D(-0.70711, 0, 0.70711, 0, 1, 0, -0.70711, 0, -0.70711, 34, 0, -58)
+profile = ExtResource("p_gp")
+
+[node name="NE_CourtyardPatrol" parent="Enemies" instance=ExtResource("3_enemy")]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, 20, 0, -48)
+profile = ExtResource("p_gm")
+route = NodePath("../../Routes/R_Courtyard")
+start_point = 1
+
+[node name="NE_RoofSniper" parent="Enemies" instance=ExtResource("3_enemy")]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, 11, 15.2, -26)
+profile = ExtResource("p_sn")
+route = NodePath("../../Routes/R_RoofSniper")
+start_point = 0
+
+[node name="NE_RoofPatrol" parent="Enemies" instance=ExtResource("3_enemy")]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, 32, 18.2, -44)
+profile = ExtResource("p_gp")
+route = NodePath("../../Routes/R_RoofCourt")
+start_point = 0
+
+[node name="SW_ShantyPatrol" parent="Enemies" instance=ExtResource("3_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -54.8, 2.5, 61.5)
+profile = ExtResource("p_gm")
+route = NodePath("../../Routes/R_Shanty")
+start_point = 1
+
+[node name="SW_AlleyGunner" parent="Enemies" instance=ExtResource("3_enemy")]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, -38, 0, 21)
+profile = ExtResource("p_gp")
+
+[node name="SW_BarrelThug" parent="Enemies" instance=ExtResource("3_enemy")]
+transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, -0.0, 0, -1.0, -50, 0, 35)
+profile = ExtResource("p_gm")
+
+[node name="SW_StreetPatrol" parent="Enemies" instance=ExtResource("3_enemy")]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, -62, 0, 25)
+profile = ExtResource("p_gm")
+route = NodePath("../../Routes/R_SWStreet")
+start_point = 0
+
+[node name="SE_MarketGunner" parent="Enemies" instance=ExtResource("3_enemy")]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, 52, 0, 33)
+profile = ExtResource("p_gp")
+route = NodePath("../../Routes/R_Market")
+start_point = 1
+
+[node name="SE_WarehouseThug" parent="Enemies" instance=ExtResource("3_enemy")]
+transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 57, 0, 34)
+profile = ExtResource("p_gm")
+
+[node name="X_Cop" parent="Enemies" instance=ExtResource("3_enemy")]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, 6, 0.15, 6)
+profile = ExtResource("p_cop")
+route = NodePath("../../Routes/R_Crossing")
+start_point = 1

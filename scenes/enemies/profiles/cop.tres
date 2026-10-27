@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="EnemyProfile" format=3]
+
+[ext_resource type="Script" path="res://scenes/enemies/enemy_profile.gd" id="1_profile"]
+[ext_resource type="Resource" path="res://scenes/items/data/stim_pack.tres" id="2_stim"]
+[ext_resource type="Resource" path="res://scenes/items/data/energy_drink.tres" id="3_drink"]
+
+[resource]
+script = ExtResource("1_profile")
+display_name = "Streifenpolizist"
+faction = &"police"
+look = 3
+style = 1
+accent = Color(0.3, 0.6, 1, 1)
+max_health = 85.0
+stun_time = 4.0
+view_distance = 18.0
+view_angle = 50.0
+sight_gain = 1.1
+awareness_decay = 0.15
+shout_radius = 18.0
+walk_speed = 1.4
+run_speed = 4.0
+damage = 7.0
+death_cause = &"police_shot"
+attack_range = 22.0
+preferred_distance = 11.0
+attack_interval = 0.5
+burst = 2
+burst_pause = 2.0
+magazine = 10
+reload_time = 2.2
+accuracy = 0.35
+aim_time = 0.9
+loot_items = Array[Resource]([ExtResource("2_stim"), ExtResource("3_drink")])
+loot_chances = PackedFloat32Array(0.3, 0.4)
+credits_min = 5
+credits_max = 15
+voice_pitch = 0.95
