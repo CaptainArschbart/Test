@@ -66,6 +66,9 @@ const THIGH := 0.43
 const SHIN := 0.42
 const FOOT_DROP := 0.11
 const HIPS_Y := 0.95
+## Render-Ebene 19: nur die Beine. Ein schwaches Fülllicht (nur in der Ego-Sicht) wirkt allein darauf,
+## damit Knie und Stiefel beim Runterschauen auch in dunklen Gassen lesbar sind (wie bei den Ego-Händen).
+const LEGS_LAYER := 1 << 18
 
 var _upper_parts: Array[GeometryInstance3D] = []
 var _legs: Array[Dictionary] = []
@@ -75,6 +78,7 @@ var _hips: Node3D
 var _strap_material: StandardMaterial3D
 var _rubber_material: StandardMaterial3D
 var _metal_material: StandardMaterial3D
+var _leg_light: OmniLight3D
 
 
 func _ready() -> void:
@@ -183,6 +187,8 @@ func _update_visibility() -> void:
 		part.cast_shadow = mode
 	if _hips != null:
 		_hips.position.z = first_person_leg_offset if first_person else 0.0
+	if _leg_light != null:
+		_leg_light.visible = first_person
 
 
 func _build() -> void:
@@ -220,7 +226,19 @@ func _build() -> void:
 			dir * 0.125 + Vector3(0.0, -0.17, 0.0), Vector3(0.1, angle, 0.0))
 		pelvis.append(flap)
 	for side: float in [1.0, -1.0]:
-		_legs.append(_build_leg(hips, side))
+		var leg := _build_leg(hips, side)
+		_set_layer(leg.hip, LEGS_LAYER)
+		_legs.append(leg)
+	_leg_light = OmniLight3D.new()
+	_leg_light.name = "LegFillLight"
+	_leg_light.light_color = Color(0.75, 0.85, 1.0)
+	_leg_light.light_energy = 0.9
+	_leg_light.light_specular = 0.4
+	_leg_light.omni_range = 1.5
+	_leg_light.shadow_enabled = false
+	_leg_light.light_cull_mask = LEGS_LAYER
+	_leg_light.position = Vector3(0.0, -0.05, -0.55)
+	hips.add_child(_leg_light)
 
 	_spine = Node3D.new()
 	_spine.name = "Spine"
@@ -409,6 +427,13 @@ func _build_arm(spine: Node3D, side: float) -> Dictionary:
 	parts.append(_part(elbow, ProcMesh.rounded_box(Vector3(0.012, 0.04, 0.05), 0.3), armor_material,
 		Vector3(0.019 * side, -0.31, -0.005)))
 	return {"shoulder": shoulder, "elbow": elbow, "parts": parts}
+
+
+func _set_layer(node: Node, layer: int) -> void:
+	if node is GeometryInstance3D:
+		(node as GeometryInstance3D).layers |= layer
+	for child in node.get_children():
+		_set_layer(child, layer)
 
 
 func _part(parent: Node3D, mesh: Mesh, material: Material, pos: Vector3,

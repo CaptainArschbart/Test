@@ -165,17 +165,17 @@ const POSE_GRENADE_RIGHT := {
 ## Bildrand. Die Hand pendelt zwischen den beiden Lagen (rechte Hand nach vorn, wenn das linke
 ## Bein vorn ist). Links wird gespiegelt.
 const POSE_SPRINT := {
-	"pos": Vector3(0.17, -0.2, -0.34),
-	"fingers": Vector3(-0.35, 0.4, -1.0),
-	"back": Vector3(1.0, 0.25, 0.1),
+	"pos": Vector3(0.17, -0.16, -0.36),
+	"fingers": Vector3(-0.25, 0.8, -0.75),
+	"back": Vector3(1.0, 0.1, 0.1),
 	"curl": [[70.0, 80.0, 40.0], [74.0, 82.0, 42.0], [76.0, 84.0, 42.0], [78.0, 84.0, 42.0]],
-	"spread": 1.0,
-	"thumb": Vector3(-48.0, 12.0, 55.0),
-	"thumb_curl": [28.0, 22.0],
+	"spread": 0.5,
+	"thumb": Vector3(-62.0, 6.0, 55.0),
+	"thumb_curl": [36.0, 30.0],
 }
 ## Hintere Lage der Sprint-Faust: Versatz zur vorderen Lage und zusätzliches Kippen (Grad, um x).
-const SPRINT_BACK_OFFSET := Vector3(0.07, -0.2, 0.2)
-const SPRINT_BACK_PITCH := -55.0
+const SPRINT_BACK_OFFSET := Vector3(0.05, -0.15, 0.15)
+const SPRINT_BACK_PITCH := -40.0
 
 ## Hand flach auf einer Kante, Finger greifen über die Kante (Lage kommt beim Klettern aus der Welt).
 const POSE_LEDGE := {
@@ -406,7 +406,7 @@ func _sprint_pose(side: float, phase: float) -> Dictionary:
 	var front: Vector3 = POSE_SPRINT.pos * mirror
 	var back := front + SPRINT_BACK_OFFSET * mirror
 	# Leichter Bogen: in der Mitte etwas tiefer (der Ellbogen schwingt am Körper vorbei).
-	result.pos = front.lerp(back, t) + Vector3(0.0, -0.035 * sin(t * PI), 0.0)
+	result.pos = front.lerp(back, t) + Vector3(0.0, -0.02 * sin(t * PI), 0.0)
 	var tilt := Basis(Vector3.RIGHT, deg_to_rad(SPRINT_BACK_PITCH) * t)
 	result.basis = tilt * result.basis
 	result.arm_basis = result.basis

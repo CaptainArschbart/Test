@@ -32,7 +32,7 @@ const GROUP := &"camera_shake"
 
 @export_group("Explosion")
 ## Größter Ausschlag bei Trauma 1 (Grad): Nicken, Drehen, Rollen.
-@export var explosion_max_degrees := Vector3(2.6, 1.8, 3.2)
+@export var explosion_max_degrees := Vector3(4.0, 3.0, 5.0)
 ## Größter Versatz bei Trauma 1 (Meter).
 @export var explosion_max_offset := 0.04
 ## Trauma direkt an der Explosion.
