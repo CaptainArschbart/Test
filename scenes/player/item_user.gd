@@ -51,7 +51,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("use_item") and _item is ConsumableData:
 		get_viewport().set_input_as_handled()
 		use_selected()
-	elif event.is_action_pressed("fire") and (_item is GrenadeData or _item is MeleeData):
+	elif event.is_action_pressed("fire") and (_item is GrenadeData or _item is MeleeData) \
+			and (_player.melee == null or not _player.melee.is_busy()):
 		get_viewport().set_input_as_handled()
 		use_selected()
 
@@ -74,6 +75,8 @@ func _process(delta: float) -> void:
 	_cooldown = maxf(_cooldown - delta, 0.0)
 	_swing = maxf(_swing - delta * 5.0, 0.0)
 	if _held != null:
+		# Beim Boxen mit "melee" kurz weggesteckt.
+		_held.visible = _player.melee == null or not _player.melee.is_holstering()
 		# Klinge schwingt von rechts oben nach links unten, Granate holt aus.
 		var t := sin(_swing * PI)
 		_held.rotation = Vector3(-t * 1.2, t * 0.6, t * 0.9)

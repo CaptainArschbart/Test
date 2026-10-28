@@ -85,6 +85,8 @@ func _process(delta: float) -> void:
 	_recoil = lerpf(_recoil, 0.0, minf(recoil_return * delta, 1.0))
 	_update_aim(delta)
 	if _view != null:
+		# Beim Boxen mit "melee" ist die Waffe kurz weggesteckt.
+		_view.visible = not _holstered()
 		_view.position = Vector3(0.0, _recoil * 0.3, _recoil)
 		_view.rotation.x = _recoil * 3.0
 		# Beim Nachladen kippt die Waffe nach unten weg.
@@ -252,6 +254,8 @@ func _apply_aim() -> void:
 		scoped = _weapon.has_scope and _aim > 0.85
 	else:
 		transform = _base_transform
+	if _player.melee != null:
+		fov += _player.melee.get_fov_offset()
 	_player.camera.fov = fov
 	_player.hands.motion_scale = 1.0 - t * 0.85
 	_player.hands.visible = not scoped
@@ -269,7 +273,11 @@ func _set_flash(on: bool) -> void:
 
 func _can_use() -> bool:
 	return _player.controls_local_body() and not _player.input_locked and not _player.noclip \
-			and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not get_tree().paused
+			and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not get_tree().paused and not _holstered()
+
+
+func _holstered() -> bool:
+	return _player.melee != null and _player.melee.is_holstering()
 
 
 func _play(stream: AudioStream, pitch := 1.0) -> void:

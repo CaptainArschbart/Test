@@ -128,6 +128,8 @@ var _strafe_point := Vector3.INF
 var _strafe_timer := 0.0
 var _stun_left := 0.0
 var _stagger := 0.0
+## Rückstoß durch Faustschläge (m/s, waagerecht), klingt in _move ab.
+var _knock := Vector3.ZERO
 var _step_timer := 0.0
 var _bark_cooldown := 0.0
 var _flash_left := 0.0
@@ -291,6 +293,23 @@ func take_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 		_enter_combat(false)
 
 
+## Faustschlag des Spielers (PlayerMelee): Schaden wie take_hit, dazu Rückstoß, Taumeln und
+## optional Betäubung (aufgeladener Schlag).
+func melee_hit(damage: float, point: Vector3, normal: Vector3, push: Vector3, stun_time: float) -> void:
+	if state == State.DEAD:
+		return
+	# Fäuste zählen nie als Kopftreffer (die Kamera ist auf Kopfhöhe), Hinterhalt gilt weiter.
+	var body_point := Vector3(point.x, minf(point.y, global_position.y + 1.2), point.z)
+	take_hit(damage, body_point, normal)
+	if state == State.DEAD:
+		return
+	_knock = Vector3(push.x, 0.0, push.z)
+	_stagger = maxf(_stagger, 0.3 + _knock.length() * 0.05)
+	model.flinch = 1.0
+	if stun_time > 0.0:
+		_stun(maxf(stun_time, _stun_left))
+
+
 ## EMP-Granate: Schaden und Betäubung (Elektronik, Lampe, Implantate fallen aus).
 func emp_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 	if state == State.DEAD:
@@ -309,6 +328,7 @@ func reset_alert() -> void:
 	awareness = 0.0
 	_sees_player = false
 	_stun_left = 0.0
+	_knock = Vector3.ZERO
 	_release_token()
 	_set_state(State.RETURN)
 
@@ -1060,8 +1080,17 @@ func _move(delta: float) -> void:
 	var probe := maxf(0.55, _hvel.length() * delta + 0.3)
 	if _hvel.length() > 0.1 and not _ground_below(global_position + _hvel.normalized() * probe, 1.3):
 		_hvel = Vector3.ZERO
-	velocity = Vector3(_hvel.x, 0.0, _hvel.z) * step_scale
+	# Rückstoß von Faustschlägen, ebenfalls nie über eine Kante.
+	if _knock.length() > 0.05:
+		var knock_probe := maxf(0.55, _knock.length() * delta + 0.3)
+		if not _ground_below(global_position + _knock.normalized() * knock_probe, 1.3):
+			_knock = Vector3.ZERO
+	velocity = (Vector3(_hvel.x, 0.0, _hvel.z) + _knock) * step_scale
 	move_and_slide()
+	# Exponentiell: Weg etwa Tempo / 6 (Faust 0,3 m, Powerschlag gut 1 m).
+	_knock *= exp(-6.0 * delta)
+	if _knock.length() < 0.05:
+		_knock = Vector3.ZERO
 	velocity = Vector3(_hvel.x, 0.0, _hvel.z)
 	# Senkrecht: Bodenstrahl, Stufen bis 0,6 m hoch und runter weich.
 	var ground := _ground_height()
