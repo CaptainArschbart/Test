@@ -24,6 +24,8 @@ extends Node3D
 ## Sprint mit leeren Händen: Fäuste pumpen gegengleich zu den Beinen (POSE_SPRINT).
 ## Hängt an Camera3D, damit Drehen und Nicken die Hände mitnehmen.
 ## Beim Klettern (PlayerMovement) greifen beide Hände fest an die Kante.
+## Verbrauchsitems: die rechte Hand hält das Modell (Griff aus ConsumableModel über ItemUser.get_held_grip),
+## beim Benutzen gibt ConsumableUse auch die linke Hand vor (ItemUser.get_left_hand_target).
 
 @export var bob_frequency: float = 2.2
 @export var walk_bob_amplitude: float = 0.012
@@ -264,6 +266,13 @@ func get_hide_amount() -> float:
 	return _hide
 
 
+## Unterarm-Knoten einer Hand (side 1 = rechts, −1 = links), direkt unter den Händen.
+## ConsumableUse hängt daran Verband und Partikel und zielt mit dem Injektor darauf.
+func get_arm_node(side: float) -> Node3D:
+	var hand: Dictionary = _right if side > 0.0 else _left
+	return hand.get("arm") as Node3D
+
+
 ## Gewicht der Sprint-Pose (0–1).
 func get_sprint_weight() -> float:
 	return _sprint_weight
@@ -357,9 +366,16 @@ func update_pose(delta: float) -> void:
 		var item_user: Node3D = _player.item_user
 		var space := item_user.transform * held.transform
 		var arm_space := item_user.transform * Transform3D(Basis.IDENTITY, held.position)
-		var pose := POSE_GRENADE_RIGHT if _player.item_user.get_held_item() is GrenadeData else POSE_BLADE_RIGHT
+		var pose: Dictionary = _player.item_user.get_held_grip()
+		if pose.is_empty():
+			pose = POSE_GRENADE_RIGHT if _player.item_user.get_held_item() is GrenadeData else POSE_BLADE_RIGHT
 		target_right = _pose_in_space(pose, space, arm_space, null)
 		_pose_right = _blend_pose(_pose_right, target_right, maxf(weight, 0.6))
+		# Benutz-Animation: linke Hand hält den Arm hin, zieht die Lasche usw.
+		var left_target: Dictionary = _player.item_user.get_left_hand_target()
+		if not left_target.is_empty():
+			target_left = _pose_in_space(left_target.pose, left_target.space, left_target.space, null)
+			weight = maxf(weight, left_target.follow)
 	else:
 		# Leere Hände: beim Sprint pumpen die Fäuste, Gewicht weich überblendet.
 		_update_sprint_weight(delta)
