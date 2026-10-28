@@ -817,6 +817,142 @@ for side in ("N", "S", "E", "W"):
         pos += w + rnd.uniform(0.5, 3.0)
 
 # =====================================================================================
+# Straßennetz für Autos und Wegenetz für Fußgänger (PR #35) → scenes/slum/slum_life.tscn
+# =====================================================================================
+LIFE_OUT = os.path.join(os.path.dirname(__file__), "..", "scenes", "slum", "slum_life.tscn")
+JUNCTIONS = {"C": (0.0, 0.0), "TN": (0.0, -RING), "TS": (0.0, RING), "TE": (RING, 0.0), "TW": (-RING, 0.0),
+             "NE": (RING, -RING), "NW": (-RING, -RING), "SE": (RING, RING), "SW": (-RING, RING)}
+# Wo die Fahrspur vor der Kreuzungsmitte endet: vor dem Zebrastreifen (6,5 m) bzw. an den Ecken früher.
+JUNCTION_STOP = {"C": 9.0, "TN": 9.0, "TS": 9.0, "TE": 9.0, "TW": 9.0, "NE": 7.0, "NW": 7.0, "SE": 7.0, "SW": 7.0}
+ROADS = [("C", "TN"), ("C", "TS"), ("C", "TE"), ("C", "TW"), ("TN", "NE"), ("TN", "NW"), ("TS", "SE"), ("TS", "SW"),
+         ("TE", "NE"), ("TE", "SE"), ("TW", "NW"), ("TW", "SW")]
+CROSSWALK_JUNCTIONS = {"C", "TN", "TS", "TE", "TW"}
+PED = 6.5  # Fußgängerlinie: 6,5 m neben der Straßenmitte, Ecken 6,5 m vor der Kreuzungsmitte
+
+
+class PedGraph:
+    def __init__(self) -> None:
+        self.nodes: list[tuple[float, float, float]] = []
+        self.wait: list[float] = []
+        self.edges: dict[tuple[int, int], int] = {}
+
+    def add(self, x: float, z: float, y: float = 0.15, wait: float = 0.0) -> int:
+        key = (round(x, 1), round(z, 1))
+        for i, n in enumerate(self.nodes):
+            if (round(n[0], 1), round(n[2], 1)) == key:
+                self.wait[i] = max(self.wait[i], wait)
+                return i
+        self.nodes.append((round(x, 2), y, round(z, 2)))
+        self.wait.append(wait)
+        return len(self.nodes) - 1
+
+    def link(self, a: int, b: int, crossing: bool = False) -> None:
+        if a != b:
+            self.edges[(min(a, b), max(a, b))] = 1 if crossing else 0
+
+    def line(self, x0: float, z0: float, x1: float, z1: float, step: float = 14.0, y: float = 0.15) -> list[int]:
+        n = max(1, int(math.ceil(math.hypot(x1 - x0, z1 - z0) / step)))
+        ids = [self.add(x0 + (x1 - x0) * i / n, z0 + (z1 - z0) * i / n, y) for i in range(n + 1)]
+        for a, b in zip(ids, ids[1:]):
+            self.link(a, b)
+        return ids
+
+    def nearest(self, x: float, z: float) -> int:
+        return min(range(len(self.nodes)), key=lambda i: (self.nodes[i][0] - x) ** 2 + (self.nodes[i][2] - z) ** 2)
+
+
+ped = PedGraph()
+for (a, b) in ROADS:
+    ax, az = JUNCTIONS[a]
+    bx, bz = JUNCTIONS[b]
+    length = math.hypot(bx - ax, bz - az)
+    ux, uz = (bx - ax) / length, (bz - az) / length
+    px, pz = -uz, ux
+    for side in (-1, 1):
+        ped.line(ax + ux * PED + px * PED * side, az + uz * PED + pz * PED * side,
+                 bx - ux * PED + px * PED * side, bz - uz * PED + pz * PED * side)
+for name, (jx, jz) in JUNCTIONS.items():
+    dirs = []
+    for (a, b) in ROADS:
+        if name in (a, b):
+            ox, oz = JUNCTIONS[b if a == name else a]
+            length = math.hypot(ox - jx, oz - jz)
+            dirs.append(((ox - jx) / length, (oz - jz) / length))
+    if name in CROSSWALK_JUNCTIONS:
+        if len(dirs) == 3:  # T-Kreuzung: der fehlende Arm ist ein Platz
+            sx, sz = sum(d[0] for d in dirs), sum(d[1] for d in dirs)
+            dirs.append((-sx, -sz))
+        for (ux, uz) in dirs:
+            px, pz = -uz, ux
+            p1 = ped.add(jx + ux * PED + px * PED, jz + uz * PED + pz * PED)
+            p2 = ped.add(jx + ux * PED - px * PED, jz + uz * PED - pz * PED)
+            plaza = name != "C" and (ux, uz) == dirs[-1]
+            ped.link(p1, p2, crossing=not plaza)
+    else:  # Ecke: außen um die Ecke herum
+        (u1x, u1z), (u2x, u2z) = dirs
+        ox, oz = jx - (u1x + u2x) * PED, jz - (u1z + u2z) * PED
+        corner = ped.add(ox, oz)
+        for (ux, uz) in dirs:
+            # Punkt auf der Außenseite des Arms (u): 6,5 m in Richtung u, 6,5 m nach außen.
+            ped.link(corner, ped.nearest(jx + ux * PED - (u1x + u2x - ux) * PED, jz + uz * PED - (u1z + u2z - uz) * PED))
+
+
+def poi_chain(points: list[tuple[float, float, float]], start: tuple[float, float], y: float = 0.0) -> None:
+    """Abzweig vom Gehweg-Knoten bei start zu Orten zum Bummeln (x, z, Wartezeit)."""
+    prev = ped.nearest(*start)
+    for (x, z, wait) in points:
+        cur = ped.add(x, z, y, wait)
+        ped.link(prev, cur)
+        prev = cur
+
+
+poi_chain([(40.0, 20.0, 0.0), (40.0, 36.5, 8.0), (30.0, 36.5, 6.0)], (40.0, PED))           # Markt SO
+poi_chain([(20.0, -20.0, 0.0), (32.0, -50.0, 5.0)], (20.0, -PED))                          # Hinterhof NO
+poi_chain([(-20.0, 36.0, 6.0)], (-PED, 36.0))                                              # Stände SW
+poi_chain([(0.0, -98.0, 6.0), (0.0, -106.0, 5.0)], (0.0, -RING - PED))                     # Platz Nord
+poi_chain([(0.0, 106.0, 2.0)], (0.0, RING + PED))                                          # Nachtmeile
+alley = ped.line(-84.0, 106.0, 84.0, 106.0, 12.0, 0.0)                                      # Gasse
+for i in alley[::3]:
+    ped.wait[i] = 5.0
+poi_chain([(-104.0, 0.0, 0.0), (-118.0, -5.5, 4.0)], (-RING - PED, 0.0))                   # Shanty-Hang
+poi_chain([(104.0, 0.0, 6.0)], (RING + PED, 0.0))                                          # Docks-Tor
+poi_chain([(112.0, 100.0, 5.0)], (RING + PED, RING + PED))                                 # Parkplatz
+
+
+def life_scene() -> str:
+    names = list(JUNCTIONS)
+    j_pts = ", ".join(f"{JUNCTIONS[n][0]}, 0, {JUNCTIONS[n][1]}" for n in names)
+    j_stop = ", ".join(str(JUNCTION_STOP[n]) for n in names)
+    j_cross = ", ".join("1" if n in CROSSWALK_JUNCTIONS else "0" for n in names)
+    r_edges = ", ".join(f"{names.index(a)}, {names.index(b)}" for (a, b) in ROADS)
+    p_pts = ", ".join(f"{x}, {y}, {z}" for (x, y, z) in ped.nodes)
+    p_wait = ", ".join(str(w) for w in ped.wait)
+    keys = sorted(ped.edges)
+    p_edges = ", ".join(f"{a}, {b}" for (a, b) in keys)
+    p_cross = ", ".join(str(ped.edges[k]) for k in keys)
+    return f"""[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/traffic/traffic_director.gd" id="1_traffic"]
+[ext_resource type="Script" path="res://scenes/civilians/crowd_director.gd" id="2_crowd"]
+
+[node name="SlumLife" type="Node3D"]
+
+[node name="Traffic" type="Node3D" parent="."]
+script = ExtResource("1_traffic")
+junctions = PackedVector3Array({j_pts})
+junction_stop = PackedFloat32Array({j_stop})
+junction_crosswalk = PackedInt32Array({j_cross})
+roads = PackedInt32Array({r_edges})
+
+[node name="Crowd" type="Node3D" parent="."]
+script = ExtResource("2_crowd")
+nodes = PackedVector3Array({p_pts})
+node_wait = PackedFloat32Array({p_wait})
+edges = PackedInt32Array({p_edges})
+edge_crossing = PackedInt32Array({p_cross})
+"""
+
+# =====================================================================================
 # Kopf, Umgebung, Spieler, Items
 # =====================================================================================
 HEAD = """[gd_scene format=3]
@@ -842,6 +978,7 @@ HEAD = """[gd_scene format=3]
 [ext_resource type="Resource" path="res://scenes/items/data/pistol.tres" id="i_pistol"]
 [ext_resource type="Resource" path="res://scenes/items/data/sniper.tres" id="i_sniper"]
 [ext_resource type="PackedScene" path="res://scenes/slum/slum_enemies.tscn" id="e_enemies"]
+[ext_resource type="PackedScene" path="res://scenes/slum/slum_life.tscn" id="l_life"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
 sky_top_color = Color(0.02, 0.025, 0.05, 1)
@@ -977,6 +1114,8 @@ def items() -> str:
                    f'currency = ExtResource("i_credchip")')
     # Gegner, Streifenwege und Navmesh-Director (scenes/slum/slum_enemies.tscn, im Editor bearbeiten)
     out.append('[node name="SlumEnemies" parent="." instance=ExtResource("e_enemies")]')
+    # Fußgänger und Autos (scenes/slum/slum_life.tscn, wird mit erzeugt)
+    out.append('[node name="SlumLife" parent="." instance=ExtResource("l_life")]')
     return "\n\n".join(out)
 
 
@@ -987,6 +1126,9 @@ def main() -> None:
     with open(OUT, "w", encoding="utf-8") as f:
         f.write(text)
     print("geschrieben:", OUT, len(nodes), "Kit-Knoten")
+    with open(LIFE_OUT, "w", encoding="utf-8") as f:
+        f.write(life_scene())
+    print("geschrieben:", LIFE_OUT, len(ped.nodes), "Fußgänger-Knoten,", len(ped.edges), "Wege")
 
 
 if __name__ == "__main__":

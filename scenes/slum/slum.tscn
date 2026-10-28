@@ -21,6 +21,7 @@
 [ext_resource type="Resource" path="res://scenes/items/data/pistol.tres" id="i_pistol"]
 [ext_resource type="Resource" path="res://scenes/items/data/sniper.tres" id="i_sniper"]
 [ext_resource type="PackedScene" path="res://scenes/slum/slum_enemies.tscn" id="e_enemies"]
+[ext_resource type="PackedScene" path="res://scenes/slum/slum_life.tscn" id="l_life"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
 sky_top_color = Color(0.02, 0.025, 0.05, 1)
@@ -6789,3 +6790,5 @@ price = 6
 currency = ExtResource("i_credchip")
 
 [node name="SlumEnemies" parent="." instance=ExtResource("e_enemies")]
+
+[node name="SlumLife" parent="." instance=ExtResource("l_life")]

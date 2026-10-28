@@ -42,6 +42,8 @@ func rebuild() -> void:
 			child.queue_free()
 	rng.seed = hash(seed_value) ^ hash(name)
 	var b := SlumBuilder.new(self)
+	b.solid_range = _solid_range()
+	b.detail_range = _detail_range()
 	_build(b)
 	b.finish()
 	for child: Node in get_children():
@@ -52,6 +54,16 @@ func rebuild() -> void:
 ## Von Unterklassen überschrieben.
 func _build(_b: SlumBuilder) -> void:
 	pass
+
+
+## Sichtweite für Mesh bzw. Details (Aufkleber, Linien) in Metern, 0 = immer. Von Unterklassen
+## überschrieben: Kleinkram verschwindet im Nebel, Gebäude bleiben (Silhouette).
+func _solid_range() -> float:
+	return 0.0
+
+
+func _detail_range() -> float:
+	return 0.0
 
 
 ## Fügt einen erzeugten Knoten hinzu (Licht, Label, Skript-Knoten). Wird beim Neubauen entfernt.
