@@ -1052,11 +1052,17 @@ func _move(delta: float) -> void:
 		var side := Vector3(-wish.z, 0.0, wish.x).normalized() * (1.0 if int(_stuck_time / 1.5) % 2 == 0 else -1.0)
 		wish += side * wish.length() * 0.8
 	_hvel = _hvel.move_toward(wish, (14.0 if wish.length() > _hvel.length() else 18.0) * delta)
+	# move_and_slide() rechnet immer mit einem Physik-Frame. Bei LOD LOW läuft _tick nur alle
+	# 0,2 s, also muss die Geschwindigkeit für diesen einen Schritt hochskaliert werden, sonst
+	# kommen entfernte Gegner nur mit 1/12 des Tempos voran und wirken eingefroren.
+	var step_scale := maxf(delta / get_physics_process_delta_time(), 1.0)
 	# Nie über eine Kante ohne Boden darunter.
-	if _hvel.length() > 0.1 and not _ground_below(global_position + _hvel.normalized() * 0.55, 1.3):
+	var probe := maxf(0.55, _hvel.length() * delta + 0.3)
+	if _hvel.length() > 0.1 and not _ground_below(global_position + _hvel.normalized() * probe, 1.3):
 		_hvel = Vector3.ZERO
-	velocity = Vector3(_hvel.x, 0.0, _hvel.z)
+	velocity = Vector3(_hvel.x, 0.0, _hvel.z) * step_scale
 	move_and_slide()
+	velocity = Vector3(_hvel.x, 0.0, _hvel.z)
 	# Senkrecht: Bodenstrahl, Stufen bis 0,6 m hoch und runter weich.
 	var ground := _ground_height()
 	var y := global_position.y
