@@ -141,7 +141,8 @@ for sx in (-1, 1):
 
 # Boden der vier Viertel (Oberkante 0)
 INNER = HALF + WALK
-size = EDGE + 6 - INNER
+# Bis an den inneren Gehweg der Ringstraße (84 - 4,5 - 3 = 76,5), vorher bis 81.
+size = 76.5 - INNER
 mid = INNER + size / 2
 slab(P, mid, -mid, size, size, "concrete_dark", 0.0, 0.6)       # NO
 slab(P, -mid, -mid, size, size, "asphalt_old", 0.0, 0.7)        # NW
@@ -150,11 +151,13 @@ slab(P, mid, mid, size, size, "concrete_dark", 0.0, 0.5)        # SO
 # Marktplatz mit Pflaster
 slab(P, 40, 37, 38, 30, "sidewalk_small", 0.02, 0.4)
 
-# Straßenenden: Absperrungen
-for (x, z, yaw) in ((0, -73.5, 0), (0, 73.5, 0), (-73.5, 0, 90), (73.5, 0, 90)):
-    prop(P, "CONCRETE_BARRIER", x, z, yaw, length=8.0)
-    prop(P, "STRIPED_BARRIER", x + (2 if yaw == 0 else 0), z + (0 if yaw == 0 else 2) + (-1.5 if z > 0 else 1.5 if z < 0 else 0),
-         yaw, length=2.5)
+# Früher standen hier Absperrungen an den Straßenenden. Seit der Erweiterung (PR #35) gehen die
+# Straßen bis zur Ringstraße weiter. Die Zufallszahlen der acht Absperrungen werden trotzdem gezogen,
+# damit alles danach genau so aussieht wie vorher.
+for _ in range(8):
+    rnd.randint(1, 9999)
+counter["ConcreteBarrier"] = 4  # und die Namen der späteren Absperrungen bleiben gleich
+counter["StripedBarrier"] = 4
 
 # Strommasten an den Straßen mit Kabeln quer drüber
 nodes.append('[node name="Power" type="Node3D" parent="."]')
@@ -185,10 +188,12 @@ for (x, z) in ((6.5, -20), (-6.5, 30), (6.3, 55), (-6.4, -58)):
     prop(SP, "HYDRANT", x, z)
 for (x, z, yaw) in ((-6.2, 12.0, 90), (6.2, -12.5, -90), (20, -6.3, 0)):
     prop(SP, "NEWS_BOX", x, z, yaw)
-prop(SP, "CAR_WRECK", -2.6, 36, 8, variant=0)
-prop(SP, "CAR_WRECK", 2.8, -52, 185, variant=1)
-prop(SP, "CAR_WRECK", -38, -2.5, 93, variant=2)
-for (x, z) in ((-1.5, 33.5), (-3.5, 39.5), (4.0, -50.0), (-40.5, -1.0)):
+# Autowracks und Hütchen standen früher auf der Fahrbahn. Dort fahren jetzt Autos, deshalb stehen sie
+# auf dem Parkplatz im Südosten bzw. auf dem Schrottplatz im Nordwesten (gleiche Zufallszahlen).
+prop(SP, "CAR_WRECK", 104.0, 101.0, 98, variant=0)
+prop(SP, "CAR_WRECK", 104.0, 108.0, 85, variant=1)
+prop(SP, "CAR_WRECK", -108.0, -112.0, 33, variant=2)
+for (x, z) in ((101.0, 97.5), (101.5, 112.0), (-104.0, -106.0), (-111.0, -104.5)):
     prop(SP, "CONE", x, z, rnd.uniform(0, 90))
 prop(SP, "TRASH_PILE", 6.4, 40, 0)
 prop(SP, "TRASH_BAGS", -6.4, -34, 0, variant=1)
@@ -394,6 +399,397 @@ scatter(SE, ["CRATE_STACK", "TRASH_BAGS", "BARREL", "CRATE", "CONE"], 20, 60, 20
 sign(SE, "sign_bar", 29.0, 15.06, 58.0, 180, "roof", 5.0, (1.0, 0.2, 0.25, 1), 0.15, 2.5)
 
 # =====================================================================================
+# Erweiterung (PR #35): Ringstraße bei ±84 m und vier Außenviertel bis ±136 m
+# =====================================================================================
+# Die alten Viertel bleiben, wie sie sind. Die Hauptstraßen laufen jetzt weiter bis zur Ringstraße
+# (T-Kreuzungen bei (0, ±84) und (±84, 0), Ecken bei (±84, ±84)). Außen liegen:
+#   Nord  „Wohnblöcke Nord“: Häuserreihe, Platz mit Markt, Plattenbauten, Käfig-Sportplatz
+#   Ost   „Docks A9“: Lagerhallen, Containerhof hinter einem Tor
+#   Süd   „Nachtmeile“: Läden mit Neon, Fußgängergasse mit Lampions, zweite Ladenreihe
+#   West  „Shanty-Hang“: Häuserreihe, dahinter ein großes Hüttenfeld auf Stelzen mit Stegen
+#   Ecken Kraftwerk (NO), Schrottplatz (NW), Parkplatz mit Hotel (SO), Hütten und Wohnturm (SW)
+# Alle neuen Gebäude laufen über claim(): überlappen sich zwei Grundflächen (inkl. Feuertreppen),
+# bricht das Skript ab.
+RING = 84.0
+MAP_EDGE = 136.0
+B2 = RING + HALF + WALK + 0.5  # 92: Hauskante außen an der Ringstraße
+WALK_OUT = RING + HALF + WALK  # 91,5: Ende des äußeren Gehwegs
+GROUND_END = MAP_EDGE + 6.0
+
+placed: list[tuple[float, float, float, float, str]] = []
+
+
+def claim(x0: float, x1: float, z0: float, z1: float, what: str) -> None:
+    for (a0, a1, b0, b1, other) in placed:
+        if x0 < a1 and a0 < x1 and z0 < b1 and b0 < z1:
+            raise SystemExit(f"Überlappung: {what} mit {other}")
+    if max(abs(x0), abs(x1), abs(z0), abs(z1)) > MAP_EDGE - 1.0:
+        raise SystemExit(f"Außerhalb der Karte: {what}")
+    placed.append((x0, x1, z0, z1, what))
+
+
+def obuilding(parent: str, style: str, x: float, z: float, facing: str, w: float, d: float, floors: int,
+              **props) -> None:
+    """building() mit Platzprüfung. Feuertreppen und Hüttentreppen stehen seitlich neben dem Haus."""
+    side = 0.3
+    if props.get("stair_side", 0) != 0:
+        side = 2.8
+    if style == "shanty" and props.get("stilt_height", 2.4) > 0 and props.get("shanty_stair", 2) != 0:
+        side = 2.2
+    if facing in ("S", "N"):
+        ex, ez = w / 2 + side, d / 2 + 0.3
+    else:
+        ex, ez = d / 2 + 0.3, w / 2 + side
+    claim(x - ex, x + ex, z - ez, z + ez, f"{style} ({x:.1f}, {z:.1f})")
+    building(parent, style, x, z, facing, w, d, floors, **props)
+
+
+def oprop(parent: str, kind: str, x: float, z: float, yaw: float = 0.0, r: float = 0.0, half=None, **props) -> None:
+    """prop() mit Platzprüfung: r = halbe Kantenlänge eines Quadrats, half = (x, z) halbe Maße bei yaw 0
+    (bei 90° vertauscht). Ohne beides wird nicht geprüft."""
+    if half is not None:
+        hx, hz = (half[1], half[0]) if abs(yaw) % 180 == 90 else half
+        claim(x - hx, x + hx, z - hz, z + hz, f"{kind} ({x:.1f}, {z:.1f})")
+    elif r > 0.0:
+        claim(x - r, x + r, z - r, z + r, f"{kind} ({x:.1f}, {z:.1f})")
+    prop(parent, kind, x, z, yaw, **props)
+
+
+CONTAINER_HALF = (1.3, 3.1)
+
+
+def side_xz(side: str, along: float, across: float) -> tuple[float, float]:
+    """Ringseite → Weltkoordinaten. along läuft entlang der Straße, across ist der Abstand von der Mitte."""
+    if side == "N":
+        return along, -across
+    if side == "S":
+        return along, across
+    if side == "E":
+        return across, along
+    return -across, along
+
+
+FRONT = {"N": "S", "S": "N", "E": "W", "W": "E"}
+SIGNS = ["sign_bar", "sign_24h", "sign_hotel", "sign_hotel2", "sign_ramen", "sign_noodles", "sign_pharmacy",
+         "sign_shop", "sign_open", "sign_vacancy", "sign_ngc7"]
+WALLS = ["concrete", "concrete_dark", "concrete_green", "brick", "brick_dark", "plaster", "plaster_teal", "plaster_pink"]
+
+
+def frontage(parent: str, side: str, a0: float, a1: float, mix: dict, depth=(9.0, 11.0), floors=(3, 7),
+             fixed_depth: float = 0.0, base: float = B2) -> list[tuple[float, float, float]]:
+    """Häuserreihe entlang einer Ringseite zwischen a0 und a1, Front zur Straße.
+    mix: Stil → Gewicht. Gibt (Mitte, Breite, Tiefe) je Haus zurück."""
+    out = []
+    styles = [k for k, v in mix.items() for _ in range(v)]
+    pos = a0
+    while True:
+        style = rnd.choice(styles)
+        w = round(rnd.uniform(8.0, 12.5) if style != "shop" else rnd.uniform(8.0, 10.0), 1)
+        d = fixed_depth or round(rnd.uniform(*depth), 1)
+        stairs = style == "res" and rnd.random() < 0.45
+        margin = 2.9 if stairs else round(rnd.uniform(0.4, 1.8), 1)
+        if pos + margin * 2 + w > a1:
+            break
+        c = pos + margin + w / 2
+        x, z = side_xz(side, c, base + d / 2)
+        props = {"wall": rnd.choice(WALLS)}
+        if rnd.random() < 0.5:
+            props["ground_wall"] = rnd.choice(["brick", "brick_dark", "concrete_dark", "tiles_dark"])
+        if style == "shop":
+            props["front_sign"] = rnd.choice(SIGNS)
+            if rnd.random() < 0.6:
+                props["side_sign"] = rnd.choice(SIGNS)
+            fl = rnd.randint(2, 3)
+        else:
+            fl = rnd.randint(*floors)
+            props["lit_ratio"] = round(rnd.uniform(0.3, 0.55), 2)
+            props["balcony_chance"] = round(rnd.uniform(0.15, 0.4), 2)
+            if stairs:
+                props["stair_side"] = SIDE[rnd.choice(["left", "right"])]
+            if rnd.random() < 0.35:
+                props["front_sign"] = rnd.choice(SIGNS)
+            if rnd.random() < 0.25:
+                props["number"] = rnd.choice(["07", "A2"])
+        obuilding(parent, style, x, z, FRONT[side], w, d, fl, **props)
+        out.append((c, w, d))
+        pos = c + w / 2 + margin
+    return out
+
+
+nodes.append('[node name="Ring" type="Node3D" parent="."]')
+RG = "Ring"
+# Hauptstraßen bis zur Ringstraße verlängern (4,5 m), Zebrastreifen an der T-Kreuzung.
+EXT = RING - HALF - EDGE
+for s in (-1, 1):
+    street(RG, 0, s * (EDGE + EXT / 2), 0, length=EXT, crosswalk_start=s < 0, crosswalk_end=s > 0, lamp_spacing=0.0)
+    street(RG, s * (EDGE + EXT / 2), 0, 90, length=EXT, crosswalk_start=s < 0, crosswalk_end=s > 0, lamp_spacing=0.0)
+for s in (-1, 1):
+    node(uname("RingJunction"), RG, "k_street", 0, 0, s * RING, 0, kind=1, road_width=9.0, seed_value=rnd.randint(1, 9999))
+    node(uname("RingJunction"), RG, "k_street", s * RING, 0, 0, 0, kind=1, road_width=9.0, seed_value=rnd.randint(1, 9999))
+    for t in (-1, 1):
+        slab(RG, s * RING, t * RING, 9.0, 9.0, "asphalt", 0.0, 0.3)  # Ecke ohne Zebrastreifen
+# Acht Ringstücke zu je 75 m, drei Straßenteile pro Stück.
+SEG = (RING - 2 * HALF) / 3.0
+for s in (-1, 1):
+    for t in (-1, 1):
+        for i in range(3):
+            a = t * (HALF + SEG * (i + 0.5))
+            street(RG, a, s * RING, 90, length=SEG, crosswalk_start=(i == 0 and t > 0), crosswalk_end=(i == 0 and t < 0))
+            street(RG, s * RING, a, 0, length=SEG, crosswalk_start=(i == 0 and t > 0), crosswalk_end=(i == 0 and t < 0))
+# Gehweg außen an den T-Kreuzungen (Zugang zu den Plätzen) und an den Ecken (L aus zwei Platten).
+OS = HALF + WALK / 2
+for s in (-1, 1):
+    slab(RG, 0, s * (RING + OS), 9.0, 3.0, "sidewalk", 0.15, 0.2)
+    slab(RG, s * (RING + OS), 0, 3.0, 9.0, "sidewalk", 0.15, 0.2)
+    for t in (-1, 1):
+        slab(RG, s * (RING + 1.5), t * (RING + OS), 12.0, 3.0, "sidewalk", 0.15, 0.2)
+        slab(RG, s * (RING + OS), t * RING, 3.0, 9.0, "sidewalk", 0.15, 0.2)
+# Boden der Außenviertel (Oberkante 0).
+GL = GROUND_END - WALK_OUT
+GC = WALK_OUT + GL / 2
+slab(RG, 0, -GC, 2 * GROUND_END, GL, "concrete", 0.0, 0.6)
+slab(RG, 0, GC, 2 * GROUND_END, GL, "sidewalk_small", 0.0, 0.45)
+slab(RG, GC, 0, GL, 2 * WALK_OUT, "asphalt_old", 0.0, 0.7)
+slab(RG, -GC, 0, GL, 2 * WALK_OUT, "concrete_green", 0.0, 0.9)
+# Strommasten am Ring (außen), Leitungen von Mast zu Mast.
+for s in (-1, 1):
+    for a in (-66.0, -40.0, 40.0, 66.0):
+        prop("Power", "POWER_POLE", a, s * (RING + 7.0), 0)
+        prop("Power", "POWER_POLE", s * (RING + 7.0), a, 90)
+    for (a, b) in ((-66.0, -40.0), (40.0, 66.0)):
+        cables("Power", [(a + 0.9, LOW_ARM, s * (RING + 7.0)), (b - 0.9, LOW_ARM, s * (RING + 7.0))], 1.0, 1,
+               wall_brackets=False)
+        cables("Power", [(s * (RING + 7.0), LOW_ARM, a + 0.9), (s * (RING + 7.0), LOW_ARM, b - 0.9)], 1.0, 1,
+               wall_brackets=False)
+for (x, z, yaw) in ((5.0, -90.5, 0), (-90.5, 20.0, 90), (90.5, -25.0, -90), (30.0, 90.5, 180), (-60.0, 77.0, 0)):
+    prop(SP, "NEWS_BOX", x, z, yaw)
+for (x, z) in ((-90.6, -40.0), (90.6, 33.0), (45.0, -90.6), (-30.0, 90.6), (77.2, 50.0)):
+    prop(SP, "HYDRANT", x, z)
+
+# --- Nord: Wohnblöcke Nord --------------------------------------------------------------
+nodes.append('[node name="OuterNorth" type="Node3D" parent="."]')
+ON = "OuterNorth"
+frontage(ON, "N", -88.0, -11.0, {"res": 3, "shop": 2}, floors=(4, 7))
+frontage(ON, "N", 11.0, 88.0, {"res": 3, "shop": 2}, floors=(4, 7))
+# Platz mit Markt hinter der T-Kreuzung
+for i in range(3):
+    oprop(ON, "MARKET_STALL", -6.5, -97.0 - i * 4.5, 90, r=1.4, variant=i % 3)
+    oprop(ON, "MARKET_STALL", 6.5, -97.0 - i * 4.5, -90, r=1.4, variant=(i + 1) % 3)
+for z in (-95.5, -100.5, -105.5):
+    cables(ON, [(-9.0, 5.0, z), (0.0, 5.5, z + 0.4), (9.0, 5.0, z)], 0.6, 1, True, poles=[0, 1, 2], pole_ground=0.0)
+oprop(ON, "BENCH", -2.5, -108.0, 0, r=1.0)
+oprop(ON, "BENCH", 2.5, -108.0, 0, r=1.0)
+oprop(ON, "FIRE_BARREL", 0.0, -103.0, 0, r=0.5)
+obuilding(ON, "res", 0.0, -118.0, "S", 20, 12, 12, wall="concrete_dark", ground_wall="tiles_dark", number="07",
+          front_sign="sign_ngc7", lit_ratio=0.5, stair_side=SIDE["right"])
+sign(ON, "sign_hotel2", 0.0, 39.06, -118.0, 0, "roof", 7.0, (1.0, 0.3, 0.75, 1), 0.0, 3.0)
+# Plattenbauten links und rechts, dazwischen Höfe
+obuilding(ON, "res", -48.0, -121.0, "S", 22, 12, 8, wall="concrete", ground_wall="concrete_dark",
+          stair_side=SIDE["left"], balcony_chance=0.45, lit_ratio=0.4)
+obuilding(ON, "res", 48.0, -121.0, "S", 22, 12, 8, wall="concrete_green", ground_wall="brick_dark",
+          stair_side=SIDE["right"], balcony_chance=0.45, lit_ratio=0.4)
+obuilding(ON, "res", -80.0, -121.0, "S", 12, 10, 5, wall="brick", lit_ratio=0.35)
+obuilding(ON, "res", 80.0, -121.0, "S", 12, 10, 5, wall="plaster", lit_ratio=0.35)
+# Käfig-Sportplatz
+slab(ON, -24.0, -121.0, 16.0, 18.0, "asphalt_old", 0.02, 0.2)
+oprop(ON, "FENCE", -24.0, -112.2, 0, length=16.0)
+oprop(ON, "FENCE", -24.0, -129.8, 0, length=16.0)
+oprop(ON, "FENCE", -32.0, -126.0, 90, length=7.6)
+oprop(ON, "FENCE", -16.0, -126.0, 90, length=7.6)
+oprop(ON, "FENCE", -32.0, -115.0, 90, length=5.6)
+oprop(ON, "FENCE", -16.0, -115.0, 90, length=5.6)
+claim(-32.5, -15.5, -130.3, -111.7, "Sportplatz")
+oprop(ON, "STREET_LAMP", -24.0, -111.4, 0)
+# Hütten im Hof rechts
+obuilding(ON, "shanty", 21.0, -118.0, "S", 6, 5, 1, stilt_height=0.0)
+obuilding(ON, "shanty", 29.0, -126.0, "W", 5, 5, 1, stilt_height=0.0)
+oprop(ON, "WATER_TANK", 24.0, -128.5, 0, r=1.5)
+oprop(ON, "GENERATOR", 30.0, -113.0, 20, r=1.2)
+scatter(ON, ["TRASH_BAGS", "TRASH_PILE", "BARREL", "CRATE_STACK", "PALLETS"], -86, -14, -110, -106, 7)
+scatter(ON, ["TRASH_BAGS", "TRASH_PILE", "BARREL", "CRATE_STACK", "PALLETS"], 14, 86, -110, -106, 7)
+for x in (-60.0, -36.0, 36.0, 60.0):
+    oprop(ON, "DUMPSTER", x, -110.0, 0, r=1.2, variant=rnd.randint(0, 2))
+oprop(ON, "STREET_LAMP", -64.0, -108.5, 180)
+oprop(ON, "STREET_LAMP", 64.0, -108.5, 180, variant=2)
+cables(ON, [(-40.0, 6.5, -114.95), (-8.0, 7.5, -111.95)], 0.7, 2, True)
+cables(ON, [(40.0, 6.5, -114.95), (8.0, 7.5, -111.95)], 0.7, 2, True)
+
+# --- Ost: Docks A9 ----------------------------------------------------------------------
+nodes.append('[node name="OuterEast" type="Node3D" parent="."]')
+OE = "OuterEast"
+for (z, w, d, wall, num, fsign) in ((-74.0, 22, 18, "corrugated_grey", "A2", "sign_ngc7"),
+                                    (-46.0, 20, 16, "corrugated_rust", "", ""),
+                                    (-22.0, 16, 14, "corrugated_blue", "A2", ""),
+                                    (24.0, 18, 16, "corrugated_green", "", "sign_24h"),
+                                    (50.0, 20, 18, "corrugated_grey", "A2", ""),
+                                    (75.0, 16, 14, "corrugated_rust", "", "")):
+    obuilding(OE, "warehouse", B2 + d / 2, z, "W", w, d, 2, floor_height=rnd.choice([3.2, 3.4, 3.6]), wall=wall,
+              number=num, front_sign=fsign)
+# Containerhof hinter dem Tor an der T-Kreuzung
+oprop(OE, "FENCE", 93.0, -8.5, 90, length=7.0)
+oprop(OE, "FENCE", 93.0, 8.5, 90, length=7.0)
+oprop(OE, "STRIPED_BARRIER", 93.4, 0.0, 90, length=3.0)
+sign(OE, "sign_noentry", 92.94, 1.45, -9.0, -90, "wall", 1.6, (1.0, 0.2, 0.2, 1), 0.0, 0.0)
+obuilding(OE, "shanty", 97.5, 9.0, "W", 3.5, 3.2, 1, stilt_height=0.0)
+for (x, z, yaw, stack) in ((106.0, -7.0, 90, 1), (106.0, -9.8, 90, 0), (113.0, 4.0, 0, 1), (116.0, 4.0, 0, 0),
+                           (122.0, -8.0, 90, 1), (122.0, -10.8, 90, 1), (128.0, 6.0, 0, 0), (115.0, -20.0, 90, 0)):
+    oprop(OE, "CONTAINER", x, z, yaw, half=CONTAINER_HALF, variant=rnd.randint(0, 3))
+    if stack:
+        prop(OE, "CONTAINER", x, z, yaw, y=2.6, variant=rnd.randint(0, 3))
+oprop(OE, "CRATE_STACK", 107.5, -3.0, 0, r=0.8)
+oprop(OE, "MILITARY_CRATES", 112.0, -6.0, 0, r=1.1)
+oprop(OE, "PALLETS", 118.0, 12.0, 20, r=1.0)
+oprop(OE, "FIRE_BARREL", 109.0, 10.0, 0, r=0.4)
+for z in (-88.0, -60.0, -32.0, 34.0, 62.0, 88.0):
+    oprop(OE, "STREET_LAMP", 113.5 if abs(z) > 80 else 124.0, z, -90, variant=rnd.randint(0, 2))
+for (z0, z1) in ((-30.0, -16.0), (16.0, 40.0), (60.0, 86.0), (-86.0, -60.0)):
+    for _ in range(3):
+        oprop(OE, rnd.choice(["BARREL_GROUP", "CRATE_STACK", "MILITARY_CRATES", "PALLETS"]),
+              round(rnd.uniform(118.0, 131.0), 1), round(rnd.uniform(z0, z1), 1), rnd.choice([0, 90]), r=0.0,
+              variant=rnd.randint(0, 3))
+scatter(OE, ["BARREL", "PALLETS", "TRASH_BAGS", "CONE", "CRATE"], 114, 132, -86, -24, 8)
+scatter(OE, ["BARREL", "PALLETS", "TRASH_BAGS", "CONE", "CRATE"], 114, 132, 14, 86, 8)
+
+# --- Süd: Nachtmeile --------------------------------------------------------------------
+nodes.append('[node name="OuterSouth" type="Node3D" parent="."]')
+OSD = "OuterSouth"
+ALLEY0 = B2 + 10.0  # 102: Rückseite der vorderen Reihe
+ALLEY1 = ALLEY0 + 8.0  # 110: Front der zweiten Reihe
+row1 = frontage(OSD, "S", -88.0, -11.0, {"shop": 3, "res": 2}, fixed_depth=10.0, floors=(3, 6))
+row1 += frontage(OSD, "S", 11.0, 88.0, {"shop": 3, "res": 2}, fixed_depth=10.0, floors=(3, 6))
+row2 = []
+pos = -88.0
+while pos < 86.0:
+    w = round(rnd.uniform(8.0, 11.0), 1)
+    if pos + w > 88.0:
+        break
+    c = pos + w / 2
+    style = rnd.choice(["shop", "shop", "res"])
+    props = {"wall": rnd.choice(WALLS), "front_sign": rnd.choice(SIGNS)}
+    if rnd.random() < 0.5:
+        props["side_sign"] = rnd.choice(SIGNS)
+    obuilding(OSD, style, c, ALLEY1 + 5.0, "N", w, 10, rnd.randint(2, 3) if style == "shop" else rnd.randint(4, 7),
+              lit_ratio=round(rnd.uniform(0.4, 0.6), 2), **props)
+    row2.append((c, w))
+    pos = c + w / 2 + round(rnd.uniform(0.8, 1.5), 1)
+# Lampionketten quer über die Gasse, von Wand zu Wand
+for (c, w, _d) in row1[::2]:
+    if any(abs(c - c2) < w2 / 2 - 0.4 and abs(c + 0.8 - c2) < w2 / 2 - 0.4 for (c2, w2) in row2):
+        cables(OSD, [(c, 5.2, ALLEY0 + 0.05), (c + 0.8, 5.6, ALLEY1 - 0.05)], 0.6, 1, True)
+for x in (-70.0, -38.0, 22.0, 52.0):
+    oprop(OSD, "MARKET_STALL", x, ALLEY1 - 1.9, 0, r=1.4, variant=rnd.randint(0, 2))
+for x in (-55.0, -18.0, 36.0, 70.0):
+    oprop(OSD, "FIRE_BARREL", x, ALLEY0 + 1.2, 0, r=0.4, variant=rnd.randint(0, 1))
+    oprop(OSD, "BENCH", x + 3.0, ALLEY0 + 1.6, 180, r=1.0)
+oprop(OSD, "STREET_LAMP", -4.5, ALLEY0 + 0.6, 0)
+oprop(OSD, "STREET_LAMP", 4.5, ALLEY1 - 0.6, 180, variant=2)
+scatter(OSD, ["TRASH_BAGS", "TRASH_PILE", "AC_STACK", "DUMPSTER", "BARREL"], -86, 86, 121.5, 128, 16)
+for x in (-60.0, -20.0, 20.0, 60.0):
+    oprop(OSD, "STREET_LAMP", x, 129.0, 180, variant=rnd.randint(0, 2))
+
+# --- West: Shanty-Hang ------------------------------------------------------------------
+nodes.append('[node name="OuterWest" type="Node3D" parent="."]')
+OW = "OuterWest"
+frontage(OW, "W", -88.0, -11.0, {"res": 2, "shop": 2}, depth=(9.0, 10.0), floors=(3, 5))
+frontage(OW, "W", 11.0, 88.0, {"res": 2, "shop": 2}, depth=(9.0, 10.0), floors=(3, 5))
+# Hüttenfeld wie im Südwesten: erst planen, dann bauen.
+plan2 = {}
+for gx in range(3):
+    for gz in range(14):
+        z = -72.0 + gz * 11.0
+        if abs(z) < 7.0 or rnd.random() < 0.18:
+            continue
+        stilt = rnd.choice([0.0, 2.4, 2.4, 2.4])
+        plan2[(gx, gz)] = {"x": -109.0 - gx * 10.0, "z": z, "stilt": stilt,
+                           "w": round(rnd.uniform(4.8, 5.6), 2), "d": round(rnd.uniform(4.5, 5.2), 2),
+                           "open_left": False, "open_right": False}
+bridges2 = []
+for (gx, gz), c in sorted(plan2.items()):
+    n = plan2.get((gx + 1, gz))  # westlicher Nachbar (x kleiner)
+    if n and c["stilt"] == 2.4 and n["stilt"] == 2.4 and rnd.random() < 0.7:
+        c["open_left"] = True
+        n["open_right"] = True
+        x0 = n["x"] + n["w"] / 2 - 0.3
+        x1 = c["x"] - c["w"] / 2 + 0.3
+        bridges2.append(((x0 + x1) / 2, c["z"] + min(c["d"], n["d"]) / 2 - 0.6, x1 - x0))
+for (gx, gz), c in sorted(plan2.items()):
+    if c["stilt"] > 0:
+        if c["open_left"] and c["open_right"]:
+            sd = "none"
+        elif c["open_right"]:
+            sd = "left"
+        elif c["open_left"]:
+            sd = "right"
+        else:
+            sd = rnd.choice(["left", "right"])
+        obuilding(OW, "shanty", c["x"], c["z"], "S", c["w"], c["d"], 1, stilt_height=c["stilt"], shanty_stair=SIDE[sd],
+                  open_left=c["open_left"], open_right=c["open_right"])
+    else:
+        obuilding(OW, "shanty", c["x"], c["z"], rnd.choice(["S", "N", "E", "W"]), c["w"], c["d"], 1,
+                  stilt_height=0.0, shanty_stair=SIDE["none"])
+for (x, z, length) in bridges2:
+    walkway(OW, x, 2.4, z, 90, round(length, 2), width=1.1, wooden=True, lanterns=rnd.random() < 0.5)
+for gz in range(0, 14, 2):
+    z = -72.0 + gz * 11.0 + 5.5
+    cables(OW, [(-106.0, 5.2, z), (-119.5, 5.6, z + 0.4), (-133.0, 5.0, z - 0.3)], 0.7, 1, True, poles=[0, 1, 2],
+           wooden_poles=True)
+for (x, z) in ((-104.0, -2.0), (-114.0, 32.5), (-124.0, -44.5), (-104.5, 65.5)):
+    oprop(OW, "FIRE_BARREL", x, z, 0, variant=rnd.randint(0, 1))
+# Kleinkram nur in den Gassen zwischen den Hüttenreihen
+for _ in range(22):
+    z = -72.0 + rnd.randint(0, 12) * 11.0 + 5.5 + rnd.uniform(-1.5, 1.5)
+    prop(OW, rnd.choice(["TRASH_PILE", "TRASH_BAGS", "BARREL", "CRATE", "PALLETS"]), rnd.uniform(-132.0, -105.0), z,
+         rnd.uniform(0, 360), variant=rnd.randint(0, 2))
+
+# --- Ecken ------------------------------------------------------------------------------
+nodes.append('[node name="OuterCorners" type="Node3D" parent="."]')
+OC = "OuterCorners"
+# NO: Kraftwerk
+obuilding(OC, "warehouse", 113.0, -110.0, "W", 24, 20, 3, floor_height=3.6, wall="corrugated_grey", number="07",
+          front_sign="sign_ngc7")
+for (x, z) in ((98.0, -126.0), (104.0, -129.0), (127.0, -128.0)):
+    oprop(OC, "WATER_TANK", x, z, 0, r=1.6)
+for (x, z) in ((96.0, -102.0), (128.0, -96.0)):
+    oprop(OC, "GENERATOR", x, z, 0, r=1.2)
+for z in (-96.0, -124.0):
+    oprop(OC, "POWER_POLE", 99.0, z, 90)
+cables(OC, [(99.0, TOP_ARM, -96.9), (99.0, TOP_ARM, -123.1)], 1.0, 1, wall_brackets=False)
+# NW: Schrottplatz hinter Zaun
+for (x0, x1) in ((-132.0, -118.0), (-112.0, -94.0)):
+    oprop(OC, "FENCE", (x0 + x1) / 2, -94.0, 0, length=x1 - x0)
+oprop(OC, "FENCE", -94.0, -114.0, 90, length=40.0)
+for (x, z, yaw) in ((-102.0, -100.0, 0), (-126.0, -102.0, 90), (-124.0, -124.0, 0), (-100.0, -128.0, 90)):
+    oprop(OC, "CONTAINER", x, z, yaw, half=CONTAINER_HALF, variant=rnd.randint(0, 3))
+prop(OC, "CONTAINER", -126.0, -102.0, 90, y=2.6, variant=1)
+for (x, z, yaw) in ((-116.0, -118.0, 140), (-106.0, -122.0, 15), (-120.0, -110.0, 60)):
+    oprop(OC, "CAR_WRECK", x, z, yaw, r=2.0, variant=rnd.randint(0, 2))
+oprop(OC, "FIRE_BARREL", -112.0, -102.0, 0, r=0.4)
+oprop(OC, "STREET_LAMP", -98.0, -110.0, 90)
+for (kind, x, z) in (("BARREL_GROUP", -110.0, -128.0), ("PALLETS", -128.0, -114.0), ("TRASH_PILE", -100.0, -116.0),
+                     ("CRATE_STACK", -114.0, -100.0), ("TRASH_BAGS", -130.0, -130.0)):
+    oprop(OC, kind, x, z, rnd.uniform(0, 360), r=1.0, variant=rnd.randint(0, 2))
+# SO: Parkplatz und Hotel
+slab(OC, 112.0, 106.0, 34.0, 20.0, "asphalt", 0.02, 0.4)
+obuilding(OC, "res", 118.0, 126.0, "N", 26, 12, 10, wall="concrete_dark", ground_wall="tiles_dark",
+          front_sign="sign_hotel", side_sign="sign_vacancy", lit_ratio=0.55, stair_side=SIDE["left"])
+sign(OC, "sign_hotel", 118.0, 33.06, 126.0, 180, "roof", 7.0, (0.3, 0.8, 1.0, 1), 0.0, 3.0)
+obuilding(OC, "shop", 97.0, 125.0, "N", 9, 9, 2, wall="plaster_pink", front_sign="sign_24h", side_sign="sign_open")
+for x in (110.0, 118.0, 126.0):
+    oprop(OC, "STREET_LAMP", x, 97.0, 0, variant=rnd.randint(0, 2))
+oprop(OC, "CONCRETE_BARRIER", 128.0, 112.0, 90, r=0.0, length=6.0)
+# SW: Hütten und Wohnturm
+obuilding(OC, "res", -114.0, 120.0, "N", 18, 14, 11, wall="concrete", ground_wall="brick_dark", number="07",
+          lit_ratio=0.45, stair_side=SIDE["right"])
+obuilding(OC, "shanty", -98.0, 100.0, "S", 6, 5, 1, stilt_height=0.0)
+obuilding(OC, "shanty", -98.0, 110.0, "E", 5, 5, 1, stilt_height=0.0)
+obuilding(OC, "shanty", -130.0, 98.0, "N", 5, 4.5, 1, stilt_height=0.0)
+oprop(OC, "WATER_TANK", -99.0, 129.0, 0, r=1.6)
+oprop(OC, "FIRE_BARREL", -106.0, 104.0, 0, r=0.4)
+for (kind, x, z) in (("TRASH_PILE", -110.0, 100.0), ("BARREL", -122.0, 104.0), ("CRATE", -116.0, 98.0),
+                     ("TRASH_BAGS", -126.0, 108.0)):
+    oprop(OC, kind, x, z, rnd.uniform(0, 360), r=0.9, variant=rnd.randint(0, 2))
+
+# =====================================================================================
 # Rand: Hochhäuser (Hintergrund) und unsichtbare Wände
 # =====================================================================================
 nodes.append('[node name="Skyline" type="Node3D" parent="."]')
@@ -401,13 +797,13 @@ SK = "Skyline"
 walls = ["concrete_dark", "concrete", "brick_dark", "plaster", "concrete_green"]
 signs = ["", "", "", "sign_ngc7", "sign_shop", "sign_24h", "sign_bar"]
 for side in ("N", "S", "E", "W"):
-    pos = -88.0
-    while pos < 88.0:
+    pos = -MAP_EDGE - 8.0
+    while pos < MAP_EDGE + 8.0:
         w = rnd.uniform(14, 22)
         c = pos + w / 2
-        floors = rnd.randint(9, 22)
+        floors = rnd.randint(10, 24)
         d = rnd.uniform(12, 16)
-        dist = 84.0 + d / 2 + rnd.uniform(0, 4)
+        dist = MAP_EDGE + 4.0 + d / 2 + rnd.uniform(0, 4)
         if side == "N":
             x, z, face = c, -dist, "S"
         elif side == "S":
@@ -488,7 +884,7 @@ adjustment_contrast = 1.08
 adjustment_saturation = 0.9
 
 [sub_resource type="BoxShape3D" id="Shape_bound"]
-size = Vector3(180, 60, 1)
+size = Vector3(BOUND_SIZE, 60, 1)
 
 [node name="Slum" type="Node3D"]
 script = ExtResource("1_script")
@@ -508,31 +904,31 @@ TAIL = """
 [node name="Bounds" type="Node3D" parent="."]
 
 [node name="North" type="StaticBody3D" parent="Bounds"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 30, -80)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 30, -BOUND)
 
 [node name="Shape" type="CollisionShape3D" parent="Bounds/North"]
 shape = SubResource("Shape_bound")
 
 [node name="South" type="StaticBody3D" parent="Bounds"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 30, 80)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 30, BOUND)
 
 [node name="Shape" type="CollisionShape3D" parent="Bounds/South"]
 shape = SubResource("Shape_bound")
 
 [node name="East" type="StaticBody3D" parent="Bounds"]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 80, 30, 0)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, BOUND, 30, 0)
 
 [node name="Shape" type="CollisionShape3D" parent="Bounds/East"]
 shape = SubResource("Shape_bound")
 
 [node name="West" type="StaticBody3D" parent="Bounds"]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -80, 30, 0)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -BOUND, 30, 0)
 
 [node name="Shape" type="CollisionShape3D" parent="Bounds/West"]
 shape = SubResource("Shape_bound")
 
 [node name="Player" parent="." instance=ExtResource("2_player")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 62)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.8, 0.25, 62)
 
 [node name="PauseMenu" parent="." instance=ExtResource("3_pause")]
 """
@@ -550,6 +946,13 @@ SPOTS = [
     ("Spot_Roof07", (13.0, 15.1, -28.5), "i_credchip", 40),
     ("Spot_Alley", (-24.0, 0.0, 66.0), "i_drink", 1),
     ("Spot_Gate", (-14.0, 0.0, -38.0), "i_credchip", 10),
+    # Außenviertel (PR #35)
+    ("Spot_NorthMarket", (0.0, 0.0, -104.0), "i_noodles", 2),
+    ("Spot_Docks", (106.0, 5.2, -7.0), "i_shard", 2),
+    ("Spot_NightMile", (-30.0, 0.0, 106.0), "i_drink", 2),
+    ("Spot_ShantyHill", (-104.0, 0.0, 4.0), "i_credchip", 15),
+    ("Spot_Scrapyard", (-110.0, 0.0, -106.0), "i_stim", 1),
+    ("Spot_Parking", (112.0, 0.02, 103.0), "i_credchip", 25),
 ]
 
 
@@ -578,7 +981,9 @@ def items() -> str:
 
 
 def main() -> None:
-    text = HEAD + "\n" + "\n\n".join(nodes) + "\n" + TAIL + "\n" + items() + "\n"
+    head = HEAD.replace("BOUND_SIZE", str(int(2 * MAP_EDGE + 20)))
+    tail = TAIL.replace("BOUND", str(int(MAP_EDGE)))
+    text = head + "\n" + "\n\n".join(nodes) + "\n" + tail + "\n" + items() + "\n"
     with open(OUT, "w", encoding="utf-8") as f:
         f.write(text)
     print("geschrieben:", OUT, len(nodes), "Kit-Knoten")
