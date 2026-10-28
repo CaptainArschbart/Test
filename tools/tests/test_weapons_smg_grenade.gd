@@ -380,12 +380,24 @@ func _test_throw() -> void:
 	var held: Node3D = _item_user.call("get_held_view")
 	var rest := held.position
 	_check(_item_user.call("use_selected"), "Wurf startet")
-	await _frames(3)
-	print("    Wurfzeit %.3f, Hand %s → %s" % [float(_item_user.get("_throw_time")), rest, held.position])
-	_check(held.position.z > rest.z + 0.02 and held.position.y > rest.y + 0.02, "Ausholen: Hand geht zurück und hoch")
-	_check(_count_inventory(data) == 2, "beim Ausholen noch nicht losgelassen")
-	await _seconds(0.2)
-	_check(_count_inventory(data) == 1, "nach dem Ausholen fliegt die Granate")
+	# Jedes Bild ansehen: beim Ausholen (vor dem Loslassen) Lage der Hand und Inventar prüfen.
+	var wind_seen := false
+	var wind_ok := true
+	var released := false
+	for i in 200:
+		await process_frame
+		var t := float(_item_user.get("_throw_time"))
+		var count := _count_inventory(data)
+		if t > 0.0 and t < 0.16 and count == 2:
+			wind_seen = true
+			wind_ok = wind_ok and held.position.z > rest.z + 0.005 and held.position.y > rest.y + 0.005
+		if count == 1:
+			released = true
+			break
+	print("    Wurfzeit beim Loslassen %.3f s" % float(_item_user.get("_throw_time")))
+	_check(wind_seen and wind_ok, "Ausholen: Hand geht zurück und hoch, Granate noch in der Hand")
+	_check(released and float(_item_user.get("_throw_time")) >= 0.16, "nach dem Ausholen fliegt die Granate")
+	await _frames(2)
 	_check(label.text.ends_with("×1"), "Anzeige zählt runter: „%s“" % label.text)
 	await _seconds(0.8)
 	# Letzte Granate: Hand bleibt bis zum Ende des Wurfs.
