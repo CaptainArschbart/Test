@@ -12,12 +12,24 @@ extends Node3D
 ## werfen nur Schatten (sonst steckt die Kamera im Kopf). first_person = false zeigt alles,
 ## so sehen andere Spieler im Multiplayer die Figur (PlayerAvatarSync schaltet das um).
 ##
-## Ohne external_drive laufen die Beine mit der Geschwindigkeit des Players, die Arme schwingen
-## gegengleich, in der Luft werden die Knie angezogen. Mit external_drive setzt PlayerAvatarSync
-## die Zustände (Blick, Hocken, Rutschen, Klettern, Waffe, Zielen, Nachladen, Tod) und ruft
-## animate() auf. Waffen hängen an einer Halterung am Oberkörper, die Hände greifen sie per
-## Zwei-Gelenk-IK. Gelenkwinkel: Hüfte/Schulter +x = nach vorn, Knie -x = Unterschenkel nach hinten,
-## Ellbogen +x = Unterarm nach vorn, Wirbelsäule/Kopf +x = nach hinten bzw. hochschauen.
+## Laufzyklus: Die Beine laufen im Takt der Schritte des Players (Schrittlänge wie bei den
+## Schrittgeräuschen, Player.walk_step_interval × walk_speed). Ein Zyklus = zwei Schritte;
+## get_stride_phase() liefert ihn auch für Ego-Hände, Kamerawippen und Schrittgeräusche, damit alles
+## zusammen auftritt (rechter Fuß setzt bei Phase π/2 auf, linker bei 3π/2).
+## Pro Bein: Oberschenkel pendelt, das Knie knickt in der Schwungphase stark (Ferse zum Gesäß) und
+## federt im Stand leicht, der Fuß rollt ab (Ferse auf, Spitze ab). Das Becken sinkt so weit, wie
+## das längere Bein kürzer wird: der Standfuß bleibt auf dem Boden, nichts schwebt.
+## Arme schwingen gegengleich, beim Sprint stärker angewinkelt, Oberkörper neigt sich vor.
+## In der Luft werden die Knie angezogen, beim Landen federn sie kurz ein.
+## Ohne Player darüber bleibt die Grundhaltung.
+##
+## Fremde Figur (external_drive): PlayerAvatarSync setzt die Zustände (Blick, Hocken, Rutschen,
+## Klettern, Waffe, Zielen, Nachladen, Tod) und ruft animate_remote() auf. Das legt Hocken, Rutschen,
+## Klettern und Waffenhaltung über den Laufzyklus, das Becken dreht in die Laufrichtung, Kopf und
+## Oberkörper folgen dem Blick. Waffen hängen an einer Halterung am Oberkörper, die Hände greifen sie
+## per Zwei-Gelenk-IK. Für die eigene Figur bleiben diese Gewichte 0, dort ändert sich nichts.
+## Gelenkwinkel: Hüfte/Schulter +x = nach vorn, Knie -x = gebeugt, Ellbogen +x = Unterarm nach vorn,
+## Wirbelsäule/Kopf +x = nach hinten bzw. hochschauen.
 
 ## Was die Figur in der Hand hält (bestimmt Haltung und IK-Griffe).
 enum Hold { NONE, PISTOL, RIFLE, MELEE, GRENADE }
@@ -29,10 +41,18 @@ signal stepped
 	set(value):
 		first_person = value
 		_update_visibility()
-## Schrittlänge: wie viele Schrittzyklen pro Meter.
-@export var stride_rate := 1.45
-@export var leg_swing_degrees := 32.0
-@export var arm_swing_degrees := 22.0
+## Schrittlänge in Metern, wenn kein Player darüber ist (sonst wie die Schrittgeräusche).
+@export var fallback_step_length := 2.3
+## Ab dieser Geschwindigkeit (m/s) volle Schrittweite, darunter kleiner.
+@export var full_gait_speed := 8.0
+## Oberschenkel nach vorn/hinten bei voller Schrittweite.
+@export var leg_swing_degrees := 44.0
+## Knieknick in der Schwungphase und Einfedern im Stand bei voller Schrittweite.
+@export var knee_swing_degrees := 100.0
+@export var knee_stance_degrees := 16.0
+@export var arm_swing_degrees := 30.0
+## Oberkörper-Neigung nach vorn beim Sprint.
+@export var sprint_lean_degrees := 7.0
 ## In der Ego-Sicht rutschen die Beine so weit nach hinten, damit man beim Runterschauen
 ## an den Oberschenkeln vorbei auf Knie und Stiefel sieht.
 @export var first_person_leg_offset := 0.16
@@ -46,16 +66,24 @@ signal stepped
 @export var neon_material: Material
 @export var visor_material: Material
 
-const HIP_HEIGHT := 0.95
+var _player: CharacterBody3D
+var _phase := 0.0
+## Phase ohne Umbruch (zählt die Schritte).
+var _stride_total := PI * 0.5 - 0.01
+var _gait := 0.0
+var _sprint := 0.0
+var _air := 0.0
+var _land := 0.0
+var _was_on_floor := true
+## Oberschenkel, Unterschenkel und Knöchel bis Sohle (siehe _build_leg), für das Absenken des Beckens.
 const THIGH := 0.43
 const SHIN := 0.42
-## Fußgelenk bis Sohle.
-const FOOT := 0.105
+const FOOT_DROP := 0.11
+const HIPS_Y := 0.95
 const UPPER_ARM := 0.29
 ## Ellbogen bis Handfläche.
 const FOREARM := 0.33
 const PALM := Vector3(0.0, -0.33, -0.01)
-
 ## true = PlayerAvatarSync steuert (fremde Figur), sonst liest der Körper den Player selbst.
 var external_drive := false
 ## Blick hoch (+) / runter (-) in Radiant, wie Player.head.rotation.x.
@@ -79,20 +107,22 @@ var dead := false:
 		else:
 			_reset_death()
 var hold: Hold = Hold.NONE
+## Render-Ebene 19: nur die Beine. Ein schwaches Fülllicht (nur in der Ego-Sicht) wirkt allein darauf,
+## damit Knie und Stiefel beim Runterschauen auch in dunklen Gassen lesbar sind (wie bei den Ego-Händen).
+const LEGS_LAYER := 1 << 18
 
-var _player: CharacterBody3D
-var _phase := 0.0
-var _swing := 0.0
-var _air := 0.0
 var _upper_parts: Array[GeometryInstance3D] = []
 var _legs: Array[Dictionary] = []
 var _arms: Array[Dictionary] = []
 var _spine: Node3D
 var _hips: Node3D
-var _head: Node3D
 var _strap_material: StandardMaterial3D
 var _rubber_material: StandardMaterial3D
 var _metal_material: StandardMaterial3D
+var _leg_light: OmniLight3D
+var _head: Node3D
+## +1 vorwärts, -1 rückwärts (nur fremde Figur).
+var _stride_dir := 1.0
 
 # Gewichte, weich nachgeführt, damit 20-Hz-Netzwerte nicht ruckeln.
 var _crouch_w := 0.0
@@ -129,12 +159,135 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if external_drive:
 		return
-	var velocity := Vector3.ZERO
+	var speed := 0.0
 	var on_floor := true
+	var sprinting := false
 	if _player != null:
-		velocity = _player.velocity
+		speed = Vector2(_player.velocity.x, _player.velocity.z).length()
 		on_floor = _player.is_on_floor()
-	animate(delta, velocity, on_floor)
+		if _player is Player and (_player as Player).stats != null:
+			sprinting = (_player as Player).stats.is_sprinting()
+	animate(delta, speed, on_floor, sprinting)
+
+
+## Lauf-, Steh- und Sprunghaltung. `speed` in Metern pro Sekunde.
+func animate(delta: float, speed: float, on_floor: bool, sprinting := false) -> void:
+	_update_overlays(delta)
+	var target_gait := clampf(speed / full_gait_speed, 0.0, 1.1) if on_floor else 0.0
+	_gait = lerpf(_gait, target_gait, minf(8.0 * delta, 1.0))
+	_sprint = move_toward(_sprint, 1.0 if sprinting and on_floor and speed > 1.0 else 0.0, 4.0 * delta)
+	_air = lerpf(_air, 0.0 if on_floor else 1.0, minf(6.0 * delta, 1.0))
+	if on_floor and not _was_on_floor:
+		_land = 1.0
+	_was_on_floor = on_floor
+	_land = move_toward(_land, 0.0, 4.0 * delta)
+	if on_floor and speed > 0.3:
+		_stride_total += delta * get_cadence(speed, sprinting) * PI * _stride_dir
+	_phase = fmod(_stride_total, TAU)
+
+	var leg := deg_to_rad(leg_swing_degrees) * _gait
+	var knee_swing := deg_to_rad(knee_swing_degrees) * pow(minf(_gait, 1.0), 0.8)
+	var knee_stance := deg_to_rad(knee_stance_degrees) * _gait
+	var reach := 0.0
+	for i in _legs.size():
+		var p := _phase + (0.0 if i == 0 else PI)
+		var swing := maxf(0.0, cos(p + 0.35))
+		swing = swing * swing * (3.0 - 2.0 * swing)
+		var stance := maxf(0.0, -cos(p))
+		var hip_angle := sin(p) * leg + _air * 0.5 + _land * 0.2
+		var knee_flex := swing * knee_swing + stance * knee_stance + _air * 1.1 + _land * 0.45 + 0.06
+		# Fuß: Ferse setzt mit leicht angehobener Spitze auf, hinten drückt die Spitze ab.
+		var foot := (0.22 * sin(p) - 0.3 * swing) * _gait - _air * 0.25
+		# Fremde Figur: Hocken, Rutschen (rechts gestreckt, links untergeschlagen), Klettern.
+		hip_angle += 1.25 * _crouch_w
+		knee_flex += 2.05 * _crouch_w
+		hip_angle = lerpf(hip_angle, 1.3 if i == 0 else 0.45, _slide_w)
+		knee_flex = lerpf(knee_flex, 0.2 if i == 0 else 1.95, _slide_w)
+		var climb_leg := _climb_leg(i)
+		hip_angle = lerpf(hip_angle, climb_leg.x, _climb_w)
+		knee_flex = lerpf(knee_flex, -climb_leg.y, _climb_w)
+		foot *= 1.0 - maxf(_crouch_w, _slide_w)
+		var shin := hip_angle - knee_flex
+		var hip: Node3D = _legs[i].hip
+		var knee: Node3D = _legs[i].knee
+		var ankle: Node3D = _legs[i].ankle
+		hip.rotation.x = hip_angle
+		knee.rotation.x = -knee_flex
+		ankle.rotation.x = foot - shin
+		reach = maxf(reach, THIGH * cos(hip_angle) + SHIN * cos(shin) + FOOT_DROP * cos(foot))
+	# Das längere Bein steht auf dem Boden: Becken sinkt um das, was ihm zur geraden Länge fehlt.
+	var straight := THIGH + SHIN * cos(0.06) + FOOT_DROP
+	if _hips != null:
+		_hips.position.y = HIPS_Y - (straight - reach) * (1.0 - _air) * (1.0 - _climb_w)
+		_hips.rotation.y = _hip_yaw
+
+	var arm := deg_to_rad(arm_swing_degrees) * _gait
+	for i in _arms.size():
+		var side := 1.0 if i == 0 else -1.0
+		var shoulder: Node3D = _arms[i].shoulder
+		var elbow: Node3D = _arms[i].elbow
+		shoulder.rotation = Vector3(-sin(_phase) * side * arm + _air * 0.4, 0.0, (0.09 + _air * 0.25) * side)
+		elbow.rotation.x = 0.25 + _gait * 0.35 + _sprint * 0.6 + maxf(0.0, -sin(_phase) * side) * arm * 0.6
+	var breath := sin(Time.get_ticks_msec() * 0.0013) * 0.012
+	_spine.rotation.x = -0.04 * _gait - deg_to_rad(sprint_lean_degrees) * _sprint + breath
+	_spine.position.y = 0.075
+	_apply_overlays()
+
+
+## Fremde Figur. `velocity` in Weltkoordinaten (m/s): das Becken dreht in die Laufrichtung
+## (seitwärts bis 50°), rückwärts läuft der Zyklus rückwärts. Meldet Schritte über `stepped`.
+func animate_remote(delta: float, velocity: Vector3, on_floor: bool) -> void:
+	_recoil = move_toward(_recoil, 0.0, delta * 7.0)
+	_action = move_toward(_action, 0.0, delta * 2.2)
+	if _flash_left > 0.0:
+		_flash_left -= delta
+		if _flash_left <= 0.0:
+			_set_flash(false)
+	if dead:
+		return
+	var local := global_basis.orthonormalized().inverse() * velocity
+	# x = rechts, y = vorwärts.
+	var planar := Vector2(local.x, -local.z)
+	var speed := planar.length()
+	_stride_dir = 1.0
+	var yaw_target := 0.0
+	if speed > 0.4 and not sliding and climb < 0.0:
+		var angle := atan2(planar.x, planar.y)
+		if absf(angle) > PI * 0.6:
+			_stride_dir = -1.0
+			angle = wrapf(angle - PI, -PI, PI)
+		yaw_target = -clampf(angle, -0.9, 0.9)
+	_hip_yaw = lerp_angle(_hip_yaw, yaw_target, minf(delta * 8.0, 1.0))
+	var steps := get_step_count()
+	var sprinting := speed > 6.0 and crouch < 0.5
+	animate(delta, 0.0 if sliding or climb >= 0.0 else speed, on_floor, sprinting)
+	if on_floor and get_step_count() != steps:
+		stepped.emit()
+
+
+## Schritte pro Sekunde bei `speed` (wie die Schrittgeräusche des Players, 0,16–0,75 s je Schritt).
+func get_cadence(speed: float, sprinting: bool) -> float:
+	var step_length := fallback_step_length
+	if _player is Player:
+		var player := _player as Player
+		step_length = player.sprint_step_interval * player.sprint_speed if sprinting \
+			else player.walk_step_interval * player.walk_speed
+	return clampf(speed / maxf(step_length, 0.1), 1.0 / 0.75, 1.0 / 0.16)
+
+
+## Laufzyklus 0–2π. Rechter Fuß setzt bei π/2 auf, linker bei 3π/2.
+func get_stride_phase() -> float:
+	return _phase
+
+
+## Wie viele Schritte bisher (wächst bei jedem Auftritt um eins).
+func get_step_count() -> int:
+	return floori((_stride_total - PI * 0.5) / PI)
+
+
+## Schrittweite 0 (Stand) bis ~1 (Sprint), weich überblendet.
+func get_gait() -> float:
+	return _gait
 
 
 ## Zeigt ein Item in der rechten Hand (Schusswaffe, Klinge, Granate) und wählt die Haltung.
@@ -191,20 +344,9 @@ func trigger_action() -> void:
 	_action = 1.0
 
 
-## Zustände in Haltung umsetzen. `velocity` in Weltkoordinaten (m/s).
-func animate(delta: float, velocity: Vector3, on_floor: bool) -> void:
-	_recoil = move_toward(_recoil, 0.0, delta * 7.0)
-	_action = move_toward(_action, 0.0, delta * 2.2)
-	if _flash_left > 0.0:
-		_flash_left -= delta
-		if _flash_left <= 0.0:
-			_set_flash(false)
-	if dead:
-		return
-	var local := global_basis.orthonormalized().inverse() * velocity
-	# x = rechts, y = vorwärts.
-	var planar := Vector2(local.x, -local.z)
-	var speed := planar.length()
+## Gewichte für Hocken, Rutschen, Klettern, Zielen und Nachladen weich nachführen
+## (20-Hz-Netzwerte sollen nicht ruckeln). Für die eigene Figur bleiben sie 0.
+func _update_overlays(delta: float) -> void:
 	var k := minf(delta * 10.0, 1.0)
 	var climbing := climb >= 0.0
 	_climb_w = lerpf(_climb_w, 1.0 if climbing else 0.0, minf(delta * 14.0, 1.0))
@@ -216,82 +358,11 @@ func animate(delta: float, velocity: Vector3, on_floor: bool) -> void:
 	_reload_w = lerpf(_reload_w, 1.0 if reload >= 0.0 else 0.0, minf(delta * 12.0, 1.0))
 	if reload >= 0.0:
 		_reload_t = reload
-	_air = lerpf(_air, 0.0 if on_floor or climbing else 1.0, minf(6.0 * delta, 1.0))
-
-	# Laufrichtung: Becken dreht mit (seitwärts), rückwärts läuft der Zyklus rückwärts.
-	var dir_sign := 1.0
-	var yaw_target := 0.0
-	if speed > 0.4 and _slide_w < 0.5 and _climb_w < 0.5:
-		var angle := atan2(planar.x, planar.y)
-		if absf(angle) > PI * 0.6:
-			dir_sign = -1.0
-			angle = wrapf(angle - PI, -PI, PI)
-		yaw_target = -clampf(angle, -0.9, 0.9)
-	_hip_yaw = lerp_angle(_hip_yaw, yaw_target, minf(delta * 8.0, 1.0))
-	var busy := maxf(_slide_w, _climb_w)
-	var target_swing := clampf(speed / 5.0, 0.0, 1.4) * (1.0 - busy) if on_floor else 0.0
-	_swing = lerpf(_swing, target_swing, minf(8.0 * delta, 1.0))
-	var old_phase := _phase
-	_phase = fmod(_phase + delta * speed * stride_rate * PI * dir_sign * (1.0 + 0.5 * _crouch_w) + TAU, TAU)
-	if external_drive and on_floor and _swing > 0.15 and signf(sin(old_phase)) != signf(sin(_phase)):
-		stepped.emit()
-	var sprint := clampf((speed - 5.5) / 2.5, 0.0, 1.0) * (1.0 - busy)
-
-	_animate_legs(on_floor)
-	_animate_spine(sprint)
-	_animate_arms(delta)
 
 
-func _animate_legs(on_floor: bool) -> void:
-	var leg := deg_to_rad(leg_swing_degrees) * _swing
-	var lowest := 0.0
-	for i in _legs.size():
-		var side := 1.0 if i == 0 else -1.0
-		var s := sin(_phase) * side
-		var c := cos(_phase) * side
-		var hip_x := s * leg + _air * 0.5
-		# Das Knie knickt, während das Bein nach vorn schwingt.
-		var knee_x := -maxf(0.0, c) * leg * 1.5 - 0.05 - _air * 0.9
-		hip_x += 1.25 * _crouch_w
-		knee_x -= 2.05 * _crouch_w
-		# Rutschen: rechtes Bein gestreckt vorn, linkes untergeschlagen.
-		hip_x = lerpf(hip_x, 1.3 if i == 0 else 0.45, _slide_w)
-		knee_x = lerpf(knee_x, -0.2 if i == 0 else -1.95, _slide_w)
-		var climb_leg := _climb_leg(i)
-		hip_x = lerpf(hip_x, climb_leg.x, _climb_w)
-		knee_x = lerpf(knee_x, climb_leg.y, _climb_w)
-		var hip: Node3D = _legs[i].hip
-		var knee: Node3D = _legs[i].knee
-		var ankle: Node3D = _legs[i].ankle
-		hip.rotation.x = hip_x
-		knee.rotation.x = knee_x
-		# Fuß bleibt beim Hocken flach, beim Gehen rollt er etwas ab.
-		var flat := maxf(_crouch_w, _slide_w)
-		ankle.rotation.x = -(hip_x + knee_x) * lerpf(0.45, 0.95, flat)
-		lowest = maxf(lowest, THIGH * cos(hip_x) + SHIN * cos(hip_x + knee_x) + FOOT)
-	_hips.rotation.y = _hip_yaw
-	# Am Boden steht der tiefere Fuß auf (Hocken, Rutschen), sonst Grundhöhe.
-	var planted := minf(HIP_HEIGHT, 0.05 + lowest)
-	var ground := (1.0 - _air) * (1.0 - _climb_w) if on_floor else 0.0
-	_hips.position.y = lerpf(HIP_HEIGHT, planted, ground)
-
-
-## Beinwinkel (Hüfte, Knie) beim Klettern.
-func _climb_leg(i: int) -> Vector2:
-	var t := _climb_t
-	var right := i == 0
-	if t < 1.0:
-		return Vector2(0.2, -0.35)
-	if t < 2.0:
-		var k := smoothstep(0.0, 1.0, t - 1.0)
-		return Vector2(0.2, -0.35).lerp(Vector2(1.5, -2.0) if right else Vector2(0.6, -1.2), k)
-	var k := smoothstep(0.0, 1.0, minf(t - 2.0, 1.0))
-	return (Vector2(1.5, -2.0) if right else Vector2(0.6, -1.2)).lerp(
-		Vector2(0.7, -0.7) if right else Vector2(1.3, -1.9), k)
-
-
-func _animate_spine(sprint: float) -> void:
-	var lean := -0.05 * _swing - 0.14 * sprint - 0.32 * _crouch_w - 0.1 * _air
+## Oberkörper, Kopf und Arme der fremden Figur über den Laufzyklus legen.
+func _apply_overlays() -> void:
+	var lean := _spine.rotation.x - 0.32 * _crouch_w
 	lean = lerpf(lean, 0.45, _slide_w)
 	var climb_lean := 0.1
 	if _climb_t >= 1.0:
@@ -299,24 +370,20 @@ func _animate_spine(sprint: float) -> void:
 	lean = lerpf(lean, climb_lean, _climb_w)
 	# Oberkörper folgt dem Blick ein Stück, im Anschlag mehr.
 	var follow := lerpf(0.25, 0.45, _aim_w) * (1.0 - _climb_w)
-	var breath := sin(Time.get_ticks_msec() * 0.0013) * 0.012
-	_spine.rotation.x = lean + look_pitch * follow + breath
+	_spine.rotation.x = lean + look_pitch * follow if external_drive else lean
 	_spine.rotation.y = -_hip_yaw * 0.85
-	_spine.position.y = 0.075 + absf(sin(_phase)) * 0.015 * _swing
-	_head.rotation.x = clampf(look_pitch - _spine.rotation.x, -0.9, 0.9)
-
-
-func _animate_arms(delta: float) -> void:
-	var arm := deg_to_rad(arm_swing_degrees) * _swing
+	if external_drive:
+		_head.rotation.x = clampf(look_pitch - _spine.rotation.x, -0.9, 0.9)
 	var mount := _mount_transform()
 	_weapon_mount.transform = mount
 	var weapon := hold != Hold.NONE
 	for i in _arms.size():
 		var side := 1.0 if i == 0 else -1.0
-		# Frei: Pendeln gegengleich zu den Beinen, beim Rennen mehr Ellbogen.
-		var x := -sin(_phase) * side * arm + _air * 0.4 + 0.25 * _crouch_w
-		var z := 0.09 + _air * 0.25
-		var elbow := 0.25 + _swing * 0.35 + 0.3 * _crouch_w
+		var shoulder: Node3D = _arms[i].shoulder
+		var elbow_node: Node3D = _arms[i].elbow
+		var x := shoulder.rotation.x + 0.25 * _crouch_w
+		var z := shoulder.rotation.z * side
+		var elbow := elbow_node.rotation.x + 0.3 * _crouch_w
 		# Rutschen: rechts nach vorn, links stützt hinten ab.
 		x = lerpf(x, 0.6 if i == 0 else -0.5, _slide_w)
 		z = lerpf(z, 0.15 if i == 0 else 0.6, _slide_w)
@@ -341,10 +408,7 @@ func _animate_arms(delta: float) -> void:
 					var dip := sin(clampf(_reload_t, 0.0, 1.0) * PI)
 					left = left.lerp(_grip_right + Vector3(0.0, -0.09 - dip * 0.18, -0.06), _reload_w)
 				target = mount * left
-			grip *= 1.0 - _climb_w
-			grip *= 1.0 - _slide_w * 0.6
-		var shoulder: Node3D = _arms[i].shoulder
-		var elbow_node: Node3D = _arms[i].elbow
+			grip *= (1.0 - _climb_w) * (1.0 - _slide_w * 0.6)
 		if grip > 0.001:
 			var ik := _solve_arm(shoulder.position, target, side)
 			basis = basis.slerp(ik.basis, grip)
@@ -352,6 +416,20 @@ func _animate_arms(delta: float) -> void:
 		shoulder.basis = basis
 		elbow_node.rotation.x = elbow
 	_weapon_mount.visible = weapon and _climb_w < 0.5
+
+
+## Beinwinkel (Hüfte, Knie) beim Klettern.
+func _climb_leg(i: int) -> Vector2:
+	var t := _climb_t
+	var right := i == 0
+	if t < 1.0:
+		return Vector2(0.2, -0.35)
+	if t < 2.0:
+		var k := smoothstep(0.0, 1.0, t - 1.0)
+		return Vector2(0.2, -0.35).lerp(Vector2(1.5, -2.0) if right else Vector2(0.6, -1.2), k)
+	var k := smoothstep(0.0, 1.0, minf(t - 2.0, 1.0))
+	return (Vector2(1.5, -2.0) if right else Vector2(0.6, -1.2)).lerp(
+		Vector2(0.7, -0.7) if right else Vector2(1.3, -1.9), k)
 
 
 ## Arm (Schulter-Basis, Ellbogenwinkel) beim Klettern: über Kopf greifen, hochdrücken, abstützen.
@@ -383,7 +461,7 @@ func _mount_transform() -> Transform3D:
 	var aimed := Transform3D()
 	match hold:
 		Hold.PISTOL:
-			low = Transform3D(Basis.from_euler(Vector3(-0.6, 0.15, 0.0)), Vector3(0.17, 0.2, -0.3))
+			low = Transform3D(Basis.from_euler(Vector3(-0.75, 0.15, 0.0)), Vector3(0.15, 0.24, -0.24))
 			aimed = Transform3D(Basis(Vector3.RIGHT, aim_pitch),
 				pivot + Basis(Vector3.RIGHT, aim_pitch) * Vector3(0.04, 0.2, -0.48))
 		Hold.RIFLE:
@@ -534,6 +612,8 @@ func _update_visibility() -> void:
 		part.cast_shadow = mode
 	if _hips != null:
 		_hips.position.z = first_person_leg_offset if first_person else 0.0
+	if _leg_light != null:
+		_leg_light.visible = first_person
 	if _weapon_view != null:
 		for node: Node in _weapon_view.find_children("*", "GeometryInstance3D", true, false):
 			(node as GeometryInstance3D).cast_shadow = mode
@@ -574,7 +654,19 @@ func _build() -> void:
 			dir * 0.125 + Vector3(0.0, -0.17, 0.0), Vector3(0.1, angle, 0.0))
 		pelvis.append(flap)
 	for side: float in [1.0, -1.0]:
-		_legs.append(_build_leg(hips, side))
+		var leg := _build_leg(hips, side)
+		_set_layer(leg.hip, LEGS_LAYER)
+		_legs.append(leg)
+	_leg_light = OmniLight3D.new()
+	_leg_light.name = "LegFillLight"
+	_leg_light.light_color = Color(0.75, 0.85, 1.0)
+	_leg_light.light_energy = 0.9
+	_leg_light.light_specular = 0.4
+	_leg_light.omni_range = 1.5
+	_leg_light.shadow_enabled = false
+	_leg_light.light_cull_mask = LEGS_LAYER
+	_leg_light.position = Vector3(0.0, -0.05, -0.55)
+	hips.add_child(_leg_light)
 
 	_spine = Node3D.new()
 	_spine.name = "Spine"
@@ -769,6 +861,13 @@ func _build_arm(spine: Node3D, side: float) -> Dictionary:
 	parts.append(_part(elbow, ProcMesh.rounded_box(Vector3(0.012, 0.04, 0.05), 0.3), armor_material,
 		Vector3(0.019 * side, -0.31, -0.005)))
 	return {"shoulder": shoulder, "elbow": elbow, "parts": parts}
+
+
+func _set_layer(node: Node, layer: int) -> void:
+	if node is GeometryInstance3D:
+		(node as GeometryInstance3D).layers |= layer
+	for child in node.get_children():
+		_set_layer(child, layer)
 
 
 func _part(parent: Node3D, mesh: Mesh, material: Material, pos: Vector3,

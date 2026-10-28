@@ -4,7 +4,10 @@ extends RigidBody3D
 ##
 ## Die Explosion trifft alles im Radius mit take_hit(damage, point, normal), wenn keine
 ## Wand dazwischen ist. Steht der Werfer selbst im Radius und drains_stamina ist an,
-## ist seine Ausdauer leer. Mesh, Licht und Blitz entstehen im Code.
+## ist seine Ausdauer leer. Mesh, Licht und Blitz entstehen im Code. Die Kamera des Spielers
+## wackelt, je näher er an der Explosion steht (CameraShake).
+
+const CameraShakeScript := preload("res://scenes/player/camera_shake.gd")
 
 var data: GrenadeData
 var thrower: Player
@@ -56,6 +59,7 @@ func explode() -> void:
 	set_physics_process(false)
 	var center := global_position
 	StealthNoise.emit(get_tree(), center, 40.0, self, StealthNoise.EXPLOSION)
+	CameraShakeScript.explosion(get_tree(), center, data.radius)
 	var space := get_world_3d().direct_space_state
 	var query := PhysicsShapeQueryParameters3D.new()
 	var sphere := SphereShape3D.new()

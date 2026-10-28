@@ -106,7 +106,7 @@ func _process(delta: float) -> void:
 	_body.reload = net_reload
 	_body.dead = flags & Flag.DEAD != 0
 	var on_floor := flags & Flag.FLOOR != 0 and flags & Flag.NOCLIP == 0
-	_body.animate(delta, net_velocity, on_floor)
+	_body.animate_remote(delta, net_velocity, on_floor)
 
 
 ## Eigene Figur: Zustand in die net_*-Felder schreiben.

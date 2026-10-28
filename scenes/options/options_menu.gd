@@ -43,6 +43,8 @@ var _confirm_discard := false
 @onready var sensitivity_slider: HSlider = %SensitivitySlider
 @onready var sensitivity_value: Label = %SensitivityValue
 @onready var invert_y_check: CheckButton = %InvertYCheck
+@onready var camera_shake_slider: HSlider = %CameraShakeSlider
+@onready var camera_shake_value: Label = %CameraShakeValue
 @onready var key_grid: GridContainer = %KeyGrid
 @onready var apply_button: Button = %ApplyButton
 @onready var defaults_button: Button = %DefaultsButton
@@ -72,6 +74,7 @@ func _ready() -> void:
 	sfx_slider.value_changed.connect(_set_draft.bind("sfx_volume"))
 	sensitivity_slider.value_changed.connect(_set_draft.bind("mouse_sensitivity"))
 	invert_y_check.toggled.connect(_set_draft.bind("invert_y"))
+	camera_shake_slider.value_changed.connect(func(percent: float) -> void: _set_draft(percent / 100.0, "camera_shake"))
 	tabs.tab_changed.connect(func(_tab: int) -> void: glitch_requested.emit(0.5, 0.08))
 
 	_build_key_grid()
@@ -323,6 +326,7 @@ func _refresh_options() -> void:
 	sfx_slider.set_value_no_signal(_draft.sfx_volume)
 	sensitivity_slider.set_value_no_signal(_draft.mouse_sensitivity)
 	invert_y_check.set_pressed_no_signal(_draft.invert_y)
+	camera_shake_slider.set_value_no_signal(_draft.get("camera_shake", 1.0) * 100.0)
 	for action: String in _key_buttons:
 		var button: Button = _key_buttons[action]
 		if action == _rebinding_action:
@@ -338,6 +342,8 @@ func _refresh_labels() -> void:
 	music_value.text = "%d%%" % roundi(_draft.music_volume)
 	sfx_value.text = "%d%%" % roundi(_draft.sfx_volume)
 	sensitivity_value.text = "%.2fx" % _draft.mouse_sensitivity
+	var shake: float = _draft.get("camera_shake", 1.0)
+	camera_shake_value.text = "AUS" if shake <= 0.0 else "%d%%" % roundi(shake * 100.0)
 
 
 func _build_key_grid() -> void:
