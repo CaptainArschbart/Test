@@ -99,6 +99,8 @@ var _mantle_time := 0.0
 var _mantle_duration := 0.0
 var _mantle_crouch := false
 var _camera_tilt := 0.0
+## Kletter-Nicken der Kamera (Bogenmaß), ohne Kamerawackeln.
+var _camera_pitch := 0.0
 
 
 func _ready() -> void:
@@ -242,12 +244,11 @@ func _update_crouch_visuals(delta: float) -> void:
 		crouch_amount = move_toward(crouch_amount, target, delta * crouch_blend_speed * 0.6)
 	var eased := crouch_amount * crouch_amount * (3.0 - 2.0 * crouch_amount)
 	_camera_drop = crouch_camera_drop * eased
-	_apply_camera_drop()
 	var tilt_target := deg_to_rad(slide_camera_tilt_degrees) if state == State.SLIDE else 0.0
 	_camera_tilt = lerpf(_camera_tilt, tilt_target, minf(delta * 8.0, 1.0))
-	_player.camera.rotation.z = _camera_tilt
 	# Beim Klettern nickt die Kamera mit (Kamera, nicht Kopf: Zielen und Mausblick bleiben).
-	_player.camera.rotation.x = lerpf(_player.camera.rotation.x, _climb_pitch(), minf(delta * 16.0, 1.0))
+	_camera_pitch = lerpf(_camera_pitch, _climb_pitch(), minf(delta * 16.0, 1.0))
+	refresh_camera()
 	_update_mantle_visuals(delta)
 	var body := _player.get_node_or_null("Body") as Node3D
 	if body != null:
@@ -255,16 +256,30 @@ func _update_crouch_visuals(delta: float) -> void:
 
 
 func _process(_delta: float) -> void:
-	# Jedes Bild neu, weil sich der Blickwinkel zwischen zwei Physik-Frames ändern kann.
+	# Jedes Bild neu, weil sich Blickwinkel und Kamerawackeln zwischen zwei Physik-Frames ändern.
 	if _player != null and _player.is_node_ready():
-		_apply_camera_drop()
+		refresh_camera()
+
+
+## Setzt Lage und Drehung der Kamera aus Hocken, Rutsch-Neigung, Kletter-Nicken und Kamerawackeln.
+## Die einzige Stelle, die Camera3D.position/rotation schreibt.
+func refresh_camera() -> void:
+	var shake_rotation := Vector3.ZERO
+	var shake_offset := Vector3.ZERO
+	if _player.camera_shake != null:
+		shake_rotation = _player.camera_shake.get_rotation_offset()
+		shake_offset = _player.camera_shake.get_position_offset()
+	_apply_camera_drop(shake_offset)
+	_player.camera.rotation = Vector3(_camera_pitch, 0.0, _camera_tilt) + shake_rotation
 
 
 ## Die Kamera hängt am nickenden Kopf. Die Absenkung muss senkrecht in der Welt sein,
 ## also wird sie in den Raum des Kopfes zurückgerechnet (sonst sinkt man beim Runterschauen nach hinten).
-func _apply_camera_drop() -> void:
+## `extra` ist ein Versatz im selben Raum (Kamerawackeln), y = Welt-Senkrechte.
+func _apply_camera_drop(extra := Vector3.ZERO) -> void:
 	var head_basis := _player.head.transform.basis
-	_player.camera.position = Vector3(0.0, _camera_base_y, 0.0) + head_basis.inverse() * Vector3(0.0, -_camera_drop, 0.0)
+	_player.camera.position = Vector3(0.0, _camera_base_y, 0.0) \
+		+ head_basis.inverse() * (Vector3(0.0, -_camera_drop, 0.0) + extra)
 
 
 # --- Rutschen -----------------------------------------------------------------------------
