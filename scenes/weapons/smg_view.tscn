@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=23 format=3]
 
 [sub_resource type="StandardMaterial3D" id="Mat_body"]
 albedo_color = Color(0.075, 0.08, 0.095, 1)
@@ -90,18 +90,14 @@ size = Vector2(0.038, 0.032)
 
 [sub_resource type="SphereMesh" id="Mesh_dot"]
 material = SubResource("Mat_dot")
-radius = 0.0016
-height = 0.0032
+radius = 0.0022
+height = 0.0044
 radial_segments = 8
 rings = 4
 
 [sub_resource type="BoxMesh" id="Mesh_stock_bar"]
 material = SubResource("Mat_body")
-size = Vector3(0.008, 0.008, 0.17)
-
-[sub_resource type="BoxMesh" id="Mesh_butt"]
-material = SubResource("Mat_polymer")
-size = Vector3(0.03, 0.075, 0.016)
+size = Vector3(0.008, 0.008, 0.09)
 
 [sub_resource type="StandardMaterial3D" id="Mat_flash"]
 transparency = 1
@@ -139,11 +135,6 @@ mesh = SubResource("Mesh_lower")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.034, -0.295)
 cast_shadow = 0
 mesh = SubResource("Mesh_shroud")
-
-[node name="Ring" type="MeshInstance3D" parent="Shroud"]
-transform = Transform3D(0.85, 0, 0, 0, 0.9, 0, 0, 0, 0.05, 0, 0, -0.02)
-cast_shadow = 0
-mesh = SubResource("Mesh_mag_stripe")
 
 [node name="Barrel" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.036, -0.375)
@@ -210,19 +201,14 @@ cast_shadow = 0
 mesh = SubResource("Mesh_dot")
 
 [node name="StockTop" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.045, 0.125)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.012, 0.045, 0.085)
 cast_shadow = 0
 mesh = SubResource("Mesh_stock_bar")
 
 [node name="StockBottom" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.985, -0.174, 0, 0.174, 0.985, 0, 0.0, 0.13)
+transform = Transform3D(1, 0, 0, 0, 0.985, -0.174, 0, 0.174, 0.985, 0.012, 0.005, 0.09)
 cast_shadow = 0
 mesh = SubResource("Mesh_stock_bar")
-
-[node name="Butt" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, 0.21)
-cast_shadow = 0
-mesh = SubResource("Mesh_butt")
 
 [node name="Eject" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.026, 0.045, -0.06)

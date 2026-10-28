@@ -234,14 +234,14 @@ func _spawn_frag_blast(center: Vector3) -> void:
 	blast.add_child(light)
 	blast.add_child(_particles(48, 0.9, Vector3.UP, 180.0, 7.0, 16.0, Vector3(0, -12, 0), 0.025, 0.05,
 		Color(1.0, 0.8, 0.35), 4.0, false))
-	var smoke := _particles(22, 2.6, Vector3.UP, 70.0, 1.0, 3.5, Vector3(0, 0.6, 0), 0.6, 1.4,
-		Color(0.18, 0.17, 0.17, 0.75), 0.0, true)
+	var smoke := _particles(28, 3.0, Vector3.UP, 70.0, 1.0, 3.5, Vector3(0, 0.6, 0), 1.4, 2.6,
+		Color(0.2, 0.19, 0.19, 0.9), 0.0, true)
 	smoke.damping_min = 1.5
 	smoke.damping_max = 2.5
 	blast.add_child(smoke)
 	# Staub, der flach über den Boden rollt.
-	var dust := _particles(26, 2.0, Vector3.UP, 88.0, 3.0, 6.0, Vector3(0, -0.4, 0), 0.4, 0.9,
-		Color(0.42, 0.36, 0.3, 0.6), 0.0, true)
+	var dust := _particles(26, 2.2, Vector3.UP, 88.0, 3.0, 6.0, Vector3(0, -0.4, 0), 0.9, 1.8,
+		Color(0.45, 0.38, 0.32, 0.75), 0.0, true)
 	dust.position.y = -0.1
 	dust.damping_min = 2.5
 	dust.damping_max = 4.0
@@ -290,6 +290,7 @@ func _particles(amount: int, lifetime: float, direction: Vector3, spread: float,
 		var quad := QuadMesh.new()
 		quad.size = Vector2.ONE
 		mesh = quad
+		material.albedo_texture = _soft_texture()
 		var ramp := Gradient.new()
 		ramp.set_color(0, color)
 		ramp.set_color(1, Color(color.r, color.g, color.b, 0.0))
@@ -308,6 +309,26 @@ func _particles(amount: int, lifetime: float, direction: Vector3, spread: float,
 	particles.mesh = mesh
 	particles.emitting = true
 	return particles
+
+
+## Runder, weich auslaufender Fleck für Rauch und Staub (einmal erzeugt, von allen geteilt).
+static var _soft: GradientTexture2D
+
+
+static func _soft_texture() -> GradientTexture2D:
+	if _soft == null:
+		var gradient := Gradient.new()
+		gradient.set_color(0, Color(1, 1, 1, 1))
+		gradient.set_color(1, Color(1, 1, 1, 0))
+		gradient.add_point(0.45, Color(1, 1, 1, 0.55))
+		_soft = GradientTexture2D.new()
+		_soft.gradient = gradient
+		_soft.fill = GradientTexture2D.FILL_RADIAL
+		_soft.fill_from = Vector2(0.5, 0.5)
+		_soft.fill_to = Vector2(1.0, 0.5)
+		_soft.width = 64
+		_soft.height = 64
+	return _soft
 
 
 func _glow_material(color: Color, energy: float) -> StandardMaterial3D:
