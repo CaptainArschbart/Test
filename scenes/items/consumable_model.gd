@@ -28,7 +28,7 @@ const PICKUP_SCALE := {
 
 ## Lage in der Hand, solange das Item nur gewählt ist (Raum des %ItemUser, Drehung in Grad).
 const HOLD := {
-	&"injector": [Vector3(0.0, 0.01, 0.0), Vector3(-12.0, 10.0, -8.0)],
+	&"injector": [Vector3(-0.03, 0.05, -0.02), Vector3(-5.0, 15.0, 18.0)],
 	&"can": [Vector3(-0.005, 0.0, 0.0), Vector3(0.0, -25.0, 0.0)],
 	&"noodles": [Vector3(-0.02, -0.005, 0.0), Vector3(12.0, -10.0, 0.0)],
 	&"bandage": [Vector3(0.0, 0.0, 0.0), Vector3(0.0, -20.0, 8.0)],

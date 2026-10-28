@@ -26,15 +26,16 @@ const RETURN_TIME := 0.22
 
 ## Linke Hand (Format wie PlayerHands.POSE_*). "space": hands = Raum der Hände, item = Raum des Modells,
 ## Teilname (z. B. "Lid") = Raum dieses Modellteils. "follow" = Mindest-Überblendung pro Frame.
+## "aim_arm": Unterarm zeigt zur linken Schulter statt mit der Hand mitzudrehen.
 const LEFT_POSES := {
 	# Unterarm quer vor dem Körper, Handfläche nach oben (Innenseite zeigt zur Kamera).
 	&"arm": {
 		"space": &"hands",
 		"follow": 0.0,
 		"pose": {
-			"pos": Vector3(-0.03, -0.215, -0.34),
-			"fingers": Vector3(1.0, 0.12, -0.42),
-			"back": Vector3(0.05, -1.0, 0.25),
+			"pos": Vector3(0.0, -0.165, -0.36),
+			"fingers": Vector3(1.0, 0.2, -0.5),
+			"back": Vector3(0.1, -1.0, 0.3),
 			"curl": [[12.0, 14.0, 8.0], [14.0, 16.0, 8.0], [18.0, 18.0, 10.0], [22.0, 20.0, 10.0]],
 			"spread": 6.0,
 			"thumb": Vector3(-8.0, 38.0, 55.0),
@@ -45,10 +46,11 @@ const LEFT_POSES := {
 	&"tab": {
 		"space": &"item",
 		"follow": 0.45,
+		"aim_arm": true,
 		"pose": {
-			"pos": Vector3(-0.055, 0.1, 0.075),
-			"fingers": Vector3(0.45, -0.55, -0.7),
-			"back": Vector3(-0.4, 0.75, -0.3),
+			"pos": Vector3(-0.09, 0.085, 0.035),
+			"fingers": Vector3(1.0, -0.3, -0.25),
+			"back": Vector3(0.1, 1.0, 0.35),
 			"curl": [[42.0, 58.0, 34.0], [62.0, 70.0, 36.0], [70.0, 74.0, 38.0], [74.0, 74.0, 38.0]],
 			"spread": 1.5,
 			"thumb": Vector3(-26.0, 20.0, 55.0),
@@ -59,6 +61,7 @@ const LEFT_POSES := {
 	&"lid": {
 		"space": &"Lid",
 		"follow": 0.45,
+		"aim_arm": true,
 		"pose": {
 			"pos": Vector3(-0.075, 0.03, -0.14),
 			"fingers": Vector3(0.65, -0.2, 0.55),
@@ -85,11 +88,11 @@ const ANIMATIONS := {
 		"items": [
 			[&"draw", 0.0, {"hold": true}],
 			[&"draw", 1.0, {"pos": Vector3(-0.07, 0.035, 0.02), "rot": Vector3(5.0, 0.0, -22.0)}],
-			[&"use", 0.16, {"pos": Vector3(-0.1, 0.06, 0.03), "rot": Vector3(0.0, 0.0, -26.0)}],
-			[&"use", 0.42, {"at": &"arm", "lift": 0.07, "rot": Vector3(0.0, 0.0, -26.0)}],
-			[&"use", 0.5, {"at": &"arm", "lift": 0.0, "rot": Vector3(0.0, 0.0, -26.0)}],
-			[&"use", 0.88, {"at": &"arm", "lift": 0.0, "rot": Vector3(0.0, 0.0, -26.0)}],
-			[&"use", 1.0, {"at": &"arm", "lift": 0.08, "rot": Vector3(0.0, 0.0, -20.0)}],
+			[&"use", 0.16, {"pos": Vector3(-0.1, 0.06, 0.03), "rot": Vector3(0.0, 0.0, -40.0)}],
+			[&"use", 0.42, {"at": &"arm", "lift": 0.07, "rot": Vector3(0.0, 0.0, -40.0)}],
+			[&"use", 0.5, {"at": &"arm", "lift": 0.0, "rot": Vector3(0.0, 0.0, -40.0)}],
+			[&"use", 0.88, {"at": &"arm", "lift": 0.0, "rot": Vector3(0.0, 0.0, -40.0)}],
+			[&"use", 1.0, {"at": &"arm", "lift": 0.08, "rot": Vector3(0.0, 0.0, -34.0)}],
 			[&"stow", 1.0, {"low": true}],
 		],
 		"left": [[&"draw", 0.0, &"arm"], [&"stow", 0.0, &"rest"]],
@@ -114,11 +117,11 @@ const ANIMATIONS := {
 			[&"draw", 1.0, {"pos": Vector3(-0.09, 0.03, 0.0), "rot": Vector3(12.0, -10.0, 0.0)}],
 			[&"use", 0.22, {"pos": Vector3(-0.09, 0.03, 0.0), "rot": Vector3(12.0, -10.0, 0.0)}],
 			[&"use", 0.27, {"pos": Vector3(-0.09, 0.036, 0.0), "rot": Vector3(16.0, -10.0, 0.0)}],
-			[&"use", 0.47, {"pos": Vector3(-0.165, 0.085, 0.17), "rot": Vector3(72.0, -5.0, -8.0)}],
-			[&"use", 0.62, {"pos": Vector3(-0.17, 0.09, 0.18), "rot": Vector3(86.0, -5.0, -8.0)}],
-			[&"use", 0.78, {"pos": Vector3(-0.17, 0.095, 0.18), "rot": Vector3(96.0, -5.0, -8.0)}],
-			[&"use", 0.94, {"pos": Vector3(-0.17, 0.1, 0.18), "rot": Vector3(106.0, -5.0, -8.0)}],
-			[&"use", 1.0, {"pos": Vector3(-0.15, 0.065, 0.15), "rot": Vector3(70.0, -5.0, -8.0)}],
+			[&"use", 0.47, {"pos": Vector3(-0.175, 0.1, 0.21), "rot": Vector3(100.0, -4.0, -6.0)}],
+			[&"use", 0.62, {"pos": Vector3(-0.18, 0.108, 0.225), "rot": Vector3(110.0, -4.0, -6.0)}],
+			[&"use", 0.78, {"pos": Vector3(-0.18, 0.112, 0.228), "rot": Vector3(118.0, -4.0, -6.0)}],
+			[&"use", 0.94, {"pos": Vector3(-0.18, 0.116, 0.23), "rot": Vector3(126.0, -4.0, -6.0)}],
+			[&"use", 1.0, {"pos": Vector3(-0.16, 0.07, 0.17), "rot": Vector3(80.0, -5.0, -8.0)}],
 			[&"stow", 1.0, {"low": true}],
 		],
 		"left": [[&"draw", 0.0, &"tab"], [&"use", 0.34, &"rest"]],
@@ -142,11 +145,11 @@ const ANIMATIONS := {
 			[&"draw", 0.0, {"hold": true}],
 			[&"draw", 1.0, {"pos": Vector3(-0.1, 0.0, -0.02), "rot": Vector3(32.0, -5.0, 0.0)}],
 			[&"use", 0.34, {"pos": Vector3(-0.1, 0.005, -0.02), "rot": Vector3(34.0, -5.0, 0.0)}],
-			[&"use", 0.46, {"pos": Vector3(-0.16, 0.06, 0.15), "rot": Vector3(55.0, 0.0, -5.0)}],
-			[&"use", 0.6, {"pos": Vector3(-0.165, 0.07, 0.17), "rot": Vector3(68.0, 0.0, -5.0)}],
-			[&"use", 0.7, {"pos": Vector3(-0.16, 0.06, 0.15), "rot": Vector3(56.0, 0.0, -5.0)}],
-			[&"use", 0.84, {"pos": Vector3(-0.165, 0.07, 0.17), "rot": Vector3(70.0, 0.0, -5.0)}],
-			[&"use", 0.95, {"pos": Vector3(-0.165, 0.072, 0.17), "rot": Vector3(76.0, 0.0, -5.0)}],
+			[&"use", 0.46, {"pos": Vector3(-0.155, 0.04, 0.12), "rot": Vector3(52.0, 0.0, -5.0)}],
+			[&"use", 0.6, {"pos": Vector3(-0.16, 0.05, 0.135), "rot": Vector3(64.0, 0.0, -5.0)}],
+			[&"use", 0.7, {"pos": Vector3(-0.155, 0.04, 0.12), "rot": Vector3(54.0, 0.0, -5.0)}],
+			[&"use", 0.84, {"pos": Vector3(-0.16, 0.05, 0.135), "rot": Vector3(66.0, 0.0, -5.0)}],
+			[&"use", 0.95, {"pos": Vector3(-0.16, 0.052, 0.135), "rot": Vector3(72.0, 0.0, -5.0)}],
 			[&"use", 1.0, {"pos": Vector3(-0.15, 0.05, 0.14), "rot": Vector3(55.0, 0.0, -5.0)}],
 			[&"stow", 1.0, {"low": true}],
 		],
@@ -194,7 +197,7 @@ const ANIMATIONS := {
 ## −Y = Innenseite, die beim Hinhalten nach oben zeigt).
 const ARM_INJECT_POINT := Vector3(0.0, -0.046, 0.052)
 ## Verband: Mitte und Radius der Wickelbahn um den Unterarm.
-const ARM_WRAP_CENTER := Vector3(0.0, 0.0, 0.05)
+const ARM_WRAP_CENTER := Vector3(0.0, 0.0, 0.035)
 const ORBIT_RADIUS := 0.075
 
 enum State { IDLE, ACTIVE, RETURN }
@@ -307,7 +310,7 @@ func get_left_target() -> Dictionary:
 			space = _item_user.transform * _view.transform
 			if part != null:
 				space = space * part.transform
-	return {"pose": entry.pose, "space": space, "follow": entry.follow}
+	return {"pose": entry.pose, "space": space, "follow": entry.follow, "aim_arm": entry.get("aim_arm", false)}
 
 
 ## Bricht ab, solange der Effekt noch nicht gegriffen hat. `instant` = Modell sofort weg
@@ -630,7 +633,7 @@ func _start_wrap() -> void:
 		return
 	_wrap = MeshInstance3D.new()
 	_wrap.name = "BandageWrap"
-	_wrap.mesh = ProcMesh.tube(0.049, 0.051, 0.05)
+	_wrap.mesh = ProcMesh.tube(0.058, 0.06, 0.05)
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color(0.92, 0.92, 0.95)
 	material.roughness = 0.95

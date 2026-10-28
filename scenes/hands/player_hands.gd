@@ -195,6 +195,9 @@ const LEDGE_MIN_Y := -0.22
 const LEDGE_MAX_Y := 0.16
 const LEDGE_MAX_Z := -0.32
 
+## Rechte Schulter im Raum der Hände (Richtung des Unterarms, wenn ein Verbrauchsitem nah vor dem Gesicht ist).
+const SHOULDER_RIGHT := Vector3(0.26, -0.45, 0.12)
+
 ## Faktor auf alle Ausschläge (WeaponHolder senkt ihn beim Zielen).
 var motion_scale: float = 1.0
 
@@ -367,14 +370,21 @@ func update_pose(delta: float) -> void:
 		var space := item_user.transform * held.transform
 		var arm_space := item_user.transform * Transform3D(Basis.IDENTITY, held.position)
 		var pose: Dictionary = _player.item_user.get_held_grip()
-		if pose.is_empty():
+		var consumable := not pose.is_empty()
+		if not consumable:
 			pose = POSE_GRENADE_RIGHT if _player.item_user.get_held_item() is GrenadeData else POSE_BLADE_RIGHT
 		target_right = _pose_in_space(pose, space, arm_space, null)
+		if consumable:
+			# Verbrauchsitems wandern bis vor das Gesicht: der Unterarm zeigt dann zur Schulter,
+			# statt gerade nach hinten in die Kamera.
+			target_right.arm_basis = _arm_toward(target_right.pos, SHOULDER_RIGHT)
 		_pose_right = _blend_pose(_pose_right, target_right, maxf(weight, 0.6))
 		# Benutz-Animation: linke Hand hält den Arm hin, zieht die Lasche usw.
 		var left_target: Dictionary = _player.item_user.get_left_hand_target()
 		if not left_target.is_empty():
 			target_left = _pose_in_space(left_target.pose, left_target.space, left_target.space, null)
+			if left_target.get("aim_arm", false):
+				target_left.arm_basis = _arm_toward(target_left.pos, SHOULDER_RIGHT * Vector3(-1.0, 1.0, 1.0))
 			weight = maxf(weight, left_target.follow)
 	else:
 		# Leere Hände: beim Sprint pumpen die Fäuste, Gewicht weich überblendet.
@@ -427,6 +437,13 @@ func _sprint_pose(side: float, phase: float) -> Dictionary:
 	result.basis = tilt * result.basis
 	result.arm_basis = result.basis
 	return result
+
+
+## Unterarm vom Handgelenk `wrist` Richtung `shoulder` (+Z des Arms zeigt zum Ellbogen).
+static func _arm_toward(wrist: Vector3, shoulder: Vector3) -> Basis:
+	var z := (shoulder - wrist).normalized()
+	var y := (Vector3.UP - z * Vector3.UP.dot(z)).normalized()
+	return Basis(y.cross(z), y, z)
 
 
 ## Greifpose an einer Kante: Welt-Transform des Handgelenks in den Raum der Hände.
