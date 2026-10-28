@@ -1,5 +1,6 @@
 extends Node3D
-## Schießstand in der Testmap: Pistole und Scharfschützengewehr auf dem Tisch, Scheiben
+## Schießstand in der Testmap: Pistole, SMG und Scharfschützengewehr auf dem Tisch (Kontaktgranaten
+## daneben auf dem Boden), Scheiben
 ## auf 10, 20, 30 und 40 m plus eine fahrende Scheibe auf 25 m (gemessen ab der
 ## orangen Schusslinie). Eingang von Westen zwischen Schusslinie und 10-m-Scheibe.
 ##

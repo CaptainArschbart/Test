@@ -11,7 +11,8 @@ extends Node3D
 ## den Griff, die linke stützt (beidhändig). Beim Nachladen holt die linke Hand das
 ## Magazin. Die Griffposen hängen an der Waffenszene im %WeaponHolder und folgen damit
 ## Rückstoß und Nachlade-Kippen. Eine Waffenszene kann Marker3D "HandGripRight" und
-## "HandGripLeft" mitbringen, sonst gelten die Pistolenwerte unten.
+## "HandGripLeft" mitbringen, sonst gelten die Pistolenwerte unten. Beim Nachladen folgt die linke
+## Hand einem Marker "Magazine/HandReloadLeft" (Magazin vor dem Griff, z. B. SMG), falls vorhanden.
 ##
 ## Idle atmet leicht, Gehen und Sprint wackeln stärker, Umschauen zieht die Hände
 ## etwas nach, Landen drückt sie kurz runter. Die Pose aus der Szene bleibt die Mitte;
@@ -344,10 +345,12 @@ func update_pose(delta: float) -> void:
 		var arm_space := holder.transform * Transform3D(Basis.IDENTITY, view.position)
 		var reloading := holder.is_reloading()
 		_sprint_weight = 0.0
-		target_right = _pose_in_space(POSE_GRIP_RIGHT, space, arm_space, view.get_node_or_null("HandGripRight"))
+		target_right = _pose_in_space(POSE_GRIP_RIGHT, space, arm_space, view.get_node_or_null("HandGripRight"), view)
 		var left_pose := POSE_RELOAD_LEFT if reloading else POSE_GRIP_LEFT
-		var left_marker: Node = null if reloading else view.get_node_or_null("HandGripLeft")
-		target_left = _pose_in_space(left_pose, space, arm_space, left_marker)
+		var left_marker: Node = view.get_node_or_null("HandGripLeft")
+		if reloading:
+			left_marker = view.get_node_or_null("Magazine/HandReloadLeft")
+		target_left = _pose_in_space(left_pose, space, arm_space, left_marker, view)
 		# Der Griff sitzt fest: die rechte Hand folgt der Waffe sofort (Rückstoß).
 		_pose_right = _blend_pose(_pose_right, target_right, maxf(weight, 0.6))
 	elif _held_item() != null:
@@ -483,11 +486,17 @@ static func _hand_basis(fingers: Vector3, back: Vector3) -> Basis:
 
 ## Pose aus dem Raum der Waffe in den Raum der Hände. Ein Marker ersetzt Lage und Drehung.
 ## arm_space ist die Waffe ohne eigene Drehung: der Unterarm macht Kippen nicht mit.
-func _pose_in_space(pose: Dictionary, space: Transform3D, arm_space: Transform3D, marker: Node) -> Dictionary:
+## Der Marker darf tiefer in der Szene hängen (z. B. am Magazin), gemessen wird relativ zu `root`.
+func _pose_in_space(pose: Dictionary, space: Transform3D, arm_space: Transform3D, marker: Node,
+		root: Node3D = null) -> Dictionary:
 	var result := _to_runtime(pose)
 	var local := Transform3D(result.basis, result.pos)
 	if marker is Node3D:
 		local = (marker as Node3D).transform
+		var parent := marker.get_parent() as Node3D
+		while parent != null and parent != root and root != null:
+			local = parent.transform * local
+			parent = parent.get_parent() as Node3D
 	var placed := space * local
 	result.pos = placed.origin
 	result.basis = placed.basis.orthonormalized()

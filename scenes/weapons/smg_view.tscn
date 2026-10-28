@@ -1,0 +1,245 @@
+[gd_scene load_steps=24 format=3]
+
+[sub_resource type="StandardMaterial3D" id="Mat_body"]
+albedo_color = Color(0.075, 0.08, 0.095, 1)
+metallic = 0.75
+roughness = 0.32
+
+[sub_resource type="StandardMaterial3D" id="Mat_polymer"]
+albedo_color = Color(0.14, 0.13, 0.17, 1)
+metallic = 0.15
+roughness = 0.65
+
+[sub_resource type="StandardMaterial3D" id="Mat_neon"]
+albedo_color = Color(0.1, 0.9, 1, 1)
+emission_enabled = true
+emission = Color(0.1, 0.9, 1, 1)
+emission_energy_multiplier = 2.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_magenta"]
+albedo_color = Color(1, 0.15, 0.7, 1)
+emission_enabled = true
+emission = Color(1, 0.15, 0.7, 1)
+emission_energy_multiplier = 2.2
+
+[sub_resource type="StandardMaterial3D" id="Mat_glass"]
+transparency = 1
+albedo_color = Color(0.3, 0.9, 1, 0.12)
+metallic = 0.9
+roughness = 0.05
+
+[sub_resource type="StandardMaterial3D" id="Mat_dot"]
+shading_mode = 0
+albedo_color = Color(1, 0.2, 0.45, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_receiver"]
+material = SubResource("Mat_body")
+size = Vector3(0.046, 0.06, 0.3)
+
+[sub_resource type="BoxMesh" id="Mesh_lower"]
+material = SubResource("Mat_polymer")
+size = Vector3(0.042, 0.03, 0.2)
+
+[sub_resource type="BoxMesh" id="Mesh_shroud"]
+material = SubResource("Mat_body")
+size = Vector3(0.038, 0.04, 0.1)
+
+[sub_resource type="CylinderMesh" id="Mesh_barrel"]
+material = SubResource("Mat_body")
+top_radius = 0.01
+bottom_radius = 0.011
+height = 0.07
+
+[sub_resource type="CylinderMesh" id="Mesh_comp"]
+material = SubResource("Mat_polymer")
+top_radius = 0.014
+bottom_radius = 0.014
+height = 0.03
+
+[sub_resource type="BoxMesh" id="Mesh_grip"]
+material = SubResource("Mat_polymer")
+size = Vector3(0.03, 0.1, 0.045)
+
+[sub_resource type="BoxMesh" id="Mesh_mag"]
+material = SubResource("Mat_body")
+size = Vector3(0.026, 0.15, 0.04)
+
+[sub_resource type="BoxMesh" id="Mesh_mag_stripe"]
+material = SubResource("Mat_magenta")
+size = Vector3(0.028, 0.11, 0.006)
+
+[sub_resource type="BoxMesh" id="Mesh_stripe"]
+material = SubResource("Mat_neon")
+size = Vector3(0.048, 0.005, 0.24)
+
+[sub_resource type="BoxMesh" id="Mesh_rail"]
+material = SubResource("Mat_body")
+size = Vector3(0.022, 0.008, 0.2)
+
+[sub_resource type="BoxMesh" id="Mesh_sight_post"]
+material = SubResource("Mat_body")
+size = Vector3(0.006, 0.04, 0.012)
+
+[sub_resource type="BoxMesh" id="Mesh_sight_top"]
+material = SubResource("Mat_body")
+size = Vector3(0.046, 0.006, 0.012)
+
+[sub_resource type="QuadMesh" id="Mesh_glass"]
+material = SubResource("Mat_glass")
+size = Vector2(0.038, 0.032)
+
+[sub_resource type="SphereMesh" id="Mesh_dot"]
+material = SubResource("Mat_dot")
+radius = 0.0016
+height = 0.0032
+radial_segments = 8
+rings = 4
+
+[sub_resource type="BoxMesh" id="Mesh_stock_bar"]
+material = SubResource("Mat_body")
+size = Vector3(0.008, 0.008, 0.17)
+
+[sub_resource type="BoxMesh" id="Mesh_butt"]
+material = SubResource("Mat_polymer")
+size = Vector3(0.03, 0.075, 0.016)
+
+[sub_resource type="StandardMaterial3D" id="Mat_flash"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.7, 0.95, 1, 0.9)
+billboard_mode = 1
+
+[sub_resource type="QuadMesh" id="Mesh_flash"]
+material = SubResource("Mat_flash")
+size = Vector2(0.13, 0.13)
+
+[node name="SmgView" type="Node3D"]
+
+[node name="Receiver" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, -0.1)
+cast_shadow = 0
+mesh = SubResource("Mesh_receiver")
+
+[node name="StripeLeft" type="MeshInstance3D" parent="Receiver"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.008, -0.02)
+cast_shadow = 0
+mesh = SubResource("Mesh_stripe")
+
+[node name="Rail" type="MeshInstance3D" parent="Receiver"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.034, 0.0)
+cast_shadow = 0
+mesh = SubResource("Mesh_rail")
+
+[node name="Lower" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.009, -0.15)
+cast_shadow = 0
+mesh = SubResource("Mesh_lower")
+
+[node name="Shroud" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.034, -0.295)
+cast_shadow = 0
+mesh = SubResource("Mesh_shroud")
+
+[node name="Ring" type="MeshInstance3D" parent="Shroud"]
+transform = Transform3D(0.85, 0, 0, 0, 0.9, 0, 0, 0, 0.05, 0, 0, -0.02)
+cast_shadow = 0
+mesh = SubResource("Mesh_mag_stripe")
+
+[node name="Barrel" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.036, -0.375)
+cast_shadow = 0
+mesh = SubResource("Mesh_barrel")
+
+[node name="Compensator" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.036, -0.415)
+cast_shadow = 0
+mesh = SubResource("Mesh_comp")
+
+[node name="Grip" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.966, 0.259, 0, -0.259, 0.966, 0, -0.03, 0.005)
+cast_shadow = 0
+mesh = SubResource("Mesh_grip")
+
+[node name="Magazine" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.985, 0.174, 0, -0.174, 0.985, 0, -0.075, -0.1)
+
+[node name="Body" type="MeshInstance3D" parent="Magazine"]
+cast_shadow = 0
+mesh = SubResource("Mesh_mag")
+
+[node name="Stripe" type="MeshInstance3D" parent="Magazine"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.018)
+cast_shadow = 0
+mesh = SubResource("Mesh_mag_stripe")
+
+[node name="HandReloadLeft" type="Marker3D" parent="Magazine"]
+position = Vector3(-0.012, -0.075, 0.04)
+rotation = Vector3(0.4363, -0.1745, 3.0543)
+
+[node name="Sight" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.068, -0.07)
+
+[node name="PostLeft" type="MeshInstance3D" parent="Sight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.02, 0.012, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_sight_post")
+
+[node name="PostRight" type="MeshInstance3D" parent="Sight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.02, 0.012, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_sight_post")
+
+[node name="Top" type="MeshInstance3D" parent="Sight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.035, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_sight_top")
+
+[node name="Base" type="MeshInstance3D" parent="Sight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.004, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_sight_top")
+
+[node name="Glass" type="MeshInstance3D" parent="Sight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, 0.001)
+cast_shadow = 0
+mesh = SubResource("Mesh_glass")
+
+[node name="Dot" type="MeshInstance3D" parent="Sight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.015, -0.002)
+cast_shadow = 0
+mesh = SubResource("Mesh_dot")
+
+[node name="StockTop" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.045, 0.125)
+cast_shadow = 0
+mesh = SubResource("Mesh_stock_bar")
+
+[node name="StockBottom" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.985, -0.174, 0, 0.174, 0.985, 0, 0.0, 0.13)
+cast_shadow = 0
+mesh = SubResource("Mesh_stock_bar")
+
+[node name="Butt" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, 0.21)
+cast_shadow = 0
+mesh = SubResource("Mesh_butt")
+
+[node name="Eject" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.026, 0.045, -0.06)
+
+[node name="Muzzle" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.036, -0.44)
+
+[node name="Flash" type="MeshInstance3D" parent="Muzzle"]
+visible = false
+cast_shadow = 0
+mesh = SubResource("Mesh_flash")
+
+[node name="FlashLight" type="OmniLight3D" parent="Muzzle"]
+visible = false
+light_color = Color(0.6, 0.9, 1, 1)
+light_energy = 3.0
+omni_range = 4.0
+
+[node name="HandGripLeft" type="Marker3D" parent="."]
+transform = Transform3D(-0.8399, -0.2100, -0.5005, 0.3050, -0.9454, -0.1152, -0.4490, -0.2494, 0.8580, -0.042, -0.035, -0.2)

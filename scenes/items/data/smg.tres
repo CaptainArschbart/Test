@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scenes/items/weapon_data.gd" id="1_weapon"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/smg_view.tscn" id="2_view"]
+[ext_resource type="AudioStream" path="res://assets/audio/smg_shot.wav" id="3_shot"]
+[ext_resource type="AudioStream" path="res://assets/audio/smg_reload.wav" id="4_reload"]
+[ext_resource type="AudioStream" path="res://assets/audio/pistol_empty.wav" id="5_empty"]
+
+[resource]
+script = ExtResource("1_weapon")
+damage = 14.0
+magazine_size = 30
+fire_interval = 0.07
+reload_time = 1.6
+max_range = 60.0
+view_scene = ExtResource("2_view")
+pickup_scale = 1.6
+hip_offset = Vector3(0.01, -0.01, -0.06)
+automatic = true
+aim_fov = 56.0
+aim_time = 0.17
+sight_offset = Vector3(0, 0.083, 0)
+aim_distance = 0.3
+aim_sensitivity = 0.9
+has_scope = false
+hip_spread_degrees = 2.2
+aim_spread_degrees = 0.35
+bloom_per_shot = 0.45
+max_bloom_degrees = 4.5
+bloom_recovery = 9.0
+aim_bloom_factor = 0.45
+recoil_kick = 0.016
+view_kick_degrees = 0.32
+recoil_climb = 1.3
+view_kick_horizontal_degrees = 0.22
+reload_tilt = 0.25
+reload_roll = 0.45
+eject_shells = true
+noise_radius = 32.0
+fire_sound = ExtResource("3_shot")
+reload_sound = ExtResource("4_reload")
+empty_sound = ExtResource("5_empty")
+id = "smg"
+display_name = "Maschinenpistole"
+description = "Kompakte SMG mit Holo-Visier. 30 Schuss, Linksklick halten für Dauerfeuer, streut beim Dauerfeuer stärker. R lädt nach."
+glyph = "SMG"
+color = Color(0.1, 0.9, 1, 1)
+max_stack = 1
