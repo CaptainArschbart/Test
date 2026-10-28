@@ -92,6 +92,8 @@ var output_device := DEFAULT_OUTPUT_DEVICE
 ## Faktor auf Player.mouse_sensitivity (1.0 = Standard).
 var mouse_sensitivity := 1.0
 var invert_y := false
+## Stärke des Kamerawackelns (Rennen, Explosionen) als Faktor: 0 = aus, 1 = Standard.
+var camera_shake := 1.0
 ## Aktion → physical_keycode
 var key_bindings := {}
 
@@ -130,6 +132,7 @@ func get_values() -> Dictionary:
 		"output_device": output_device,
 		"mouse_sensitivity": mouse_sensitivity,
 		"invert_y": invert_y,
+		"camera_shake": camera_shake,
 		"key_bindings": key_bindings.duplicate(),
 	}
 
@@ -149,6 +152,7 @@ func get_defaults() -> Dictionary:
 		"output_device": DEFAULT_OUTPUT_DEVICE,
 		"mouse_sensitivity": 1.0,
 		"invert_y": false,
+		"camera_shake": 1.0,
 		"key_bindings": _default_bindings.duplicate(),
 	}
 
@@ -168,6 +172,7 @@ func apply_values(values: Dictionary) -> void:
 	output_device = values.get("output_device", output_device)
 	mouse_sensitivity = values.mouse_sensitivity
 	invert_y = values.invert_y
+	camera_shake = values.get("camera_shake", camera_shake)
 	key_bindings = values.key_bindings.duplicate()
 	apply()
 	save_settings()
@@ -242,6 +247,7 @@ func load_settings() -> void:
 	output_device = str(config.get_value("audio", "output_device", output_device))
 	mouse_sensitivity = config.get_value("controls", "mouse_sensitivity", mouse_sensitivity)
 	invert_y = config.get_value("controls", "invert_y", invert_y)
+	camera_shake = clampf(float(config.get_value("controls", "camera_shake", camera_shake)), 0.0, 1.0)
 	for action: String in REBINDABLE_ACTIONS:
 		key_bindings[action] = config.get_value("keys", action, key_bindings[action])
 
@@ -260,6 +266,7 @@ func save_settings() -> void:
 	config.set_value("audio", "output_device", output_device)
 	config.set_value("controls", "mouse_sensitivity", mouse_sensitivity)
 	config.set_value("controls", "invert_y", invert_y)
+	config.set_value("controls", "camera_shake", camera_shake)
 	for action: String in key_bindings:
 		config.set_value("keys", action, key_bindings[action])
 	config.save(PATH)

@@ -12,17 +12,33 @@ extends Node3D
 ## werfen nur Schatten (sonst steckt die Kamera im Kopf). first_person = false zeigt alles,
 ## etwa für eine spätere Dritte-Person-Ansicht.
 ##
-## Die Beine laufen mit der Geschwindigkeit des Players, die Arme schwingen gegengleich,
-## in der Luft werden die Knie angezogen. Ohne Player darüber bleibt die Grundhaltung.
+## Laufzyklus: Die Beine laufen im Takt der Schritte des Players (Schrittlänge wie bei den
+## Schrittgeräuschen, Player.walk_step_interval × walk_speed). Ein Zyklus = zwei Schritte;
+## get_stride_phase() liefert ihn auch für Ego-Hände, Kamerawippen und Schrittgeräusche, damit alles
+## zusammen auftritt (rechter Fuß setzt bei Phase π/2 auf, linker bei 3π/2).
+## Pro Bein: Oberschenkel pendelt, das Knie knickt in der Schwungphase stark (Ferse zum Gesäß) und
+## federt im Stand leicht, der Fuß rollt ab (Ferse auf, Spitze ab). Das Becken sinkt so weit, wie
+## das längere Bein kürzer wird: der Standfuß bleibt auf dem Boden, nichts schwebt.
+## Arme schwingen gegengleich, beim Sprint stärker angewinkelt, Oberkörper neigt sich vor.
+## In der Luft werden die Knie angezogen, beim Landen federn sie kurz ein.
+## Ohne Player darüber bleibt die Grundhaltung.
 
 @export var first_person := true:
 	set(value):
 		first_person = value
 		_update_visibility()
-## Schrittlänge: wie viele Schrittzyklen pro Meter.
-@export var stride_rate := 1.45
-@export var leg_swing_degrees := 32.0
-@export var arm_swing_degrees := 22.0
+## Schrittlänge in Metern, wenn kein Player darüber ist (sonst wie die Schrittgeräusche).
+@export var fallback_step_length := 2.3
+## Ab dieser Geschwindigkeit (m/s) volle Schrittweite, darunter kleiner.
+@export var full_gait_speed := 8.0
+## Oberschenkel nach vorn/hinten bei voller Schrittweite.
+@export var leg_swing_degrees := 44.0
+## Knieknick in der Schwungphase und Einfedern im Stand bei voller Schrittweite.
+@export var knee_swing_degrees := 100.0
+@export var knee_stance_degrees := 16.0
+@export var arm_swing_degrees := 30.0
+## Oberkörper-Neigung nach vorn beim Sprint.
+@export var sprint_lean_degrees := 7.0
 ## In der Ego-Sicht rutschen die Beine so weit nach hinten, damit man beim Runterschauen
 ## an den Oberschenkeln vorbei auf Knie und Stiefel sieht.
 @export var first_person_leg_offset := 0.16
@@ -38,8 +54,19 @@ extends Node3D
 
 var _player: CharacterBody3D
 var _phase := 0.0
-var _swing := 0.0
+## Phase ohne Umbruch (zählt die Schritte).
+var _stride_total := PI * 0.5 - 0.01
+var _gait := 0.0
+var _sprint := 0.0
 var _air := 0.0
+var _land := 0.0
+var _was_on_floor := true
+## Oberschenkel, Unterschenkel und Knöchel bis Sohle (siehe _build_leg), für das Absenken des Beckens.
+const THIGH := 0.43
+const SHIN := 0.42
+const FOOT_DROP := 0.11
+const HIPS_Y := 0.95
+
 var _upper_parts: Array[GeometryInstance3D] = []
 var _legs: Array[Dictionary] = []
 var _arms: Array[Dictionary] = []
@@ -62,40 +89,91 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	var speed := 0.0
 	var on_floor := true
+	var sprinting := false
 	if _player != null:
 		speed = Vector2(_player.velocity.x, _player.velocity.z).length()
 		on_floor = _player.is_on_floor()
-	animate(delta, speed, on_floor)
+		if _player is Player and (_player as Player).stats != null:
+			sprinting = (_player as Player).stats.is_sprinting()
+	animate(delta, speed, on_floor, sprinting)
 
 
 ## Lauf-, Steh- und Sprunghaltung. `speed` in Metern pro Sekunde.
-func animate(delta: float, speed: float, on_floor: bool) -> void:
-	var target_swing := clampf(speed / 5.0, 0.0, 1.4) if on_floor else 0.0
-	_swing = lerpf(_swing, target_swing, minf(8.0 * delta, 1.0))
+func animate(delta: float, speed: float, on_floor: bool, sprinting := false) -> void:
+	var target_gait := clampf(speed / full_gait_speed, 0.0, 1.1) if on_floor else 0.0
+	_gait = lerpf(_gait, target_gait, minf(8.0 * delta, 1.0))
+	_sprint = move_toward(_sprint, 1.0 if sprinting and on_floor and speed > 1.0 else 0.0, 4.0 * delta)
 	_air = lerpf(_air, 0.0 if on_floor else 1.0, minf(6.0 * delta, 1.0))
-	_phase = fmod(_phase + delta * speed * stride_rate * PI, TAU)
-	var leg := deg_to_rad(leg_swing_degrees) * _swing
-	var arm := deg_to_rad(arm_swing_degrees) * _swing
+	if on_floor and not _was_on_floor:
+		_land = 1.0
+	_was_on_floor = on_floor
+	_land = move_toward(_land, 0.0, 4.0 * delta)
+	if on_floor and speed > 0.3:
+		_stride_total += delta * get_cadence(speed, sprinting) * PI
+	_phase = fmod(_stride_total, TAU)
+
+	var leg := deg_to_rad(leg_swing_degrees) * _gait
+	var knee_swing := deg_to_rad(knee_swing_degrees) * pow(minf(_gait, 1.0), 0.8)
+	var knee_stance := deg_to_rad(knee_stance_degrees) * _gait
+	var reach := 0.0
 	for i in _legs.size():
-		var side := 1.0 if i == 0 else -1.0
-		var s := sin(_phase) * side
+		var p := _phase + (0.0 if i == 0 else PI)
+		var swing := maxf(0.0, cos(p + 0.35))
+		swing = swing * swing * (3.0 - 2.0 * swing)
+		var stance := maxf(0.0, -cos(p))
+		var hip_angle := sin(p) * leg + _air * 0.5 + _land * 0.2
+		var knee_flex := swing * knee_swing + stance * knee_stance + _air * 1.1 + _land * 0.45 + 0.06
+		# Fuß: Ferse setzt mit leicht angehobener Spitze auf, hinten drückt die Spitze ab.
+		var foot := (0.22 * sin(p) - 0.3 * swing) * _gait - _air * 0.25
+		var shin := hip_angle - knee_flex
 		var hip: Node3D = _legs[i].hip
 		var knee: Node3D = _legs[i].knee
 		var ankle: Node3D = _legs[i].ankle
-		hip.rotation.x = s * leg - _air * 0.55
-		# Das Knie knickt nur, wenn das Bein nach hinten schwingt und wieder vorkommt.
-		knee.rotation.x = maxf(0.0, -cos(_phase) * side) * leg * 1.6 + _air * 1.0 + 0.04
-		ankle.rotation.x = -hip.rotation.x * 0.3 - knee.rotation.x * 0.35
+		hip.rotation.x = hip_angle
+		knee.rotation.x = -knee_flex
+		ankle.rotation.x = foot - shin
+		reach = maxf(reach, THIGH * cos(hip_angle) + SHIN * cos(shin) + FOOT_DROP * cos(foot))
+	# Das längere Bein steht auf dem Boden: Becken sinkt um das, was ihm zur geraden Länge fehlt.
+	var straight := THIGH + SHIN * cos(0.06) + FOOT_DROP
+	if _hips != null:
+		_hips.position.y = HIPS_Y - (straight - reach) * (1.0 - _air)
+
+	var arm := deg_to_rad(arm_swing_degrees) * _gait
 	for i in _arms.size():
 		var side := 1.0 if i == 0 else -1.0
 		var shoulder: Node3D = _arms[i].shoulder
 		var elbow: Node3D = _arms[i].elbow
 		shoulder.rotation.x = -sin(_phase) * side * arm + _air * 0.4
 		shoulder.rotation.z = (0.09 + _air * 0.25) * side
-		elbow.rotation.x = 0.25 + _swing * 0.35
+		elbow.rotation.x = 0.25 + _gait * 0.35 + _sprint * 0.6 + maxf(0.0, -sin(_phase) * side) * arm * 0.6
 	var breath := sin(Time.get_ticks_msec() * 0.0013) * 0.012
-	_spine.rotation.x = -0.04 * _swing + breath
-	_spine.position.y = 0.075 + absf(sin(_phase)) * 0.015 * _swing
+	_spine.rotation.x = -0.04 * _gait - deg_to_rad(sprint_lean_degrees) * _sprint + breath
+	_spine.position.y = 0.075
+
+
+## Schritte pro Sekunde bei `speed` (wie die Schrittgeräusche des Players, 0,16–0,75 s je Schritt).
+func get_cadence(speed: float, sprinting: bool) -> float:
+	var step_length := fallback_step_length
+	if _player is Player:
+		var player := _player as Player
+		step_length = player.sprint_step_interval * player.sprint_speed if sprinting \
+			else player.walk_step_interval * player.walk_speed
+	return clampf(speed / maxf(step_length, 0.1), 1.0 / 0.75, 1.0 / 0.16)
+
+
+## Laufzyklus 0–2π. Rechter Fuß setzt bei π/2 auf, linker bei 3π/2.
+func get_stride_phase() -> float:
+	return _phase
+
+
+## Wie viele Schritte bisher (wächst bei jedem Auftritt um eins).
+func get_step_count() -> int:
+	return floori((_stride_total - PI * 0.5) / PI)
+
+
+## Schrittweite 0 (Stand) bis ~1 (Sprint), weich überblendet.
+func get_gait() -> float:
+	return _gait
 
 
 func _update_visibility() -> void:

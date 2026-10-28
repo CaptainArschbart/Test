@@ -15,7 +15,13 @@ extends Node3D
 ##
 ## Idle atmet leicht, Gehen und Sprint wackeln stärker, Umschauen zieht die Hände
 ## etwas nach, Landen drückt sie kurz runter. Die Pose aus der Szene bleibt die Mitte;
-## die Abweichung wird jedes Frame neu gesetzt, nicht aufaddiert.
+## die Abweichung wird jedes Frame neu gesetzt, nicht aufaddiert. Das Wippen beim Laufen folgt
+## dem Schrittzyklus des Körpers (PlayerBody.get_stride_phase), wie Beine und Kamera.
+##
+## Leere Hände im Stand: Nach idle_hide_delay Sekunden ohne Bewegung sinken die Hände weich aus dem
+## Bild und werden dann ausgeblendet. Laufen, Springen, Fallen, Klettern, Rutschen, eine Waffe oder
+## ein Item in der Hand und wake() (Benutzen, Essen) holen sie sofort wieder hoch.
+## Sprint mit leeren Händen: Fäuste pumpen gegengleich zu den Beinen (POSE_SPRINT).
 ## Hängt an Camera3D, damit Drehen und Nicken die Hände mitnehmen.
 ## Beim Klettern (PlayerMovement) greifen beide Hände fest an die Kante.
 
@@ -39,6 +45,23 @@ extends Node3D
 
 ## Größe der Hände gegenüber einer echten Hand (Größe M). Etwas größer liest sich im Bild besser.
 @export var hand_scale: float = 1.15
+
+@export_group("Ausblenden im Stand")
+@export var idle_hide_enabled := true
+## So lange muss der Spieler stehen, bevor die leeren Hände verschwinden (kein Flackern bei kurzen Stopps).
+@export var idle_hide_delay := 1.2
+## Dauer des Absinkens und des Wiederhochkommens in Sekunden.
+@export var idle_hide_time := 0.45
+@export var idle_show_time := 0.18
+## Versatz und Kippen, wenn die Hände ganz unten sind (aus dem Bild).
+@export var idle_hide_offset := Vector3(0.0, -0.3, 0.1)
+@export var idle_hide_pitch_degrees := -30.0
+
+@export_group("Sprint")
+## Wie weit die Fäuste beim Pumpen vor und zurück gehen (0–1 auf die Strecke zwischen den Posen).
+@export var sprint_pump := 1.0
+## Überblendung zwischen lockerer Haltung und Pumpen (pro Sekunde).
+@export var sprint_blend_speed := 6.0
 
 @export_group("Materialien")
 @export var glove_material: Material
@@ -138,6 +161,22 @@ const POSE_GRENADE_RIGHT := {
 	"thumb_curl": [20.0, 16.0],
 }
 
+## Sprint: Faust, Daumen oben, Handrücken nach außen. Vorn hoch vor der Brust, hinten tief am
+## Bildrand. Die Hand pendelt zwischen den beiden Lagen (rechte Hand nach vorn, wenn das linke
+## Bein vorn ist). Links wird gespiegelt.
+const POSE_SPRINT := {
+	"pos": Vector3(0.17, -0.2, -0.34),
+	"fingers": Vector3(-0.35, 0.4, -1.0),
+	"back": Vector3(1.0, 0.25, 0.1),
+	"curl": [[70.0, 80.0, 40.0], [74.0, 82.0, 42.0], [76.0, 84.0, 42.0], [78.0, 84.0, 42.0]],
+	"spread": 1.0,
+	"thumb": Vector3(-48.0, 12.0, 55.0),
+	"thumb_curl": [28.0, 22.0],
+}
+## Hintere Lage der Sprint-Faust: Versatz zur vorderen Lage und zusätzliches Kippen (Grad, um x).
+const SPRINT_BACK_OFFSET := Vector3(0.07, -0.2, 0.2)
+const SPRINT_BACK_PITCH := -55.0
+
 ## Hand flach auf einer Kante, Finger greifen über die Kante (Lage kommt beim Klettern aus der Welt).
 const POSE_LEDGE := {
 	"pos": Vector3.ZERO,
@@ -169,6 +208,12 @@ var _last_look := Basis.IDENTITY
 var _look_offset := Vector2.ZERO
 var _land_dip: float = 0.0
 var _was_on_floor := true
+var _idle_time := 0.0
+## 0 = Hände voll da, 1 = ganz ausgeblendet.
+var _hide := 0.0
+var _wake_left := 0.0
+var _sprint_weight := 0.0
+var _body: Node
 var _lit_view: Node3D
 var _metal_material: StandardMaterial3D
 var _rubber_material: StandardMaterial3D
@@ -193,6 +238,7 @@ func _ready() -> void:
 		push_error("PlayerHands braucht einen Player über sich.")
 		return
 	_last_look = (get_parent() as Node3D).global_basis
+	_body = _player.get_node_or_null("Body")
 
 
 func _process(delta: float) -> void:
@@ -202,8 +248,52 @@ func _process(delta: float) -> void:
 	var sprinting := _player.stats != null and _player.stats.is_sprinting()
 	_update_look_sway(delta)
 	_update_landing(delta)
+	update_idle_hide(delta, flat.length())
 	apply_motion(delta, flat.length(), sprinting)
 	update_pose(delta)
+
+
+## Holt die Hände für `seconds` hoch, auch im Stand (z. B. beim Benutzen oder Essen).
+func wake(seconds := 1.0) -> void:
+	_wake_left = maxf(_wake_left, seconds)
+	_idle_time = 0.0
+
+
+## 0 = Hände voll sichtbar, 1 = ausgeblendet (im Stand ohne Waffe).
+func get_hide_amount() -> float:
+	return _hide
+
+
+## Gewicht der Sprint-Pose (0–1).
+func get_sprint_weight() -> float:
+	return _sprint_weight
+
+
+## Leere Hände im Stand weich aus dem Bild nehmen, bei jeder Aktion sofort wieder zeigen.
+func update_idle_hide(delta: float, horizontal_speed: float) -> void:
+	_wake_left = maxf(_wake_left - delta, 0.0)
+	if _needs_hands(horizontal_speed):
+		_idle_time = 0.0
+	else:
+		_idle_time += delta
+	var target := 1.0 if idle_hide_enabled and _idle_time >= idle_hide_delay else 0.0
+	var duration := idle_hide_time if target > _hide else idle_show_time
+	_hide = move_toward(_hide, target, delta / maxf(duration, 0.01))
+	var shown := _hide < 0.999
+	for hand: Dictionary in [_right, _left]:
+		(hand.root as Node3D).visible = shown
+		(hand.arm as Node3D).visible = shown
+
+
+func _needs_hands(horizontal_speed: float) -> bool:
+	if _wake_left > 0.0 or horizontal_speed > move_speed_epsilon or not _player.is_on_floor():
+		return true
+	if _weapon_view() != null or _held_item() != null:
+		return true
+	var movement := _player.movement
+	if movement != null and (movement.get_grab_weight() > 0.0 or movement.is_sliding() or movement.is_mantling()):
+		return true
+	return false
 
 
 ## Idle, Gehen oder Sprint. `horizontal_speed` in Metern pro Sekunde.
@@ -225,9 +315,17 @@ func apply_motion(delta: float, horizontal_speed: float, sprinting: bool) -> voi
 	_time += delta * frequency
 	var wave := sin(_time)
 	var sway := sin(_time * 0.5)
+	if moving and _body != null and _body.has_method("get_stride_phase") and _player.is_on_floor():
+		# Im Takt der Füße: tiefster Punkt kurz nach jedem Auftritt, seitlich einmal pro Doppelschritt.
+		var phase: float = _body.get_stride_phase()
+		wave = cos(2.0 * (phase - PI * 0.5 - 0.35))
+		sway = sin(phase - 0.35)
 	var look := _look_offset * motion_scale
-	position = _base_position + Vector3(sway * amplitude_x - look.x * 0.5, wave * amplitude_y + look.y * 0.5 - _land_dip * motion_scale, 0.0)
-	rotation = _base_rotation + Vector3(wave * amplitude_y * 2.0 + look.y * 1.5, look.x * 1.5, sway * amplitude_x * 1.5 + look.x * 0.8)
+	var lowered := smoothstep(0.0, 1.0, _hide)
+	position = _base_position + Vector3(sway * amplitude_x - look.x * 0.5, wave * amplitude_y + look.y * 0.5 - _land_dip * motion_scale, 0.0) \
+		+ idle_hide_offset * lowered
+	rotation = _base_rotation + Vector3(wave * amplitude_y * 2.0 + look.y * 1.5 + deg_to_rad(idle_hide_pitch_degrees) * lowered,
+		look.x * 1.5, sway * amplitude_x * 1.5 + look.x * 0.8)
 
 
 ## Überblendet beide Hände zur Pose, die zur aktuellen Waffe passt.
@@ -245,6 +343,7 @@ func update_pose(delta: float) -> void:
 		var space := holder.transform * view.transform
 		var arm_space := holder.transform * Transform3D(Basis.IDENTITY, view.position)
 		var reloading := holder.is_reloading()
+		_sprint_weight = 0.0
 		target_right = _pose_in_space(POSE_GRIP_RIGHT, space, arm_space, view.get_node_or_null("HandGripRight"))
 		var left_pose := POSE_RELOAD_LEFT if reloading else POSE_GRIP_LEFT
 		var left_marker: Node = null if reloading else view.get_node_or_null("HandGripLeft")
@@ -253,6 +352,7 @@ func update_pose(delta: float) -> void:
 		_pose_right = _blend_pose(_pose_right, target_right, maxf(weight, 0.6))
 	elif _held_item() != null:
 		# Klinge oder Granate: rechte Hand greift, linke bleibt locker unten.
+		_sprint_weight = 0.0
 		var held := _held_item()
 		var item_user: Node3D = _player.item_user
 		var space := item_user.transform * held.transform
@@ -261,6 +361,14 @@ func update_pose(delta: float) -> void:
 		target_right = _pose_in_space(pose, space, arm_space, null)
 		_pose_right = _blend_pose(_pose_right, target_right, maxf(weight, 0.6))
 	else:
+		# Leere Hände: beim Sprint pumpen die Fäuste, Gewicht weich überblendet.
+		_update_sprint_weight(delta)
+		if _sprint_weight > 0.001:
+			var phase: float = _body.get_stride_phase() if _body != null and _body.has_method("get_stride_phase") else 0.0
+			target_right = _blend_pose(target_right, _sprint_pose(1.0, phase), _sprint_weight)
+			target_left = _blend_pose(target_left, _sprint_pose(-1.0, phase), _sprint_weight)
+			# Die Fäuste folgen dem Takt direkt, sonst hinkt das Pumpen hinterher.
+			weight = maxf(weight, _sprint_weight * 0.7)
 		_pose_right = _blend_pose(_pose_right, target_right, weight)
 	_pose_left = _blend_pose(_pose_left, target_left, weight)
 	# Ein wenig Leben in den Fingern, auch beim Stillstehen.
@@ -274,6 +382,35 @@ func update_pose(delta: float) -> void:
 		return
 	_apply_pose(_right, _pose_right, breath if view == null and _held_item() == null else 0.0)
 	_apply_pose(_left, _pose_left, breath)
+
+
+func _update_sprint_weight(delta: float) -> void:
+	var target := 0.0
+	var speed := Vector2(_player.velocity.x, _player.velocity.z).length()
+	if _player.stats != null and _player.stats.is_sprinting() and speed > move_speed_epsilon \
+			and _player.is_on_floor():
+		target = 1.0
+	_sprint_weight = move_toward(_sprint_weight, target, sprint_blend_speed * delta)
+
+
+## Sprint-Faust für eine Seite bei Phase `phase` des Laufzyklus (rechter Fuß setzt bei π/2 auf).
+func _sprint_pose(side: float, phase: float) -> Dictionary:
+	var pose := POSE_SPRINT.duplicate()
+	var mirror := Vector3(side, 1.0, 1.0)
+	pose.fingers = pose.fingers * mirror
+	pose.back = pose.back * mirror
+	var result := _to_runtime(pose)
+	# Rechte Faust vorn, wenn das linke Bein vorn ist (Phase 3π/2), linke gegengleich.
+	var forward := -sin(phase) * side
+	var t := (1.0 - forward * sprint_pump) * 0.5
+	var front: Vector3 = POSE_SPRINT.pos * mirror
+	var back := front + SPRINT_BACK_OFFSET * mirror
+	# Leichter Bogen: in der Mitte etwas tiefer (der Ellbogen schwingt am Körper vorbei).
+	result.pos = front.lerp(back, t) + Vector3(0.0, -0.035 * sin(t * PI), 0.0)
+	var tilt := Basis(Vector3.RIGHT, deg_to_rad(SPRINT_BACK_PITCH) * t)
+	result.basis = tilt * result.basis
+	result.arm_basis = result.basis
+	return result
 
 
 ## Greifpose an einer Kante: Welt-Transform des Handgelenks in den Raum der Hände.
