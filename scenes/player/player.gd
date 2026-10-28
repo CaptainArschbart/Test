@@ -87,6 +87,7 @@ extends CharacterBody3D
 const PICKUP_SCENE := preload("res://scenes/items/pickup.tscn")
 const LowHealthFxScript := preload("res://scenes/survival/low_health_fx.gd")
 const DeathScreenScript := preload("res://scenes/survival/death_screen.gd")
+const CameraShakeScript := preload("res://scenes/player/camera_shake.gd")
 
 signal revived
 
@@ -100,10 +101,14 @@ var noclip := false
 var dead := false
 var low_health_fx: LowHealthFxScript
 var death_screen: DeathScreenScript
+## Renn-Wippen und Explosions-Wackeln der Kamera (nur beim lokalen Spieler, sonst null).
+var camera_shake: CameraShakeScript
 
 var _spawn_transform: Transform3D
 var _noclip_label: Label
 var _step_timer: float = 0.0
+## Schrittzähler des Körpers beim letzten Schrittgeräusch.
+var _last_step_count := 0
 var _fall_speed: float = 0.0
 var _last_footstep: int = -1
 var _last_land: int = -1
@@ -143,6 +148,9 @@ func _ready() -> void:
 	_life_started_msec = Time.get_ticks_msec()
 	low_health_fx = LowHealthFxScript.new()
 	add_child(low_health_fx)
+	camera_shake = CameraShakeScript.new()
+	camera_shake.name = "CameraShake"
+	add_child(camera_shake)
 	_create_noclip_label()
 	death_screen = DeathScreenScript.new()
 	add_child(death_screen)
@@ -310,6 +318,8 @@ func _on_stats_died() -> void:
 	movement.cancel()
 	_stop_sounds()
 	velocity = Vector3.ZERO
+	camera_shake.reset()
+	movement.refresh_camera()
 	var inventory_ui := get_node_or_null(^"InventoryUI")
 	if inventory_ui != null and inventory_ui.has_method("force_close"):
 		inventory_ui.call("force_close")
@@ -336,6 +346,8 @@ func revive() -> void:
 	head.rotation = Vector3.ZERO
 	camera.h_offset = 0.0
 	camera.v_offset = 0.0
+	camera_shake.reset()
+	movement.refresh_camera()
 	input_locked = false
 	low_health_fx.reset()
 	_life_started_msec = Time.get_ticks_msec()
@@ -560,16 +572,26 @@ func _update_view_step(delta: float) -> void:
 
 func _update_footsteps(delta: float, sprinting: bool, target_speed: float) -> void:
 	var horiz := Vector2(velocity.x, velocity.z).length()
+	var body := get_node_or_null(^"Body") as PlayerBody
 	if horiz < step_speed_epsilon or target_speed <= 0.0:
 		_step_timer = 0.0
+		if body != null:
+			_last_step_count = body.get_step_count()
 		return
-	var interval := sprint_step_interval if sprinting else walk_step_interval
-	var reference := sprint_speed if sprinting else walk_speed
-	interval = clampf(interval * reference / horiz, 0.16, 0.75)
-	_step_timer += delta
-	if _step_timer < interval:
-		return
-	_step_timer = 0.0
+	if body != null:
+		# Im Takt des Körpers: Geräusch, wenn ein Fuß aufsetzt (Beine, Hände und Kamera laufen mit).
+		var count := body.get_step_count()
+		if count == _last_step_count:
+			return
+		_last_step_count = count
+	else:
+		var interval := sprint_step_interval if sprinting else walk_step_interval
+		var reference := sprint_speed if sprinting else walk_speed
+		interval = clampf(interval * reference / horiz, 0.16, 0.75)
+		_step_timer += delta
+		if _step_timer < interval:
+			return
+		_step_timer = 0.0
 	var volume := sprint_volume_db if sprinting else walk_volume_db
 	var pitch := sprint_pitch if sprinting else 1.0
 	pitch *= randf_range(0.97, 1.03)

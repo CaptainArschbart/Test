@@ -110,6 +110,7 @@ func interact() -> bool:
 	if target == null or target.get_interact_text(_player) == "":
 		return false
 	target.interact(_player)
+	_player.hands.wake()
 	return true
 
 
@@ -118,6 +119,8 @@ func use_selected() -> bool:
 	var item := _player.inventory.get_selected_item()
 	if item == null or _cooldown > 0.0:
 		return false
+	# Im Stand ausgeblendete Hände kommen zum Benutzen hoch.
+	_player.hands.wake()
 	if item is ConsumableData:
 		return _consume(item)
 	if item is GrenadeData:
