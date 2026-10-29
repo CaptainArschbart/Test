@@ -28,6 +28,9 @@ const IMPACT_COLOR := Color(1.0, 0.75, 0.3)
 const MAX_SHELLS := 30
 const SHELL_LIFETIME := 2.5
 
+## Ein Schuss ist raus (für PlayerAvatarSync: andere Spieler sehen Rückstoß und Mündungsfeuer).
+signal fired
+
 var _player: Player
 var _weapon: WeaponData
 var _view: Node3D
@@ -120,6 +123,8 @@ func _process(delta: float) -> void:
 	_recoil = lerpf(_recoil, 0.0, minf(recoil_return * delta, 1.0))
 	_update_aim(delta)
 	if _view != null:
+		# Beim Boxen mit "melee" ist die Waffe kurz weggesteckt.
+		_view.visible = not _holstered()
 		_view.position = Vector3(0.0, _recoil * 0.3, _recoil)
 		_view.rotation.x = _recoil * 3.0
 		# Beim Nachladen kippt die Waffe nach unten weg.
@@ -158,6 +163,7 @@ func try_fire() -> bool:
 	_shoot_ray()
 	if _weapon.eject_shells:
 		_eject_shell()
+	fired.emit()
 	# Kamera springt erst nach dem Strahl hoch, sonst ginge der Schuss daneben.
 	var heat := get_heat()
 	var kick := _weapon.view_kick_degrees * (1.0 + _weapon.recoil_climb * heat)
@@ -226,6 +232,13 @@ func get_weapon() -> WeaponData:
 
 func is_reloading() -> bool:
 	return _reload_left > 0.0
+
+
+## Fortschritt beim Nachladen 0…1, -1 = lädt nicht nach.
+func get_reload_progress() -> float:
+	if _reload_left <= 0.0 or _weapon == null:
+		return -1.0
+	return clampf(1.0 - _reload_left / maxf(_weapon.reload_time, 0.001), 0.0, 1.0)
 
 
 func _finish_reload() -> void:
@@ -435,6 +448,8 @@ func _apply_aim() -> void:
 		scoped = _weapon.has_scope and _aim > 0.85
 	else:
 		transform = _base_transform
+	if _player.melee != null:
+		fov += _player.melee.get_fov_offset()
 	_player.camera.fov = fov
 	_player.hands.motion_scale = 1.0 - t * 0.85
 	_player.hands.visible = not scoped
@@ -452,7 +467,11 @@ func _set_flash(on: bool) -> void:
 
 func _can_use() -> bool:
 	return _player.controls_local_body() and not _player.input_locked and not _player.noclip \
-			and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not get_tree().paused
+			and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not get_tree().paused and not _holstered()
+
+
+func _holstered() -> bool:
+	return _player.melee != null and _player.melee.is_holstering()
 
 
 func _play(stream: AudioStream, pitch := 1.0) -> void:

@@ -404,6 +404,81 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
   - Gegner reagieren nicht auf tote Fußgänger, und der Spieler kann noch nicht fahren.
   - Neue Klassen (`RoadNetwork`, `TrafficDirector`, `TrafficCar`, `VehicleModel`, `Civilian`, `CivilianModel`, `CrowdDirector`): Projekt im Editor einmal neu laden.
 
+### 2026-10-28 · Bessere Sounds statt 8-Bit-Töne · Claude (für Arschi) · PR #39
+- Auftrag: Arschi findet die Sounds „8-bit und trashy“. Alle Effekte durch hochwertigere ersetzen.
+- Bestand vorher: 10 WAVs unter `assets/audio` (22 kHz, je ein Sinus/Rauschen) und Laufzeit-Synthese in `enemy_sounds.gd` (Gegnerstimmen als Formant-Brummen mit Bit-Reduktion, also echtes 8-Bit-Klangbild, dazu Wusch, Aufprall, Zap) und `vital_sounds.gd` (Herz, Atem, Flatline). Musik (`sounds/*.mp3`) nicht angefasst.
+- Quelle: Freesound, OpenGameArt, Kenney sind aus dem Container gesperrt. Deshalb neu `tools/gen_sounds.py` (numpy/scipy, 44,1 kHz, fester Seed): Schüsse geschichtet aus Knall-Transiente, Mündungsknall, Druckstoß, Tiefbass und Verschlussmechanik, dazu Straßenschlucht-Hall (synthetische Impulsantwort mit Hauswand-Echos, Gewehr mit langem Nachrollen). Nachladen als Abfolge echter Handgriffe (Modal-Synthese für Metallklicks, Reibegeräusche). Schritte: Ferse, Abrollen, Sohle, Kies. Gegnerrufe sind jetzt echte deutsche Sprache (Piper-TTS, Stimme Thorsten, CC0), Text passt zur Sprechblase (`Enemy.BARKS`, gleiche Reihenfolge), drei Stimmlagen.
+- Neu/ersetzt in `assets/audio`: gleiche Namen für `pistol_shot`, `sniper_shot`, `pistol_reload`, `sniper_reload`, `pistol_empty`, `footstep_01–03`, `land_01–02` (uids bleiben, `player.tscn` und Waffen-`.tres` unverändert). Neu: `pistol_shot_world`, `sniper_shot_world` (mono für Gegner in 3D), `melee_swing`, `melee_thud`, `emp_zap`, `heartbeat`, `breath_loop`, `flatline_loop` (Loop im Import), `voices/<ruf>_<0-2>_<low|mid|high>.wav` (81 Dateien, 22 kHz), `CREDITS.md`.
+- Code: `scenes/enemies/enemy_sounds.gd` und `scenes/survival/vital_sounds.gd` laden jetzt Dateien statt zu synthetisieren. Funktionen und Konstanten gleich (`voice(line, pitch, variant)`, `swing()`, `thud()`, `zap()`, `step()`, `PISTOL_SHOT`, `RIFLE_SHOT`, `RELOAD`, `heartbeat()`, `breath()`, `flatline()`). `voice()` nimmt die Stimmlage, die `voice_pitch` am nächsten liegt, und gleicht den Rest über `mix_rate` einer Kopie aus. `enemy.gd` nicht angefasst.
+- Pegel: Schritte und Landen auf dem alten Niveau gehalten (RMS −32/−25 dB), Schüsse Peak −0,6 dB, Mechanik −2,5 dB. Lautstärke im Spiel weiter über die Player und den SFX-Bus.
+- Tests: neu `tools/tests/check_audio_levels.py` (ohne Godot, `python3 tools/tests/check_audio_levels.py`): Format, kein Clipping, kein Gleichanteil, kein Knacken an Anfang/Ende, 3D-Sounds mono, Schleifen-Naht, `loop_end` im Import, alle `res://assets/audio/...`-Verweise in `scenes/` existieren. Ergebnis `CHECKS 1199 FAILS 0`. Neu `tools/tests/test_audio.gd` (Godot headless, lädt alles über die echten Schnittstellen, alle Profile-Stimmlagen, Loops, Nachladesound ≤ `reload_time`). GDScript per `gdparse`/`gdlint` geprüft.
+- Nicht getestet: Godot selbst lief im Container nicht (Download-Binary nicht erlaubt), `test_audio.gd` also noch nicht ausgeführt. Kein Hörtest möglich, nur Pegel und Spektrogramme angesehen. Bitte einmal im Editor importieren lassen und reinhören.
+- Hinweise für die Nächsten: Neue Sounds (SMG, Kontaktgranate, Consumables, Autos) gern ebenfalls als Funktion in `tools/gen_sounds.py` ergänzen und den Dateinamen in `EXPECTED` von `check_audio_levels.py` eintragen. Sounds für 3D-Player mono halten. Wer `Enemy.BARKS` ändert, muss `VOICE_LINES` in `gen_sounds.py` anpassen und die Stimmen neu erzeugen (`--voices`).
+
+### 2026-10-29 · main in PR #39 geholt, Mergekonflikte gelöst · Claude (für Arschi)
+
+### 2026-10-28 · Multiplayer: ganzes Playermodel für andere Spieler · Claude (für Arschi) · PR #34
+- Auftrag: Im Multiplayer sah man andere Spieler nur als ein paar Hände und Füße. Sie sollen als ganze Figur mit passenden, synchronisierten Animationen erscheinen.
+- Ursache: Die fremde Figur nutzte denselben `PlayerBody` wie die Ego-Sicht (`first_person = true`: Oberkörper, Arme, Kopf nur Schatten), die Ego-Hände hingen sichtbar an der fremden Kamera, und weil Physik bei fremden Figuren aus ist, war `velocity` 0, die Beine bewegten sich also nicht. Synchronisiert wurden nur Position, Drehung und Kopf, ungeglättet mit 20 Hz.
+- Neu `scenes/player/player_avatar_sync.gd` (`PlayerAvatarSync`, Knoten `AvatarSync` in `player.tscn`, `process_mode` ALWAYS):
+  - Eigene Figur: sammelt jedes Physik-Frame `net_position`, `net_yaw`, `net_pitch`, `net_velocity`, `net_flags` (Boden, Rutschen, Tod, Noclip), `net_crouch`, `net_climb`, `net_aim`, `net_reload`, `net_held` (Item-id) und Zähler `net_shots` / `net_actions` (Schuss bzw. Schlag/Wurf).
+  - Fremde Figur: `PlayerBody.first_person = false` und `external_drive = true`, `PlayerHands` unsichtbar und ohne Prozess. Position, Yaw und Blick werden 0,1 s hinter dem neuesten Paket zwischen zwei Paketen gemischt (über 4 m Sprung = Teleport, z. B. Respawn). Steigt ein Zähler: Rückstoß, Mündungsfeuer und Schuss-Sound (`RemoteShot`, 3D) bzw. Schlag/Wurf. Schritte der fremden Figur spielen auf ihrem `%Footsteps` im Takt der Beine (`PlayerBody.stepped`), leiser beim Hocken.
+- `scenes/player/player.tscn`: `PlayerSync` überträgt `.:position`, `.:rotation`, `Head:rotation` nur noch beim Spawn (`replication_mode` 0), dazu 12 `AvatarSync:net_*`-Felder (Item und Zähler „on change“, Rest immer; `net_position` steht absichtlich zuletzt, sein Setter legt das Paket ab). `PlayerSync.process_mode` ALWAYS, damit der Tod (Player ist dann DISABLED) noch ankommt.
+- `scenes/player/player_body.gd` (auf dem neuen Laufzyklus aus PR #32 aufgesetzt, der bleibt für die eigene Figur unverändert):
+  - `animate_remote(delta, velocity, on_floor)`: Becken dreht in die Laufrichtung (seitwärts bis 50°, Oberkörper bleibt in Blickrichtung), rückwärts läuft der Zyklus rückwärts, Sprint ab 6 m/s.
+  - Überlagerungen mit weichen Gewichten (`_update_overlays`, `_apply_overlays`): Hocken (Knie/Hüfte, Becken sinkt über die Beinlänge), Rutschen (rechtes Bein vorn gestreckt, linkes untergeschlagen, zurückgelehnt, linke Hand stützt), Klettern in drei Phasen wie `PlayerMovement` (über Kopf greifen, hochdrücken, Bein über die Kante), Oberkörper und Kopf folgen dem Blick (`look_pitch`).
+  - Waffen: `set_held_item(item)` hängt das `view_scene` der Waffe (Pistole, Gewehr) bzw. eine Klinge/Granate an `WeaponMount` am Oberkörper (`Hold` PISTOL/RIFLE/MELEE/GRENADE). Haltung Hüfte ↔ Anschlag (zeigt genau in Blickrichtung), Nachladen kippt die Waffe und die linke Hand holt das Magazin, `trigger_fire()` Rückstoß + Mündungsfeuer, `trigger_action()` Schlag bzw. Wurf. Hände greifen per Zwei-Gelenk-IK (`_solve_arm`), Gewehr nutzt `HandGripRight/Left` aus `sniper_view.tscn`.
+  - Tod: Knie knicken ein, Figur kippt nach hinten und bleibt liegen; Respawn setzt zurück.
+  - Für die eigene Figur sind alle neuen Gewichte 0, `animate()` wird wie bisher aus `_process` aufgerufen.
+- Kleine Haken: `WeaponHolder` Signal `fired` und `get_reload_progress()`; `ItemUser` Signal `action_performed` (Granate geworfen, Klinge geschlagen); `PlayerMovement.get_climb_progress()` (−1 oder Phase + Anteil 0…3).
+- Getestet (Godot 4.7.2, Prüfskripte nur im Scratchpad, nicht im Repo):
+  - Zwei echte Prozesse Host + Client über ENet (127.0.0.1), Host headless spielt 18 Zustände durch, Client fotografiert die Host-Figur: stehen, gehen, rennen, seitwärts, hocken, Hockgang, rutschen, Pistole, Pistole zielen + hochschauen, Schuss, nachladen, Gewehr, Gewehr zielen, Klinge, Granate, klettern (1,8-m-Mauer im Kletterhof), Tod, Respawn. Alle Werte kommen beim Client an, fremde Hände bleiben unsichtbar, eigene Figur bleibt Ego-Modell. Gerendert unter Xvfb mit Forward+ (Vulkan über lavapipe) und Compatibility (OpenGL), ohne Skriptfehler.
+  - Glättung: Client headless mit ~145 fps, Gehen 219 Frames ohne einen Stillstand-Frame (ohne Glättung stünde die Figur zwischen 20-Hz-Paketen).
+  - Host beendet → Client landet im Hauptmenü ohne Fehler; Client beendet → Host räumt die Figur ohne Fehler ab.
+  - Einzelspieler: Testmap und Sektor 7 je 10 s ohne Skriptfehler, `tools/tests/test_sector7_enemies.gd` `CHECKS 15 FAILS 0`.
+  - Posen-Übersicht aller Zustände in Forward+ (Seite und schräg vorn). Screenshots im Projektordner `multiplayer-playermodel/`.
+- Nicht getestet: echtes Spiel mit zwei Menschen über LAN/Internet und echter GPU, Paketverlust/hoher Ping (Glättung puffert 0,1 s), Ton auf echter Soundkarte.
+- Offene Punkte Multiplayer (nicht in diesem PR):
+  - Gegner und Beute sind nicht synchronisiert (laufen auf jedem Rechner für sich, siehe PR #30).
+  - Kein Schaden zwischen Spielern und keine Treffer auf fremde Figuren (Schüsse sind nur sichtbar/hörbar). Granaten fremder Spieler erscheinen nicht.
+  - Host wählt weiter `game_scene` (Testmap), Sektor 7 als Host-Map fehlt im Menü.
+  - Klettern: fremde Hände greifen nicht exakt an der Kante (Kante wird nicht übertragen), nur Pose.
+- Hinweise: Neue Zustände für fremde Figuren → Feld in `PlayerAvatarSync` (`_collect` + `_process`) und Pfad in `PlayerSync` von `player.tscn` ergänzen, Pose als Gewicht in `PlayerBody._update_overlays`/`_apply_overlays`. Ein `-s`-Testskript darf `PlayerBody`/`Player` nicht typisiert verwenden (wird vor den Autoloads kompiliert).
+
+### 2026-10-29 · main in PR #34 geholt, Mergekonflikte gelöst · Claude (für Arschi)
+
+### 2026-10-28 · Nahkampf: Boxen und aufgeladener Dash-Schlag · Claude (für Arschi) · PR #38
+- Auftrag: Unbewaffnet einen normalen Angriff (Boxen) und einen aufgeladenen Angriff (Vorschlag Dash + Schlag) einbauen.
+- Bedienung:
+  - Boxen: **F** (neue Aktion `melee`, im Optionsmenü unter Steuerung als „Boxen / Aufladen“ belegbar, Konflikt-Tausch wie bei allen Tasten) oder **Linksklick**, wenn nichts in der Hand ist, das selbst auf `fire` reagiert (Schusswaffe, Granate, Klinge). Jeder Druck schlägt sofort; links, rechts, links im Wechsel, jeder dritte Schlag einer Kombo ist ein Haken (×1,5). Mit Waffe/Klinge/Granate in der Hand geht nur F: die Waffe wird für den Schlag weggesteckt (ausgeblendet, Schießen/Zielen gesperrt) und kommt danach zurück.
+  - Aufladen: Taste halten. Ab 0,22 s zieht die rechte Faust zurück, leuchtet (cyan → magenta), Balken unter dem Fadenkreuz mit Strich bei der Mindestladung, steigender Ton, man läuft mit 60 % Tempo, kein Sprint. Loslassen unter 45 % = nichts. Darüber: Dash in Blickrichtung (2,5–5 m je nach Ladung, 17 m/s, FOV-Kick +9°, Kamerastoß), dann Powerschlag (32–65 Schaden, Rückstoß, 1,2 s Betäubung) mit kleiner Schockwelle (2,6 m, 30 % Schaden, Wegstoßen). 1,6 s Cooldown.
+  - Dash bricht ab: Gegner/Ziel in 1,3 m vor dem Körper (Schlag sofort), Wand, Kante ohne Boden (tiefer als 0,7 m, zwei Strahlen voraus), festgefahren. Startet nur am Boden und nicht beim Klettern/Rutschen/Noclip; in der Luft gibt es den Schlag ohne Dash. Klettern, Rutschen, Noclip, Tod brechen Aufladen/Dash ab. Treppen nimmt der Dash über `Player._move_with_stairs`.
+  - Treffer: Hitstop über `Engine.time_scale` (Faust 0,045 s, Power 0,11 s, nur lokal), Kamerastoß über neues `CameraShake.add_trauma()`, Lichtblitz mit Ring am Einschlag, prozedurale Sounds, Lärm für Gegner (6 m / 14 m). Wand-Treffer klingen anders.
+- Neu:
+  - `scenes/player/player_melee.gd` (`PlayerMelee`, vom Player im Code angelegt wie `CameraShake`, `Player.melee`, nur für die lokale Figur). Getter für Hände/Waffe: `is_holstering()`, `get_guard_weight()`, `get_extension(side)`, `get_windup()`, `get_fov_offset()`, `get_move_factor()`, `blocks_sprint()`. Für Tests: `press()`, `release()`, `last_dash_reason`, `last_dash_distance`.
+  - `scenes/player/melee_tuning.gd` + `melee_tuning.tres`: **alle Werte** (Schaden, Reichweite, Takt, Kombo-Fenster, Aufladezeit, Dash-Weite/Tempo/Kanten-Tiefe, Cooldown, Rückstoß, Betäubung, Schockwelle, Hitstop, Shake, Lärm). Dort justieren.
+  - `scenes/player/melee_sounds.gd`: Luftzug, Treffer, Wand, Aufladen, Dash, Powerschlag (prozedural, gecacht).
+  - `tools/tests/test_player_melee.gd`: Prüfskript, Aufruf `godot --headless --path . -s res://tools/tests/test_player_melee.gd`, Exitcode 0 = grün.
+- Geändert:
+  - `scenes/hands/player_hands.gd`: Posen `POSE_GUARD`, `POSE_PUNCH`, `POSE_HOOK`, `POSE_WINDUP`, `POSE_POWER`, `_melee_pose()`, `_mirrored()`, `get_fist(side)`. Deckung blendet weich ein und bleibt 1,4 s nach dem letzten Schlag. Weggesteckte Waffe = leere-Hände-Zweig. Hände blenden in der Deckung nicht aus.
+  - `scenes/enemies/enemy.gd`: neue `melee_hit(damage, point, normal, push, stun_time)`: wie `take_hit`, aber nie Kopftreffer (Kamera ist auf Kopfhöhe), Hinterhalt ×3 gilt weiter (Faust von hinten schlägt nieder). Rückstoß `_knock` in `_move` (klingt exponentiell ab, ~Tempo/6 m, nie über Kanten), Taumeln, optional Betäubung. Andere Ziele (Testwachen, Schießscheiben) bekommen `take_hit`.
+  - `scenes/player/player.gd`: legt `PlayerMelee` an, `melee.physics_step()` nach `PlayerMovement`, Tempo-Faktor, kein Sprint beim Aufladen/Dash, Abbruch bei Respawn/Noclip.
+  - `scenes/weapons/weapon_holder.gd`: Waffe beim Weggesteckt-Sein ausgeblendet und gesperrt, FOV-Kick wird aufs Sichtfeld gerechnet.
+  - `scenes/player/item_user.gd`: gehaltenes Item beim Wegstecken ausgeblendet, kein Klingen-/Granaten-`fire` während eines Schlags.
+  - `scenes/player/camera_shake.gd`: `add_trauma(amount)`.
+  - `project.godot` (Aktion `melee` = F), `autoload/settings.gd` (`REBINDABLE_ACTIONS`).
+- Getestet: Godot 4.7.2 headless, Prüfskript `CHECKS 42 FAILS 0` in 5 Läufen (Taste/Optionsmenü/kein Konflikt, Treffer 18, Kombo L-R-L, Haken 27, Reichweite, Hitstop endet, Aufladen/Leuchten/Balken/Bremsen, voller Dash 5,1 m, zu kurz = nichts, Cooldown, Wand-Stopp vor der Wand, Kanten-Stopp oben auf 2-m-Plattform, in der Luft ohne Dash, Dash auf Ziel bricht ab und trifft voll ohne hineinzudashen, Pistole: Linksklick schießt weiter, F steckt weg und trifft, Waffe kommt zurück; echte Gegner: Faustschaden, Reaktion, Rückstoß, Powerschlag betäubt, Schockwelle trifft Nebenmann; Noclip bricht ab). `test_sector7_enemies.gd` weiter 15/15. Hauptmenü, Testmap, Sektor 7 je 10 s ohne Skriptfehler. Screenshots in Sektor 7 unter Xvfb, Compatibility und Forward+ (Vulkan über lavapipe), Projektordner `nahkampf/`.
+- Nicht getestet: echte GPU, Gefühl mit Maus/Tastatur (Hitstop-Länge, Dash-Tempo bitte anspielen und in `melee_tuning.tres` justieren), Ton auf echter Soundkarte.
+- Offene Punkte / Hinweise:
+  - **Multiplayer-Sync fehlt:** Schläge, Dash und Treffer laufen nur lokal (wie die Gegner selbst). Andere Spieler sehen den Dash über die normale Positions-Sync, aber keine Box-Animation, kein Leuchten; Spieler gegen Spieler gibt es nicht. Hitstop verlangsamt nur das eigene Spiel.
+  - Zivil-NPCs (PR #35) sind noch nicht auf main: Sie werden getroffen, wenn sie `take_hit` (oder `melee_hit`) haben; Flucht müsste dort ausgelöst werden.
+  - Wer neue Gegner-/NPC-Typen baut: `melee_hit(damage, point, normal, push, stun_time)` anbieten, sonst gibt es nur `take_hit` ohne Rückstoß.
+  - Ein `-s`-Testskript darf eine Spielfigur nicht „Player“ nennen, wenn sie nicht in einer Map liegt: der NetworkManager behandelt die Szene sonst als Multiplayer-Map und ersetzt sie.
+
+### 2026-10-29 · main in PR #38 geholt, Mergekonflikte gelöst · Claude (für Arschi)
+
+- Aktuellen main (#35) in den Branch gemergt. Konflikt in `claude_updatenotice.md` gelöst, alle Einträge aus main und aus diesem PR behalten.
+
 ### 2026-10-28 · SMG und Kontaktgranate · Claude (für Arschi) · PR #36
 - Auftrag: Eine SMG (Maschinenpistole) und normale Kontaktgranaten einbauen.
 - Werte zentral: Alles Justierbare steht in den Item-Resources `scenes/items/data/smg.tres` und `scenes/items/data/contact_grenade.tres` (Schaden, Feuerrate, Magazin, Nachladezeit, Streuung, Rückstoß, Radius, Abfall, Wurfgeschwindigkeit, Lärm, Sounds). Die Felder sind neu in `WeaponData` bzw. `GrenadeData` und haben Standardwerte, mit denen Pistole, Scharfschützengewehr und EMP-Granate genau wie vorher funktionieren.
@@ -430,3 +505,9 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 
 - Aktuellen main (#35) in den Branch gemergt. Konflikt in `claude_updatenotice.md` gelöst, alle Einträge aus main und aus diesem PR behalten. In `scenes/survival/death_screen.gd` beide Todesursachen behalten (`grenade` aus diesem PR, `car` aus main).
 - Geprüft: keine Konfliktmarker, keine fehlenden `res://`-Pfade. Nicht in Godot geladen.
+
+### 2026-10-29 · PR #36 an main angepasst (nach Merge von #34 und #38) · Claude (für Arschi)
+
+- `scenes/player/item_user.gd`: Der neue Wurfablauf aus diesem PR bleibt. Dazu kommen aus main das Wegstecken beim Boxen (`_held.visible` in `_process`) und `action_performed.emit()`, jetzt in `_release`, wenn die Granate die Hand verlässt.
+- `scenes/weapons/weapon_holder.gd`: Hülsenauswurf aus diesem PR und `fired.emit()` aus main, beides behalten.
+- Nur statisch geprüft (keine Konfliktmarker, keine fehlenden `res://`-Pfade), nicht in Godot geladen.

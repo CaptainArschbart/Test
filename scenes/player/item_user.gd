@@ -22,6 +22,9 @@ const GRENADE_SCRIPT := preload("res://scenes/items/grenade.gd")
 const THROW_WINDUP := 0.16
 const THROW_FOLLOW := 0.3
 
+## Granate geworfen oder mit der Klinge zugeschlagen (für PlayerAvatarSync).
+signal action_performed
+
 var _player: Player
 var _item: ItemData
 var _target: Object
@@ -69,7 +72,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("use_item") and _item is ConsumableData:
 		get_viewport().set_input_as_handled()
 		use_selected()
-	elif event.is_action_pressed("fire") and (_item is GrenadeData or _item is MeleeData):
+	elif event.is_action_pressed("fire") and (_item is GrenadeData or _item is MeleeData) \
+			and (_player.melee == null or not _player.melee.is_busy()):
 		get_viewport().set_input_as_handled()
 		use_selected()
 
@@ -91,6 +95,9 @@ func _process(delta: float) -> void:
 		return
 	_cooldown = maxf(_cooldown - delta, 0.0)
 	_swing = maxf(_swing - delta * 5.0, 0.0)
+	if _held != null:
+		# Beim Boxen mit "melee" kurz weggesteckt.
+		_held.visible = _player.melee == null or not _player.melee.is_holstering()
 	if _throw_time >= 0.0:
 		_update_throw(delta)
 	elif _held != null:
@@ -259,6 +266,7 @@ func _release(item: GrenadeData) -> void:
 	grenade.linear_velocity = forward * item.throw_speed + Vector3.UP * 3.0 \
 		+ Vector3(_player.velocity.x, 0.0, _player.velocity.z)
 	grenade.add_collision_exception_with(_player)
+	action_performed.emit()
 
 
 func _find_item(item: ItemData) -> int:
@@ -297,6 +305,7 @@ func is_throwing() -> bool:
 func _strike(item: MeleeData) -> bool:
 	_cooldown = item.swing_interval
 	_swing = 1.0
+	action_performed.emit()
 	var camera := _player.camera
 	var from := camera.global_position
 	var to := from - camera.global_basis.z * item.reach
