@@ -26,6 +26,8 @@ enum State { IDLE, JAB, CHARGE, DASH, POWER }
 const DEFAULT_TUNING := preload("res://scenes/player/melee_tuning.tres")
 const Sounds := preload("res://scenes/player/melee_sounds.gd")
 const LAYER_WORLD := 1
+## Andere Spielerfiguren (Multiplayer) sind treffbar.
+const LAYER_PLAYER := 2
 ## Dauer, die die Deckung nach dem letzten Schlag oben bleibt.
 const GUARD_HOLD := 1.4
 const GLOW_COLOR := Color(0.0, 1.0, 0.95)
@@ -483,7 +485,7 @@ func _find_target(from: Vector3, dir: Vector3, reach: float, radius: float) -> D
 	sphere.radius = radius
 	var query := PhysicsShapeQueryParameters3D.new()
 	query.shape = sphere
-	query.collision_mask = LAYER_WORLD
+	query.collision_mask = LAYER_WORLD | LAYER_PLAYER
 	query.exclude = exclude
 	var best: Dictionary = {}
 	var best_distance := INF
@@ -518,7 +520,7 @@ func _hittable(collider: Object) -> Node:
 
 
 func _ray(from: Vector3, dir: Vector3, reach: float) -> Dictionary:
-	var query := PhysicsRayQueryParameters3D.create(from, from + dir * reach, LAYER_WORLD, [_player.get_rid()])
+	var query := PhysicsRayQueryParameters3D.create(from, from + dir * reach, LAYER_WORLD | LAYER_PLAYER, [_player.get_rid()])
 	return _player.get_world_3d().direct_space_state.intersect_ray(query)
 
 

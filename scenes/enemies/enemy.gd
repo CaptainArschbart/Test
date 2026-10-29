@@ -23,6 +23,11 @@ extends CharacterBody3D
 ## Bewegung: „schwebende“ Kapsel (unten 0,6 m frei) plus Bodenstrahl. Stufen bis 0,6 m (Treppen,
 ## Bordsteine) geht er so einfach hoch, und er läuft nie über eine Kante, unter der kein Boden ist.
 ## Wege kommen vom NavigationAgent3D auf dem Navmesh des EnemyDirector.
+##
+## Multiplayer: Nur der Host rechnet die KI und jagt den nächsten lebenden Spieler (_find_player).
+## Er schickt den Zustand über WorldSync (net_get_state) und Ereignisse wie Schüsse, Rufe und Tod
+## (net_event). Auf Clients ist der Gegner nur Anzeige (_puppet_tick): Treffer gehen per
+## WorldSync.forward_hit an den Host, Beute legt der Host über WorldSync.spawn_pickup.
 
 signal died(enemy: Enemy)
 signal state_changed(enemy: Enemy, state: State)
@@ -134,6 +139,16 @@ var _step_timer := 0.0
 var _bark_cooldown := 0.0
 var _flash_left := 0.0
 
+## Multiplayer (Host): Zeitpunkt (ms), ab dem er sich ein neues Ziel sucht.
+var _retarget_at := 0
+## Multiplayer (Client): Stand aus dem letzten Paket des Hosts.
+var _net_position := Vector3.INF
+var _net_yaw := 0.0
+var _net_target := 0
+var _net_shown := 0.0
+var _net_laser := false
+var _death_shown := false
+
 var _shape: CollisionShape3D
 var _mark: Label3D
 var _bark_label: Label3D
@@ -152,6 +167,7 @@ func _ready() -> void:
 		profile = EnemyProfile.new()
 	add_to_group(GROUP)
 	add_to_group(StealthNoise.GROUP)
+	add_to_group(WorldSync.NPC_GROUP)
 	collision_layer = 1
 	collision_mask = 1 | 2
 	motion_mode = CharacterBody3D.MOTION_MODE_FLOATING
@@ -261,6 +277,8 @@ func set_lod(new_lod: Lod, lights: bool) -> void:
 func take_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 	if state == State.DEAD:
 		return
+	if _forward_hit(&"take_hit", [damage, point, normal]):
+		return
 	_find_player()
 	var amount := damage
 	if point.y > global_position.y + 1.55 - model.crouch * 0.3:
@@ -273,6 +291,7 @@ func take_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 	health -= amount
 	model.flinch = clampf(amount / 30.0, 0.4, 1.0)
 	_flash()
+	WorldSync.npc_event(self, &"hit", [model.flinch])
 	if health <= 0.0:
 		var push := -normal
 		if _player != null:
@@ -298,6 +317,8 @@ func take_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 func melee_hit(damage: float, point: Vector3, normal: Vector3, push: Vector3, stun_time: float) -> void:
 	if state == State.DEAD:
 		return
+	if _forward_hit(&"melee_hit", [damage, point, normal, push, stun_time]):
+		return
 	# Fäuste zählen nie als Kopftreffer (die Kamera ist auf Kopfhöhe), Hinterhalt gilt weiter.
 	var body_point := Vector3(point.x, minf(point.y, global_position.y + 1.2), point.z)
 	take_hit(damage, body_point, normal)
@@ -314,11 +335,27 @@ func melee_hit(damage: float, point: Vector3, normal: Vector3, push: Vector3, st
 func emp_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 	if state == State.DEAD:
 		return
+	if _forward_hit(&"emp_hit", [damage, point, normal]):
+		return
 	take_hit(damage * 0.5, point, normal)
 	if state != State.DEAD:
 		_stun(profile.stun_time)
-		_sfx.stream = SoundGen.zap()
-		_sfx.play()
+		_play_zap()
+		WorldSync.npc_event(self, &"zap")
+
+
+func _play_zap() -> void:
+	_sfx.stream = SoundGen.zap()
+	_sfx.play()
+
+
+## Multiplayer-Client: Treffer an den Host schicken und nur kurz aufblitzen. true = weitergeleitet.
+func _forward_hit(method: StringName, args: Array) -> bool:
+	if not WorldSync.is_client():
+		return false
+	WorldSync.forward_hit(self, method, args)
+	_flash()
+	return true
 
 
 ## Spieler ist nach dem Tod respawnt: vergessen, was war, und zurück auf Streife.
@@ -335,6 +372,8 @@ func reset_alert() -> void:
 
 ## Von StealthNoise aufgerufen.
 func hear_noise(position: Vector3, radius: float, source: Node, kind: StringName) -> void:
+	if WorldSync.is_client():
+		return
 	if state == State.DEAD or state == State.STUNNED or lod == Lod.SLEEP and not is_engaged():
 		return
 	var effective := radius * profile.hearing_scale
@@ -377,6 +416,9 @@ func hear_noise(position: Vector3, radius: float, source: Node, kind: StringName
 # --- Takt ---------------------------------------------------------------------------------
 
 func _physics_process(delta: float) -> void:
+	if WorldSync.is_client():
+		_puppet_tick(delta)
+		return
 	if state == State.DEAD:
 		_corpse_tick(delta)
 		return
@@ -414,13 +456,55 @@ func _tick(delta: float) -> void:
 
 
 func _find_player() -> void:
+	if WorldSync.is_online():
+		_find_net_target()
+		return
 	if _player != null and is_instance_valid(_player):
 		return
-	# Im Multiplayer gibt es mehrere Spielerfiguren; Gegner laufen pro Rechner und jagen die eigene.
 	for node: Node in get_tree().get_nodes_in_group("player"):
 		if node is Player and (not node.has_method("controls_local_body") or node.call("controls_local_body")):
 			_player = node
 			return
+
+
+## Multiplayer (Host): jagt den nächsten lebenden Spieler. Im Kampf mit Sicht bleibt er beim
+## aktuellen Ziel, sonst prüft er jede Sekunde neu.
+func _find_net_target() -> void:
+	var now := Time.get_ticks_msec()
+	var current_ok := _player != null and is_instance_valid(_player) and _target_alive(_player)
+	if current_ok and (now < _retarget_at or state == State.COMBAT and _sees_player):
+		return
+	_retarget_at = now + 1000
+	var best: Player = null
+	var best_distance := INF
+	for node: Node in get_tree().get_nodes_in_group("player"):
+		var player := node as Player
+		if player == null or not _target_alive(player):
+			continue
+		var distance := player.global_position.distance_squared_to(global_position)
+		if distance < best_distance:
+			best_distance = distance
+			best = player
+	if best != null:
+		_player = best
+	elif not current_ok and _player != null and not is_instance_valid(_player):
+		_player = null
+
+
+static func _target_alive(player: Player) -> bool:
+	return not player.dead and not player.noclip and player.stats.is_alive()
+
+
+## WorldSync: ein Client hat getroffen, dieser Spieler zählt als Angreifer.
+func net_set_attacker(attacker: Player) -> void:
+	if attacker != null and _target_alive(attacker):
+		_player = attacker
+		_retarget_at = Time.get_ticks_msec() + 3000
+
+
+## WorldSync.notify_revived: jagt er gerade diesen Spieler?
+func net_targets(player: Player) -> bool:
+	return _player == player
 
 
 # --- Wahrnehmung --------------------------------------------------------------------------
@@ -702,9 +786,8 @@ func _combat_melee(delta: float) -> void:
 			var to := _player.global_position - global_position
 			var front := (-global_basis.z).dot(Vector3(to.x, 0, to.z).normalized())
 			if _sees_player and to.length() < profile.attack_range + 0.5 and front > 0.3 and absf(to.y) < 1.4:
-				_player.stats.damage(profile.damage, profile.death_cause)
-				_sfx.stream = SoundGen.thud()
-				_sfx.play()
+				_player.apply_damage(profile.damage, profile.death_cause)
+				_play_sfx(&"thud")
 		if _attack_t >= 0.75:
 			_attack_t = -1.0
 			model.attack = 0.0
@@ -715,9 +798,7 @@ func _combat_melee(delta: float) -> void:
 		if _cooldown <= 0.0:
 			_attack_t = 0.0
 			_attack_hit_done = false
-			_sfx.stream = SoundGen.swing()
-			_sfx.pitch_scale = _rng.randf_range(0.9, 1.1)
-			_sfx.play()
+			_play_sfx(&"swing")
 		return
 	if _flat(global_position, target_position) > 0.9:
 		_go(target_position, profile.run_speed)
@@ -726,6 +807,24 @@ func _combat_melee(delta: float) -> void:
 		_face(target_position)
 	else:
 		_face_yaw_to(rotation.y + delta * 2.0)
+
+
+## Ton am Gegner, im Multiplayer auch auf den Clients: thud, swing, reload.
+func _play_sfx(kind: StringName, share := true) -> void:
+	match kind:
+		&"thud":
+			_sfx.stream = SoundGen.thud()
+		&"swing":
+			_sfx.stream = SoundGen.swing()
+			_sfx.pitch_scale = _rng.randf_range(0.9, 1.1)
+		&"reload":
+			_sfx.stream = SoundGen.RELOAD
+			_sfx.pitch_scale = 0.9
+		_:
+			return
+	_sfx.play()
+	if share:
+		WorldSync.npc_event(self, &"sfx", [kind])
 
 
 func _combat_ranged(delta: float) -> void:
@@ -801,9 +900,7 @@ func _shoot_logic(delta: float) -> void:
 		_cover_point = Vector3.INF
 		_cover_left = profile.reload_time
 		_say(&"cover")
-		_sfx.stream = SoundGen.RELOAD
-		_sfx.pitch_scale = 0.9
-		_sfx.play()
+		_play_sfx(&"reload")
 		_release_token()
 		_aim_t = 0.0
 		_burst_left = profile.burst
@@ -839,7 +936,7 @@ func _fire() -> void:
 	chance = clampf(chance, 0.03, 0.95)
 	var end := chest
 	if _line_to_player(eye, chest) and _rng.randf() < chance:
-		_player.stats.damage(profile.damage, profile.death_cause)
+		_player.apply_damage(profile.damage, profile.death_cause)
 	else:
 		# Daneben: knapp vorbei, bis zur nächsten Wand.
 		var miss := Vector3(_rng.randf_range(-1, 1), _rng.randf_range(-0.6, 0.8), _rng.randf_range(-1, 1)).normalized()
@@ -848,6 +945,13 @@ func _fire() -> void:
 		var query := PhysicsRayQueryParameters3D.create(from, far, 1, [get_rid()])
 		var hit := get_world_3d().direct_space_state.intersect_ray(query)
 		end = hit.position if not hit.is_empty() else far
+	_show_shot(from, end)
+	WorldSync.npc_event(self, &"fire", [from, end])
+	StealthNoise.emit(get_tree(), global_position, 35.0, self, StealthNoise.SHOT)
+
+
+## Leuchtspur, Mündungsfeuer und Schuss-Ton (auch auf Clients über net_event).
+func _show_shot(from: Vector3, end: Vector3) -> void:
 	_spawn_tracer(from, end)
 	_flash_left = 0.06
 	_muzzle_light.visible = true
@@ -855,7 +959,6 @@ func _fire() -> void:
 	_sfx.stream = SoundGen.RIFLE_SHOT if profile.style == EnemyProfile.Style.RIFLE else SoundGen.PISTOL_SHOT
 	_sfx.pitch_scale = _rng.randf_range(0.85, 0.97)
 	_sfx.play()
-	StealthNoise.emit(get_tree(), global_position, 35.0, self, StealthNoise.SHOT)
 
 
 func _update_muzzle_flash(delta: float) -> void:
@@ -929,6 +1032,20 @@ func _die(push: Vector3) -> void:
 	_release_token()
 	_set_state(State.DEAD)
 	awareness = 0.0
+	_show_death(push)
+	_say(&"death", true)
+	WorldSync.npc_event(self, &"die", [push])
+	_drop_loot()
+	died.emit(self)
+
+
+## Umfallen, Gruppen und Kollision weg (auch auf Clients über net_event bzw. Zustand DEAD).
+func _show_death(push: Vector3) -> void:
+	if _death_shown:
+		return
+	_death_shown = true
+	state = State.DEAD
+	_apply_state_look()
 	remove_from_group(GROUP)
 	remove_from_group(StealthNoise.GROUP)
 	add_to_group(CORPSE_GROUP)
@@ -938,16 +1055,15 @@ func _die(push: Vector3) -> void:
 	_mark.visible = false
 	_bark_label.visible = false
 	_muzzle_light.visible = false
+	if model.laser != null:
+		model.laser.visible = false
 	model.stunned = false
 	model.fall(push)
-	_say(&"death", true)
 	get_tree().create_timer(0.75, false).timeout.connect(func() -> void:
 		if is_inside_tree():
 			_steps.stream = SoundGen.thud()
 			_steps.volume_db = 0.0
 			_steps.play())
-	_drop_loot()
-	died.emit(self)
 
 
 func _drop_loot() -> void:
@@ -958,20 +1074,16 @@ func _drop_loot() -> void:
 		var chance := profile.loot_chances[i] if i < profile.loot_chances.size() else 0.3
 		if profile.loot_items[i] != null and _rng.randf() < chance:
 			drops.append([profile.loot_items[i], 1])
-	var parent := get_parent()
 	for i: int in drops.size():
 		var item: ItemData = drops[i][0]
 		var count: int = drops[i][1]
 		if count <= 0:
 			continue
-		var pickup: ItemPickup = PICKUP_SCENE.instantiate()
-		pickup.item = item
-		pickup.count = count
-		parent.add_child(pickup)
 		var angle := i * 2.39996 + _rng.randf()
 		var spread := Vector3(cos(angle), 0.0, sin(angle))
-		pickup.global_position = global_position + Vector3.UP * 0.9 + spread * 0.2
-		pickup.throw(spread * 1.6 + Vector3.UP * 2.2, 0.6)
+		# WorldSync: im Multiplayer sehen alle die Beute, aufheben kann sie nur einer.
+		WorldSync.spawn_pickup(item, count, global_position + Vector3.UP * 0.9 + spread * 0.2,
+			spread * 1.6 + Vector3.UP * 2.2, 0.6)
 
 
 func _corpse_tick(delta: float) -> void:
@@ -1222,6 +1334,11 @@ func _say(line: StringName, force := false) -> void:
 		return
 	_bark_cooldown = 2.5
 	var variant := _rng.randi() % 3
+	_show_say(line, variant)
+	WorldSync.npc_event(self, &"say", [line, variant])
+
+
+func _show_say(line: StringName, variant: int) -> void:
 	_voice.stream = SoundGen.voice(line, profile.voice_pitch, variant)
 	_voice.pitch_scale = _rng.randf_range(0.95, 1.05)
 	_voice.play()
@@ -1234,3 +1351,119 @@ func _say(line: StringName, force := false) -> void:
 	get_tree().create_timer(2.2, false).timeout.connect(func() -> void:
 		if is_instance_valid(_bark_label) and _bark_label.text == shown:
 			_bark_label.visible = false)
+
+
+# --- Multiplayer --------------------------------------------------------------------------
+
+## Host → Clients (WorldSync): Position, Blick, Zustand, Leben, Haltung, Ziel und Laser.
+func net_get_state() -> Array:
+	var target := 0
+	var shown := 0.0
+	if _player != null and is_instance_valid(_player) and state != State.DEAD:
+		target = _player.get_multiplayer_authority()
+		if awareness > 0.01 and state != State.STUNNED:
+			shown = 1.0 if state == State.COMBAT else minf(awareness, 0.99)
+	var laser := model.laser != null and model.laser.visible
+	return [global_position, rotation.y, int(state), health, model.attack, model.aim, model.crouch,
+		model.stunned, target, shown, laser]
+
+
+## Client: Paket des Hosts übernehmen. Bewegt wird in _puppet_tick (geglättet).
+func net_apply_state(data: Array) -> void:
+	if data.size() < 11:
+		return
+	var first := _net_position == Vector3.INF
+	_net_position = data[0]
+	_net_yaw = float(data[1])
+	var new_state := int(data[2]) as State
+	health = float(data[3])
+	if new_state == State.DEAD:
+		if first:
+			# Später beigetreten: Leiche gleich hinlegen.
+			global_position = _net_position
+			rotation.y = _net_yaw
+		_show_death(Vector3.ZERO)
+		return
+	if new_state != state:
+		state = new_state
+		_state_time = 0.0
+		_apply_state_look()
+	model.attack = float(data[4])
+	model.aim = float(data[5])
+	model.crouch = float(data[6])
+	model.stunned = bool(data[7])
+	_net_target = int(data[8])
+	_net_shown = float(data[9])
+	_net_laser = bool(data[10])
+	if first:
+		global_position = _net_position
+		rotation.y = _net_yaw
+
+
+## Client: Ereignis vom Host (WorldSync.npc_event).
+func net_event(event: StringName, args: Array) -> void:
+	match event:
+		&"fire":
+			if args.size() >= 2:
+				_show_shot(args[0], args[1])
+		&"say":
+			if args.size() >= 2:
+				_show_say(StringName(args[0]), int(args[1]))
+		&"sfx":
+			if args.size() >= 1:
+				_play_sfx(StringName(args[0]), false)
+		&"hit":
+			if args.size() >= 1:
+				model.flinch = float(args[0])
+			_flash()
+		&"zap":
+			_play_zap()
+		&"die":
+			_show_death(args[0] if args.size() >= 1 else Vector3.ZERO)
+
+
+## Client: Anzeige ohne KI. Gleitet zur Position des Hosts, Animation aus dem Tempo.
+func _puppet_tick(delta: float) -> void:
+	if state == State.DEAD:
+		_corpse_tick(delta)
+		return
+	if _net_position == Vector3.INF:
+		return
+	var before := global_position
+	if before.distance_to(_net_position) > 4.0:
+		global_position = _net_position
+	else:
+		global_position = before.lerp(_net_position, 1.0 - exp(-12.0 * delta))
+	rotation.y = lerp_angle(rotation.y, _net_yaw, 1.0 - exp(-12.0 * delta))
+	velocity = (global_position - before) / maxf(delta, 0.001)
+	_update_muzzle_flash(delta)
+	_animate_puppet(delta)
+	_report_to_local_player()
+
+
+func _animate_puppet(delta: float) -> void:
+	var keep_aim := model.aim
+	var keep_crouch := model.crouch
+	_animate(delta)
+	model.aim = keep_aim
+	model.crouch = keep_crouch
+	if model.laser == null:
+		return
+	var target := WorldSync.player_of(_net_target) if _net_laser else null
+	model.laser.visible = target != null and lod == Lod.FULL
+	if model.laser.visible:
+		var from := model.muzzle.global_position
+		var to := target.global_position + Vector3.UP * 1.0
+		var length := from.distance_to(to)
+		if length > 0.1:
+			model.laser.global_transform = Transform3D(Basis.looking_at(to - from), (from + to) * 0.5)
+			model.laser.scale = Vector3(1, 1, length)
+
+
+## Client: Wer gejagt wird, sieht es in der eigenen Schleich-Anzeige.
+func _report_to_local_player() -> void:
+	if _net_shown <= 0.01 or _net_target != WorldSync.local_peer():
+		return
+	var local := WorldSync.player_of(_net_target)
+	if local != null and local.stealth != null:
+		local.stealth.report_awareness(self, _net_shown)
