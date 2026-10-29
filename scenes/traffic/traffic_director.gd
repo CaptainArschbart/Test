@@ -8,6 +8,9 @@ extends Node3D
 ## Hindernisse: einmal pro Physik-Frame werden Spieler, Fußgänger, Gegner und Autos als Punkte
 ## gesammelt (obstacles_near). Autos und Fußgänger fragen diese Liste.
 ## Leistung: Autos hinter `far_distance` rechnen nur 10× pro Sekunde, Licht und Motorton nur nah.
+## Multiplayer: Nur der Host fährt die Autos. Er schickt über WorldSync (Gruppe NPC_GROUP) alle 0,1 s
+## Spur, Strecke und Tempo jedes Autos. Clients erzeugen dieselben Autos (gleiche Art und Zufallszahl)
+## und lassen sie nur nachfahren (TrafficCar.net_puppet).
 
 enum Kind { PLAYER, PERSON, ENEMY, CAR }
 
@@ -15,6 +18,8 @@ const GROUP := &"traffic_director"
 const CAR_GROUP := &"traffic_car"
 const CarScript := preload("res://scenes/traffic/traffic_car.gd")
 const Sounds := preload("res://scenes/traffic/vehicle_sounds.gd")
+## Multiplayer: Werte je Auto im Paket (Nummer, Art + TrafficCar.net_floats).
+const NET_STRIDE := 7
 
 @export_group("Straßennetz")
 @export var junctions := PackedVector3Array()
@@ -60,7 +65,10 @@ func _ready() -> void:
 	_hit_audio.max_distance = 40.0
 	_hit_audio.stream = Sounds.hit()
 	add_child(_hit_audio)
-	_spawn_cars.call_deferred()
+	add_to_group(WorldSync.NPC_GROUP)
+	# Client: Die Autos kommen vom Host (net_apply_state).
+	if not WorldSync.is_client():
+		_spawn_cars.call_deferred()
 
 
 static func find(tree: SceneTree) -> TrafficDirector:
@@ -228,3 +236,55 @@ func _update_lod() -> void:
 	for car: TrafficCar in cars:
 		var d := car.global_position.distance_to(eye)
 		car.set_near(d < light_distance, d < sound_distance, d > far_distance)
+
+
+# --- Multiplayer --------------------------------------------------------------------------
+
+## Host → Clients (WorldSync), kompakt: [Floats je Auto: Nummer, Art, Spur, Strecke, Versatz, Tempo,
+## Bremse; Zufallszahlen als [Nummer, Zahl, …]]. Die Zufallszahl bestimmt Farbe und Wunschtempo.
+func net_get_state() -> Array:
+	var floats := PackedFloat32Array()
+	var seeds := PackedInt32Array()
+	for car: TrafficCar in cars:
+		if not is_instance_valid(car):
+			continue
+		var id := int(String(car.name).trim_prefix("Car"))
+		floats.append(id)
+		floats.append(car.kind_id)
+		floats.append_array(car.net_floats())
+		seeds.append(id)
+		seeds.append(car.seed_id)
+	return [floats, seeds]
+
+
+## Client: fehlende Autos anlegen, alle nachziehen, beim Host verschwundene entfernen.
+func net_apply_state(data: Array) -> void:
+	if network == null or data.size() < 2:
+		return
+	var floats: PackedFloat32Array = data[0]
+	var seed_list: PackedInt32Array = data[1]
+	var seeds := {}
+	for i in range(0, seed_list.size() - 1, 2):
+		seeds[seed_list[i]] = seed_list[i + 1] & 0xFFFFFFFF
+	var seen := {}
+	for i in range(0, floats.size() - NET_STRIDE + 1, NET_STRIDE):
+		var id := int(floats[i])
+		var lane := int(floats[i + 2])
+		if lane < 0 or lane >= network.pieces.size() or not seeds.has(id):
+			continue
+		var car_name := "Car%d" % id
+		seen[car_name] = true
+		var car := get_node_or_null(NodePath(car_name)) as TrafficCar
+		if car == null:
+			car = CarScript.new() as TrafficCar
+			car.name = car_name
+			car.net_puppet = true
+			add_child(car)
+			car.setup(self, lane, floats[i + 3], int(floats[i + 1]) as VehicleModel.Kind, seeds[id])
+			cars.append(car)
+		car.net_apply(lane, floats[i + 3], floats[i + 4], floats[i + 5], floats[i + 6] > 0.5)
+	for car: TrafficCar in cars.duplicate():
+		if not seen.has(String(car.name)):
+			cars.erase(car)
+			lane_leave(car.piece_id, car)
+			car.queue_free()

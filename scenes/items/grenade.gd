@@ -162,12 +162,40 @@ func explode_remote(center: Vector3) -> void:
 	set_physics_process(false)
 	global_position = center
 	CameraShakeScript.explosion(get_tree(), center, data.radius)
+	_push_bodies(center)
 	if data.blast == GrenadeData.Blast.FRAG:
 		_spawn_frag_blast(center)
 	else:
 		_spawn_blast(center)
 	_play_explosion(center)
 	queue_free()
+
+
+## Kopie: lose Physik-Objekte (Kisten, Fässer) im Radius genauso wegstoßen wie beim Werfer.
+## Die Objekte selbst sind nicht synchron, so liegen sie aber bei allen ungefähr gleich.
+func _push_bodies(center: Vector3) -> void:
+	if data.impulse <= 0.0:
+		return
+	var space := get_world_3d().direct_space_state
+	var query := PhysicsShapeQueryParameters3D.new()
+	var sphere := SphereShape3D.new()
+	sphere.radius = data.radius
+	query.shape = sphere
+	query.transform = Transform3D(Basis(), center)
+	query.collision_mask = 1 | 2
+	query.exclude = [get_rid()]
+	var done := {}
+	for result in space.intersect_shape(query, 64):
+		var body := result.collider as RigidBody3D
+		if body == null or done.has(body) or body is ThrownGrenade:
+			continue
+		done[body] = true
+		var target := _shape_center(body, result.shape)
+		if not _in_sight(space, center, target, body):
+			continue
+		var amount := damage_at(center.distance_to(target))
+		var push := (target - center).normalized() + Vector3.UP * 0.4
+		body.apply_central_impulse(push.normalized() * data.impulse * amount / data.damage)
 
 
 ## Schaden in `distance` Metern Abstand: voll in der Mitte, am Rand min_damage_fraction.

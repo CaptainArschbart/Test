@@ -171,6 +171,8 @@ var _mark: Label3D
 ## Kleiner Pfeil über dem Kopf: gelb = neutral, rot = feindlich. Wippt mit dem Zustandszeichen.
 var _arrow: MeshInstance3D
 var _arrow_material: StandardMaterial3D
+## Peer, der zuletzt getroffen hat (bekommt beim Tod die XP).
+var _killer_peer := 0
 var _bark_label: Label3D
 var _voice: AudioStreamPlayer3D
 var _sfx: AudioStreamPlayer3D
@@ -350,6 +352,7 @@ func take_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 	if _forward_hit(&"take_hit", [damage, point, normal]):
 		return
 	_find_player()
+	_killer_peer = WorldSync.hit_source_peer()
 	var was_hostile := hostile
 	hostile = true
 	var amount := damage
@@ -1131,10 +1134,8 @@ func _die(push: Vector3) -> void:
 	_say(&"death", true)
 	WorldSync.npc_event(self, &"die", [push])
 	_drop_loot()
-	# Alle Treffer kommen von Spielern. XP bekommt der Spieler, auf dessen Rechner der Gegner stirbt
-	# (im Multiplayer der Host, der die Gegner rechnet).
-	if _player != null and _player.xp != null:
-		_player.xp.add_xp(profile.xp_reward)
+	# XP bekommt, wer zuletzt getroffen hat (im Multiplayer auch ein Client, über WorldSync).
+	WorldSync.award_xp(_killer_peer, profile.xp_reward)
 	died.emit(self)
 
 

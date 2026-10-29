@@ -14,6 +14,7 @@ extends Node
 ##   alle STATE_INTERVAL Sekunden den Zustand aller NPCs (net_get_state), die Clients zeigen ihn
 ##   (net_apply_state). Ereignisse wie Schüsse und Rufe kommen über npc_event. Treffer auf einen
 ##   NPC beim Client gehen per forward_hit an den Host.
+## XP: Stirbt ein Gegner beim Host, bekommt der Spieler, der zuletzt getroffen hat, die XP (award_xp).
 ## Geräusche (StealthNoise) eines Clients gehen zusätzlich an den Host, damit dessen Gegner sie hören.
 ##
 ## Ein Client, der später beitritt, bekommt vom Host den Stand der Pickups (_pickup_snapshot).
@@ -24,6 +25,9 @@ const NPC_GROUP := &"net_npc"
 const STATE_INTERVAL := 0.1
 ## Ein NPC, der so lange in keinem Paket vorkam, ist beim Host weg (Leiche abgeräumt).
 const NPC_MISSING_TIME := 3.0
+## Größe eines NPC-Pakets in Bytes, ab der ein neues angefangen wird (unter der ENet-MTU von 1392,
+## sonst wird das unzuverlässige Paket zerlegt und geht bei Verlust ganz verloren).
+const PACKET_BUDGET := 1100
 const PICKUP_SCENE := preload("res://scenes/items/pickup.tscn")
 const GRENADE_SCRIPT := preload("res://scenes/items/grenade.gd")
 
@@ -34,6 +38,8 @@ var _npc_seen := {}
 var _npc_packets := 0
 ## Granaten, die gerade fliegen (net_id → ThrownGrenade).
 var _grenades := {}
+## Host: Peer, dessen weitergeleiteter Treffer gerade verarbeitet wird (0 = eigener Treffer).
+var _hit_peer := 0
 
 
 func _ready() -> void:
@@ -360,14 +366,26 @@ func _physics_process(delta: float) -> void:
 func _send_npc_states() -> void:
 	if multiplayer.get_peers().is_empty():
 		return
+	var map := _scene().scene_file_path if _scene() != null else ""
+	# In Stücken unter PACKET_BUDGET; ein einzelner zu großer Zustand geht allein raus.
 	var states := {}
+	var size := 0
 	for node: Node in get_tree().get_nodes_in_group(NPC_GROUP):
 		if not node.has_method("net_get_state"):
 			continue
 		var path := _path_of(node)
-		if not path.is_empty():
-			states[path] = node.call("net_get_state")
-	_npc_states.rpc(_scene().scene_file_path if _scene() != null else "", states)
+		if path.is_empty():
+			continue
+		var state: Variant = node.call("net_get_state")
+		var bytes := var_to_bytes(state).size() + path.length() + 12
+		if size + bytes > PACKET_BUDGET and not states.is_empty():
+			_npc_states.rpc(map, states)
+			states = {}
+			size = 0
+		states[path] = state
+		size += bytes
+	if not states.is_empty():
+		_npc_states.rpc(map, states)
 
 
 @rpc("authority", "unreliable_ordered", "call_remote")
@@ -436,7 +454,36 @@ func _forward_hit_remote(path: String, method: StringName, args: Array) -> void:
 	var attacker := player_of(multiplayer.get_remote_sender_id())
 	if node.has_method("net_set_attacker"):
 		node.call("net_set_attacker", attacker)
+	_hit_peer = multiplayer.get_remote_sender_id()
 	node.callv(method, args)
+	_hit_peer = 0
+
+
+## Host bzw. offline: wer den laufenden Treffer ausgeteilt hat (Peer-Id). Ohne weitergeleiteten
+## Treffer ist es dieser Rechner.
+func hit_source_peer() -> int:
+	return _hit_peer if _hit_peer != 0 else local_peer()
+
+
+## XP an den Spieler von `peer` (Kill). Offline und beim eigenen Peer direkt, sonst per RPC.
+func award_xp(peer: int, amount: int) -> void:
+	if amount <= 0 or peer <= 0:
+		return
+	if not is_online() or peer == local_peer():
+		_add_local_xp(amount)
+	elif multiplayer.is_server():
+		_xp_remote.rpc_id(peer, amount)
+
+
+@rpc("authority", "reliable", "call_remote")
+func _xp_remote(amount: int) -> void:
+	_add_local_xp(clampi(amount, 0, 1000))
+
+
+func _add_local_xp(amount: int) -> void:
+	var player := player_of(local_peer())
+	if player != null and player.xp != null:
+		player.xp.add_xp(amount)
 
 
 ## Ein Spieler ist nach dem Tod respawnt: Gegner, die ihn gejagt haben, vergessen ihn.

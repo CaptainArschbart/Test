@@ -12,6 +12,10 @@ extends Node3D
 ## Hunderte Figuren gleichzeitig existieren.
 ## Nachschub: Tote verschwinden nach `corpse_time` (wenn keiner hinschaut), neue Fußgänger kommen
 ## an Knoten weit weg von der Kamera dazu, bis wieder `count` unterwegs sind.
+## Multiplayer: Nur der Host rechnet die Fußgänger. LOD, Verlegen und Nachschub achten auf alle Spieler,
+## nicht nur auf die eigene Kamera. Über WorldSync (Gruppe NPC_GROUP) gehen alle 0,1 s Position,
+## Blick, Zustand und Tempo an die Clients, die dieselben Figuren als Kopie zeigen (Civilian.net_puppet).
+## Treffer beim Client gehen an den Host.
 
 const GROUP := &"crowd_director"
 const CivilianScript := preload("res://scenes/civilians/civilian.gd")
@@ -47,6 +51,13 @@ var _lod_timer := 0.0
 var _refill_timer := 3.0
 var _corpses := {}  # Civilian -> Sekunden
 var _next_id := 1
+## Multiplayer: Werte je Fußgänger im Paket (Nummer + Civilian.net_floats). Die Zufallszahlen fürs
+## Aussehen gehen reihum für jeden NET_SEED_EVERY-ten Fußgänger mit.
+const NET_STRIDE := 7
+const NET_SEED_EVERY := 8
+var _net_ticks := 0
+## Client: Nummer → Zufallszahl des Hosts.
+var _net_seeds := {}
 
 
 func _ready() -> void:
@@ -61,7 +72,10 @@ func _ready() -> void:
 		_adjacent[b].append(a)
 		if i / 2 < edge_crossing.size() and edge_crossing[i / 2] == 1:
 			_crossing[_key(a, b)] = true
-	_spawn_all.call_deferred()
+	add_to_group(WorldSync.NPC_GROUP)
+	# Client: Die Fußgänger kommen vom Host (net_apply_state).
+	if not WorldSync.is_client():
+		_spawn_all.call_deferred()
 
 
 static func find(tree: SceneTree) -> CrowdDirector:
@@ -152,6 +166,8 @@ func _physics_process(delta: float) -> void:
 	if _lod_timer <= 0.0:
 		_lod_timer = 0.3
 		_update_lod()
+	if WorldSync.is_client():
+		return
 	_refill_timer -= delta
 	if _refill_timer <= 0.0:
 		_refill_timer = 2.0
@@ -166,7 +182,8 @@ func _update_lod() -> void:
 	var list: Array = []
 	for civ: Civilian in civilians:
 		if is_instance_valid(civ) and not civ.is_dead():
-			list.append([civ.global_position.distance_squared_to(eye), civ])
+			var d := minf(civ.global_position.distance_to(eye), _nearest_player(civ.global_position))
+			list.append([d * d, civ])
 	list.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
 	var full := 0
 	for entry: Array in list:
@@ -189,6 +206,9 @@ func _relocate_far(eye: Vector3, cam: Camera3D) -> void:
 		if not is_instance_valid(civ) or civ.is_dead() or civ.is_panicking():
 			continue
 		var to := civ.global_position - eye
+		# Multiplayer: nicht vor der Nase eines anderen Spielers wegnehmen.
+		if _nearest_player(civ.global_position) < relocate_distance:
+			continue
 		if to.length() < relocate_distance or (cam != null and (-cam.global_basis.z).dot(to.normalized()) > 0.3 and to.length() < sleep_distance):
 			continue
 		var node := _node_out_of_sight(eye, cam)
@@ -207,7 +227,7 @@ func _node_out_of_sight(eye: Vector3, cam: Camera3D) -> int:
 	for i: int in 16:
 		var n := _rng.randi() % nodes.size()
 		var d := nodes[n].distance_to(eye)
-		if d < 25.0 or d > 65.0:
+		if d < 25.0 or d > 65.0 or _nearest_player(nodes[n]) < 25.0:
 			continue
 		if cam == null or (-cam.global_basis.z).dot((nodes[n] - eye).normalized()) < 0.2:
 			return n
@@ -224,7 +244,8 @@ func _cleanup(step: float) -> void:
 			_corpses.erase(civ)
 			continue
 		_corpses[civ] += step
-		if _corpses[civ] > corpse_time and (civ as Civilian).global_position.distance_to(eye) > 40.0:
+		if _corpses[civ] > corpse_time and (civ as Civilian).global_position.distance_to(eye) > 40.0 \
+				and _nearest_player((civ as Civilian).global_position) > 40.0:
 			_corpses.erase(civ)
 			civilians.erase(civ)
 			(civ as Civilian).queue_free()
@@ -237,10 +258,79 @@ func _cleanup(step: float) -> void:
 		return
 	for i: int in 10:
 		var a := _rng.randi() % nodes.size()
-		if nodes[a].distance_to(eye) < 60.0:
+		if nodes[a].distance_to(eye) < 60.0 or _nearest_player(nodes[a]) < 60.0:
 			continue
 		var next := neighbors(a)
 		if next.is_empty():
 			continue
 		_spawn(nodes[a], next[_rng.randi() % next.size()])
 		return
+
+
+## Abstand zum nächsten Spieler (im Multiplayer auch die der Mitspieler). INF ohne Spieler.
+func _nearest_player(pos: Vector3) -> float:
+	var best := INF
+	for p: Vector3 in _player_positions():
+		best = minf(best, p.distance_to(pos))
+	return best
+
+
+# --- Multiplayer --------------------------------------------------------------------------
+
+## Host → Clients (WorldSync), kompakt, damit es in ein Netzpaket passt:
+## [Floats je Fußgänger: Nummer, x, y, z, Blick, Zustand, Tempo; Zufallszahlen als [Nummer, Zahl, …]].
+## Die Zufallszahlen (fürs Aussehen) gehen reihum mit, je Paket nur für jeden NET_SEED_EVERY-ten
+## Fußgänger. Der Client braucht sie nur einmal, nach 0,8 s kennt er alle.
+func net_get_state() -> Array:
+	var floats := PackedFloat32Array()
+	var seeds := PackedInt32Array()
+	_net_ticks += 1
+	var slot := _net_ticks % NET_SEED_EVERY
+	var index := -1
+	for civ: Civilian in civilians:
+		index += 1
+		if not is_instance_valid(civ) or not civ.is_inside_tree():
+			continue
+		var id := int(String(civ.name).trim_prefix("Civilian"))
+		floats.append(id)
+		floats.append_array(civ.net_floats())
+		if index % NET_SEED_EVERY == slot:
+			seeds.append(id)
+			seeds.append(civ.net_seed)
+	return [floats, seeds]
+
+
+## Client: fehlende Fußgänger anlegen (gleiches Aussehen über die Zufallszahl), alle nachziehen,
+## beim Host verschwundene entfernen. Ohne bekannte Zufallszahl wartet er auf das nächste Paket damit.
+func net_apply_state(data: Array) -> void:
+	if data.size() < 2:
+		return
+	var floats: PackedFloat32Array = data[0]
+	var seeds: PackedInt32Array = data[1]
+	for i in range(0, seeds.size() - 1, 2):
+		# Zurück auf die vorzeichenlose Zahl, die der Host benutzt hat.
+		_net_seeds[seeds[i]] = seeds[i + 1] & 0xFFFFFFFF
+	var seen := {}
+	for i in range(0, floats.size() - NET_STRIDE + 1, NET_STRIDE):
+		var id := int(floats[i])
+		var civ_name := "Civilian%d" % id
+		seen[civ_name] = true
+		var pos := Vector3(floats[i + 1], floats[i + 2], floats[i + 3])
+		var civ := get_node_or_null(NodePath(civ_name)) as Civilian
+		if civ == null:
+			if not _net_seeds.has(id):
+				continue
+			civ = CivilianScript.new() as Civilian
+			civ.name = civ_name
+			civ.net_puppet = true
+			civ.setup(self, -1, _net_seeds[id])
+			civ.position = pos
+			add_child(civ)
+			civilians.append(civ)
+		civ.net_apply(pos, floats[i + 4], int(floats[i + 5]), floats[i + 6])
+	for civ: Civilian in civilians.duplicate():
+		if not is_instance_valid(civ):
+			civilians.erase(civ)
+		elif not seen.has(String(civ.name)):
+			civilians.erase(civ)
+			civ.queue_free()

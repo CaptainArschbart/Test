@@ -46,12 +46,19 @@ var _waiting_since := -1.0
 var _engine: AudioStreamPlayer3D
 var _horn: AudioStreamPlayer3D
 var _blocker_kind := -1
+## Multiplayer: Beim Client fährt das Auto nicht selbst, sondern folgt dem Host (net_apply).
+var net_puppet := false
+var kind_id := 0
+var seed_id := 0
+var _net_s := 0.0
 
 
 func setup(new_director: TrafficDirector, lane: int, start_s: float, kind: VehicleModel.Kind, seed_value: int) -> void:
 	director = new_director
 	piece_id = lane
 	s = start_s
+	kind_id = kind
+	seed_id = seed_value
 	_rng.seed = seed_value
 	cruise = _rng.randf_range(director.speed_min, director.speed_max)
 	collision_layer = 1
@@ -114,6 +121,9 @@ func set_near(lights: bool, sound: bool, far: bool) -> void:
 
 func _physics_process(delta: float) -> void:
 	if director == null or director.network == null:
+		return
+	if net_puppet:
+		_puppet_drive(delta)
 		return
 	if lod_far:
 		_accum += delta
@@ -329,7 +339,49 @@ func _hit_player(node: Node3D, push: Vector3, hit_speed: float) -> void:
 	var player := node as CharacterBody3D
 	if player == null:
 		return
+	var amount := clampf((hit_speed - 1.4) * 3.0, 3.0, 30.0)
+	# Multiplayer: Autos fährt der Host, Schaden und Stoß gehen an den Rechner, der die Figur steuert.
+	if player.has_method("apply_damage"):
+		if player.call("controls_local_body"):
+			player.velocity = Vector3.ZERO
+		player.call("apply_damage", amount, &"car", push)
+		return
 	player.velocity = push
 	var stats: Variant = player.get("stats")
 	if stats != null and stats.has_method("damage"):
-		stats.damage(clampf((hit_speed - 1.4) * 3.0, 3.0, 30.0), &"car")
+		stats.damage(amount, &"car")
+
+
+# --- Multiplayer --------------------------------------------------------------------------
+
+## Host → Clients (über TrafficDirector.net_get_state): Spur, Strecke, Versatz, Tempo, Bremslicht.
+func net_floats() -> PackedFloat32Array:
+	return PackedFloat32Array([piece_id, s, offset, speed, 1.0 if _braking else 0.0])
+
+
+## Client: Stand vom Host. Auf derselben Spur wird weich nachgezogen, sonst springt das Auto.
+func net_apply(lane: int, new_s: float, new_offset: float, new_speed: float, braking: bool) -> void:
+	if lane != piece_id:
+		director.lane_leave(piece_id, self)
+		piece_id = lane
+		director.lane_enter(piece_id, self)
+		s = new_s
+	elif absf(new_s - s) > 4.0:
+		s = new_s
+	_net_s = new_s
+	offset = new_offset
+	speed = new_speed
+	_braking = braking
+
+
+## Client: zwischen den Paketen mit dem letzten Tempo weiterfahren, Abweichung langsam abbauen.
+func _puppet_drive(delta: float) -> void:
+	_net_s += speed * delta
+	s += speed * delta
+	s = lerpf(s, _net_s, minf(delta * 4.0, 1.0))
+	s = minf(s, piece().length)
+	_place()
+	model.update(speed, delta, _braking or speed < 0.2)
+	if _engine.playing:
+		_engine.pitch_scale = 0.55 + speed / 14.0
+		_engine.volume_db = -14.0 + minf(speed, 10.0) * 0.6
