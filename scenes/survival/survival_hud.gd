@@ -1,6 +1,6 @@
 extends CanvasLayer
 ## Vier Leisten oben links, darunter das Geldfeld (Inventory.money, zählt bei Änderungen hoch
-## und zeigt kurz "+15" bzw. "−5"). Liegt auf Layer 2, das Pausemenü auf Layer 10 darüber.
+## und zeigt kurz "+15 ¢" bzw. "−5 ¢", der Rahmen leuchtet dabei grün oder rot). Liegt auf Layer 2, das Pausemenü auf Layer 10 darüber.
 ## Die NOCLIP-Zeile bleibt darüber frei (sie steht bei y = 20, der Rahmen beginnt bei y = 56).
 ## Feste Größe in der 1280×720-Basis. Der Projekt-Stretch skaliert sie mit.
 ## Optik wie das Hauptmenü: dunkles Violett, Cyan-Rand, Magenta-Streifen, schräge Kanten.
@@ -20,6 +20,9 @@ const CHAMFER := 14.0
 const MONEY_COLOR := Color(1.0, 0.9, 0.2, 1.0)
 const MONEY_ROLL_TIME := 0.45
 const MONEY_GAIN_COLOR := Color(0.3, 1.0, 0.55, 1.0)
+const MONEY_PANEL_SIZE := Vector2(200.0, 40.0)
+## So lange leuchten Rand und Credchip nach einer Änderung nach (Sekunden).
+const MONEY_FLASH_TIME := 0.7
 
 @onready var hp_bar: ProgressBar = %HPBar
 @onready var stamina_bar: ProgressBar = %StaminaBar
@@ -38,6 +41,9 @@ var _money_delta: Label
 var _shown_money := 0.0
 var _money_tween: Tween
 var _delta_tween: Tween
+## 1 direkt nach einer Änderung, fällt auf 0. Färbt Rand und Chip in _money_flash_color.
+var _money_flash := 0.0
+var _money_flash_color := MONEY_GAIN_COLOR
 
 
 func _ready() -> void:
@@ -76,14 +82,24 @@ func _on_money_changed(money: int, delta: int) -> void:
 		_money_tween.kill()
 	_money_tween = create_tween()
 	_money_tween.tween_method(_set_shown_money, _shown_money, float(money), MONEY_ROLL_TIME)
-	_money_delta.text = ("+%s" if delta > 0 else "−%s") % format_money(absi(delta))
-	_money_delta.add_theme_color_override("font_color", MONEY_GAIN_COLOR if delta > 0 else WARN_COLOR)
+	_money_delta.text = ("+%s ¢" if delta > 0 else "−%s ¢") % format_money(absi(delta))
+	_money_flash_color = MONEY_GAIN_COLOR if delta > 0 else WARN_COLOR
+	_money_delta.add_theme_color_override("font_color", _money_flash_color)
 	_money_delta.modulate.a = 1.0
+	_money_delta.position.y = 0.0
 	if _delta_tween:
 		_delta_tween.kill()
-	_delta_tween = create_tween()
-	_delta_tween.tween_interval(1.0)
-	_delta_tween.tween_property(_money_delta, "modulate:a", 0.0, 0.5)
+	# Einblendung steigt leicht nach oben und blendet aus, der Rahmen leuchtet kurz in derselben Farbe.
+	_delta_tween = create_tween().set_parallel(true)
+	_delta_tween.tween_method(_set_money_flash, 1.0, 0.0, MONEY_FLASH_TIME)
+	_delta_tween.tween_property(_money_delta, "position:y", -10.0, 1.5) \
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	_delta_tween.tween_property(_money_delta, "modulate:a", 0.0, 0.5).set_delay(1.0)
+
+
+func _set_money_flash(value: float) -> void:
+	_money_flash = value
+	money_panel.queue_redraw()
 
 
 func _set_shown_money(value: float) -> void:
@@ -106,42 +122,44 @@ func _build_money_panel() -> void:
 	money_panel = Control.new()
 	money_panel.name = "Money"
 	money_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# Unter der Stealth-Anzeige (StealthHud, 46 px hoch, 8 px unter dem Rahmen).
+	# Unter der Stealth-Anzeige (StealthHud, 46 px hoch, 8 px unter dem Rahmen), gleich breit wie sie.
 	money_panel.position = Vector2(frame.offset_left, frame.offset_bottom + 62.0)
-	money_panel.size = Vector2(190.0, 34.0)
+	money_panel.size = MONEY_PANEL_SIZE
 	money_panel.draw.connect(_draw_money_panel)
 	add_child(money_panel)
-	var caption := Label.new()
-	caption.text = "CREDS"
-	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	caption.position = Vector2(18.0, 9.0)
-	caption.add_theme_font_size_override("font_size", 11)
-	caption.add_theme_color_override("font_color", Color(MAGENTA, 0.9))
-	money_panel.add_child(caption)
 	money_label = Label.new()
 	money_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	money_label.position = Vector2(62.0, 2.0)
-	money_label.size = Vector2(106.0, 30.0)
+	money_label.position = Vector2(46.0, 16.0)
 	money_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	money_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	money_label.text = "0"
-	money_label.add_theme_font_size_override("font_size", 20)
+	money_label.add_theme_font_size_override("font_size", 18)
 	money_label.add_theme_color_override("font_color", MONEY_COLOR)
-	money_label.add_theme_color_override("font_outline_color", Color(1.0, 0.5, 0.0, 0.35))
+	money_label.add_theme_color_override("font_outline_color", Color(1.0, 0.5, 0.0, 0.3))
 	money_label.add_theme_constant_override("outline_size", 3)
+	# Weicher Goldschein hinter den Ziffern.
+	money_label.add_theme_color_override("font_shadow_color", Color(1.0, 0.7, 0.0, 0.22))
+	money_label.add_theme_constant_override("shadow_offset_x", 0)
+	money_label.add_theme_constant_override("shadow_offset_y", 0)
+	money_label.add_theme_constant_override("shadow_outline_size", 9)
+	# Label erzwingt sonst die Höhe seiner Schrift; die Größe erst nach add_child setzen.
 	money_panel.add_child(money_label)
+	money_label.size = Vector2(MONEY_PANEL_SIZE.x - 46.0 - 24.0, 22.0)
 	_money_delta = Label.new()
 	_money_delta.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_money_delta.position = Vector2(money_panel.size.x + 8.0, 0.0)
-	_money_delta.size = Vector2(120.0, 34.0)
+	_money_delta.size = Vector2(120.0, money_panel.size.y)
 	_money_delta.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_money_delta.add_theme_font_size_override("font_size", 16)
+	_money_delta.add_theme_font_size_override("font_size", 15)
 	_money_delta.add_theme_color_override("font_outline_color", Color(0.03, 0.0, 0.08))
 	_money_delta.add_theme_constant_override("outline_size", 4)
 	_money_delta.modulate.a = 0.0
 	money_panel.add_child(_money_delta)
 
 
-## Kleiner Rahmen wie die Vitals-Box: Violett, Cyan-Rand, gelbes ¢-Zeichen links.
+## Rahmen im Stil der Stealth-Box: Violett, Scanlines, Cyan-Rand, Magenta-Streifen und
+## Kopfzeile "CREDITS" mit Trennlinie. Links ein gezeichneter Credchip, rechts Betrag und ¢.
+## Bei Änderungen leuchten Rand und Chip kurz grün (Gutschrift) oder rot (Abbuchung).
 func _draw_money_panel() -> void:
 	var w := money_panel.size.x
 	var h := money_panel.size.y
@@ -151,15 +169,55 @@ func _draw_money_panel() -> void:
 		Vector2(w, h), Vector2(c, h), Vector2(0.0, h - c),
 	])
 	money_panel.draw_colored_polygon(shape, PANEL_COLOR)
+	if _money_flash > 0.0:
+		money_panel.draw_colored_polygon(shape, Color(_money_flash_color, 0.1 * _money_flash))
+	var y := 2.0
+	while y < h - 1.0:
+		var x_left := maxf(0.0, c - (h - y)) if y > h - c else 0.0
+		var x_right := w - maxf(0.0, c - y) if y < c else w
+		money_panel.draw_line(Vector2(x_left, y), Vector2(x_right, y), Color(1.0, 1.0, 1.0, 0.025), 1.0)
+		y += 3.0
+	var edge := CYAN.lerp(_money_flash_color, _money_flash)
 	var outline := shape.duplicate()
 	outline.append(shape[0])
-	money_panel.draw_polyline(outline, Color(CYAN, 0.12), 5.0)
-	money_panel.draw_polyline(outline, Color(CYAN, 0.5), 1.0)
+	money_panel.draw_polyline(outline, Color(edge, 0.12 + 0.25 * _money_flash), 5.0)
+	money_panel.draw_polyline(outline, Color(edge, 0.5 + 0.4 * _money_flash), 1.0)
 	money_panel.draw_colored_polygon(PackedVector2Array([
 		Vector2(3.0, 4.0), Vector2(6.5, 4.0), Vector2(3.5, h - c), Vector2(0.0, h - c),
-	]), MONEY_COLOR)
+	]), MAGENTA)
+	# Hell leuchtende Ecke an der Abschrägung oben rechts.
+	money_panel.draw_line(Vector2(w - c - 18.0, 0.0), Vector2(w - c, 0.0), edge, 2.0)
+	money_panel.draw_line(Vector2(w - c, 0.0), Vector2(w, c), edge, 2.0)
 	var font := money_panel.get_theme_default_font()
-	money_panel.draw_string(font, Vector2(w - 16.0, h - 9.0), "¢", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 16, MONEY_COLOR)
+	money_panel.draw_string(font, Vector2(14.0, 13.0), "CREDITS", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.95, 0.97, 1.0))
+	money_panel.draw_line(Vector2(14.0, 16.5), Vector2(w * 0.55, 16.5), Color(MAGENTA, 0.45), 1.0)
+	money_panel.draw_line(Vector2(w * 0.55, 16.5), Vector2(w - 12.0, 16.5), Color(MAGENTA, 0.12), 1.0)
+	money_panel.draw_string(font, Vector2(w - 74.0, 12.0), "NC-ACCT", HORIZONTAL_ALIGNMENT_RIGHT, 60.0, 8, Color(CYAN, 0.4))
+	_draw_credchip(Vector2(27.0, 28.0))
+	money_panel.draw_string(font, Vector2(w - 20.0, h - 9.0), "¢", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 15, Color(MONEY_COLOR, 0.85))
+
+
+## Kleiner Credchip: goldene Karte mit abgeschrägter Ecke, Kontaktfeld und Leiterbahnen.
+func _draw_credchip(center: Vector2) -> void:
+	var tl := center - Vector2(11.0, 7.0)
+	var br := center + Vector2(11.0, 7.0)
+	var cut := 3.5
+	var card := PackedVector2Array([
+		tl, Vector2(br.x - cut, tl.y), Vector2(br.x, tl.y + cut), br, Vector2(tl.x, br.y),
+	])
+	money_panel.draw_colored_polygon(card, Color(MONEY_COLOR.lerp(_money_flash_color, _money_flash), 0.18 + 0.3 * _money_flash))
+	var edge := card.duplicate()
+	edge.append(card[0])
+	money_panel.draw_polyline(edge, MONEY_COLOR, 1.2, true)
+	# Kontaktfeld links, durch zwei dunkle Linien in vier Felder geteilt.
+	var pad := Rect2(tl + Vector2(3.0, 3.0), Vector2(6.0, 8.0))
+	money_panel.draw_rect(pad, Color(MONEY_COLOR, 0.85))
+	money_panel.draw_line(pad.position + Vector2(0.0, 4.0), pad.position + Vector2(6.0, 4.0), PANEL_COLOR, 1.0)
+	money_panel.draw_line(pad.position + Vector2(3.0, 0.0), pad.position + Vector2(3.0, 8.0), PANEL_COLOR, 1.0)
+	for i in 3:
+		var ly := tl.y + 4.5 + i * 2.5
+		var right := br.x - (6.0 if i == 0 else 3.0)
+		money_panel.draw_line(Vector2(pad.end.x + 2.0, ly), Vector2(right, ly), Color(MONEY_COLOR, 0.6), 1.0)
 
 
 func _bar_for(stat_name: String) -> ProgressBar:
