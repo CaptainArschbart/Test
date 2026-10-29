@@ -3,17 +3,18 @@ extends RefCounted
 ## pitch_scale) und Hupe (zwei Töne). Wird einmal erzeugt und geteilt. Per preload benutzt.
 
 const SoundGen := preload("res://scenes/enemies/enemy_sounds.gd")
+const MIX_RATE := 22050
 
 static var _engine: AudioStreamWAV
 static var _horn: AudioStreamWAV
-static var _hit: AudioStreamWAV
+static var _hit: AudioStream
 
 
 ## Eine Sekunde Motor, nahtlos schleifbar (alle Frequenzen ganzzahlig in Hz).
 static func engine_loop() -> AudioStreamWAV:
 	if _engine != null:
 		return _engine
-	var rate := SoundGen.MIX_RATE
+	var rate := MIX_RATE
 	var n := rate
 	var samples := PackedFloat32Array()
 	samples.resize(n)
@@ -28,7 +29,7 @@ static func engine_loop() -> AudioStreamWAV:
 		v *= 0.75 + 0.25 * sin(TAU * 8.0 * t)
 		low += (rng.randf_range(-1.0, 1.0) - low) * 0.08
 		samples[i] = v + low * 0.5
-	_engine = SoundGen._to_stream(samples, 0.7)
+	_engine = _to_stream(samples, 0.7)
 	_engine.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	_engine.loop_begin = 0
 	_engine.loop_end = n
@@ -38,7 +39,7 @@ static func engine_loop() -> AudioStreamWAV:
 static func horn() -> AudioStreamWAV:
 	if _horn != null:
 		return _horn
-	var rate := SoundGen.MIX_RATE
+	var rate := MIX_RATE
 	var n := int(rate * 0.55)
 	var samples := PackedFloat32Array()
 	samples.resize(n)
@@ -50,13 +51,30 @@ static func horn() -> AudioStreamWAV:
 			# Rechteckig und etwas schnarrend wie eine billige Hupe.
 			v += clampf(sin(TAU * f * t) * 3.0, -1.0, 1.0) * 0.5
 		samples[i] = v * env
-	_horn = SoundGen._to_stream(samples, 0.8)
+	_horn = _to_stream(samples, 0.8)
 	return _horn
 
 
 ## Dumpfer Aufprall (Auto trifft jemanden).
-static func hit() -> AudioStreamWAV:
+static func hit() -> AudioStream:
 	if _hit != null:
 		return _hit
 	_hit = SoundGen.thud()
 	return _hit
+
+
+static func _to_stream(samples: PackedFloat32Array, peak: float) -> AudioStreamWAV:
+	var top := 0.0001
+	for v: float in samples:
+		top = maxf(top, absf(v))
+	var scale := peak / top
+	var data := PackedByteArray()
+	data.resize(samples.size() * 2)
+	for i: int in samples.size():
+		data.encode_s16(i * 2, int(clampf(samples[i] * scale, -1.0, 1.0) * 32767.0))
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = MIX_RATE
+	stream.stereo = false
+	stream.data = data
+	return stream
