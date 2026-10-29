@@ -134,5 +134,8 @@ func _show_consumable_model() -> void:
 
 
 func _update_label() -> void:
-	label.text = item.display_name if count == 1 else "%s ×%d" % [item.display_name, count]
+	if item.is_currency:
+		label.text = "%d ¢" % count
+	else:
+		label.text = item.display_name if count == 1 else "%s ×%d" % [item.display_name, count]
 	label.modulate = item.color

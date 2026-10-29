@@ -10,3 +10,4 @@ description = "Anonymes Guthaben auf einem Wegwerf-Chip. Die Währung der Straß
 glyph = "¢"
 color = Color(1, 0.9, 0.2, 1)
 max_stack = 99
+is_currency = true

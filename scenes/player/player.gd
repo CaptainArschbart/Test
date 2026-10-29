@@ -87,6 +87,7 @@ extends CharacterBody3D
 @export var drop_items_on_death := true
 
 const PICKUP_SCENE := preload("res://scenes/items/pickup.tscn")
+const CREDCHIP := preload("res://scenes/items/data/credchip.tres")
 const LowHealthFxScript := preload("res://scenes/survival/low_health_fx.gd")
 const DeathScreenScript := preload("res://scenes/survival/death_screen.gd")
 const CameraShakeScript := preload("res://scenes/player/camera_shake.gd")
@@ -373,23 +374,32 @@ func revive() -> void:
 
 
 ## Wirft alles aus dem Inventar rund um die Todesstelle (wie drop_item, nur ohne Blickrichtung).
+## Das Geld fällt als ein Credchip-Stapel mit dem ganzen Kontostand.
 func _drop_all_items() -> void:
 	var dropped := 0
+	var money := inventory.take_all_money()
+	if money > 0:
+		_drop_at_death(CREDCHIP, money, dropped)
+		dropped += 1
 	for index: int in inventory.get_size():
 		var item := inventory.get_item(index)
 		var count := inventory.get_count(index)
 		if item == null or count <= 0:
 			continue
 		var removed := inventory.remove_at(index, count)
-		var angle := dropped * 2.39996
-		var spread := Vector3(cos(angle), 0.0, sin(angle))
-		var pickup: ItemPickup = PICKUP_SCENE.instantiate()
-		pickup.item = item
-		pickup.count = removed
-		get_parent().add_child(pickup)
-		pickup.global_position = global_position + Vector3.UP * 0.6 + spread * 0.3
-		pickup.throw(spread * (1.2 + 0.25 * (dropped % 3)) + Vector3.UP * 2.0, 0.5)
+		_drop_at_death(item, removed, dropped)
 		dropped += 1
+
+
+func _drop_at_death(item: ItemData, count: int, dropped: int) -> void:
+	var angle := dropped * 2.39996
+	var spread := Vector3(cos(angle), 0.0, sin(angle))
+	var pickup: ItemPickup = PICKUP_SCENE.instantiate()
+	pickup.item = item
+	pickup.count = count
+	get_parent().add_child(pickup)
+	pickup.global_position = global_position + Vector3.UP * 0.6 + spread * 0.3
+	pickup.throw(spread * (1.2 + 0.25 * (dropped % 3)) + Vector3.UP * 2.0, 0.5)
 
 
 ## Wirft `amount` Stück aus einem Inventar-Slot vor den Spieler.

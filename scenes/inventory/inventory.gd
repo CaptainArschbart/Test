@@ -11,15 +11,23 @@ signal changed
 signal selected_changed(index: int)
 ## Etwas wurde aufgenommen (für die Einblendung "+3 Credchip").
 signal item_added(item: ItemData, amount: int)
+## Kontostand hat sich geändert (`delta` > 0 = bekommen, < 0 = ausgegeben).
+signal money_changed(money: int, delta: int)
 
 const HOTBAR_SIZE := 9
+## Obergrenze für das Geld.
+const MAX_MONEY := 999999
 
 ## Slots im Rucksack (Raster mit HOTBAR_SIZE Spalten).
 @export var backpack_size := 27
 ## Startausrüstung, kommt beim Spielstart in die Hotbar.
 @export var starting_items: Array[ItemData] = []
+## Geld beim Spielstart.
+@export var starting_money := 0
 
 var selected := 0
+## Kontostand in Credchips. Währungs-Items (ItemData.is_currency) landen hier statt in einem Slot.
+var money := 0
 
 var _items: Array[ItemData] = []
 var _counts := PackedInt32Array()
@@ -30,6 +38,7 @@ func _ready() -> void:
 	_counts.resize(HOTBAR_SIZE + backpack_size)
 	for item in starting_items:
 		add_item(item, 1, false)
+	add_money(starting_money)
 
 
 func get_size() -> int:
@@ -63,6 +72,11 @@ func is_hotbar(index: int) -> bool:
 ## Legt Items ab: erst auf passende Stapel, dann in freie Slots (Hotbar zuerst).
 ## Gibt zurück, wie viele nicht mehr gepasst haben.
 func add_item(item: ItemData, amount := 1, notify := true) -> int:
+	if item != null and item.is_currency:
+		var added := add_money(amount)
+		if added > 0 and notify:
+			item_added.emit(item, added)
+		return amount - added
 	var all := range(get_size())
 	var left := _merge_into(item, amount, all)
 	left = _fill_empty(item, left, all)
@@ -71,6 +85,38 @@ func add_item(item: ItemData, amount := 1, notify := true) -> int:
 		if notify:
 			item_added.emit(item, amount - left)
 	return left
+
+
+## Bucht Geld gut (bis MAX_MONEY). Gibt zurück, wie viel tatsächlich dazukam.
+func add_money(amount: int) -> int:
+	var added := clampi(amount, 0, MAX_MONEY - money)
+	if added > 0:
+		money += added
+		money_changed.emit(money, added)
+	return added
+
+
+func has_money(amount: int) -> bool:
+	return money >= amount
+
+
+## Zieht `amount` ab, wenn genug da ist. false = zu wenig Geld, nichts abgezogen.
+func spend_money(amount: int) -> bool:
+	if amount < 0 or money < amount:
+		return false
+	if amount > 0:
+		money -= amount
+		money_changed.emit(money, -amount)
+	return true
+
+
+## Nimmt das ganze Geld heraus (z. B. beim Tod). Gibt die Summe zurück.
+func take_all_money() -> int:
+	var amount := money
+	if amount > 0:
+		money = 0
+		money_changed.emit(0, -amount)
+	return amount
 
 
 ## Nimmt bis zu `amount` aus einem Slot. Gibt die tatsächlich entnommene Menge zurück.

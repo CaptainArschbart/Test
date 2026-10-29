@@ -162,7 +162,7 @@ func _check_stim_completes() -> void:
 
 func _check_cancel_by_switch() -> void:
 	_give("stim_pack", 2)
-	_inventory.call("add_item", _item("credchip"), 1)
+	_inventory.call("add_item", _item("data_shard"), 1)
 	await _frames(5)
 	_stats.call("damage", 30.0)
 	await _frames(2)

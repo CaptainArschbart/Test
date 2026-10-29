@@ -35,21 +35,30 @@ func interact(player: Player) -> void:
 	if product == null:
 		return
 	var inventory := player.inventory
-	if price > 0 and currency != null:
+	var paid := price > 0 and currency != null
+	if paid:
 		if count_of(inventory, currency) < price:
 			player.item_user.show_message("Zu wenig %s" % currency.display_name, Color(1.0, 0.2, 0.35))
 			return
-		_take(inventory, currency, price)
+		if currency.is_currency:
+			inventory.spend_money(price)
+		else:
+			_take(inventory, currency, price)
 	var left := inventory.add_item(product, 1)
 	if left > 0:
 		# Kein Platz: Geld zurück.
-		if price > 0 and currency != null:
-			inventory.add_item(currency, price, false)
+		if paid:
+			if currency.is_currency:
+				inventory.add_money(price)
+			else:
+				inventory.add_item(currency, price, false)
 		player.item_user.show_message("Inventar voll", Color(1.0, 0.2, 0.35))
 
 
-## Wie viele Stück eines Items im ganzen Inventar liegen.
+## Wie viele Stück eines Items im ganzen Inventar liegen (bei Währung: der Kontostand).
 static func count_of(inventory: Inventory, item: ItemData) -> int:
+	if item.is_currency:
+		return inventory.money
 	var total := 0
 	for i in inventory.get_size():
 		if item.is_same(inventory.get_item(i)):

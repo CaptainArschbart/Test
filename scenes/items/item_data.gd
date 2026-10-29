@@ -16,6 +16,8 @@ extends Resource
 @export var color := Color(0, 0.95, 1)
 ## Wie viele davon in einen Slot passen (1 = nicht stapelbar).
 @export_range(1, 999) var max_stack := 1
+## Währung: landet nicht in einem Slot, sondern als Geld im Inventar (Inventory.money).
+@export var is_currency := false
 
 
 func is_same(other: ItemData) -> bool:

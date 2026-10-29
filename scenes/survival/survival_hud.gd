@@ -1,5 +1,6 @@
 extends CanvasLayer
-## Vier Leisten oben links. Liegt auf Layer 2, das Pausemenü auf Layer 10 darüber.
+## Vier Leisten oben links, darunter das Geldfeld (Inventory.money, zählt bei Änderungen hoch
+## und zeigt kurz "+15" bzw. "−5"). Liegt auf Layer 2, das Pausemenü auf Layer 10 darüber.
 ## Die NOCLIP-Zeile bleibt darüber frei (sie steht bei y = 20, der Rahmen beginnt bei y = 56).
 ## Feste Größe in der 1280×720-Basis. Der Projekt-Stretch skaliert sie mit.
 ## Optik wie das Hauptmenü: dunkles Violett, Cyan-Rand, Magenta-Streifen, schräge Kanten.
@@ -15,6 +16,10 @@ const MAGENTA := Color(1.0, 0.1, 0.75, 1.0)
 const WARN_COLOR := Color(1.0, 0.16, 0.36, 1.0)
 ## Abgeschrägte Ecken oben rechts und unten links, in Pixeln.
 const CHAMFER := 14.0
+## Geldanzeige unter dem Rahmen: Farbe wie der Credchip, Zählen dauert so lange (Sekunden).
+const MONEY_COLOR := Color(1.0, 0.9, 0.2, 1.0)
+const MONEY_ROLL_TIME := 0.45
+const MONEY_GAIN_COLOR := Color(0.3, 1.0, 0.55, 1.0)
 
 @onready var hp_bar: ProgressBar = %HPBar
 @onready var stamina_bar: ProgressBar = %StaminaBar
@@ -24,14 +29,28 @@ const CHAMFER := 14.0
 @onready var status_label: Label = %Status
 
 var stats: PlayerStats
+var inventory: Inventory
+## Geldfeld (im Code erzeugt): Rahmen, Betrag und kurze "+15"-Einblendung.
+var money_panel: Control
+var money_label: Label
+var _money_delta: Label
+## Angezeigter Betrag; zählt per Tween zum echten Kontostand.
+var _shown_money := 0.0
+var _money_tween: Tween
+var _delta_tween: Tween
 
 
 func _ready() -> void:
 	frame.draw.connect(_draw_frame)
+	_build_money_panel()
 	var player := get_parent() as Player
 	if player == null:
 		push_error("SurvivalHud braucht den Player als Parent.")
 		return
+	inventory = player.get_node_or_null(^"Inventory") as Inventory
+	if inventory != null:
+		inventory.money_changed.connect(_on_money_changed)
+		_set_shown_money(inventory.money)
 	stats = player.get_node_or_null(^"PlayerStats") as PlayerStats
 	if stats == null:
 		push_error("SurvivalHud: Knoten PlayerStats fehlt.")
@@ -50,6 +69,96 @@ func _on_stat_changed(stat_name: String, current: float, maximum: float) -> void
 	if bar == null:
 		return
 	_apply(bar, current, maximum)
+
+
+func _on_money_changed(money: int, delta: int) -> void:
+	if _money_tween:
+		_money_tween.kill()
+	_money_tween = create_tween()
+	_money_tween.tween_method(_set_shown_money, _shown_money, float(money), MONEY_ROLL_TIME)
+	_money_delta.text = ("+%s" if delta > 0 else "−%s") % format_money(absi(delta))
+	_money_delta.add_theme_color_override("font_color", MONEY_GAIN_COLOR if delta > 0 else WARN_COLOR)
+	_money_delta.modulate.a = 1.0
+	if _delta_tween:
+		_delta_tween.kill()
+	_delta_tween = create_tween()
+	_delta_tween.tween_interval(1.0)
+	_delta_tween.tween_property(_money_delta, "modulate:a", 0.0, 0.5)
+
+
+func _set_shown_money(value: float) -> void:
+	_shown_money = value
+	if money_label != null:
+		money_label.text = format_money(roundi(value))
+
+
+## 1250 → "1.250" (deutscher Tausenderpunkt).
+static func format_money(amount: int) -> String:
+	var digits := str(absi(amount))
+	var out := ""
+	while digits.length() > 3:
+		out = "." + digits.right(3) + out
+		digits = digits.left(digits.length() - 3)
+	return ("-" if amount < 0 else "") + digits + out
+
+
+func _build_money_panel() -> void:
+	money_panel = Control.new()
+	money_panel.name = "Money"
+	money_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	money_panel.position = Vector2(frame.offset_left, frame.offset_bottom + 8.0)
+	money_panel.size = Vector2(190.0, 34.0)
+	money_panel.draw.connect(_draw_money_panel)
+	add_child(money_panel)
+	var caption := Label.new()
+	caption.text = "CREDS"
+	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	caption.position = Vector2(18.0, 9.0)
+	caption.add_theme_font_size_override("font_size", 11)
+	caption.add_theme_color_override("font_color", Color(MAGENTA, 0.9))
+	money_panel.add_child(caption)
+	money_label = Label.new()
+	money_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	money_label.position = Vector2(62.0, 2.0)
+	money_label.size = Vector2(106.0, 30.0)
+	money_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	money_label.text = "0"
+	money_label.add_theme_font_size_override("font_size", 20)
+	money_label.add_theme_color_override("font_color", MONEY_COLOR)
+	money_label.add_theme_color_override("font_outline_color", Color(1.0, 0.5, 0.0, 0.35))
+	money_label.add_theme_constant_override("outline_size", 3)
+	money_panel.add_child(money_label)
+	_money_delta = Label.new()
+	_money_delta.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_money_delta.position = Vector2(money_panel.size.x + 8.0, 0.0)
+	_money_delta.size = Vector2(120.0, 34.0)
+	_money_delta.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_money_delta.add_theme_font_size_override("font_size", 16)
+	_money_delta.add_theme_color_override("font_outline_color", Color(0.03, 0.0, 0.08))
+	_money_delta.add_theme_constant_override("outline_size", 4)
+	_money_delta.modulate.a = 0.0
+	money_panel.add_child(_money_delta)
+
+
+## Kleiner Rahmen wie die Vitals-Box: Violett, Cyan-Rand, gelbes ¢-Zeichen links.
+func _draw_money_panel() -> void:
+	var w := money_panel.size.x
+	var h := money_panel.size.y
+	var c := 10.0
+	var shape := PackedVector2Array([
+		Vector2(0.0, 0.0), Vector2(w - c, 0.0), Vector2(w, c),
+		Vector2(w, h), Vector2(c, h), Vector2(0.0, h - c),
+	])
+	money_panel.draw_colored_polygon(shape, PANEL_COLOR)
+	var outline := shape.duplicate()
+	outline.append(shape[0])
+	money_panel.draw_polyline(outline, Color(CYAN, 0.12), 5.0)
+	money_panel.draw_polyline(outline, Color(CYAN, 0.5), 1.0)
+	money_panel.draw_colored_polygon(PackedVector2Array([
+		Vector2(3.0, 4.0), Vector2(6.5, 4.0), Vector2(3.5, h - c), Vector2(0.0, h - c),
+	]), MONEY_COLOR)
+	var font := money_panel.get_theme_default_font()
+	money_panel.draw_string(font, Vector2(w - 16.0, h - 9.0), "¢", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 16, MONEY_COLOR)
 
 
 func _bar_for(stat_name: String) -> ProgressBar:
