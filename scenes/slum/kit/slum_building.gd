@@ -56,6 +56,12 @@ enum Side { NONE, LEFT, RIGHT }
 	set(v):
 		front_sign = v
 		queue_rebuild()
+## Laden: Höhe des Ladenbodens. 0,15 = bündig mit dem Gehweg davor, 0 = Straße direkt vor der Tür.
+## Eine Schwelle in der Türöffnung schließt an den Boden davor an, damit keine Kante bleibt.
+@export var floor_level := 0.15:
+	set(v):
+		floor_level = v
+		queue_rebuild()
 ## Senkrechtes Schild an der Ecke (z. B. sign_hotel, sign_pharmacy).
 @export var side_sign := "":
 	set(v):
@@ -103,6 +109,8 @@ const DECAL_STENCIL := 0.04
 const DECAL_GRAFFITI := 0.045
 const DECAL_TAG := 0.05
 const DECAL_POSTER := 0.055
+
+const ShopInteriorScript := preload("res://scenes/interact/shop_interior.gd")
 
 var _w := 10.0
 var _d := 8.0
@@ -540,18 +548,24 @@ func _roof_shack(b: SlumBuilder, at: Vector3) -> void:
 func _shop(b: SlumBuilder) -> void:
 	var fh := floor_height
 	var t := 0.25
+	var fl := maxf(floor_level, 0.0)
 	var ground := SlumMats.surface(ground_wall if ground_wall != "" else wall, wall_tint)
 	var floor_mat := SlumMats.surface("tiles_dark")
-	# Erdgeschoss hohl: Rück- und Seitenwände, Front mit großer Öffnung
+	# Erdgeschoss hohl: Rück- und Seitenwände, Front mit großer Toröffnung (bis 6,2 m breit)
 	b.box(Vector3(0, fh * 0.5, -_d * 0.5 + t * 0.5), Vector3(_w, fh, t), ground)
 	b.box(Vector3(-_w * 0.5 + t * 0.5, fh * 0.5, 0), Vector3(t, fh, _d - 2 * t), ground)
 	b.box(Vector3(_w * 0.5 - t * 0.5, fh * 0.5, 0), Vector3(t, fh, _d - 2 * t), ground)
-	var open_w := minf(_w - 2.0, 4.6)
+	var open_w := clampf(_w - 2.6, 3.0, 6.2)
 	var side_w := (_w - open_w) * 0.5
+	var lintel := 0.35
 	b.box(Vector3(-_w * 0.5 + side_w * 0.5, fh * 0.5, _d * 0.5 - t * 0.5), Vector3(side_w, fh, t), ground)
 	b.box(Vector3(_w * 0.5 - side_w * 0.5, fh * 0.5, _d * 0.5 - t * 0.5), Vector3(side_w, fh, t), ground)
-	b.box(Vector3(0, fh - 0.3, _d * 0.5 - t * 0.5), Vector3(open_w, 0.6, t), ground)
-	b.box(Vector3(0, 0.04, 0), Vector3(_w - 2 * t, 0.08, _d - 2 * t), floor_mat)
+	b.box(Vector3(0, fh - lintel * 0.5, _d * 0.5 - t * 0.5), Vector3(open_w, lintel, t), ground)
+	# Boden auf Höhe des Bodens davor, Schwelle durch die Wand bis auf den Gehweg (keine Kante, keine Rinne).
+	# 5 mm über dem Gehweg, damit die Oberflächen nicht in einer Ebene flackern.
+	var top := fl + 0.005 if fl > 0.0 else 0.02
+	b.box(Vector3(0, top * 0.5, 0), Vector3(_w - 2 * t, top, _d - 2 * t), floor_mat)
+	b.box(Vector3(0, top * 0.5, _d * 0.5 + 0.05), Vector3(open_w, top, t + 0.7), SlumMats.surface("metal_plate"))
 	# Decke zwischen den Wänden, darüber die Obergeschosse
 	b.box(Vector3(0, fh - 0.1, 0), Vector3(_w - 2 * t, 0.2, _d - 2 * t), SlumMats.surface("concrete", Color(0.75, 0.75, 0.78)))
 	if floors > 1:
@@ -560,28 +574,46 @@ func _shop(b: SlumBuilder) -> void:
 		_facade_windows(b, 1, [Vector3.BACK, Vector3.FORWARD, Vector3.LEFT, Vector3.RIGHT])
 	_roof(b, [])
 	_plinth_front(b, open_w)
-	# Rollladen halb hoch, darunter Licht von innen
-	b.quad(Vector3(0, fh - 0.88, _d * 0.5 + DECAL_OPENING), Vector3.BACK, open_w, 0.56, SlumMats.decal("door_security"), Rect2(0, 0, 1, 0.3))
-	b.box(Vector3(0, fh - 0.62, _d * 0.5 + 0.12), Vector3(open_w + 0.2, 0.2, 0.25), _metal, false)
+	# Rolltor ganz hochgezogen: Kasten über der Öffnung, unten schaut eine Lamellenkante heraus,
+	# seitlich Führungsschienen. Lichte Höhe ca. 2,6 m.
+	var gate_top := fh - lintel
+	b.box(Vector3(0, gate_top + 0.18, _d * 0.5 + 0.2), Vector3(open_w + 0.4, 0.42, 0.34), _metal, false)
+	b.quad(Vector3(0, gate_top - 0.06, _d * 0.5 + 0.02), Vector3.BACK, open_w, 0.12, SlumMats.decal("door_security"), Rect2(0, 0, 1, 0.08))
+	for s: float in [-1.0, 1.0]:
+		b.box(Vector3(s * (open_w * 0.5 + 0.06), gate_top * 0.5, _d * 0.5 + 0.06), Vector3(0.1, gate_top, 0.12), _dark_metal, false)
 	# Markise
 	var awn := SlumMats.surface(pick(["tarp_red", "tarp_blue"]))
-	var awn_x := Transform3D(Basis(Vector3.RIGHT, deg_to_rad(22)), Vector3(0, fh - 0.25, _d * 0.5 + 0.75))
+	var awn_x := Transform3D(Basis(Vector3.RIGHT, deg_to_rad(22)), Vector3(0, fh + 0.05, _d * 0.5 + 0.85))
 	b.box_x(awn_x, Vector3(open_w + 0.8, 0.05, 1.6), awn, false)
-	b.quad(Vector3(0, fh - 0.62, _d * 0.5 + 1.5), Vector3.BACK, open_w + 0.8, 0.24, SlumMats.decal("red_white"), Rect2(0, 0, 8, 1))
-	# Inneneinrichtung: Theke, Regale, Waren, Lampe
+	b.quad(Vector3(0, fh - 0.32, _d * 0.5 + 1.6), Vector3.BACK, open_w + 0.8, 0.24, SlumMats.decal("red_white"), Rect2(0, 0, 8, 1))
+	# Einrichtung: Theke mit Kasse links, Regale an der linken Wand und hinten, Mittelregal,
+	# Kühlschrank rechts. Die Plätze für Ware, Kasse und Verkäufer bekommt ShopInterior.
 	var wood := SlumMats.surface("wood_dark")
-	b.box(Vector3(-_w * 0.2, 0.5, -_d * 0.15), Vector3(_w * 0.45, 1.0, 0.6), wood)
-	b.box(Vector3(-_w * 0.2, 1.03, -_d * 0.15), Vector3(_w * 0.47, 0.06, 0.7), _metal, false)
+	var counter_z := -_d * 0.12
+	var counter_x := -_w * 0.18
+	var counter_len := _w * 0.42
+	b.box(Vector3(counter_x, fl + 0.5, counter_z), Vector3(counter_len, 1.0, 0.6), wood)
+	b.box(Vector3(counter_x, fl + 1.03, counter_z), Vector3(counter_len + 0.04, 0.06, 0.7), _metal, false)
+	b.box(Vector3(counter_x, fl + 0.25, counter_z + 0.31), Vector3(counter_len - 0.1, 0.05, 0.02), SlumMats.color(Color(1.0, 0.3, 0.7), 4.0), false, false)
+	var slots: Array[Transform3D] = []
 	for i: int in 3:
 		var sx := -_w * 0.5 + t + 0.3
 		var z := -_d * 0.5 + t + 0.9 + i * 1.3
-		if z > _d * 0.5 - 1.0:
+		if z > _d * 0.5 - 1.2:
 			break
-		_shelf(b, Vector3(sx, 0, z), Vector3.RIGHT)
-	_shelf(b, Vector3(_w * 0.2, 0, -_d * 0.5 + t + 0.3), Vector3.BACK)
+		slots.append(_shelf(b, Vector3(sx, fl, z), Vector3.RIGHT))
+	slots.append(_shelf(b, Vector3(_w * 0.2, fl, -_d * 0.5 + t + 0.3), Vector3.BACK))
+	if _d >= 8.5:
+		slots.append(_shelf(b, Vector3(_w * 0.12, fl, _d * 0.12), Vector3.LEFT))
+	var fridge_at := Vector3(_w * 0.5 - t - 0.4, fl, -_d * 0.05)
+	_fridge(b, fridge_at)
+	# Platz vor der Glastür, zeigt in den Raum (-X).
+	slots.append(Transform3D(Basis(Vector3.UP, -PI * 0.5), fridge_at + Vector3(-0.42, 1.15, 0.0)))
 	var neon_col: Color = pick([Color(0.2, 1.0, 0.8), Color(1.0, 0.3, 0.7), Color(1.0, 0.8, 0.4)])
 	b.box(Vector3(0, fh - 0.24, 0), Vector3(1.6, 0.05, 0.12), SlumMats.color(neon_col, 6.0), false, false)
+	b.box(Vector3(counter_x, fh - 0.24, counter_z), Vector3(1.0, 0.05, 0.12), SlumMats.color(Color(1.0, 0.95, 0.85), 5.0), false, false)
 	add_light(Vector3(0, fh - 0.6, 0.3), neon_col.lerp(Color(1.0, 0.85, 0.7), 0.5), 2.2, 7.0, 0.05)
+	add_light(Vector3(counter_x, fh - 0.5, counter_z), Color(1.0, 0.9, 0.75), 1.4, 4.5)
 	if front_sign != "":
 		_flat_sign(b, Vector3(0, fh + 0.7, _d * 0.5 + 0.18), Vector3.BACK, front_sign, minf(open_w + 0.6, 4.2))
 	if side_sign != "":
@@ -590,6 +622,18 @@ func _shop(b: SlumBuilder) -> void:
 	_ground_decals(b, Vector3.RIGHT, _d, _w, 99.0)
 	if rooftop_clutter:
 		_rooftop(b)
+	# Spiel-Logik (Verkäufer, Kasse, Ware zum Klauen) nur im laufenden Spiel, nicht im Editor.
+	if not Engine.is_editor_hint():
+		var interior: Node3D = ShopInteriorScript.new()
+		interior.name = "ShopInterior"
+		interior.set("shop_sign", front_sign)
+		interior.set("floor_y", fl)
+		interior.set("keeper_at", Vector3(counter_x, fl, counter_z - 0.75))
+		interior.set("register_at", Vector3(counter_x - counter_len * 0.25, fl + 1.06, counter_z))
+		interior.set("counter_at", Vector3(counter_x, fl + 1.06, counter_z))
+		interior.set("slots", slots)
+		interior.set("seed_value", rng.randi())
+		add_gen(interior)
 
 
 func _plinth_front(b: SlumBuilder, open_w: float) -> void:
@@ -598,19 +642,31 @@ func _plinth_front(b: SlumBuilder, open_w: float) -> void:
 		b.box(Vector3(side * (_w * 0.5 - side_w * 0.5), 0.2, _d * 0.5 + 0.03), Vector3(side_w + 0.06, 0.4, 0.08), _trim_mat, false)
 
 
-func _shelf(b: SlumBuilder, at: Vector3, n: Vector3) -> void:
+## Regal mit Waren. Gibt den Platz für Diebesgut zurück (mittleres Fach vorn, zeigt nach `n`).
+func _shelf(b: SlumBuilder, at: Vector3, n: Vector3) -> Transform3D:
 	var metal := SlumMats.color(Color(0.3, 0.32, 0.33), 0.0, 0.5, 0.5)
 	var xf := SlumBuilder.facing(at, n)
 	b.box_x(xf * Transform3D(Basis.IDENTITY, Vector3(0, 1.0, 0)), Vector3(1.1, 2.0, 0.45), metal, true)
 	var goods := [Color(0.85, 0.2, 0.15), Color(0.95, 0.75, 0.15), Color(0.2, 0.55, 0.85), Color(0.25, 0.7, 0.35), Color(0.9, 0.9, 0.85)]
 	for row: int in 4:
 		for k: int in 4:
-			if rng.randf() < 0.2:
+			# Mitte des zweiten Fachs bleibt frei für die Ware, die man klauen kann.
+			if rng.randf() < 0.2 or row == 2 and (k == 1 or k == 2):
 				continue
 			var c: Color = goods[rng.randi() % goods.size()]
 			var h := rng.randf_range(0.12, 0.3)
 			b.box_x(xf * Transform3D(Basis.IDENTITY, Vector3(-0.4 + k * 0.27, 0.12 + row * 0.48 + h * 0.5, 0.25)),
 					Vector3(0.2, h, 0.12), SlumMats.color(c, 0.0, 0.6), false, false)
+	return xf * Transform3D(Basis.IDENTITY, Vector3(0, 0.12 + 2 * 0.48, 0.3))
+
+
+## Getränkekühlschrank mit Leuchtfront an der rechten Wand (Front zeigt nach -X).
+func _fridge(b: SlumBuilder, at: Vector3) -> void:
+	b.box(at + Vector3(0, 1.0, 0), Vector3(0.7, 2.0, 1.2), _metal, true)
+	var glow := SlumMats.color(Color(0.55, 0.9, 1.0), 2.5)
+	b.quad_x(Transform3D(Basis(Vector3.UP, -PI * 0.5), at + Vector3(-0.351, 1.05, 0)), 1.0, 1.7, glow)
+	for row: int in 4:
+		b.box(at + Vector3(-0.3, 0.4 + row * 0.42, 0), Vector3(0.05, 0.03, 1.0), _dark_metal, false, false)
 
 
 func _flat_sign(b: SlumBuilder, at: Vector3, n: Vector3, tex: String, width: float) -> void:
