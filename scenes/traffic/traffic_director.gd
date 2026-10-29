@@ -8,6 +8,9 @@ extends Node3D
 ## Hindernisse: einmal pro Physik-Frame werden Spieler, Fußgänger, Gegner und Autos als Punkte
 ## gesammelt (obstacles_near). Autos und Fußgänger fragen diese Liste.
 ## Leistung: Autos hinter `far_distance` rechnen nur 10× pro Sekunde, Licht und Motorton nur nah.
+## Multiplayer: Nur der Host fährt die Autos. Er schickt über WorldSync (Gruppe NPC_GROUP) alle 0,1 s
+## Spur, Strecke und Tempo jedes Autos. Clients erzeugen dieselben Autos (gleiche Art und Zufallszahl)
+## und lassen sie nur nachfahren (TrafficCar.net_puppet).
 
 enum Kind { PLAYER, PERSON, ENEMY, CAR }
 
@@ -60,7 +63,10 @@ func _ready() -> void:
 	_hit_audio.max_distance = 40.0
 	_hit_audio.stream = Sounds.hit()
 	add_child(_hit_audio)
-	_spawn_cars.call_deferred()
+	add_to_group(WorldSync.NPC_GROUP)
+	# Client: Die Autos kommen vom Host (net_apply_state).
+	if not WorldSync.is_client():
+		_spawn_cars.call_deferred()
 
 
 static func find(tree: SceneTree) -> TrafficDirector:
@@ -228,3 +234,44 @@ func _update_lod() -> void:
 	for car: TrafficCar in cars:
 		var d := car.global_position.distance_to(eye)
 		car.set_near(d < light_distance, d < sound_distance, d > far_distance)
+
+
+# --- Multiplayer --------------------------------------------------------------------------
+
+## Host → Clients (WorldSync): je Auto [Nummer, Art, Zufallszahl, Spur, Strecke, Versatz, Tempo, Bremse].
+func net_get_state() -> Array:
+	var out: Array = []
+	for car: TrafficCar in cars:
+		if is_instance_valid(car):
+			out.append([int(String(car.name).trim_prefix("Car")), car.kind_id, car.seed_id] + car.net_entry())
+	return out
+
+
+## Client: fehlende Autos anlegen, alle nachziehen, beim Host verschwundene entfernen.
+func net_apply_state(data: Array) -> void:
+	if network == null:
+		return
+	var seen := {}
+	for entry: Variant in data:
+		if not entry is Array or (entry as Array).size() < 8:
+			continue
+		var e: Array = entry
+		var car_name := "Car%d" % int(e[0])
+		var lane := int(e[3])
+		if lane < 0 or lane >= network.pieces.size():
+			continue
+		seen[car_name] = true
+		var car := get_node_or_null(NodePath(car_name)) as TrafficCar
+		if car == null:
+			car = CarScript.new() as TrafficCar
+			car.name = car_name
+			car.net_puppet = true
+			add_child(car)
+			car.setup(self, lane, float(e[4]), int(e[1]) as VehicleModel.Kind, int(e[2]))
+			cars.append(car)
+		car.net_apply(lane, float(e[4]), float(e[5]), float(e[6]), bool(e[7]))
+	for car: TrafficCar in cars.duplicate():
+		if not seen.has(String(car.name)):
+			cars.erase(car)
+			lane_leave(car.piece_id, car)
+			car.queue_free()
