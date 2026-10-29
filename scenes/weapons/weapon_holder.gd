@@ -200,13 +200,6 @@ func get_spread_degrees() -> float:
 	return base + _bloom * lerpf(1.0, _weapon.aim_bloom_factor, _aim)
 
 
-## 0 … 1 während des Nachladens, sonst 0.
-func get_reload_progress() -> float:
-	if _weapon == null or _reload_left <= 0.0:
-		return 0.0
-	return clampf(1.0 - _reload_left / maxf(_weapon.reload_time, 0.01), 0.0, 1.0)
-
-
 func get_ammo() -> int:
 	if _weapon == null:
 		return 0
