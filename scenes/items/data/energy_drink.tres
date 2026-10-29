@@ -10,6 +10,7 @@ description = "Koffein, Taurin und etwas, das leuchtet. Füllt Ausdauer und Durs
 glyph = "NC"
 color = Color(1, 0.55, 0.1, 1)
 max_stack = 16
+value = 2
 stamina = 100.0
 water = 30.0
 speed_multiplier = 1.3

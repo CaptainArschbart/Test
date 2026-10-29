@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ConsumableData" format=3]
+
+[ext_resource type="Script" path="res://scenes/items/consumable_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+id = "painkillers"
+display_name = "Schmerzmittel"
+description = "Opioid-Ersatz aus der Apotheke. Dämpft Schmerzen und heilt ein wenig. Rechtsklick nimmt eine."
+glyph = "SM"
+color = Color(1, 0.45, 0.2, 1)
+max_stack = 6
+value = 4
+model = &"pills"
+heal = 20.0
+use_verb = "genommen"
+use_animation = &"drink"
+use_time = 1.0

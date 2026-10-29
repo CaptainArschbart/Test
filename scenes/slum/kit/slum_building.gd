@@ -586,34 +586,86 @@ func _shop(b: SlumBuilder) -> void:
 	var awn_x := Transform3D(Basis(Vector3.RIGHT, deg_to_rad(22)), Vector3(0, fh + 0.05, _d * 0.5 + 0.85))
 	b.box_x(awn_x, Vector3(open_w + 0.8, 0.05, 1.6), awn, false)
 	b.quad(Vector3(0, fh - 0.32, _d * 0.5 + 1.6), Vector3.BACK, open_w + 0.8, 0.24, SlumMats.decal("red_white"), Rect2(0, 0, 8, 1))
-	# Einrichtung: Theke mit Kasse links, Regale an der linken Wand und hinten, Mittelregal,
-	# Kühlschrank rechts. Die Plätze für Ware, Kasse und Verkäufer bekommt ShopInterior.
+	# Einrichtung wie ein echter Späti: Theke seitlich am Eingang (Verkäufer sieht Tür und Gänge),
+	# dahinter eine Vitrine mit Wertsachen, Regalgänge (1,5 m hoch, man kann sich dahinter ducken),
+	# Kühlschränke an der rechten Wand, Wandregale hinten. Plätze für echte Ware bekommt ShopInterior.
+	var ix0 := -_w * 0.5 + t
+	var ix1 := _w * 0.5 - t
+	var iz0 := -_d * 0.5 + t
+	var iz1 := _d * 0.5 - t
+	var slots: Array = []
 	var wood := SlumMats.surface("wood_dark")
-	var counter_z := -_d * 0.12
-	var counter_x := -_w * 0.18
-	var counter_len := _w * 0.42
-	b.box(Vector3(counter_x, fl + 0.5, counter_z), Vector3(counter_len, 1.0, 0.6), wood)
-	b.box(Vector3(counter_x, fl + 1.03, counter_z), Vector3(counter_len + 0.04, 0.06, 0.7), _metal, false)
-	b.box(Vector3(counter_x, fl + 0.25, counter_z + 0.31), Vector3(counter_len - 0.1, 0.05, 0.02), SlumMats.color(Color(1.0, 0.3, 0.7), 4.0), false, false)
-	var slots: Array[Transform3D] = []
-	for i: int in 3:
-		var sx := -_w * 0.5 + t + 0.3
-		var z := -_d * 0.5 + t + 0.9 + i * 1.3
-		if z > _d * 0.5 - 1.2:
-			break
-		slots.append(_shelf(b, Vector3(sx, fl, z), Vector3.RIGHT))
-	slots.append(_shelf(b, Vector3(_w * 0.2, fl, -_d * 0.5 + t + 0.3), Vector3.BACK))
-	if _d >= 8.5:
-		slots.append(_shelf(b, Vector3(_w * 0.12, fl, _d * 0.12), Vector3.LEFT))
-	var fridge_at := Vector3(_w * 0.5 - t - 0.4, fl, -_d * 0.05)
-	_fridge(b, fridge_at)
-	# Platz vor der Glastür, zeigt in den Raum (-X).
-	slots.append(Transform3D(Basis(Vector3.UP, -PI * 0.5), fridge_at + Vector3(-0.42, 1.15, 0.0)))
+	var counter_len := clampf(_d * 0.34, 2.0, 2.8)
+	var counter_x := ix0 + 1.35
+	var counter_z1 := iz1 - 1.1
+	var counter_zc := counter_z1 - counter_len * 0.5
+	b.box(Vector3(counter_x, fl + 0.5, counter_zc), Vector3(0.6, 1.0, counter_len), wood)
+	b.box(Vector3(counter_x, fl + 1.03, counter_zc), Vector3(0.7, 0.06, counter_len + 0.04), _metal, false)
+	b.box(Vector3(counter_x + 0.31, fl + 0.25, counter_zc), Vector3(0.02, 0.05, counter_len - 0.1), SlumMats.color(Color(1.0, 0.3, 0.7), 4.0), false, false)
+	# Kartenterminal neben der Kasse, Aufsteller mit Kaugummi.
+	b.box(Vector3(counter_x + 0.1, fl + 1.11, counter_z1 - 0.95), Vector3(0.1, 0.1, 0.16), _dark_metal, false)
+	b.box(Vector3(counter_x + 0.14, fl + 1.15, counter_z1 - 0.95), Vector3(0.01, 0.05, 0.1), SlumMats.color(Color(0.3, 1.0, 0.6), 3.0), false, false)
+	b.box(Vector3(counter_x + 0.15, fl + 1.2, counter_zc + counter_len * 0.3), Vector3(0.3, 0.3, 0.25), SlumMats.color(Color(0.9, 0.2, 0.5), 0.0, 0.5), false)
+	# Vitrine an der linken Wand hinter dem Verkäufer (Glasfront, Licht innen).
+	var cab_x := ix0 + 0.25
+	b.box(Vector3(cab_x, fl + 0.45, counter_zc), Vector3(0.45, 0.9, counter_len), _dark_metal, true)
+	b.box(Vector3(cab_x, fl + 1.35, counter_zc), Vector3(0.45, 0.9, counter_len), SlumMats.glass(Color(0.6, 0.85, 1.0, 0.18)), false, false)
+	b.box(Vector3(cab_x, fl + 1.82, counter_zc), Vector3(0.47, 0.04, counter_len + 0.02), SlumMats.color(Color(1.0, 0.85, 0.6), 4.0), false, false)
+	for i in int(counter_len / 0.55):
+		var z := counter_zc - counter_len * 0.5 + 0.3 + i * 0.55
+		slots.append({"kind": "cabinet", "xf": Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(cab_x + 0.05, fl + 0.92, z))})
+	# Regalgänge: Mittelregale längs, beidseitig bestückt.
+	var aisle_z0 := iz0 + 1.2
+	var aisle_z1 := iz1 - 1.6
+	var aisle_len := aisle_z1 - aisle_z0
+	var gx := counter_x + 1.0 + 0.45 + 0.35
+	var limit := ix1 - 0.7 - 1.0 - 0.45
+	var aisle_names := ["SNACKS", "INSTANT", "PFLEGE", "DIVERSES"]
+	var aisle := 0
+	while gx <= limit and aisle_len > 1.8:
+		for n: Vector3 in [Vector3.LEFT, Vector3.RIGHT]:
+			slots.append_array(_shelf_unit(b, Vector3(gx + n.x * 0.23, fl, (aisle_z0 + aisle_z1) * 0.5), n, aisle_len, 1.5, 0.45, "shelf"))
+		b.box(Vector3(gx, fl + 1.52, (aisle_z0 + aisle_z1) * 0.5), Vector3(0.95, 0.04, aisle_len + 0.04), _metal, false)
+		_aisle_sign(Vector3(gx, fh - 0.55, aisle_z1 + 0.2), aisle_names[aisle % aisle_names.size()])
+		b.box(Vector3(gx, fh - 0.24, (aisle_z0 + aisle_z1) * 0.5), Vector3(0.1, 0.05, aisle_len * 0.8), SlumMats.color(Color(0.9, 0.95, 1.0), 5.0), false, false)
+		add_light(Vector3(gx, fh - 0.5, (aisle_z0 + aisle_z1) * 0.5), Color(0.92, 0.96, 1.0), 1.6, 5.0)
+		gx += 1.9
+		aisle += 1
+	# Kühlschränke an der rechten Wand.
+	var fridge_x := ix1 - 0.35
+	var fz := iz0 + 0.8
+	while fz + 0.6 <= iz1 - 1.3:
+		_fridge(b, Vector3(fridge_x, fl, fz))
+		for row_y: float in [0.6, 1.2]:
+			for dz: float in [-0.27, 0.27]:
+				slots.append({"kind": "fridge", "xf": Transform3D(Basis(Vector3.UP, -PI * 0.5), Vector3(fridge_x - 0.05, fl + row_y, fz + dz))})
+		fz += 1.25
+	if fz > iz0 + 0.8:
+		_aisle_sign(Vector3(fridge_x - 0.4, fh - 0.55, iz0 + 1.0), "DRINKS")
+	# Wandregal hinten.
+	var back_x0 := gx - 1.9 + 0.8 if aisle > 0 else counter_x + 1.2
+	var back_len := (fridge_x - 0.6) - back_x0
+	if back_len > 1.0:
+		slots.append_array(_shelf_unit(b, Vector3(back_x0 + back_len * 0.5, fl, iz0 + 0.25), Vector3.BACK, back_len, 2.0, 0.45, "wall"))
+	# Kamera unter der Decke vorn rechts, schaut in den Laden.
+	var camera_at := Vector3.INF
+	if rng.randf() < 0.6:
+		camera_at = Vector3(ix1 - 0.35, fh - 0.35, iz1 - 0.35)
+		b.box(camera_at + Vector3(0.0, 0.18, 0.0), Vector3(0.06, 0.15, 0.06), _dark_metal, false)
+	# Diebstahlsicherung: zwei Säulen am Eingang.
+	var sensor := rng.randf() < (0.8 if front_sign == "sign_pharmacy" or front_sign == "sign_24h" else 0.4)
+	if sensor:
+		for s: float in [-1.0, 1.0]:
+			var sx := s * (minf(_w - 2.6, 6.2) * 0.5 - 0.35)
+			if s < 0.0:
+				sx = maxf(sx, counter_x + 0.7)
+			b.box(Vector3(sx, fl + 0.75, iz1 - 0.45), Vector3(0.08, 1.5, 0.35), SlumMats.color(Color(0.85, 0.88, 0.9), 0.0, 0.3, 0.3), true)
+			b.box(Vector3(sx, fl + 0.75, iz1 - 0.45), Vector3(0.09, 1.3, 0.05), SlumMats.color(Color(0.3, 0.8, 1.0), 2.5), false, false)
 	var neon_col: Color = pick([Color(0.2, 1.0, 0.8), Color(1.0, 0.3, 0.7), Color(1.0, 0.8, 0.4)])
-	b.box(Vector3(0, fh - 0.24, 0), Vector3(1.6, 0.05, 0.12), SlumMats.color(neon_col, 6.0), false, false)
-	b.box(Vector3(counter_x, fh - 0.24, counter_z), Vector3(1.0, 0.05, 0.12), SlumMats.color(Color(1.0, 0.95, 0.85), 5.0), false, false)
-	add_light(Vector3(0, fh - 0.6, 0.3), neon_col.lerp(Color(1.0, 0.85, 0.7), 0.5), 2.2, 7.0, 0.05)
-	add_light(Vector3(counter_x, fh - 0.5, counter_z), Color(1.0, 0.9, 0.75), 1.4, 4.5)
+	b.box(Vector3(0, fh - 0.24, iz1 - 0.6), Vector3(1.6, 0.05, 0.12), SlumMats.color(neon_col, 6.0), false, false)
+	b.box(Vector3(counter_x, fh - 0.24, counter_zc), Vector3(0.12, 0.05, 1.0), SlumMats.color(Color(1.0, 0.95, 0.85), 5.0), false, false)
+	add_light(Vector3(0, fh - 0.6, iz1 - 0.8), neon_col.lerp(Color(1.0, 0.85, 0.7), 0.5), 2.0, 6.0, 0.05)
+	add_light(Vector3(counter_x, fh - 0.5, counter_zc), Color(1.0, 0.9, 0.75), 1.4, 4.5)
 	if front_sign != "":
 		_flat_sign(b, Vector3(0, fh + 0.7, _d * 0.5 + 0.18), Vector3.BACK, front_sign, minf(open_w + 0.6, 4.2))
 	if side_sign != "":
@@ -622,15 +674,18 @@ func _shop(b: SlumBuilder) -> void:
 	_ground_decals(b, Vector3.RIGHT, _d, _w, 99.0)
 	if rooftop_clutter:
 		_rooftop(b)
-	# Spiel-Logik (Verkäufer, Kasse, Ware zum Klauen) nur im laufenden Spiel, nicht im Editor.
+	# Spiel-Logik (Verkäufer, Kasse, Ware) nur im laufenden Spiel, nicht im Editor.
 	if not Engine.is_editor_hint():
 		var interior: Node3D = ShopInteriorScript.new()
 		interior.name = "ShopInterior"
 		interior.set("shop_sign", front_sign)
 		interior.set("floor_y", fl)
-		interior.set("keeper_at", Vector3(counter_x, fl, counter_z - 0.75))
-		interior.set("register_at", Vector3(counter_x - counter_len * 0.25, fl + 1.06, counter_z))
-		interior.set("counter_at", Vector3(counter_x, fl + 1.06, counter_z))
+		interior.set("keeper_at", Vector3(ix0 + 0.65, fl, counter_zc))
+		interior.set("register_at", Vector3(counter_x, fl + 1.06, counter_z1 - 0.45))
+		interior.set("counter_at", Vector3(counter_x + 0.1, fl + 1.06, counter_zc))
+		interior.set("bounds", AABB(Vector3(ix0, fl - 0.5, iz0), Vector3(ix1 - ix0, fh, iz1 - iz0 + 0.2)))
+		interior.set("camera_at", camera_at)
+		interior.set("has_sensor", sensor)
 		interior.set("slots", slots)
 		interior.set("seed_value", rng.randi())
 		add_gen(interior)
@@ -642,31 +697,71 @@ func _plinth_front(b: SlumBuilder, open_w: float) -> void:
 		b.box(Vector3(side * (_w * 0.5 - side_w * 0.5), 0.2, _d * 0.5 + 0.03), Vector3(side_w + 0.06, 0.4, 0.08), _trim_mat, false)
 
 
-## Regal mit Waren. Gibt den Platz für Diebesgut zurück (mittleres Fach vorn, zeigt nach `n`).
-func _shelf(b: SlumBuilder, at: Vector3, n: Vector3) -> Transform3D:
+## Regal (eine Seite) mit Rückwand, Böden und Füllware. `n` = Richtung, in die die Front zeigt,
+## `at` = Mitte der Grundfläche. Gibt die Plätze für echte Ware zurück (zweiter und dritter Boden,
+## alle ~0,9 m), als {"kind", "xf"} mit xf = Lage auf dem Boden, +Z zeigt aus dem Regal heraus.
+func _shelf_unit(b: SlumBuilder, at: Vector3, n: Vector3, length: float, height: float, depth: float, kind: String) -> Array:
 	var metal := SlumMats.color(Color(0.3, 0.32, 0.33), 0.0, 0.5, 0.5)
 	var xf := SlumBuilder.facing(at, n)
-	b.box_x(xf * Transform3D(Basis.IDENTITY, Vector3(0, 1.0, 0)), Vector3(1.1, 2.0, 0.45), metal, true)
+	b.box_x(xf * Transform3D(Basis.IDENTITY, Vector3(0, height * 0.5, -depth * 0.5 + 0.02)), Vector3(length, height, 0.04), metal, true)
+	for s: float in [-1.0, 1.0]:
+		b.box_x(xf * Transform3D(Basis.IDENTITY, Vector3(s * (length * 0.5 - 0.02), height * 0.5, 0.0)), Vector3(0.04, height, depth), metal, true)
+	var boards: Array[float] = [0.1, 0.55, 1.0]
+	if height > 1.7:
+		boards.append(1.45)
+	for y: float in boards:
+		b.box_x(xf * Transform3D(Basis.IDENTITY, Vector3(0, y, 0.0)), Vector3(length, 0.03, depth), metal, true)
+		# Preisleiste vorn.
+		b.box_x(xf * Transform3D(Basis.IDENTITY, Vector3(0, y - 0.03, depth * 0.5)), Vector3(length, 0.035, 0.01),
+				SlumMats.color(Color(1.0, 0.9, 0.3), 0.6), false, false)
 	var goods := [Color(0.85, 0.2, 0.15), Color(0.95, 0.75, 0.15), Color(0.2, 0.55, 0.85), Color(0.25, 0.7, 0.35), Color(0.9, 0.9, 0.85)]
-	for row: int in 4:
-		for k: int in 4:
-			# Mitte des zweiten Fachs bleibt frei für die Ware, die man klauen kann.
-			if rng.randf() < 0.2 or row == 2 and (k == 1 or k == 2):
-				continue
-			var c: Color = goods[rng.randi() % goods.size()]
-			var h := rng.randf_range(0.12, 0.3)
-			b.box_x(xf * Transform3D(Basis.IDENTITY, Vector3(-0.4 + k * 0.27, 0.12 + row * 0.48 + h * 0.5, 0.25)),
-					Vector3(0.2, h, 0.12), SlumMats.color(c, 0.0, 0.6), false, false)
-	return xf * Transform3D(Basis.IDENTITY, Vector3(0, 0.12 + 2 * 0.48, 0.3))
+	var slots: Array = []
+	var count := maxi(int(length / 0.9), 1)
+	for bi: int in boards.size():
+		var y := boards[bi]
+		# Boden 2 und 3 tragen die echte Ware, die anderen Füllware (Kartons, Packungen).
+		if bi == 1 or bi == 2:
+			for k: int in count:
+				var x := -length * 0.5 + (k + 0.5) * length / count
+				slots.append({"kind": kind, "xf": xf * Transform3D(Basis.IDENTITY, Vector3(x, y + 0.015, depth * 0.12))})
+			continue
+		var k := -length * 0.5 + 0.12
+		while k < length * 0.5 - 0.12:
+			if rng.randf() < 0.75:
+				var c: Color = goods[rng.randi() % goods.size()]
+				var h := rng.randf_range(0.12, 0.3)
+				b.box_x(xf * Transform3D(Basis.IDENTITY, Vector3(k, y + 0.015 + h * 0.5, rng.randf_range(-0.05, 0.08))),
+						Vector3(0.18, h, 0.2), SlumMats.color(c, 0.0, 0.6), false, false)
+			k += 0.24
+	return slots
 
 
-## Getränkekühlschrank mit Leuchtfront an der rechten Wand (Front zeigt nach -X).
+## Getränkekühlschrank an der rechten Wand (Front zeigt nach -X), 1,2 m breit: Korpus mit Leuchtrückwand,
+## drei Böden (0,6 / 1,2 / 1,75 m) und Glastür. Die Ware steht auf den Böden hinter dem Glas.
 func _fridge(b: SlumBuilder, at: Vector3) -> void:
-	b.box(at + Vector3(0, 1.0, 0), Vector3(0.7, 2.0, 1.2), _metal, true)
-	var glow := SlumMats.color(Color(0.55, 0.9, 1.0), 2.5)
-	b.quad_x(Transform3D(Basis(Vector3.UP, -PI * 0.5), at + Vector3(-0.351, 1.05, 0)), 1.0, 1.7, glow)
-	for row: int in 4:
-		b.box(at + Vector3(-0.3, 0.4 + row * 0.42, 0), Vector3(0.05, 0.03, 1.0), _dark_metal, false, false)
+	b.box(at + Vector3(0.3, 1.0, 0), Vector3(0.1, 2.0, 1.2), _metal, true)
+	for s: float in [-1.0, 1.0]:
+		b.box(at + Vector3(0.0, 1.0, s * 0.58), Vector3(0.7, 2.0, 0.04), _metal, true)
+	b.box(at + Vector3(0.0, 1.98, 0), Vector3(0.7, 0.04, 1.2), _metal, true)
+	b.box(at + Vector3(0.0, 0.15, 0), Vector3(0.7, 0.3, 1.2), _dark_metal, true)
+	b.quad_x(Transform3D(Basis(Vector3.UP, -PI * 0.5), at + Vector3(0.245, 1.1, 0)), 1.1, 1.6, SlumMats.color(Color(0.55, 0.9, 1.0), 2.5))
+	for row: float in [0.6, 1.2, 1.75]:
+		b.box(at + Vector3(0.0, row - 0.01, 0), Vector3(0.55, 0.02, 1.12), SlumMats.glass(Color(0.8, 0.95, 1.0, 0.5)), true, false)
+	b.box(at + Vector3(-0.34, 1.12, 0), Vector3(0.02, 1.7, 1.12), SlumMats.glass(Color(0.7, 0.9, 1.0, 0.12)), false, false)
+	b.box(at + Vector3(-0.36, 1.1, 0.5), Vector3(0.03, 0.5, 0.03), _metal, false)
+
+
+## Hängeschild über einem Gang (Text, leuchtend, beidseitig).
+func _aisle_sign(at: Vector3, text: String) -> void:
+	var label := Label3D.new()
+	label.text = text
+	label.font_size = 48
+	label.pixel_size = 0.004
+	label.outline_size = 8
+	label.double_sided = true
+	label.modulate = Color(1.0, 0.95, 0.85)
+	label.outline_modulate = Color(0.9, 0.2, 0.5)
+	add_gen(label, at)
 
 
 func _flat_sign(b: SlumBuilder, at: Vector3, n: Vector3, tex: String, width: float) -> void:

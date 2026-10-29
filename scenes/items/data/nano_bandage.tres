@@ -10,6 +10,7 @@ description = "Selbstklebender Verband voller Nanobots, die Wunden zuziehen. Dau
 glyph = "NV"
 color = Color(1, 0.3, 0.35, 1)
 max_stack = 4
+value = 5
 heal = 70.0
 use_verb = "angelegt"
 model = &"bandage"

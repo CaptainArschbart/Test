@@ -10,6 +10,7 @@ description = "Instant-Nudeln aus dem Automaten. Schmeckt nach Soja und Strom. R
 glyph = "N"
 color = Color(1, 0.35, 0.55, 1)
 max_stack = 8
+value = 3
 food = 45.0
 use_verb = "gegessen"
 model = &"noodles"

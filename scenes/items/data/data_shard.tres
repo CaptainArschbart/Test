@@ -10,3 +10,5 @@ description = "Verschlüsselte Daten. Irgendwer zahlt sicher gut dafür."
 glyph = "DS"
 color = Color(0, 0.95, 1, 1)
 max_stack = 32
+value = 18
+model = &"shard"

@@ -128,3 +128,18 @@ static func color(c: Color, emission := 0.0, roughness := 0.7, metallic := 0.0) 
 		mat.emission_energy_multiplier = emission
 	_cache[key] = mat
 	return mat
+
+
+## Durchsichtiges Glas (Vitrinen, Kühlschranktüren). `c.a` = Deckkraft.
+static func glass(c: Color) -> StandardMaterial3D:
+	var key := "g|%s" % c.to_html()
+	if _cache.has(key):
+		return _cache[key]
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = c
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.roughness = 0.05
+	mat.metallic = 0.2
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_cache[key] = mat
+	return mat
