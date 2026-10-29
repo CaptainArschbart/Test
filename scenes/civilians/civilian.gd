@@ -585,9 +585,10 @@ func _die(push: Vector3) -> void:
 
 # --- Multiplayer --------------------------------------------------------------------------
 
-## Host → Clients (über CrowdDirector.net_get_state): Position, Blick, Zustand, Tempo.
-func net_entry() -> Array:
-	return [global_position, rotation.y, int(state), Vector2(velocity.x, velocity.z).length()]
+## Host → Clients (über CrowdDirector.net_get_state): x, y, z, Blick, Zustand, Tempo.
+func net_floats() -> PackedFloat32Array:
+	var p := global_position
+	return PackedFloat32Array([p.x, p.y, p.z, rotation.y, float(state), Vector2(velocity.x, velocity.z).length()])
 
 
 ## Client: Stand vom Host. Zustandswechsel lösen Umfallen, Aufstehen, Tod und Schreie aus.

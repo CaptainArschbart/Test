@@ -355,8 +355,8 @@ func _hit_player(node: Node3D, push: Vector3, hit_speed: float) -> void:
 # --- Multiplayer --------------------------------------------------------------------------
 
 ## Host → Clients (über TrafficDirector.net_get_state): Spur, Strecke, Versatz, Tempo, Bremslicht.
-func net_entry() -> Array:
-	return [piece_id, s, offset, speed, _braking]
+func net_floats() -> PackedFloat32Array:
+	return PackedFloat32Array([piece_id, s, offset, speed, 1.0 if _braking else 0.0])
 
 
 ## Client: Stand vom Host. Auf derselben Spur wird weich nachgezogen, sonst springt das Auto.

@@ -25,6 +25,9 @@ const NPC_GROUP := &"net_npc"
 const STATE_INTERVAL := 0.1
 ## Ein NPC, der so lange in keinem Paket vorkam, ist beim Host weg (Leiche abgeräumt).
 const NPC_MISSING_TIME := 3.0
+## Größe eines NPC-Pakets in Bytes, ab der ein neues angefangen wird (unter der ENet-MTU von 1392,
+## sonst wird das unzuverlässige Paket zerlegt und geht bei Verlust ganz verloren).
+const PACKET_BUDGET := 1100
 const PICKUP_SCENE := preload("res://scenes/items/pickup.tscn")
 const GRENADE_SCRIPT := preload("res://scenes/items/grenade.gd")
 
@@ -363,14 +366,26 @@ func _physics_process(delta: float) -> void:
 func _send_npc_states() -> void:
 	if multiplayer.get_peers().is_empty():
 		return
+	var map := _scene().scene_file_path if _scene() != null else ""
+	# In Stücken unter PACKET_BUDGET; ein einzelner zu großer Zustand geht allein raus.
 	var states := {}
+	var size := 0
 	for node: Node in get_tree().get_nodes_in_group(NPC_GROUP):
 		if not node.has_method("net_get_state"):
 			continue
 		var path := _path_of(node)
-		if not path.is_empty():
-			states[path] = node.call("net_get_state")
-	_npc_states.rpc(_scene().scene_file_path if _scene() != null else "", states)
+		if path.is_empty():
+			continue
+		var state: Variant = node.call("net_get_state")
+		var bytes := var_to_bytes(state).size() + path.length() + 12
+		if size + bytes > PACKET_BUDGET and not states.is_empty():
+			_npc_states.rpc(map, states)
+			states = {}
+			size = 0
+		states[path] = state
+		size += bytes
+	if not states.is_empty():
+		_npc_states.rpc(map, states)
 
 
 @rpc("authority", "unreliable_ordered", "call_remote")

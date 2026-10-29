@@ -51,6 +51,13 @@ var _lod_timer := 0.0
 var _refill_timer := 3.0
 var _corpses := {}  # Civilian -> Sekunden
 var _next_id := 1
+## Multiplayer: Werte je Fußgänger im Paket (Nummer + Civilian.net_floats). Die Zufallszahlen fürs
+## Aussehen gehen reihum für jeden NET_SEED_EVERY-ten Fußgänger mit.
+const NET_STRIDE := 7
+const NET_SEED_EVERY := 8
+var _net_ticks := 0
+## Client: Nummer → Zufallszahl des Hosts.
+var _net_seeds := {}
 
 
 func _ready() -> void:
@@ -270,35 +277,57 @@ func _nearest_player(pos: Vector3) -> float:
 
 # --- Multiplayer --------------------------------------------------------------------------
 
-## Host → Clients (WorldSync): je Fußgänger [Nummer, Zufallszahl, Position, Blick, Zustand, Tempo].
+## Host → Clients (WorldSync), kompakt, damit es in ein Netzpaket passt:
+## [Floats je Fußgänger: Nummer, x, y, z, Blick, Zustand, Tempo; Zufallszahlen als [Nummer, Zahl, …]].
+## Die Zufallszahlen (fürs Aussehen) gehen reihum mit, je Paket nur für jeden NET_SEED_EVERY-ten
+## Fußgänger. Der Client braucht sie nur einmal, nach 0,8 s kennt er alle.
 func net_get_state() -> Array:
-	var out: Array = []
+	var floats := PackedFloat32Array()
+	var seeds := PackedInt32Array()
+	_net_ticks += 1
+	var slot := _net_ticks % NET_SEED_EVERY
+	var index := -1
 	for civ: Civilian in civilians:
-		if is_instance_valid(civ) and civ.is_inside_tree():
-			out.append([int(String(civ.name).trim_prefix("Civilian")), civ.net_seed] + civ.net_entry())
-	return out
+		index += 1
+		if not is_instance_valid(civ) or not civ.is_inside_tree():
+			continue
+		var id := int(String(civ.name).trim_prefix("Civilian"))
+		floats.append(id)
+		floats.append_array(civ.net_floats())
+		if index % NET_SEED_EVERY == slot:
+			seeds.append(id)
+			seeds.append(civ.net_seed)
+	return [floats, seeds]
 
 
 ## Client: fehlende Fußgänger anlegen (gleiches Aussehen über die Zufallszahl), alle nachziehen,
-## beim Host verschwundene entfernen.
+## beim Host verschwundene entfernen. Ohne bekannte Zufallszahl wartet er auf das nächste Paket damit.
 func net_apply_state(data: Array) -> void:
+	if data.size() < 2:
+		return
+	var floats: PackedFloat32Array = data[0]
+	var seeds: PackedInt32Array = data[1]
+	for i in range(0, seeds.size() - 1, 2):
+		# Zurück auf die vorzeichenlose Zahl, die der Host benutzt hat.
+		_net_seeds[seeds[i]] = seeds[i + 1] & 0xFFFFFFFF
 	var seen := {}
-	for entry: Variant in data:
-		if not entry is Array or (entry as Array).size() < 6:
-			continue
-		var e: Array = entry
-		var civ_name := "Civilian%d" % int(e[0])
+	for i in range(0, floats.size() - NET_STRIDE + 1, NET_STRIDE):
+		var id := int(floats[i])
+		var civ_name := "Civilian%d" % id
 		seen[civ_name] = true
+		var pos := Vector3(floats[i + 1], floats[i + 2], floats[i + 3])
 		var civ := get_node_or_null(NodePath(civ_name)) as Civilian
 		if civ == null:
+			if not _net_seeds.has(id):
+				continue
 			civ = CivilianScript.new() as Civilian
 			civ.name = civ_name
 			civ.net_puppet = true
-			civ.setup(self, -1, int(e[1]))
-			civ.position = e[2]
+			civ.setup(self, -1, _net_seeds[id])
+			civ.position = pos
 			add_child(civ)
 			civilians.append(civ)
-		civ.net_apply(e[2], float(e[3]), int(e[4]), float(e[5]))
+		civ.net_apply(pos, floats[i + 4], int(floats[i + 5]), floats[i + 6])
 	for civ: Civilian in civilians.duplicate():
 		if not is_instance_valid(civ):
 			civilians.erase(civ)

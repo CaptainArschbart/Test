@@ -18,6 +18,8 @@ const GROUP := &"traffic_director"
 const CAR_GROUP := &"traffic_car"
 const CarScript := preload("res://scenes/traffic/traffic_car.gd")
 const Sounds := preload("res://scenes/traffic/vehicle_sounds.gd")
+## Multiplayer: Werte je Auto im Paket (Nummer, Art + TrafficCar.net_floats).
+const NET_STRIDE := 7
 
 @export_group("Straßennetz")
 @export var junctions := PackedVector3Array()
@@ -238,28 +240,39 @@ func _update_lod() -> void:
 
 # --- Multiplayer --------------------------------------------------------------------------
 
-## Host → Clients (WorldSync): je Auto [Nummer, Art, Zufallszahl, Spur, Strecke, Versatz, Tempo, Bremse].
+## Host → Clients (WorldSync), kompakt: [Floats je Auto: Nummer, Art, Spur, Strecke, Versatz, Tempo,
+## Bremse; Zufallszahlen als [Nummer, Zahl, …]]. Die Zufallszahl bestimmt Farbe und Wunschtempo.
 func net_get_state() -> Array:
-	var out: Array = []
+	var floats := PackedFloat32Array()
+	var seeds := PackedInt32Array()
 	for car: TrafficCar in cars:
-		if is_instance_valid(car):
-			out.append([int(String(car.name).trim_prefix("Car")), car.kind_id, car.seed_id] + car.net_entry())
-	return out
+		if not is_instance_valid(car):
+			continue
+		var id := int(String(car.name).trim_prefix("Car"))
+		floats.append(id)
+		floats.append(car.kind_id)
+		floats.append_array(car.net_floats())
+		seeds.append(id)
+		seeds.append(car.seed_id)
+	return [floats, seeds]
 
 
 ## Client: fehlende Autos anlegen, alle nachziehen, beim Host verschwundene entfernen.
 func net_apply_state(data: Array) -> void:
-	if network == null:
+	if network == null or data.size() < 2:
 		return
+	var floats: PackedFloat32Array = data[0]
+	var seed_list: PackedInt32Array = data[1]
+	var seeds := {}
+	for i in range(0, seed_list.size() - 1, 2):
+		seeds[seed_list[i]] = seed_list[i + 1] & 0xFFFFFFFF
 	var seen := {}
-	for entry: Variant in data:
-		if not entry is Array or (entry as Array).size() < 8:
+	for i in range(0, floats.size() - NET_STRIDE + 1, NET_STRIDE):
+		var id := int(floats[i])
+		var lane := int(floats[i + 2])
+		if lane < 0 or lane >= network.pieces.size() or not seeds.has(id):
 			continue
-		var e: Array = entry
-		var car_name := "Car%d" % int(e[0])
-		var lane := int(e[3])
-		if lane < 0 or lane >= network.pieces.size():
-			continue
+		var car_name := "Car%d" % id
 		seen[car_name] = true
 		var car := get_node_or_null(NodePath(car_name)) as TrafficCar
 		if car == null:
@@ -267,9 +280,9 @@ func net_apply_state(data: Array) -> void:
 			car.name = car_name
 			car.net_puppet = true
 			add_child(car)
-			car.setup(self, lane, float(e[4]), int(e[1]) as VehicleModel.Kind, int(e[2]))
+			car.setup(self, lane, floats[i + 3], int(floats[i + 1]) as VehicleModel.Kind, seeds[id])
 			cars.append(car)
-		car.net_apply(lane, float(e[4]), float(e[5]), float(e[6]), bool(e[7]))
+		car.net_apply(lane, floats[i + 3], floats[i + 4], floats[i + 5], floats[i + 6] > 0.5)
 	for car: TrafficCar in cars.duplicate():
 		if not seen.has(String(car.name)):
 			cars.erase(car)
