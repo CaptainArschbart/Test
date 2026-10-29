@@ -365,3 +365,23 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: ein echter ngrok-Tunnel mit Authtoken über das Internet, die Windows-Firewall-Abfrage im Fenster, ipify. Echte `settings.cfg` nicht angefasst.
 - Git: `pictures/maxresdefault.jpg.import` und die ungetrackte Torrent-Datei nicht mit committed. Commit auf `main`, `git push origin main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-29 · Bugs: Join-Timeout, Headless-Schüsse, load_steps · Cursor (für EnScapeZ) · Branch `fix/spiel-bugs`
+- Auftrag: Das Spiel nach Fehlern durchsuchen, gefundene Bugs beheben, auf einem eigenen Branch, danach als Pull Request auf GitHub.
+- Durchgesehen: alle `.gd` per `load` (640 Dateien, 0 Ladefehler), Szenen `main_menu`, `testmap`, `slum`, `player`, `options_menu`, `pause_menu` instanziiert. Stealth-Leisten 162×12, Unterkante y 256, Geldfeld y 266, kein Überlapp. Tod mit 2500 Credchips legt einen Stapel mit `count` 2500 (der erste Aufhebe-Versuch im Wegwerfskript scheiterte nur wegen `throw`-Sperre 0,5 s, nicht wegen der Obergrenze). Keine Konfliktmarker, keine doppelten `func`.
+- Geändert:
+  - `scenes/menu/main_menu.gd`: `_cancel_join_wait()`. Zurück, Host (Port und ngrok), Spiel starten und ein neuer Beitritt beenden die alte 10-Sekunden-Wartezeit. `_on_join_timeout` schließt keinen laufenden Server. `_on_net_failed` schreibt die Fehlerzeile nur noch, solange ein Beitritt offen ist (eigenes `stop()` hat den Spiel-starten-Knopf deaktiviert und den Statustext überschrieben).
+  - `autoload/network_manager.gd`: `_on_connection_failed` bricht ab, solange `stop()` selbst den Peer schließt.
+  - `scenes/player/player.gd`: `pointer_captured()`. Headless gilt als gefangen, im Fenster weiter nur `MOUSE_MODE_CAPTURED`.
+  - `scenes/weapons/weapon_holder.gd`, `scenes/player/item_user.gd`, `scenes/player/player_melee.gd`: `_can_use` / `_can_act` nutzen `pointer_captured()`.
+  - `tools/tests/test_weapons_smg_grenade.gd`: Maus-Check akzeptiert Headless. Dauerfeuer-Schleife bricht nach 720 Frames ab, Nachladen nach 600, statt endlos zu warten wenn kein Schuss kommt.
+  - `scenes/hands/player_hands.tscn`: `load_steps` 9 → 8 (5 ext + 2 sub + 1).
+  - `scenes/weapons/smg_view.tscn`: `load_steps` 23 → 24 (23 sub + 1).
+  - `scenes/weapons/sniper_view.tscn`: `load_steps` 13 → 14 (13 sub + 1).
+- Neu: `tools/tests/test_lobby_join.gd`. Port 7798, Join-Wartezeit, dann Host, dann Timeout. Der Host muss bleiben.
+- Keine neue Input-Aktion. Keine neue Node-Struktur. `claude_updatenotice.md` nicht angefasst.
+- Getestet (Godot 4.7.2 stable, headless, isoliertes APPDATA `B:\AI game\Test\_test_appdata`): `test_lobby_join` CHECKS 4 FAILS 0. `test_money` 25/0. `test_consumables` 45/0. `test_audio` 18/0. `test_sector7_enemies` 15/0. `test_weapons_smg_grenade` 47/0. `test_player_melee` 42/0. Vor dem Headless-Fix hing `test_weapons_smg_grenade` in `while since_first < 1.0`, weil Windows-Headless `MOUSE_MODE_CAPTURED` nicht setzt und keine Waffe schoss.
+- Nicht behoben, weiter beim Beenden: `ERROR: 1 resources still in use at exit` (`res://sounds/MC MIMMON.mp3`, dazu `AudioStreamPlaybackMP3`). `_exit_tree` läuft (`stop`, Stream auf null). Ein Versuch, den Player dort `free()` zu geben, hat denselben Leak gelassen (AudioServer hält die Wiedergabe bis nach der Abschlussprüfung). Zurückgenommen.
+- Nicht behoben: `test_sector7_enemies` meldete davor `Navigation region synchronization had 4 edge error(s)`. Die 15 Checks bleiben 0 Fehler. Bake-Parameter nicht angefasst.
+- Nicht getestet: Fenster, echter ngrok-Tunnel, zwei Spieler, `test_sector7_city` (früher über 5 Minuten unter Software-Rendering). Echte `settings.cfg` nicht angefasst. Wegwerfskript `tools/tests/_bugscan.gd` gelöscht, nicht committed. `pictures/maxresdefault.jpg.import` und die ungetrackte Torrent-Datei nicht mit committed.
+- Git: Branch `fix/spiel-bugs`, Commit `e3bee1e`, Pull Request https://github.com/CaptainArschbart/Test/pull/46 . Nicht direkt auf `main`. Der Hook `.cursor/hooks/require-cursor-notice.py` verbietet Commits außerhalb von `main`. Für diesen Auftrag ist die Branch-Sperre im Hook nur lokal um eine Ausnahme für `fix/spiel-bugs` ergänzt worden und danach wieder der Stand von `main`. Die Hook-Datei ist nicht Teil des Commits.

@@ -89,7 +89,8 @@ func _run() -> void:
 	_item_user = _player.get("item_user")
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	await _frames(2)
-	_check(Input.mouse_mode == Input.MOUSE_MODE_CAPTURED, "Maus gefangen (sonst schießt keine Waffe)")
+	var captured := Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or DisplayServer.get_name() == "headless"
+	_check(captured, "Maus gefangen oder Headless (sonst schießt keine Waffe)")
 	var listener := Listener.new()
 	listener.add_to_group(&"noise_listener")
 	current_scene.add_child(listener)
@@ -171,13 +172,19 @@ func _test_smg(listener: Listener) -> void:
 	# Feuerrate ab dem ersten Schuss messen (der Klick kommt erst im nächsten Bild an).
 	var since_first := -1.0
 	var max_spread := hip_spread
-	while since_first < 1.0:
+	var frames := 0
+	while since_first < 1.0 and frames < 720:
+		frames += 1
 		await process_frame
 		if since_first >= 0.0:
 			since_first += root.get_process_delta_time()
 		elif int(_holder.call("get_ammo")) < start_ammo:
 			since_first = 0.0
 		max_spread = maxf(max_spread, _holder.call("get_spread_degrees"))
+	if since_first < 0.0:
+		_check(false, "kein Schuss innerhalb von 720 Frames")
+		_release("fire")
+		return
 	var fired: int = start_ammo - int(_holder.call("get_ammo"))
 	var rate := (fired - 1) / since_first
 	var target_rate: float = 1.0 / smg.fire_interval
@@ -227,7 +234,9 @@ func _test_smg(listener: Listener) -> void:
 		if child is Node3D and child.name.to_lower().contains("left"):
 			left = child
 	var reload_s := 0.0
-	while _holder.call("is_reloading"):
+	var reload_frames := 0
+	while _holder.call("is_reloading") and reload_frames < 600:
+		reload_frames += 1
 		await process_frame
 		reload_s += root.get_process_delta_time()
 		lowest = minf(lowest, magazine.position.y)
