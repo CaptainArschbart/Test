@@ -90,11 +90,31 @@ var sfx_volume := 100.0
 ## Name des Audio-Ausgabegeräts aus AudioServer.get_output_device_list().
 ## "Default" = Standardgerät des Systems.
 var output_device := DEFAULT_OUTPUT_DEVICE
+## Grafik: 0 aus, 1 Normal (SSR), 2 Raytraced High (SDFGI + SSR).
+const GI_OFF := 0
+const GI_NORMAL := 1
+const GI_HIGH := 2
+## Upscaling. Godot 4.7 hat kein Nvidia-DLSS; die Stufen ab 1 nutzen FSR 2.
+const UPSCALE_OFF := 0
+const UPSCALE_QUALITY := 1
+const UPSCALE_BALANCED := 2
+const UPSCALE_PERFORMANCE := 3
+const UPSCALE_HYBRID := 4
+
 ## Faktor auf Player.mouse_sensitivity (1.0 = Standard).
 var mouse_sensitivity := 1.0
 var invert_y := false
 ## Stärke des Kamerawackelns (Rennen, Explosionen) als Faktor: 0 = aus, 1 = Standard.
 var camera_shake := 1.0
+var gi_mode := GI_NORMAL
+var upscale_mode := UPSCALE_OFF
+## Camera3D.far in Metern.
+var draw_distance := 500.0
+## 0 niedrig … 3 ultra.
+var shadow_quality := 2
+var ssao_enabled := true
+var glow_enabled := true
+var volumetric_fog := true
 ## Aktion → physical_keycode
 var key_bindings := {}
 
@@ -134,6 +154,13 @@ func get_values() -> Dictionary:
 		"mouse_sensitivity": mouse_sensitivity,
 		"invert_y": invert_y,
 		"camera_shake": camera_shake,
+		"gi_mode": gi_mode,
+		"upscale_mode": upscale_mode,
+		"draw_distance": draw_distance,
+		"shadow_quality": shadow_quality,
+		"ssao_enabled": ssao_enabled,
+		"glow_enabled": glow_enabled,
+		"volumetric_fog": volumetric_fog,
 		"key_bindings": key_bindings.duplicate(),
 	}
 
@@ -154,6 +181,13 @@ func get_defaults() -> Dictionary:
 		"mouse_sensitivity": 1.0,
 		"invert_y": false,
 		"camera_shake": 1.0,
+		"gi_mode": GI_NORMAL,
+		"upscale_mode": UPSCALE_OFF,
+		"draw_distance": 500.0,
+		"shadow_quality": 2,
+		"ssao_enabled": true,
+		"glow_enabled": true,
+		"volumetric_fog": true,
 		"key_bindings": _default_bindings.duplicate(),
 	}
 
@@ -174,6 +208,13 @@ func apply_values(values: Dictionary) -> void:
 	mouse_sensitivity = values.mouse_sensitivity
 	invert_y = values.invert_y
 	camera_shake = values.get("camera_shake", camera_shake)
+	gi_mode = clampi(int(values.get("gi_mode", gi_mode)), GI_OFF, GI_HIGH)
+	upscale_mode = clampi(int(values.get("upscale_mode", upscale_mode)), UPSCALE_OFF, UPSCALE_HYBRID)
+	draw_distance = clampf(float(values.get("draw_distance", draw_distance)), 60.0, 800.0)
+	shadow_quality = clampi(int(values.get("shadow_quality", shadow_quality)), 0, 3)
+	ssao_enabled = bool(values.get("ssao_enabled", ssao_enabled))
+	glow_enabled = bool(values.get("glow_enabled", glow_enabled))
+	volumetric_fog = bool(values.get("volumetric_fog", volumetric_fog))
 	key_bindings = values.key_bindings.duplicate()
 	apply()
 	save_settings()
@@ -249,6 +290,13 @@ func load_settings() -> void:
 	mouse_sensitivity = config.get_value("controls", "mouse_sensitivity", mouse_sensitivity)
 	invert_y = config.get_value("controls", "invert_y", invert_y)
 	camera_shake = clampf(float(config.get_value("controls", "camera_shake", camera_shake)), 0.0, 1.0)
+	gi_mode = clampi(int(config.get_value("video", "gi_mode", gi_mode)), GI_OFF, GI_HIGH)
+	upscale_mode = clampi(int(config.get_value("video", "upscale_mode", upscale_mode)), UPSCALE_OFF, UPSCALE_HYBRID)
+	draw_distance = clampf(float(config.get_value("video", "draw_distance", draw_distance)), 60.0, 800.0)
+	shadow_quality = clampi(int(config.get_value("video", "shadow_quality", shadow_quality)), 0, 3)
+	ssao_enabled = bool(config.get_value("video", "ssao_enabled", ssao_enabled))
+	glow_enabled = bool(config.get_value("video", "glow_enabled", glow_enabled))
+	volumetric_fog = bool(config.get_value("video", "volumetric_fog", volumetric_fog))
 	for action: String in REBINDABLE_ACTIONS:
 		key_bindings[action] = config.get_value("keys", action, key_bindings[action])
 
@@ -261,6 +309,13 @@ func save_settings() -> void:
 	config.set_value("video", "fullscreen_resolution", fullscreen_resolution)
 	config.set_value("video", "msaa", msaa)
 	config.set_value("video", "render_scale", render_scale)
+	config.set_value("video", "gi_mode", gi_mode)
+	config.set_value("video", "upscale_mode", upscale_mode)
+	config.set_value("video", "draw_distance", draw_distance)
+	config.set_value("video", "shadow_quality", shadow_quality)
+	config.set_value("video", "ssao_enabled", ssao_enabled)
+	config.set_value("video", "glow_enabled", glow_enabled)
+	config.set_value("video", "volumetric_fog", volumetric_fog)
 	config.set_value("audio", "master_volume", master_volume)
 	config.set_value("audio", "music_volume", music_volume)
 	config.set_value("audio", "sfx_volume", sfx_volume)
@@ -350,10 +405,12 @@ func _apply_3d_scale() -> void:
 	if fullscreen:
 		scale *= fullscreen_factor(fullscreen_resolution, size)
 	scale = scale_for_window(scale, size)
-	# Bewusst bilinear: FSR war unter Forward+ ungetestet und stand im Verdacht, nach
-	# PR #17 einen schwarzen Bildschirm im Spiel zu verursachen.
-	if viewport.scaling_3d_mode != Viewport.SCALING_3D_MODE_BILINEAR:
-		viewport.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+	var upscale := upscale_for(upscale_mode)
+	scale *= float(upscale["scale"])
+	scale = clampf(scale, RENDER_SCALE_MIN * 0.5, 1.0)
+	var mode: int = int(upscale["mode"])
+	if viewport.scaling_3d_mode != mode:
+		viewport.scaling_3d_mode = mode as Viewport.Scaling3DMode
 	if is_equal_approx(viewport.scaling_3d_scale, scale):
 		_applied_window_size = size
 		return
@@ -397,6 +454,22 @@ func _ensure_buses() -> void:
 		var index := AudioServer.bus_count - 1
 		AudioServer.set_bus_name(index, bus_name)
 		AudioServer.set_bus_send(index, MASTER_BUS)
+
+
+## Modus und zusätzlicher Faktor für Viewport.scaling_3d_*. Aus = bilinear, sonst FSR 2.
+## DLSS 5 gibt es in Godot nicht; Hybrid ist nur die niedrigste interne Auflösung.
+static func upscale_for(mode: int) -> Dictionary:
+	match mode:
+		UPSCALE_QUALITY:
+			return {"mode": Viewport.SCALING_3D_MODE_FSR2, "scale": 0.77}
+		UPSCALE_BALANCED:
+			return {"mode": Viewport.SCALING_3D_MODE_FSR2, "scale": 0.67}
+		UPSCALE_PERFORMANCE:
+			return {"mode": Viewport.SCALING_3D_MODE_FSR2, "scale": 0.5}
+		UPSCALE_HYBRID:
+			return {"mode": Viewport.SCALING_3D_MODE_FSR2, "scale": 0.45}
+		_:
+			return {"mode": Viewport.SCALING_3D_MODE_BILINEAR, "scale": 1.0}
 
 
 func _read_binding(action: String) -> int:

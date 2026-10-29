@@ -57,6 +57,10 @@ var _label: Label3D
 ## Multiplayer: Beim Client läuft der Fußgänger nicht selbst, sondern folgt dem Host (net_apply).
 var net_puppet := false
 var net_seed := 0
+## Wohnung: bleibt stehen, läuft nicht ins Wegenetz.
+var stay_put := false
+var crime: CivilianCrime
+var _hurt_by_player := false
 var _net_pos := Vector3.INF
 var _net_yaw := 0.0
 var _net_speed := 0.0
@@ -110,7 +114,13 @@ func _ready() -> void:
 	add_child(_label)
 	_face_yaw = rotation.y
 	_last_pos = global_position
-	if not net_puppet:
+	crime = CivilianCrime.new()
+	crime.name = "CivilianCrime"
+	add_child(crime)
+	if stay_put:
+		_set_state(State.IDLE)
+		_wait_left = 999.0
+	elif not net_puppet:
 		_choose_leg()
 
 
@@ -167,6 +177,7 @@ func take_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 		amount *= 2.0
 	health -= amount
 	model.flinch = clampf(amount / 25.0, 0.4, 1.0)
+	_hurt_by_player = true
 	if health <= 0.0:
 		_die(-normal)
 		return
@@ -206,6 +217,14 @@ func hear_noise(position: Vector3, radius: float, _source: Node, kind: StringNam
 		return
 	if state == State.DEAD or state == State.DOWN or lod == Lod.SLEEP:
 		return
+	if kind == StealthNoise.BURGLARY:
+		if global_position.distance_to(position) > radius:
+			return
+		if crime != null:
+			crime.on_burglary()
+		else:
+			panic(position)
+		return
 	if kind != StealthNoise.SHOT and kind != StealthNoise.EXPLOSION:
 		return
 	if global_position.distance_to(position) > radius * 1.1:
@@ -214,8 +233,37 @@ func hear_noise(position: Vector3, radius: float, _source: Node, kind: StringNam
 
 
 ## Panik vor etwas bei `from`.
+func hold_up() -> void:
+	if state == State.DEAD or state == State.DOWN:
+		return
+	_set_state(State.COWER)
+	_wait_left = 4.0
+	if model != null:
+		model.cower = 1.0
+
+
+func show_line(text: String) -> void:
+	if _label == null:
+		return
+	_label.text = text
+	_label.visible = true
+
+
+func get_interact_text(player: Player) -> String:
+	if crime == null:
+		return ""
+	return crime.prompt(player)
+
+
+func interact(player: Player) -> void:
+	if crime != null:
+		crime.interact(player)
+
+
 func panic(from: Vector3) -> void:
 	if state == State.DEAD or state == State.DOWN:
+		return
+	if crime != null and (crime.held_up or crime.restrained):
 		return
 	_panic_from = from
 	if state == State.FLEE:
@@ -268,6 +316,10 @@ func _tick(delta: float) -> void:
 
 
 func _walk() -> void:
+	if stay_put:
+		_set_state(State.IDLE)
+		_wait_left = 999.0
+		return
 	var speed := walk_speed
 	if _crossing and crowd != null and crowd.traffic != null:
 		# Auf dem Zebrastreifen: kommt ein Auto, beeilen.
@@ -300,6 +352,9 @@ func _idle(delta: float) -> void:
 	if fmod(_state_time, 2.5) < delta:
 		_look_yaw = _face_yaw + _rng.randf_range(-1.2, 1.2)
 	_face_yaw = lerp_angle(_face_yaw, _look_yaw, minf(delta * 2.0, 1.0))
+	if stay_put:
+		_wait_left = 5.0
+		return
 	if _wait_left <= 0.0:
 		_set_state(State.WALK)
 		_choose_leg()
@@ -333,6 +388,9 @@ func _cower(delta: float) -> void:
 	_wait_left -= delta
 	model.cower = move_toward(model.cower, 1.0, delta * 5.0)
 	model.crouch = move_toward(model.crouch, 1.0, delta * 5.0)
+	if crime != null and (crime.held_up or crime.restrained):
+		_wait_left = 2.0
+		return
 	if _wait_left <= 0.0:
 		_start_flee()
 
@@ -581,6 +639,8 @@ func _die(push: Vector3) -> void:
 	collision_mask = 0
 	if crowd != null:
 		crowd.on_civilian_died(self)
+	if _hurt_by_player and not WorldSync.is_client():
+		WantedManager.report(&"murder", global_position, get_instance_id())
 
 
 # --- Multiplayer --------------------------------------------------------------------------

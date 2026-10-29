@@ -27,6 +27,8 @@ AudioManager="*res://autoload/audio_manager.gd"
 NetworkManager="*res://autoload/network_manager.gd"
 NgrokManager="*res://autoload/ngrok_manager.gd"
 WorldSync="*res://autoload/world_sync.gd"
+NoiseManager="*res://autoload/noise_manager.gd"
+WantedManager="*res://autoload/wanted_manager.gd"
 
 [display]
 

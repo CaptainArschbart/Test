@@ -15,6 +15,8 @@ const CLIMB := &"climb"
 const SHOT := &"shot"
 const EXPLOSION := &"explosion"
 const SHOUT := &"shout"
+## Gewaltsames Aufbrechen (Brechstange, Tür, Tresor).
+const BURGLARY := &"burglary"
 
 
 static func emit(tree: SceneTree, position: Vector3, radius: float, source: Node = null, kind: StringName = STEP) -> void:

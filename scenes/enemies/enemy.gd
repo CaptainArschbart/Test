@@ -390,6 +390,16 @@ func take_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 
 ## Faustschlag des Spielers (PlayerMelee): Schaden wie take_hit, dazu Rückstoß, Taumeln und
 ## optional Betäubung (aufgeladener Schlag).
+## Fahndung: sofort auf diesen Spieler gehen.
+func engage(player: Player) -> void:
+	if player == null or state == State.DEAD:
+		return
+	_player = player
+	hostile = true
+	target_position = player.global_position
+	_enter_combat(true)
+
+
 func melee_hit(damage: float, point: Vector3, normal: Vector3, push: Vector3, stun_time: float) -> void:
 	if state == State.DEAD:
 		return

@@ -8,3 +8,7 @@ extends ItemData
 @export var reach := 2.2
 ## Mindestabstand zwischen zwei Schlägen in Sekunden.
 @export var swing_interval := 0.45
+## Aufbrechen von Türen und versiegelten Behältern (Brechstange).
+@export var breaks_locks := false
+## Hörweite beim Aufbrechen, Meter.
+@export var break_noise := 18.0

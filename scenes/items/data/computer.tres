@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scenes/items/item_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+id = "computer"
+display_name = "Computer"
+description = "Rechner aus der Wohnung."
+glyph = "PC"
+color = Color(0.55, 0.7, 0.95, 1)
+max_stack = 1
+value = 48
+model = &"computer"

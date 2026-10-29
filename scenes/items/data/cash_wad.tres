@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scenes/items/item_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+id = "cash_wad"
+display_name = "Bargeld"
+description = "Bündel Scheine. Der Hehler nimmt es."
+glyph = "¢"
+color = Color(0.35, 0.75, 0.4, 1)
+max_stack = 10
+value = 25
+model = &"cash"

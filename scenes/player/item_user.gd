@@ -371,7 +371,9 @@ func _strike(item: MeleeData) -> bool:
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	if not hit.is_empty():
 		var collider: Object = hit.collider
-		if collider != null and collider.has_method("take_hit"):
+		if item.breaks_locks and collider != null and collider.has_method("break_open"):
+			collider.call("break_open", _player)
+		elif collider != null and collider.has_method("take_hit"):
 			collider.take_hit(item.damage, hit.position, hit.normal)
 	return true
 

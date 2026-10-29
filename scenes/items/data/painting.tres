@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scenes/items/item_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+id = "painting"
+display_name = "Kunstwerk"
+description = "Neon-Druck von der Wohnungswand."
+glyph = "KU"
+color = Color(0.85, 0.2, 0.55, 1)
+max_stack = 1
+value = 60
+model = &"painting"

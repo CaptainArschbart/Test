@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scenes/items/item_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+id = "jewelry"
+display_name = "Schmuck"
+description = "Kette aus einer Wohnung. Der Hehler zahlt."
+glyph = "SM"
+color = Color(1, 0.82, 0.35, 1)
+max_stack = 5
+value = 40
+model = &"jewelry"

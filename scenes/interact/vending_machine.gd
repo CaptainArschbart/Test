@@ -10,6 +10,8 @@ extends StaticBody3D
 @export var price := 1
 @export var currency: ItemData
 @export var size := Vector3(1.0, 2.0, 0.8)
+## Verbraucht das Produkt sofort (Hunger/Durst), statt es ins Inventar zu legen.
+@export var consume_now := false
 
 
 func _ready() -> void:
@@ -44,6 +46,15 @@ func interact(player: Player) -> void:
 			inventory.spend_money(price)
 		else:
 			_take(inventory, currency, price)
+	if consume_now and product is ConsumableData:
+		var food := product as ConsumableData
+		player.stats.eat(food.food)
+		player.stats.drink(food.water)
+		player.stats.heal(food.heal)
+		if food.stamina > 0.0:
+			player.stats.add_stamina(food.stamina)
+		player.item_user.show_message("%s %s" % [product.display_name, food.use_verb], food.color)
+		return
 	var left := inventory.add_item(product, 1)
 	if left > 0:
 		# Kein Platz: Geld zurück.

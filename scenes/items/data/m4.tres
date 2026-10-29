@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scenes/items/weapon_data.gd" id="1_weapon"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/smg_view.tscn" id="2_view"]
+[ext_resource type="AudioStream" path="res://assets/audio/smg_shot.wav" id="3_shot"]
+[ext_resource type="AudioStream" path="res://assets/audio/smg_reload.wav" id="4_reload"]
+[ext_resource type="AudioStream" path="res://assets/audio/pistol_empty.wav" id="5_empty"]
+
+[resource]
+script = ExtResource("1_weapon")
+damage = 18.0
+magazine_size = 30
+fire_interval = 0.09
+reload_time = 2.1
+max_range = 90.0
+view_scene = ExtResource("2_view")
+pickup_scale = 1.5
+hip_offset = Vector3(0.02, -0.02, -0.08)
+automatic = true
+aim_fov = 55.0
+aim_time = 0.18
+sight_offset = Vector3(0, 0.083, 0)
+aim_distance = 0.32
+aim_sensitivity = 0.85
+has_scope = false
+hip_spread_degrees = 1.5
+aim_spread_degrees = 0.2
+bloom_per_shot = 0.32
+max_bloom_degrees = 3.2
+bloom_recovery = 8.0
+aim_bloom_factor = 0.4
+recoil_kick = 0.02
+view_kick_degrees = 0.35
+recoil_climb = 0.6
+view_kick_horizontal_degrees = 0.12
+reload_tilt = 0.3
+reload_roll = 0.2
+eject_shells = true
+noise_radius = 40.0
+fire_sound = ExtResource("3_shot")
+reload_sound = ExtResource("4_reload")
+empty_sound = ExtResource("5_empty")
+id = "m4"
+display_name = "M4"
+description = "Sturmgewehr, 30 Schuss, Dauerfeuer. R lädt nach, rechte Maustaste zielt."
+glyph = "M4"
+color = Color(0.45, 0.7, 0.4, 1)
+max_stack = 1
+value = 120

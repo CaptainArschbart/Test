@@ -25,6 +25,16 @@ const CHIP := &"chip"
 const WATCH := &"watch"
 const CIGARETTES := &"cigarettes"
 const SHARD := &"shard"
+const CROWBAR := &"crowbar"
+const JEWELRY := &"jewelry"
+const JEWELS := &"jewels"
+const CASH := &"cash"
+const TV := &"tv"
+const PAINTING := &"painting"
+const COMPUTER := &"computer"
+const CUFFS := &"cuffs"
+const TIES := &"ties"
+const KEYCARD := &"keycard"
 
 ## Nadelspitze des Injektors im Raum des Modells (ohne Kappe).
 const INJECTOR_TIP := Vector3(0.0, -0.074, 0.0)
@@ -46,6 +56,16 @@ const PICKUP_SCALE := {
 	&"watch": 2.8,
 	&"cigarettes": 2.2,
 	&"shard": 2.8,
+	&"crowbar": 1.6,
+	&"jewelry": 2.4,
+	&"jewels": 2.4,
+	&"cash": 2.2,
+	&"tv": 1.3,
+	&"painting": 1.4,
+	&"computer": 1.5,
+	&"cuffs": 2.2,
+	&"ties": 2.4,
+	&"keycard": 2.6,
 }
 
 ## Lage in der Hand, solange das Item nur gewählt ist (Raum des %ItemUser, Drehung in Grad).
@@ -65,6 +85,16 @@ const HOLD := {
 	&"watch": [Vector3(0.0, 0.0, 0.0), Vector3(20.0, -20.0, 0.0)],
 	&"cigarettes": [Vector3(0.0, 0.0, 0.0), Vector3(10.0, -25.0, 0.0)],
 	&"shard": [Vector3(0.0, 0.0, 0.0), Vector3(10.0, -20.0, 0.0)],
+	&"crowbar": [Vector3(0.02, -0.02, -0.05), Vector3(70.0, 10.0, 0.0)],
+	&"jewelry": [Vector3(0.0, 0.0, 0.0), Vector3(10.0, -20.0, 0.0)],
+	&"jewels": [Vector3(0.0, 0.0, 0.0), Vector3(10.0, -20.0, 0.0)],
+	&"cash": [Vector3(0.0, 0.0, 0.0), Vector3(0.0, -20.0, 0.0)],
+	&"tv": [Vector3(0.0, 0.0, 0.0), Vector3(0.0, -15.0, 0.0)],
+	&"painting": [Vector3(0.0, 0.0, 0.0), Vector3(0.0, -15.0, 0.0)],
+	&"computer": [Vector3(0.0, 0.0, 0.0), Vector3(0.0, -15.0, 0.0)],
+	&"cuffs": [Vector3(0.0, 0.0, 0.0), Vector3(0.0, -20.0, 0.0)],
+	&"ties": [Vector3(0.0, 0.0, 0.0), Vector3(0.0, -20.0, 0.0)],
+	&"keycard": [Vector3(0.0, 0.0, 0.0), Vector3(10.0, -25.0, 0.0)],
 }
 
 ## Griff der rechten Hand im Raum des Modells (Format wie PlayerHands.POSE_*).
@@ -137,10 +167,19 @@ const GRIPS := {
 		"thumb": Vector3(-20.0, 30.0, 55.0),
 		"thumb_curl": [10.0, 8.0],
 	},
+	&"crowbar": {
+		"pos": Vector3(0.04, -0.02, 0.08),
+		"rot": Vector3(8.0, 12.0, -80.0),
+		"curl": [[62.0, 70.0, 34.0], [68.0, 74.0, 36.0], [72.0, 76.0, 36.0], [74.0, 76.0, 36.0]],
+		"spread": 2.0,
+		"thumb": Vector3(-36.0, 14.0, 50.0),
+		"thumb_curl": [22.0, 16.0],
+	},
 }
 
 ## Kleine Dinge (Riegel, Handy, Chip, Uhr …) greift die Hand wie den Verband.
-const SMALL_GRIP_KINDS := [&"bar", &"onigiri", &"phone", &"chip", &"watch", &"cigarettes", &"shard"]
+const SMALL_GRIP_KINDS := [&"bar", &"onigiri", &"phone", &"chip", &"watch", &"cigarettes", &"shard",
+	&"jewelry", &"jewels", &"cash", &"cuffs", &"ties", &"keycard", &"tv", &"painting", &"computer"]
 
 
 static var _materials := {}
@@ -182,6 +221,10 @@ static func build(kind: StringName, color: Color, viewmodel := false) -> Node3D:
 			_build_cigarettes(root, color)
 		SHARD:
 			_build_shard(root, color)
+		CROWBAR:
+			_build_crowbar(root, color)
+		JEWELRY, JEWELS, CASH, CUFFS, TIES, KEYCARD, TV, PAINTING, COMPUTER:
+			_build_prop(root, kind, color)
 		_:
 			_part(root, ProcMesh.rounded_box(Vector3(0.06, 0.06, 0.06), 0.3), _neon(color), Vector3.ZERO)
 	if viewmodel:
@@ -682,9 +725,64 @@ static func _draw_icon_extra(canvas: CanvasItem, kind: StringName, center: Vecto
 				center + Vector2(-s * 0.1, s * 0.05)])
 			canvas.draw_colored_polygon(crystal, Color(color, 0.7))
 			canvas.draw_rect(Rect2(center + Vector2(-s * 0.1, s * 0.05), Vector2(s * 0.2, s * 0.22)), color, false, line)
+		CROWBAR:
+			canvas.draw_line(center + Vector2(-s * 0.28, s * 0.2), center + Vector2(s * 0.2, -s * 0.22), color, line * 2.0)
+			canvas.draw_rect(Rect2(center + Vector2(s * 0.08, -s * 0.32), Vector2(s * 0.16, s * 0.16)), color)
+		JEWELRY, JEWELS:
+			canvas.draw_circle(center, s * 0.16, fill)
+			canvas.draw_arc(center, s * 0.16, 0.0, TAU, 16, color, line, true)
+		CASH, KEYCARD, CUFFS, TIES:
+			var rect := Rect2(center - Vector2(s * 0.28, s * 0.16), Vector2(s * 0.56, s * 0.32))
+			canvas.draw_rect(rect, fill)
+			canvas.draw_rect(rect, color, false, line)
+		TV, PAINTING, COMPUTER:
+			var screen := Rect2(center - Vector2(s * 0.32, s * 0.22), Vector2(s * 0.64, s * 0.4))
+			canvas.draw_rect(screen, fill)
+			canvas.draw_rect(screen, color, false, line)
 
 
 # --- Hilfen --------------------------------------------------------------------
+
+static func _build_crowbar(root: Node3D, color: Color) -> void:
+	var metal := _mat(&"crow_metal", Color(0.35, 0.36, 0.38), 0.85, 0.35)
+	var grip := _mat(&"crow_grip", color, 0.1, 0.7)
+	var shaft := BoxMesh.new()
+	shaft.size = Vector3(0.025, 0.62, 0.025)
+	_part(root, shaft, metal, Vector3(0.0, 0.12, 0.0))
+	var hook := BoxMesh.new()
+	hook.size = Vector3(0.09, 0.02, 0.02)
+	_part(root, hook, metal, Vector3(0.04, 0.42, 0.0))
+	var handle := CylinderMesh.new()
+	handle.top_radius = 0.02
+	handle.bottom_radius = 0.02
+	handle.height = 0.16
+	_part(root, handle, grip, Vector3(0.0, -0.16, 0.0))
+
+
+static func _build_prop(root: Node3D, kind: StringName, color: Color) -> void:
+	var mat := _neon(color, 0.6)
+	var mesh := BoxMesh.new()
+	match kind:
+		TV:
+			mesh.size = Vector3(0.42, 0.26, 0.05)
+		PAINTING:
+			mesh.size = Vector3(0.36, 0.28, 0.03)
+		COMPUTER:
+			mesh.size = Vector3(0.28, 0.2, 0.16)
+		CASH:
+			mesh.size = Vector3(0.12, 0.02, 0.06)
+		KEYCARD:
+			mesh.size = Vector3(0.086, 0.004, 0.054)
+		CUFFS:
+			mesh.size = Vector3(0.14, 0.03, 0.05)
+		TIES:
+			mesh.size = Vector3(0.1, 0.02, 0.04)
+		JEWELS:
+			mesh.size = Vector3(0.06, 0.05, 0.06)
+		_:
+			mesh.size = Vector3(0.05, 0.03, 0.05)
+	_part(root, mesh, mat, Vector3.ZERO)
+
 
 static func _part(parent: Node3D, mesh: Mesh, material: Material, pos: Vector3) -> MeshInstance3D:
 	var instance := MeshInstance3D.new()

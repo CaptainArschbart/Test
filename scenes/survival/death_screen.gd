@@ -1,12 +1,10 @@
 extends CanvasLayer
 ## Death-Screen „FLATLINE“. Der Player ruft show_death() auf, sobald PlayerStats.died kommt.
 ##
-## Ablauf: Kamera sackt zur Seite weg (und der Körper fällt auf den Boden, falls man in der Luft
-## starb), das Bild wird rot-monochrom und verrauscht (death_screen.gdshader), der EKG-Ton geht
-## in den Dauerton über. Dann erscheinen Titel, EKG-Linie, Todesursache, Überlebenszeit und
-## drei Knöpfe im Stil des Pausemenüs (cyber_theme.tres):
+## Ablauf: Der Bildschirm ist im selben Frame da (kein Einblenden). Die Kamera liegt sofort
+## seitlich, das Bild ist rot-monochrom (death_screen.gdshader), der EKG-Ton spielt einmal
+## und loopt nicht. Zwei Knöpfe im Stil des Pausemenüs (cyber_theme.tres):
 ##   RESPAWN          zurück an den Spawnpunkt, Vitals voll (Player.revive())
-##   MISSION NEU      Szene neu laden, alles auf Anfang
 ##   HAUPTMENÜ        zurück ins Hauptmenü
 ## Liegt auf CanvasLayer 20 über allem und läuft immer (PROCESS_MODE_ALWAYS), auch wenn der
 ## Player beim Tod angehalten ist. Esc wird abgefangen, damit kein Pausemenü darüber aufgeht.
@@ -44,9 +42,6 @@ const CAUSE_UNKNOWN := "SIGNAL VERLOREN // URSACHE UNBEKANNT"
 
 ## Szene für „Hauptmenü“.
 @export_file("*.tscn") var main_menu_scene := "res://scenes/menu/main_menu.tscn"
-## Sekunden bis Titel bzw. Knöpfe erscheinen.
-@export var title_delay := 1.1
-@export var buttons_delay := 2.0
 @export var flatline_db := -14.0
 
 ## true, solange der Bildschirm offen ist.
@@ -62,7 +57,6 @@ var _cause_label: Label
 var _time_label: Label
 var _panel: PanelContainer
 var _respawn_button: Button
-var _restart_button: Button
 var _menu_button: Button
 var _blackout: ColorRect
 var _flatline: AudioStreamPlayer
@@ -110,30 +104,19 @@ func show_death(cause: StringName, seconds_alive: float) -> void:
 	_cause_label.text = CAUSES.get(cause, CAUSE_UNKNOWN)
 	var secs := int(seconds_alive)
 	_time_label.text = "ÜBERLEBT  %02d:%02d" % [secs / 60, secs % 60]
-	_content.modulate.a = 0.0
-	_panel.modulate.a = 0.0
+	_amount = 1.0
+	_content.modulate.a = 1.0
+	_panel.modulate.a = 1.0
 	_blackout.color.a = 0.0
-	_set_buttons_enabled(false)
+	_set_buttons_enabled(true)
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-
+	_respawn_button.grab_focus()
 	_flatline.volume_db = flatline_db
+	if _flatline.playing:
+		_flatline.stop()
 	_flatline.play()
 	_collapse_camera()
-
-	var fade := _tween()
-	fade.tween_property(self, "_amount", 1.0, 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	var title := _tween()
-	title.tween_interval(title_delay)
-	title.tween_property(_content, "modulate:a", 1.0, 0.35)
-	var buttons := _tween()
-	buttons.tween_interval(buttons_delay)
-	buttons.tween_property(_panel, "modulate:a", 1.0, 0.3)
-	buttons.tween_callback(_on_buttons_shown)
-	# Dauerton nach ein paar Sekunden leiser, sonst nervt er im Menü.
-	var tone := _tween()
-	tone.tween_interval(3.5)
-	tone.tween_property(_flatline, "volume_db", flatline_db - 22.0, 2.5)
 
 
 ## Respawn am Spawnpunkt (wie der Knopf).
@@ -186,36 +169,26 @@ func _on_buttons_shown() -> void:
 	_respawn_button.grab_focus()
 
 
-## Kamera kippt zur Seite und sackt auf Bodenhöhe. In der Luft fällt der Körper erst auf den Boden.
+## Kamera liegt sofort seitlich, der Körper steht auf dem Boden. Kein Tween.
 func _collapse_camera() -> void:
 	if _player == null:
 		return
 	var head := _player.head
-	var fall_time := 0.0
 	var space := _player.get_world_3d().direct_space_state
 	var from := _player.global_position + Vector3.UP * 0.2
 	var query := PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 60.0, 1, [_player.get_rid()])
 	var hit := space.intersect_ray(query)
 	if not hit.is_empty():
 		var ground_y: float = hit.position.y
-		var drop := _player.global_position.y - ground_y
-		if drop > 0.05:
-			fall_time = clampf(sqrt(2.0 * drop / maxf(_player.gravity, 0.1)), 0.1, 1.2)
-			var body := _tween()
-			body.tween_property(_player, "global_position:y", ground_y, fall_time) \
-				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	var sag := _tween()
-	sag.set_parallel(true)
-	sag.tween_property(head, "position:y", 0.28, 0.9).set_delay(fall_time * 0.5) \
-		.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
-	sag.tween_property(head, "rotation:z", deg_to_rad(68.0), 1.0).set_delay(fall_time * 0.5 + 0.1) \
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
-	sag.tween_property(head, "rotation:x", deg_to_rad(-8.0), 1.1).set_delay(fall_time * 0.5) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		if _player.global_position.y - ground_y > 0.05:
+			_player.global_position.y = ground_y
+	head.position.y = 0.28
+	head.rotation.z = deg_to_rad(68.0)
+	head.rotation.x = deg_to_rad(-8.0)
 
 
 func _set_buttons_enabled(enabled: bool) -> void:
-	for button: Button in [_respawn_button, _restart_button, _menu_button]:
+	for button: Button in [_respawn_button, _menu_button]:
 		button.disabled = not enabled
 		button.focus_mode = Control.FOCUS_ALL if enabled else Control.FOCUS_NONE
 
@@ -314,8 +287,11 @@ func _build() -> void:
 	buttons.add_theme_constant_override("separation", 10)
 	margin.add_child(buttons)
 	_respawn_button = _button(buttons, "RESPAWN", respawn)
-	_restart_button = _button(buttons, "MISSION NEU STARTEN", restart_mission)
+	_respawn_button.name = "RespawnButton"
+	_respawn_button.unique_name_in_owner = true
 	_menu_button = _button(buttons, "HAUPTMENÜ", go_to_main_menu)
+	_menu_button.name = "MenuButton"
+	_menu_button.unique_name_in_owner = true
 
 	_blackout = ColorRect.new()
 	_blackout.name = "Blackout"
@@ -326,7 +302,9 @@ func _build() -> void:
 
 	_flatline = AudioStreamPlayer.new()
 	_flatline.name = "Flatline"
-	_flatline.stream = VitalSounds.flatline()
+	var tone := VitalSounds.flatline().duplicate() as AudioStreamWAV
+	tone.loop_mode = AudioStreamWAV.LOOP_DISABLED
+	_flatline.stream = tone
 	_flatline.bus = &"SFX"
 	add_child(_flatline)
 

@@ -16,9 +16,16 @@ var _rain: GPUParticles3D
 
 
 func _ready() -> void:
+	var atmosphere := WorldAtmosphere.new()
+	atmosphere.name = "WorldAtmosphere"
+	add_child(atmosphere)
+	var content := CityContent.new()
+	content.name = "CityContent"
+	add_child(content)
 	if rain:
 		_rain = _create_rain()
 		add_child(_rain)
+		atmosphere.bind_rain(_rain)
 
 
 func _process(_delta: float) -> void:

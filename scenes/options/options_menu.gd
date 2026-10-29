@@ -51,6 +51,15 @@ var _confirm_discard := false
 @onready var back_button: Button = %BackButton
 @onready var status_label: Label = %StatusLabel
 
+var gi_option: OptionButton
+var upscale_option: OptionButton
+var draw_distance_slider: HSlider
+var draw_distance_value: Label
+var shadow_option: OptionButton
+var ssao_check: CheckButton
+var glow_check: CheckButton
+var volumetric_check: CheckButton
+
 
 func _ready() -> void:
 	# Die ID entspricht Viewport.MSAA, so wandert sie unverändert nach Settings.msaa.
@@ -78,6 +87,7 @@ func _ready() -> void:
 	tabs.tab_changed.connect(func(_tab: int) -> void: glitch_requested.emit(0.5, 0.08))
 
 	_build_key_grid()
+	_build_nextgen_rows()
 
 	# F11 ändert Settings, während die Seite offen ist: Vollbild im Entwurf nachziehen.
 	Settings.changed.connect(_on_settings_changed)
@@ -327,6 +337,14 @@ func _refresh_options() -> void:
 	sensitivity_slider.set_value_no_signal(_draft.mouse_sensitivity)
 	invert_y_check.set_pressed_no_signal(_draft.invert_y)
 	camera_shake_slider.set_value_no_signal(_draft.get("camera_shake", 1.0) * 100.0)
+	if gi_option != null:
+		_select_id(gi_option, int(_draft.get("gi_mode", Settings.GI_NORMAL)))
+		_select_id(upscale_option, int(_draft.get("upscale_mode", Settings.UPSCALE_OFF)))
+		_select_id(shadow_option, int(_draft.get("shadow_quality", 2)))
+		draw_distance_slider.set_value_no_signal(float(_draft.get("draw_distance", 500.0)))
+		ssao_check.set_pressed_no_signal(bool(_draft.get("ssao_enabled", true)))
+		glow_check.set_pressed_no_signal(bool(_draft.get("glow_enabled", true)))
+		volumetric_check.set_pressed_no_signal(bool(_draft.get("volumetric_fog", true)))
 	for action: String in _key_buttons:
 		var button: Button = _key_buttons[action]
 		if action == _rebinding_action:
@@ -344,6 +362,93 @@ func _refresh_labels() -> void:
 	sensitivity_value.text = "%.2fx" % _draft.mouse_sensitivity
 	var shake: float = _draft.get("camera_shake", 1.0)
 	camera_shake_value.text = "AUS" if shake <= 0.0 else "%d%%" % roundi(shake * 100.0)
+	if draw_distance_value != null:
+		draw_distance_value.text = "%d m" % roundi(float(_draft.get("draw_distance", 500.0)))
+
+
+func _select_id(option: OptionButton, id: int) -> void:
+	var index := option.get_item_index(id)
+	if index >= 0:
+		option.select(index)
+
+
+func _build_nextgen_rows() -> void:
+	var page := tabs.get_node("GRAFIK") as VBoxContainer
+	gi_option = _add_option(page, "GiOption", "Raytracing / GI", ["Aus", "Normal", "Raytraced High"])
+	gi_option.item_selected.connect(func(index: int) -> void:
+		_set_draft(gi_option.get_item_id(index), "gi_mode"))
+	upscale_option = _add_option(page, "UpscaleOption", "Upscaling", [
+		"Aus", "DLSS Qualität", "DLSS Ausgewogen", "DLSS Leistung", "DLSS 5 Hybrid",
+	])
+	upscale_option.item_selected.connect(func(index: int) -> void:
+		_set_draft(upscale_option.get_item_id(index), "upscale_mode"))
+	var hint := Label.new()
+	hint.name = "UpscaleHint"
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.text = "Die Stufen steuern scaling_3d_mode (FSR 2) und scaling_3d_scale. Nvidia DLSS 5 Frame Generation gibt es in Godot 4.7 nicht; Hybrid senkt nur die interne Auflösung."
+	page.add_child(hint)
+	var row := HBoxContainer.new()
+	row.name = "DrawDistanceRow"
+	page.add_child(row)
+	var caption := Label.new()
+	caption.text = "Renderdistanz"
+	caption.custom_minimum_size = Vector2(220, 0)
+	row.add_child(caption)
+	draw_distance_slider = HSlider.new()
+	draw_distance_slider.name = "DrawDistanceSlider"
+	draw_distance_slider.unique_name_in_owner = true
+	draw_distance_slider.min_value = 80.0
+	draw_distance_slider.max_value = 800.0
+	draw_distance_slider.step = 10.0
+	draw_distance_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(draw_distance_slider)
+	draw_distance_value = Label.new()
+	draw_distance_value.name = "DrawDistanceValue"
+	draw_distance_value.unique_name_in_owner = true
+	draw_distance_value.custom_minimum_size = Vector2(72, 0)
+	row.add_child(draw_distance_value)
+	draw_distance_slider.value_changed.connect(func(meters: float) -> void:
+		_set_draft(meters, "draw_distance"))
+	shadow_option = _add_option(page, "ShadowOption", "Schattenqualität", ["Niedrig", "Mittel", "Hoch", "Ultra"])
+	shadow_option.item_selected.connect(func(index: int) -> void:
+		_set_draft(shadow_option.get_item_id(index), "shadow_quality"))
+	ssao_check = _add_check(page, "SsaoCheck", "SSAO")
+	glow_check = _add_check(page, "GlowCheck", "Glow")
+	volumetric_check = _add_check(page, "VolumetricFogCheck", "Volumetrischer Nebel")
+	ssao_check.toggled.connect(_set_draft.bind("ssao_enabled"))
+	glow_check.toggled.connect(_set_draft.bind("glow_enabled"))
+	volumetric_check.toggled.connect(_set_draft.bind("volumetric_fog"))
+
+
+func _add_option(page: VBoxContainer, node_name: String, caption: String, items: Array[String]) -> OptionButton:
+	var row := HBoxContainer.new()
+	row.name = node_name + "Row"
+	page.add_child(row)
+	var label := Label.new()
+	label.text = caption
+	label.custom_minimum_size = Vector2(220, 0)
+	row.add_child(label)
+	var option := OptionButton.new()
+	option.name = node_name
+	option.unique_name_in_owner = true
+	option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var index := 0
+	for entry: String in items:
+		option.add_item(entry, index)
+		index += 1
+	row.add_child(option)
+	option.owner = self
+	return option
+
+
+func _add_check(page: VBoxContainer, node_name: String, caption: String) -> CheckButton:
+	var check := CheckButton.new()
+	check.name = node_name
+	check.unique_name_in_owner = true
+	check.text = caption
+	page.add_child(check)
+	check.owner = self
+	return check
 
 
 func _build_key_grid() -> void:

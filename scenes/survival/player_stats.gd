@@ -4,8 +4,8 @@ extends Node
 ##
 ## Hängt am Player (kein Autoload): im Hauptmenü gibt es den Knoten nicht,
 ## bei Pause läuft er nicht mit, weil der Baum angehalten ist.
-## Hunger und Durst sinken von selbst. Bei 0 gibt es keinen Ausdauer-Nachschub
-## und HP fallen. Sprinten verbraucht Ausdauer und startet erst wieder ab
+## Hunger und Durst sinken von selbst. Unter 15 % gibt es alle 3 Sekunden
+## 1–3 Schaden. Sprinten verbraucht Ausdauer und startet erst wieder ab
 ## `sprint_restart`, damit die Leiste an der Null nicht flackert.
 
 signal stat_changed(stat_name: String, current: float, maximum: float)
@@ -28,14 +28,19 @@ const CAUSE_THIRST := &"thirst"
 @export var max_thirst: float = 100.0
 
 ## Abnahme pro Sekunde, solange der Spieler lebt. Werte bleiben in 0…Maximum.
-@export var hunger_drain_rate: float = 0.35
-@export var thirst_drain_rate: float = 0.55
+## Bewusst langsam: volle Leiste hält grob 15–20 Minuten.
+@export var hunger_drain_rate: float = 0.08
+@export var thirst_drain_rate: float = 0.12
 ## Sprint-Verbrauch und Erholung pro Sekunde.
 @export var stamina_drain_per_second: float = 20.0
 @export var stamina_regen_per_second: float = 15.0
-## HP-Verlust pro Sekunde, wenn der jeweilige Wert auf 0 steht. Beide addieren sich.
-@export var starve_hp_per_second: float = 4.0
-@export var dehydrate_hp_per_second: float = 6.0
+## Schaden erst unter diesem Anteil von Hunger oder Durst (0,15 = 15 %).
+@export var need_damage_ratio: float = 0.15
+## Abstand zwischen zwei Mangel-Treffern.
+@export var need_damage_interval: float = 3.0
+## Mangel-Schaden pro Treffer: 1, bei beiden Werten 2, bei einem Wert auf 0 zusätzlich bis 3.
+@export var need_damage_min: int = 1
+@export var need_damage_max: int = 3
 ## Unter diesem Wert erholt sich Ausdauer nur noch halb, solange der Wert über 0 liegt.
 @export var low_need: float = 25.0
 ## Ausdauer, die da sein muss, um Sprint neu zu starten.
@@ -55,6 +60,7 @@ var last_damage_cause: StringName = &""
 
 var _sprinting := false
 var _regen_delay := 0.0
+var _need_damage_wait := 0.0
 var _dead := false
 var _speed_multiplier := 1.0
 var _boost_left := 0.0
@@ -76,8 +82,8 @@ func advance(delta: float) -> void:
 	deplete_stats(delta)
 
 
-## Hunger und Durst sinken mit der Zeit. Bei 0 gibt es keinen Ausdauer-Nachschub,
-## und HP fallen. `delta` kommt aus `_process`, damit es nicht an die Bildrate hängt.
+## Hunger und Durst sinken mit der Zeit. Unter `need_damage_ratio` fällt HP
+## in festen Ticks. `delta` kommt aus `_process`, damit es nicht an die Bildrate hängt.
 func deplete_stats(delta: float) -> void:
 	if _dead or delta <= 0.0:
 		return
@@ -100,12 +106,7 @@ func deplete_stats(delta: float) -> void:
 		if hunger < low_need or thirst < low_need:
 			rate *= 0.5
 		_add(STAT_STAMINA, rate * delta)
-	if hunger <= 0.0:
-		last_damage_cause = CAUSE_HUNGER
-		_add(STAT_HP, -starve_hp_per_second * delta)
-	if thirst <= 0.0:
-		last_damage_cause = CAUSE_THIRST
-		_add(STAT_HP, -dehydrate_hp_per_second * delta)
+	_apply_need_damage(delta)
 
 
 func set_sprinting(wants: bool) -> void:
@@ -177,6 +178,7 @@ func restore_all() -> void:
 	_regen_delay = 0.0
 	_speed_multiplier = 1.0
 	_boost_left = 0.0
+	_need_damage_wait = 0.0
 	last_damage_cause = &""
 	hp = max_hp
 	stamina = max_stamina
@@ -186,6 +188,31 @@ func restore_all() -> void:
 	stat_changed.emit(STAT_STAMINA, stamina, max_stamina)
 	stat_changed.emit(STAT_HUNGER, hunger, max_hunger)
 	stat_changed.emit(STAT_THIRST, thirst, max_thirst)
+
+
+func _apply_need_damage(delta: float) -> void:
+	var hunger_low := max_hunger > 0.0 and hunger < max_hunger * need_damage_ratio
+	var thirst_low := max_thirst > 0.0 and thirst < max_thirst * need_damage_ratio
+	if not hunger_low and not thirst_low:
+		_need_damage_wait = 0.0
+		return
+	_need_damage_wait += delta
+	var interval := maxf(need_damage_interval, 0.1)
+	while _need_damage_wait >= interval:
+		_need_damage_wait -= interval
+		var amount := need_damage_min
+		if hunger_low and thirst_low:
+			amount += 1
+		if hunger <= 0.0 or thirst <= 0.0:
+			amount += 1
+		amount = clampi(amount, need_damage_min, need_damage_max)
+		if thirst_low and (thirst <= hunger or not hunger_low):
+			last_damage_cause = CAUSE_THIRST
+		else:
+			last_damage_cause = CAUSE_HUNGER
+		_add(STAT_HP, -float(amount))
+		if _dead:
+			return
 
 
 func _add(stat_name: String, amount: float) -> void:

@@ -185,6 +185,14 @@ func _ready() -> void:
 	add_child(death_screen)
 	if footsteps == null or land_impact == null:
 		push_error("Player braucht %Footsteps und %LandImpact.")
+	_apply_draw_distance()
+	if not Settings.changed.is_connected(_apply_draw_distance):
+		Settings.changed.connect(_apply_draw_distance)
+
+
+func _apply_draw_distance() -> void:
+	if camera != null:
+		camera.far = Settings.draw_distance
 
 
 func _unhandled_input(event: InputEvent) -> void:
