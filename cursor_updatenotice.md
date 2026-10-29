@@ -385,3 +385,11 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht behoben: `test_sector7_enemies` meldete davor `Navigation region synchronization had 4 edge error(s)`. Die 15 Checks bleiben 0 Fehler. Bake-Parameter nicht angefasst.
 - Nicht getestet: Fenster, echter ngrok-Tunnel, zwei Spieler, `test_sector7_city` (früher über 5 Minuten unter Software-Rendering). Echte `settings.cfg` nicht angefasst. Wegwerfskript `tools/tests/_bugscan.gd` gelöscht, nicht committed. `pictures/maxresdefault.jpg.import` und die ungetrackte Torrent-Datei nicht mit committed.
 - Git: Branch `fix/spiel-bugs`, Commit `e3bee1e`, Pull Request https://github.com/CaptainArschbart/Test/pull/46 . Nicht direkt auf `main`. Der Hook `.cursor/hooks/require-cursor-notice.py` verbietet Commits außerhalb von `main`. Für diesen Auftrag ist die Branch-Sperre im Hook nur lokal um eine Ausnahme für `fix/spiel-bugs` ergänzt worden und danach wieder der Stand von `main`. Die Hook-Datei ist nicht Teil des Commits.
+
+### 2026-10-29 · PR #46 nach main gemerged · Cursor (für EnScapeZ) · main
+- Auftrag: `/compromise`. Der Branch mit Pull Request bleibt, der Stand soll trotzdem auf `main` liegen, weil die Notice sonst für Claude nicht zählt.
+- Korrektur zum Eintrag direkt darüber: „Nicht direkt auf `main`“ galt nur bis zum Merge. GitHub-Merge `0575ef0` (Merge pull request #46), Fast-forward lokal `01bbab5..0575ef0`. PR: https://github.com/CaptainArschbart/Test/pull/46
+- Keine Codeänderung in diesem Eintrag. Keine neue Input-Aktion, keine neue Node-Struktur. `claude_updatenotice.md` nicht angefasst.
+- Getestet: nichts Neues. Die Zahlen stehen im Eintrag davor.
+- Git: auf `main`, `git pull origin main`, dieser Eintrag, `git push origin main`. `pictures/maxresdefault.jpg.import` und die Torrent-Datei nicht mit committed.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
