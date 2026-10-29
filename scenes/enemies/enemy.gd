@@ -20,6 +20,10 @@ extends CharacterBody3D
 ## PlayerStealth.visibility (Licht, Hocken, Bewegung), Geräusche über StealthNoise (Gruppe noise_listener).
 ## Gefundene Leichen machen misstrauisch. Treffer: take_hit(damage, point, normal); EMP: emp_hit().
 ##
+## Neutral (Standard, `start_hostile` aus): ignoriert den Spieler, bis er getroffen wird, ein feindlicher
+## Kollege Alarm ruft oder er eine Leiche findet. Ein Pfeil über dem Kopf zeigt das: gelb neutral, rot
+## feindlich. Beim Tod bekommt der Spieler profile.xp_reward Erfahrung (PlayerXp).
+##
 ## Bewegung: „schwebende“ Kapsel (unten 0,6 m frei) plus Bodenstrahl. Stufen bis 0,6 m (Treppen,
 ## Bordsteine) geht er so einfach hoch, und er läuft nie über eine Kante, unter der kein Boden ist.
 ## Wege kommen vom NavigationAgent3D auf dem Navmesh des EnemyDirector.
@@ -47,6 +51,14 @@ const STATE_COLORS := {
 	State.DEAD: Color(0.05, 0.05, 0.07),
 }
 
+## Pfeil über dem Kopf (Spitze nach unten) und darüber das Zustandszeichen „?“ / „!“.
+const ARROW_HEIGHT := 2.12
+const MARK_HEIGHT := 2.5
+const NEUTRAL_COLOR := Color(1.0, 0.85, 0.25)
+const HOSTILE_COLOR := Color(1.0, 0.16, 0.3)
+## Ab dieser Entfernung (m) ist der Pfeil ausgeblendet.
+const ARROW_RANGE := 45.0
+
 ## Was über dem Kopf steht, wenn er ruft (passend zur Funk-Stimme aus EnemySounds).
 const BARKS := {
 	&"suspicious": ["Hm?", "Was war das?", "Hallo?"],
@@ -69,8 +81,13 @@ const BARKS := {
 @export var start_point := 0
 ## Sekunden, bis eine Leiche verschwindet (nur wenn der Spieler weit weg ist).
 @export var corpse_time := 240.0
+## An: greift von sich aus an (alte Verhalten). Aus (Standard): neutral, bis er angegriffen wird,
+## ein feindlicher Kollege Alarm ruft oder er eine Leiche findet.
+@export var start_hostile := false
 
 var state: State = State.PATROL
+## Neutral = sieht und hört den Spieler nicht als Bedrohung. Der Pfeil über dem Kopf ist dann gelb.
+var hostile := false
 var awareness := 0.0
 var health := 80.0
 ## Letzte Stelle, an der er den Spieler gesehen oder etwas gehört hat.
@@ -136,6 +153,9 @@ var _flash_left := 0.0
 
 var _shape: CollisionShape3D
 var _mark: Label3D
+## Kleiner Pfeil über dem Kopf: gelb = neutral, rot = feindlich. Wippt mit dem Zustandszeichen.
+var _arrow: MeshInstance3D
+var _arrow_material: StandardMaterial3D
 var _bark_label: Label3D
 var _voice: AudioStreamPlayer3D
 var _sfx: AudioStreamPlayer3D
@@ -158,6 +178,7 @@ func _ready() -> void:
 	wall_min_slide_angle = deg_to_rad(5.0)
 	_rng.seed = variant_seed if variant_seed != 0 else hash(String(get_path()))
 	health = profile.max_health
+	hostile = start_hostile
 	_ammo = profile.magazine
 	_home_position = global_position
 	_home_yaw = rotation.y
@@ -189,8 +210,9 @@ func _build() -> void:
 	model.run_speed = profile.run_speed
 
 
-	_mark = _label(96, 0.007, 2.3)
-	_bark_label = _label(40, 0.006, 2.62)
+	_mark = _label(96, 0.007, MARK_HEIGHT)
+	_build_arrow()
+	_bark_label = _label(40, 0.006, 2.82)
 	_bark_label.visibility_range_end = 25.0
 	_bark_label.modulate = Color(0.85, 0.95, 1.0)
 
@@ -218,6 +240,54 @@ func _label(size: int, pixel: float, height: float) -> Label3D:
 	l.visible = false
 	add_child(l)
 	return l
+
+
+## Flaches Dreieck, immer zur Kamera gedreht, unbeleuchtet (auch im Dunkeln gut zu sehen).
+## Ein dunkler, etwas größerer Rand liegt dahinter, damit er vor hellem Himmel nicht verschwindet.
+func _build_arrow() -> void:
+	_arrow = MeshInstance3D.new()
+	_arrow.name = "Arrow"
+	_arrow.mesh = _triangle_mesh(0.13, 0.1, 0.11)
+	_arrow.position.y = ARROW_HEIGHT
+	_arrow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_arrow.visibility_range_end = ARROW_RANGE
+	_arrow.visibility_range_end_margin = 5.0
+	_arrow.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	_arrow_material = _arrow_mat(NEUTRAL_COLOR, 1)
+	_arrow.material_override = _arrow_material
+	add_child(_arrow)
+	var rim := MeshInstance3D.new()
+	rim.name = "Rim"
+	rim.mesh = _triangle_mesh(0.17, 0.13, 0.15)
+	rim.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	rim.visibility_range_end = ARROW_RANGE
+	rim.visibility_range_end_margin = 5.0
+	rim.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	rim.material_override = _arrow_mat(Color(0.05, 0.0, 0.08, 0.85), 0)
+	_arrow.add_child(rim)
+
+
+## Dreieck mit der Spitze nach unten: halbe Breite, Höhe der Oberkante, Tiefe der Spitze.
+static func _triangle_mesh(half_width: float, top: float, tip: float) -> ArrayMesh:
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = PackedVector3Array([
+		Vector3(-half_width, top, 0.0), Vector3(half_width, top, 0.0), Vector3(0.0, -tip, 0.0),
+	])
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
+
+static func _arrow_mat(color: Color, priority: int) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = color
+	mat.render_priority = priority
+	return mat
 
 
 func _audio(db: float, reach: float) -> AudioStreamPlayer3D:
@@ -262,6 +332,8 @@ func take_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 	if state == State.DEAD:
 		return
 	_find_player()
+	var was_hostile := hostile
+	hostile = true
 	var amount := damage
 	if point.y > global_position.y + 1.55 - model.crouch * 0.3:
 		amount *= profile.headshot_multiplier
@@ -290,7 +362,8 @@ func take_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 		target_position = _player.global_position
 	awareness = 1.0
 	if state != State.STUNNED:
-		_enter_combat(false)
+		# War er neutral, ruft er Alarm und die Kollegen in der Nähe werden auch feindlich.
+		_enter_combat(not was_hostile)
 
 
 ## Faustschlag des Spielers (PlayerMelee): Schaden wie take_hit, dazu Rückstoß, Taumeln und
@@ -325,12 +398,22 @@ func emp_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 func reset_alert() -> void:
 	if state == State.DEAD:
 		return
+	hostile = start_hostile
+	_apply_state_look()
 	awareness = 0.0
 	_sees_player = false
 	_stun_left = 0.0
 	_knock = Vector3.ZERO
 	_release_token()
 	_set_state(State.RETURN)
+
+
+## Wird feindlich (Pfeil rot). Danach sieht und hört er den Spieler wie bisher.
+func become_hostile() -> void:
+	if hostile or state == State.DEAD:
+		return
+	hostile = true
+	_apply_state_look()
 
 
 ## Von StealthNoise aufgerufen.
@@ -352,12 +435,19 @@ func hear_noise(position: Vector3, radius: float, source: Node, kind: StringName
 	if source is Enemy or source is StealthGuard or kind == StealthNoise.SHOUT:
 		if state == State.COMBAT:
 			return
+		if source is Enemy and not (source as Enemy).hostile:
+			return
+		if not hostile:
+			become_hostile()
 		var where := position
 		if source is Enemy:
 			where = (source as Enemy).target_position
 		target_position = where
 		awareness = maxf(awareness, 0.75)
 		_begin_search(where)
+		return
+	# Neutral: Geräusche des Spielers sind ihm egal.
+	if not hostile:
 		return
 	var loudness := 1.0 - dist / effective
 	target_position = position
@@ -434,6 +524,10 @@ func _perceive(delta: float) -> void:
 		_sees_player = _sight_amount > 0.0
 	if state == State.STUNNED:
 		return
+	if not hostile:
+		# Neutral: sieht den Spieler, nimmt ihn aber nicht als Ziel wahr.
+		_sees_player = false
+		awareness = 0.0
 	if _sees_player:
 		_unseen_time = 0.0
 		awareness = minf(awareness + profile.sight_gain * _sight_amount * delta, 1.2)
@@ -506,6 +600,7 @@ func _look_for_corpses() -> void:
 		if not get_world_3d().direct_space_state.intersect_ray(query).is_empty():
 			continue
 		body.set_meta(&"found", true)
+		become_hostile()
 		_say(&"body", true)
 		StealthNoise.emit(get_tree(), global_position, profile.shout_radius, self, StealthNoise.SHOUT)
 		target_position = body.global_position
@@ -938,6 +1033,7 @@ func _die(push: Vector3) -> void:
 	_mark.visible = false
 	_bark_label.visible = false
 	_muzzle_light.visible = false
+	_arrow.visible = false
 	model.stunned = false
 	model.fall(push)
 	_say(&"death", true)
@@ -947,6 +1043,9 @@ func _die(push: Vector3) -> void:
 			_steps.volume_db = 0.0
 			_steps.play())
 	_drop_loot()
+	# Alle Treffer kommen vom Spieler (Waffen, Fäuste, Granaten): er bekommt die XP.
+	if _player != null and _player.xp != null:
+		_player.xp.add_xp(profile.xp_reward)
 	died.emit(self)
 
 
@@ -1158,8 +1257,11 @@ func _animate(delta: float) -> void:
 			_steps.pitch_scale = _rng.randf_range(0.8, 0.95)
 			_steps.volume_db = -14.0 if speed < 2.5 else -6.0
 			_steps.play()
+	var bob := sin(Time.get_ticks_msec() * 0.006) * 0.05
 	if _mark.visible:
-		_mark.position.y = 2.3 + sin(Time.get_ticks_msec() * 0.006) * 0.05
+		_mark.position.y = MARK_HEIGHT + bob
+	if _arrow.visible and lod == Lod.FULL:
+		_arrow.position.y = ARROW_HEIGHT + bob * 0.6
 
 
 func _set_state(new_state: State) -> void:
@@ -1184,6 +1286,8 @@ func _apply_state_look() -> void:
 	if model == null:
 		return
 	model.set_status_color(STATE_COLORS[state])
+	if _arrow_material != null:
+		_arrow_material.albedo_color = HOSTILE_COLOR if hostile else NEUTRAL_COLOR
 	match state:
 		State.SUSPICIOUS, State.INVESTIGATE, State.SEARCH:
 			_mark.text = "?"

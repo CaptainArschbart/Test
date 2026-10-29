@@ -35,4 +35,5 @@ loot_items = Array[Resource]([ExtResource("2_drink"), ExtResource("3_stim"), Ext
 loot_chances = PackedFloat32Array(0.3, 0.2, 1.0, 0.6)
 credits_min = 5
 credits_max = 18
+xp_reward = 30
 voice_pitch = 0.92
