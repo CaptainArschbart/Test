@@ -143,6 +143,11 @@ func add_explosion(center: Vector3, radius: float, strength := 1.0) -> float:
 	return added
 
 
+## Kurzer Stoß ohne Ort (Faustschlag, Dash). `amount` (0–1) kommt aufs Trauma.
+func add_trauma(amount: float) -> void:
+	trauma = clampf(trauma + amount, 0.0, 1.0)
+
+
 ## Alles sofort auf null (Tod, Respawn).
 func reset() -> void:
 	trauma = 0.0

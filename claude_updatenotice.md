@@ -447,5 +447,35 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 
 ### 2026-10-29 · main in PR #34 geholt, Mergekonflikte gelöst · Claude (für Arschi)
 
+### 2026-10-28 · Nahkampf: Boxen und aufgeladener Dash-Schlag · Claude (für Arschi) · PR #38
+- Auftrag: Unbewaffnet einen normalen Angriff (Boxen) und einen aufgeladenen Angriff (Vorschlag Dash + Schlag) einbauen.
+- Bedienung:
+  - Boxen: **F** (neue Aktion `melee`, im Optionsmenü unter Steuerung als „Boxen / Aufladen“ belegbar, Konflikt-Tausch wie bei allen Tasten) oder **Linksklick**, wenn nichts in der Hand ist, das selbst auf `fire` reagiert (Schusswaffe, Granate, Klinge). Jeder Druck schlägt sofort; links, rechts, links im Wechsel, jeder dritte Schlag einer Kombo ist ein Haken (×1,5). Mit Waffe/Klinge/Granate in der Hand geht nur F: die Waffe wird für den Schlag weggesteckt (ausgeblendet, Schießen/Zielen gesperrt) und kommt danach zurück.
+  - Aufladen: Taste halten. Ab 0,22 s zieht die rechte Faust zurück, leuchtet (cyan → magenta), Balken unter dem Fadenkreuz mit Strich bei der Mindestladung, steigender Ton, man läuft mit 60 % Tempo, kein Sprint. Loslassen unter 45 % = nichts. Darüber: Dash in Blickrichtung (2,5–5 m je nach Ladung, 17 m/s, FOV-Kick +9°, Kamerastoß), dann Powerschlag (32–65 Schaden, Rückstoß, 1,2 s Betäubung) mit kleiner Schockwelle (2,6 m, 30 % Schaden, Wegstoßen). 1,6 s Cooldown.
+  - Dash bricht ab: Gegner/Ziel in 1,3 m vor dem Körper (Schlag sofort), Wand, Kante ohne Boden (tiefer als 0,7 m, zwei Strahlen voraus), festgefahren. Startet nur am Boden und nicht beim Klettern/Rutschen/Noclip; in der Luft gibt es den Schlag ohne Dash. Klettern, Rutschen, Noclip, Tod brechen Aufladen/Dash ab. Treppen nimmt der Dash über `Player._move_with_stairs`.
+  - Treffer: Hitstop über `Engine.time_scale` (Faust 0,045 s, Power 0,11 s, nur lokal), Kamerastoß über neues `CameraShake.add_trauma()`, Lichtblitz mit Ring am Einschlag, prozedurale Sounds, Lärm für Gegner (6 m / 14 m). Wand-Treffer klingen anders.
+- Neu:
+  - `scenes/player/player_melee.gd` (`PlayerMelee`, vom Player im Code angelegt wie `CameraShake`, `Player.melee`, nur für die lokale Figur). Getter für Hände/Waffe: `is_holstering()`, `get_guard_weight()`, `get_extension(side)`, `get_windup()`, `get_fov_offset()`, `get_move_factor()`, `blocks_sprint()`. Für Tests: `press()`, `release()`, `last_dash_reason`, `last_dash_distance`.
+  - `scenes/player/melee_tuning.gd` + `melee_tuning.tres`: **alle Werte** (Schaden, Reichweite, Takt, Kombo-Fenster, Aufladezeit, Dash-Weite/Tempo/Kanten-Tiefe, Cooldown, Rückstoß, Betäubung, Schockwelle, Hitstop, Shake, Lärm). Dort justieren.
+  - `scenes/player/melee_sounds.gd`: Luftzug, Treffer, Wand, Aufladen, Dash, Powerschlag (prozedural, gecacht).
+  - `tools/tests/test_player_melee.gd`: Prüfskript, Aufruf `godot --headless --path . -s res://tools/tests/test_player_melee.gd`, Exitcode 0 = grün.
+- Geändert:
+  - `scenes/hands/player_hands.gd`: Posen `POSE_GUARD`, `POSE_PUNCH`, `POSE_HOOK`, `POSE_WINDUP`, `POSE_POWER`, `_melee_pose()`, `_mirrored()`, `get_fist(side)`. Deckung blendet weich ein und bleibt 1,4 s nach dem letzten Schlag. Weggesteckte Waffe = leere-Hände-Zweig. Hände blenden in der Deckung nicht aus.
+  - `scenes/enemies/enemy.gd`: neue `melee_hit(damage, point, normal, push, stun_time)`: wie `take_hit`, aber nie Kopftreffer (Kamera ist auf Kopfhöhe), Hinterhalt ×3 gilt weiter (Faust von hinten schlägt nieder). Rückstoß `_knock` in `_move` (klingt exponentiell ab, ~Tempo/6 m, nie über Kanten), Taumeln, optional Betäubung. Andere Ziele (Testwachen, Schießscheiben) bekommen `take_hit`.
+  - `scenes/player/player.gd`: legt `PlayerMelee` an, `melee.physics_step()` nach `PlayerMovement`, Tempo-Faktor, kein Sprint beim Aufladen/Dash, Abbruch bei Respawn/Noclip.
+  - `scenes/weapons/weapon_holder.gd`: Waffe beim Weggesteckt-Sein ausgeblendet und gesperrt, FOV-Kick wird aufs Sichtfeld gerechnet.
+  - `scenes/player/item_user.gd`: gehaltenes Item beim Wegstecken ausgeblendet, kein Klingen-/Granaten-`fire` während eines Schlags.
+  - `scenes/player/camera_shake.gd`: `add_trauma(amount)`.
+  - `project.godot` (Aktion `melee` = F), `autoload/settings.gd` (`REBINDABLE_ACTIONS`).
+- Getestet: Godot 4.7.2 headless, Prüfskript `CHECKS 42 FAILS 0` in 5 Läufen (Taste/Optionsmenü/kein Konflikt, Treffer 18, Kombo L-R-L, Haken 27, Reichweite, Hitstop endet, Aufladen/Leuchten/Balken/Bremsen, voller Dash 5,1 m, zu kurz = nichts, Cooldown, Wand-Stopp vor der Wand, Kanten-Stopp oben auf 2-m-Plattform, in der Luft ohne Dash, Dash auf Ziel bricht ab und trifft voll ohne hineinzudashen, Pistole: Linksklick schießt weiter, F steckt weg und trifft, Waffe kommt zurück; echte Gegner: Faustschaden, Reaktion, Rückstoß, Powerschlag betäubt, Schockwelle trifft Nebenmann; Noclip bricht ab). `test_sector7_enemies.gd` weiter 15/15. Hauptmenü, Testmap, Sektor 7 je 10 s ohne Skriptfehler. Screenshots in Sektor 7 unter Xvfb, Compatibility und Forward+ (Vulkan über lavapipe), Projektordner `nahkampf/`.
+- Nicht getestet: echte GPU, Gefühl mit Maus/Tastatur (Hitstop-Länge, Dash-Tempo bitte anspielen und in `melee_tuning.tres` justieren), Ton auf echter Soundkarte.
+- Offene Punkte / Hinweise:
+  - **Multiplayer-Sync fehlt:** Schläge, Dash und Treffer laufen nur lokal (wie die Gegner selbst). Andere Spieler sehen den Dash über die normale Positions-Sync, aber keine Box-Animation, kein Leuchten; Spieler gegen Spieler gibt es nicht. Hitstop verlangsamt nur das eigene Spiel.
+  - Zivil-NPCs (PR #35) sind noch nicht auf main: Sie werden getroffen, wenn sie `take_hit` (oder `melee_hit`) haben; Flucht müsste dort ausgelöst werden.
+  - Wer neue Gegner-/NPC-Typen baut: `melee_hit(damage, point, normal, push, stun_time)` anbieten, sonst gibt es nur `take_hit` ohne Rückstoß.
+  - Ein `-s`-Testskript darf eine Spielfigur nicht „Player“ nennen, wenn sie nicht in einer Map liegt: der NetworkManager behandelt die Szene sonst als Multiplayer-Map und ersetzt sie.
+
+### 2026-10-29 · main in PR #38 geholt, Mergekonflikte gelöst · Claude (für Arschi)
+
 - Aktuellen main (#35) in den Branch gemergt. Konflikt in `claude_updatenotice.md` gelöst, alle Einträge aus main und aus diesem PR behalten.
 - Geprüft: keine Konfliktmarker, keine fehlenden `res://`-Pfade. Nicht in Godot geladen.

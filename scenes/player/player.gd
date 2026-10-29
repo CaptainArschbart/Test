@@ -18,6 +18,8 @@ extends CharacterBody3D
 ## Fällt der Spieler tiefer als fall_damage_min_height, zieht die Landung HP ab (PlayerStats.damage).
 ## %PlayerMovement: Hocken ("crouch"), Rutschen aus dem Sprint und Klettern an Kanten ("jump" vor einer Kante).
 ## %PlayerStealth: Sichtbarkeit und Geräuschpegel für Gegner (Schleichen).
+## PlayerMelee (im Code angelegt, Player.melee): Boxen ("melee" oder "fire" mit leeren Händen),
+## Halten lädt einen Dash-Schlag auf.
 ## "noclip" schaltet den Flugmodus um: durch Wände fliegen in Blickrichtung,
 ## "jump" hoch, "noclip_down" runter, "sprint" schneller. Im Noclip gibt es keinen HP-Verlust.
 ## Low-Health-Effekte (LowHealthFx) und der Death-Screen „FLATLINE“ (DeathScreen) werden im Code
@@ -88,6 +90,7 @@ const PICKUP_SCENE := preload("res://scenes/items/pickup.tscn")
 const LowHealthFxScript := preload("res://scenes/survival/low_health_fx.gd")
 const DeathScreenScript := preload("res://scenes/survival/death_screen.gd")
 const CameraShakeScript := preload("res://scenes/player/camera_shake.gd")
+const PlayerMeleeScript := preload("res://scenes/player/player_melee.gd")
 
 signal revived
 
@@ -103,6 +106,8 @@ var low_health_fx: LowHealthFxScript
 var death_screen: DeathScreenScript
 ## Renn-Wippen und Explosions-Wackeln der Kamera (nur beim lokalen Spieler, sonst null).
 var camera_shake: CameraShakeScript
+## Faustkampf und Dash-Schlag (nur beim lokalen Spieler, sonst null).
+var melee: PlayerMeleeScript
 
 var _spawn_transform: Transform3D
 var _noclip_label: Label
@@ -151,6 +156,9 @@ func _ready() -> void:
 	camera_shake = CameraShakeScript.new()
 	camera_shake.name = "CameraShake"
 	add_child(camera_shake)
+	melee = PlayerMeleeScript.new()
+	melee.name = "PlayerMelee"
+	add_child(melee)
 	_create_noclip_label()
 	death_screen = DeathScreenScript.new()
 	add_child(death_screen)
@@ -190,11 +198,14 @@ func _physics_process(delta: float) -> void:
 		return
 	_ensure_play_input()
 	var sprinting := not input_locked and Input.is_action_pressed("sprint") and stats.is_alive() \
-			and not movement.blocks_sprint()
+			and not movement.blocks_sprint() and not (melee != null and melee.blocks_sprint())
 	stats.set_sprinting(sprinting)
 	sprinting = stats.is_sprinting()
-	# Klettern und Rutschen bewegen den Spieler selbst.
-	if not noclip and movement.physics_step(delta, sprinting):
+	# Klettern und Rutschen bewegen den Spieler selbst, danach der Dash des aufgeladenen Schlags.
+	var moved_by_movement := not noclip and movement.physics_step(delta, sprinting)
+	if not noclip and melee != null and melee.physics_step(delta) and not moved_by_movement:
+		moved_by_movement = true
+	if moved_by_movement:
 		if global_position.y < respawn_height:
 			respawn()
 		return
@@ -222,6 +233,8 @@ func _physics_process(delta: float) -> void:
 	var direction := (transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
 	var speed := sprint_speed if sprinting else walk_speed
 	speed = movement.adjust_speed(speed)
+	if melee != null:
+		speed *= melee.get_move_factor()
 	speed *= stats.get_speed_multiplier()
 	var accel := acceleration if grounded_before else acceleration * air_control
 	var weight := minf(accel * delta, 1.0)
@@ -341,6 +354,8 @@ func revive() -> void:
 		set_noclip(false)
 	stats.restore_all()
 	movement.cancel()
+	if melee != null:
+		melee.cancel()
 	respawn()
 	head.position.y = _head_height
 	head.rotation = Vector3.ZERO
@@ -429,6 +444,8 @@ func set_noclip(enabled: bool) -> void:
 	_noclip_label.visible = enabled
 	if enabled:
 		_stop_sounds()
+		if melee != null:
+			melee.cancel()
 
 
 ## Fliegt in Blickrichtung der Kamera, ohne Kollision und Schwerkraft.
