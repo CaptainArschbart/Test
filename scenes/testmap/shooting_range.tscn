@@ -1,10 +1,12 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://scenes/testmap/shooting_range.gd" id="1_range"]
 [ext_resource type="Resource" path="res://scenes/items/data/pistol.tres" id="2_pistol"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/shooting_target.tscn" id="3_target"]
 [ext_resource type="PackedScene" path="res://scenes/items/pickup.tscn" id="4_pickup"]
 [ext_resource type="Resource" path="res://scenes/items/data/sniper.tres" id="5_sniper"]
+[ext_resource type="Resource" path="res://scenes/items/data/smg.tres" id="6_smg"]
+[ext_resource type="Resource" path="res://scenes/items/data/contact_grenade.tres" id="7_cgren"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_floor"]
 albedo_color = Color(0.07, 0.07, 0.1, 1)
@@ -41,7 +43,7 @@ emission_energy_multiplier = 1.0
 
 [node name="ShootingRange" type="Node3D"]
 script = ExtResource("1_range")
-weapons = Array[Resource]([ExtResource("2_pistol"), ExtResource("5_sniper")])
+weapons = Array[Resource]([ExtResource("2_pistol"), ExtResource("5_sniper"), ExtResource("6_smg")])
 
 [node name="Floor" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 22)
@@ -124,6 +126,15 @@ item = ExtResource("2_pistol")
 [node name="SniperPickup" parent="." instance=ExtResource("4_pickup")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 1.4, 1.2)
 item = ExtResource("5_sniper")
+
+[node name="SmgPickup" parent="." instance=ExtResource("4_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 1.2)
+item = ExtResource("6_smg")
+
+[node name="ContactGrenadePickup" parent="." instance=ExtResource("4_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.3, 0.5, 1.2)
+item = ExtResource("7_cgren")
+count = 5
 
 [node name="Board" type="Label3D" parent="."]
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 4.6, 6)

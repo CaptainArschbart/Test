@@ -4,6 +4,8 @@
 [ext_resource type="Resource" path="res://scenes/items/data/stim_pack.tres" id="2_stim"]
 [ext_resource type="Resource" path="res://scenes/items/data/data_shard.tres" id="3_shard"]
 [ext_resource type="Resource" path="res://scenes/items/data/emp_grenade.tres" id="4_emp"]
+[ext_resource type="Resource" path="res://scenes/items/data/smg.tres" id="8_smg"]
+[ext_resource type="Resource" path="res://scenes/items/data/contact_grenade.tres" id="9_cgren"]
 
 [resource]
 script = ExtResource("1_profile")
@@ -35,8 +37,8 @@ magazine = 12
 reload_time = 1.8
 accuracy = 0.45
 aim_time = 0.8
-loot_items = Array[Resource]([ExtResource("2_stim"), ExtResource("3_shard"), ExtResource("4_emp")])
-loot_chances = PackedFloat32Array(0.35, 0.4, 0.15)
+loot_items = Array[Resource]([ExtResource("2_stim"), ExtResource("3_shard"), ExtResource("4_emp"), ExtResource("8_smg"), ExtResource("9_cgren")])
+loot_chances = PackedFloat32Array(0.35, 0.4, 0.15, 0.2, 0.3)
 credits_min = 10
 credits_max = 25
 voice_pitch = 0.82

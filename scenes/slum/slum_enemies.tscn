@@ -8,6 +8,7 @@
 [ext_resource type="Resource" path="res://scenes/enemies/profiles/security.tres" id="p_sec"]
 [ext_resource type="Resource" path="res://scenes/enemies/profiles/sniper.tres" id="p_sn"]
 [ext_resource type="Resource" path="res://scenes/enemies/profiles/cop.tres" id="p_cop"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/gangster_smg.tres" id="p_smg"]
 
 [node name="SlumEnemies" type="Node3D"]
 
@@ -294,7 +295,7 @@ start_point = 1
 
 [node name="S_StreetGunner" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, 3, 0, 36)
-profile = ExtResource("p_gp")
+profile = ExtResource("p_smg")
 route = NodePath("../../Routes/R_MainStreet")
 
 [node name="S_CornerThug" parent="Enemies" instance=ExtResource("3_enemy")]
