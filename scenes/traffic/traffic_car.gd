@@ -329,7 +329,14 @@ func _hit_player(node: Node3D, push: Vector3, hit_speed: float) -> void:
 	var player := node as CharacterBody3D
 	if player == null:
 		return
+	var amount := clampf((hit_speed - 1.4) * 3.0, 3.0, 30.0)
+	# Multiplayer: Autos fährt der Host, Schaden und Stoß gehen an den Rechner, der die Figur steuert.
+	if player.has_method("apply_damage"):
+		if player.call("controls_local_body"):
+			player.velocity = Vector3.ZERO
+		player.call("apply_damage", amount, &"car", push)
+		return
 	player.velocity = push
 	var stats: Variant = player.get("stats")
 	if stats != null and stats.has_method("damage"):
-		stats.damage(clampf((hit_speed - 1.4) * 3.0, 3.0, 30.0), &"car")
+		stats.damage(amount, &"car")
