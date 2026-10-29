@@ -106,7 +106,8 @@ func _build_money_panel() -> void:
 	money_panel = Control.new()
 	money_panel.name = "Money"
 	money_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	money_panel.position = Vector2(frame.offset_left, frame.offset_bottom + 8.0)
+	# Unter der Stealth-Anzeige (StealthHud, 46 px hoch, 8 px unter dem Rahmen).
+	money_panel.position = Vector2(frame.offset_left, frame.offset_bottom + 62.0)
 	money_panel.size = Vector2(190.0, 34.0)
 	money_panel.draw.connect(_draw_money_panel)
 	add_child(money_panel)
