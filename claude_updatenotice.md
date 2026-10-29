@@ -384,6 +384,26 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 - Nicht getestet: Gefühl mit echter Maus/Tastatur und echter GPU, Ton der Schritte auf echter Soundkarte (Takt geprüft, nicht gehört), Multiplayer (Wackeln nur lokal, fremde Figuren laufen über ihren eigenen Körper-Takt).
 - Hinweise für die Nächsten: Wer die Kamera bewegen will, bitte über `PlayerMovement.refresh_camera()` gehen bzw. einen Versatz dort einrechnen, nicht `Camera3D.rotation` direkt setzen. Weitere Explosionen/Erschütterungen: `CameraShake.explosion(get_tree(), pos, radius, stärke)` (Skript per `preload`).
 
+### 2026-10-28 · Sektor 7 größer, Fußgänger und NPC-Autos · Claude (für Arschi) · PR #35
+- Auftrag: Sektor 7 vergrößern, Fußgänger-NPCs, die herumlaufen, und Autos, die nur von NPCs gefahren werden (der Spieler kann nicht einsteigen).
+- Karte (`tools/gen_slum_map.py` erzeugt `scenes/slum/slum.tscn` weiter komplett; alte Inhalte, Spawn-Gegend, Kletterwege und Gegner bleiben, der alte Zufallsablauf ist unverändert):
+  - Ringstraße bei ±84 m um das alte Viertel, Kartenrand jetzt ±136 m (vorher etwa ±76 m). Kreuzungen mit Zebrastreifen, Strommasten, Gehwege.
+  - Vier Außenviertel im selben Stil: Nord (Platz mit Markt, Hochhaus, Plattenbauten, Sportkäfig), Ost (Docks mit Lagerhallen, Containerhof hinter Tor), Süd (Nachtmeile in zwei Reihen und Laternengasse), West (Häuserzeile und Hütten-Raster), dazu die Ecken (Kraftwerk NO, Schrottplatz NW, Parkplatz und Hotel SO, Hütten und Hochhaus SW). Neue SPOTS für die Mapauswahl/Tests.
+  - Spieler-Spawn liegt jetzt bei (5,8, 0,25, 62) auf dem Gehweg statt mitten auf der Fahrbahn.
+  - Navmesh: `bake_area` in `scenes/slum/slum_enemies.tscn` deckt die ganze Karte ab (backen ca. 1 s).
+  - Leistung: Kit-Teile haben Sichtweiten (`SlumBuilder.solid_range`/`detail_range`, Ausblenden per FADE_SELF), große Gebäude bekommen einen `OccluderInstance3D`, `rendering/occlusion_culling/use_occlusion_culling=true`. `ProcMesh.rounded_box` nimmt jetzt Ringe/Segmente (für günstigere Figuren).
+- Autos (`scenes/traffic/`): `RoadNetwork` baut Fahrspuren (Rechtsverkehr) und Abbiegekurven aus den Kreuzungen, `TrafficDirector` setzt 16 Autos ein (fünf Modelle: Kleinwagen, Limousine, Van, Taxi, Pickup, mit Neon, Unterbodenlicht, Scheinwerfern, Bremslichtern und 3D-Motorsound). Vorfahrt an Kreuzungen per Konfliktliste und Warteschlange, Bremsen vor Fußgängern, Spieler, Gegnern und Autos, Hupen, nach einer Weile vorsichtig vorbeifahren, damit nichts dauerhaft festhängt. Unfall: Spieler wird weggestoßen und bekommt 3–30 Schaden je nach Tempo (Todesursache „ÜBERFAHREN“), Fußgänger fallen um. Die Autos sind kinematisch (Ebene 1, keine Maske).
+- Fußgänger (`scenes/civilians/`): `CrowdDirector` mit 40 Fußgängern auf einem Gehweg-Netz (183 Knoten, Zebrastreifen, Märkte), `Civilian` nutzt das Navmesh der Gegner und `CivilianModel` (abgeleitet von `EnemyModel`, fünf Outfits, Neon-Schirme, verschiedene Tempi). Sie warten am Zebrastreifen auf eine Lücke, weichen Spieler und Autos aus, fliehen oder ducken sich bei Schüssen und Explosionen (über `StealthNoise`), können sterben. Gruppe `civilian`, nicht `enemy`. Wer weit weg und nicht im Bild ist, wird in die Nähe des Spielers verlegt, damit es dort belebt bleibt. LOD wie bei den Gegnern (voll, gedrosselt, schlafend).
+- Neu `tools/tests/test_sector7_city.gd`: Aufruf `godot --headless --path . -s res://tools/tests/test_sector7_city.gd`, Exitcode 0 = grün. 44 Checks: Kartengröße, Viertel, Navmesh-Erreichbarkeit, Spawn, Autos fahren, Kreuzungen, keine Überlappung, Halten vor dem Spieler, Hupen, Vorbeifahren, Unfall, Fußgänger laufen auf Gehwegen, nutzen Zebrastreifen, fallen nicht durch, Panik bei Schuss, Tod.
+- Dateien: neu `scenes/traffic/*`, `scenes/civilians/*`, `scenes/slum/slum_life.tscn`, `tools/tests/test_sector7_city.gd`. Geändert `tools/gen_slum_map.py`, `scenes/slum/slum.tscn` (generiert), `scenes/slum/slum_enemies.tscn`, `scenes/slum/kit/slum_builder.gd`, `slum_piece.gd`, `slum_prop.gd`, `slum_street.gd`, `slum_building.gd`, `scenes/common/proc_mesh.gd`, `scenes/survival/death_screen.gd`, `scenes/enemies/enemy_director.gd` (nur Kommentar), `project.godot`.
+- Getestet: Godot 4.7.2 headless, Stadt-Test `CHECKS 44 FAILS 0` (mehrfach), Gegner-Test `CHECKS 15 FAILS 0`, auch nach dem Merge von main (PR #32). Screenshots unter Xvfb (OpenGL-Kompatibilität): Übersicht, Hauptstraße, Ringstraße, Nordmarkt, Docks, Nachtmeile.
+- Offene Punkte:
+  - Multiplayer: Autos und Fußgänger laufen auf jedem Rechner für sich, nicht synchronisiert.
+  - Forward+ nicht getestet (kein Vulkan im Container), ebenso Leistung auf echter GPU.
+  - Lange Navmesh-Wege quer über die ganze Karte brechen headless am Suchlimit ab; Fußgänger laufen deshalb immer nur Stück für Stück von Knoten zu Knoten.
+  - Gegner reagieren nicht auf tote Fußgänger, und der Spieler kann noch nicht fahren.
+  - Neue Klassen (`RoadNetwork`, `TrafficDirector`, `TrafficCar`, `VehicleModel`, `Civilian`, `CivilianModel`, `CrowdDirector`): Projekt im Editor einmal neu laden.
+
 ### 2026-10-28 · Bessere Sounds statt 8-Bit-Töne · Claude (für Arschi) · PR #39
 - Auftrag: Arschi findet die Sounds „8-bit und trashy“. Alle Effekte durch hochwertigere ersetzen.
 - Bestand vorher: 10 WAVs unter `assets/audio` (22 kHz, je ein Sinus/Rauschen) und Laufzeit-Synthese in `enemy_sounds.gd` (Gegnerstimmen als Formant-Brummen mit Bit-Reduktion, also echtes 8-Bit-Klangbild, dazu Wusch, Aufprall, Zap) und `vital_sounds.gd` (Herz, Atem, Flatline). Musik (`sounds/*.mp3`) nicht angefasst.
@@ -394,3 +414,8 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 - Tests: neu `tools/tests/check_audio_levels.py` (ohne Godot, `python3 tools/tests/check_audio_levels.py`): Format, kein Clipping, kein Gleichanteil, kein Knacken an Anfang/Ende, 3D-Sounds mono, Schleifen-Naht, `loop_end` im Import, alle `res://assets/audio/...`-Verweise in `scenes/` existieren. Ergebnis `CHECKS 1199 FAILS 0`. Neu `tools/tests/test_audio.gd` (Godot headless, lädt alles über die echten Schnittstellen, alle Profile-Stimmlagen, Loops, Nachladesound ≤ `reload_time`). GDScript per `gdparse`/`gdlint` geprüft.
 - Nicht getestet: Godot selbst lief im Container nicht (Download-Binary nicht erlaubt), `test_audio.gd` also noch nicht ausgeführt. Kein Hörtest möglich, nur Pegel und Spektrogramme angesehen. Bitte einmal im Editor importieren lassen und reinhören.
 - Hinweise für die Nächsten: Neue Sounds (SMG, Kontaktgranate, Consumables, Autos) gern ebenfalls als Funktion in `tools/gen_sounds.py` ergänzen und den Dateinamen in `EXPECTED` von `check_audio_levels.py` eintragen. Sounds für 3D-Player mono halten. Wer `Enemy.BARKS` ändert, muss `VOICE_LINES` in `gen_sounds.py` anpassen und die Stimmen neu erzeugen (`--voices`).
+
+### 2026-10-29 · main in PR #39 geholt, Mergekonflikte gelöst · Claude (für Arschi)
+
+- Aktuellen main (#35) in den Branch gemergt. Konflikt in `claude_updatenotice.md` gelöst, alle Einträge aus main und aus diesem PR behalten.
+- Geprüft: keine Konfliktmarker, keine fehlenden `res://`-Pfade. Nicht in Godot geladen.
