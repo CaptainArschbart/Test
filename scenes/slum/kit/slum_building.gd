@@ -637,8 +637,7 @@ func _shop(b: SlumBuilder) -> void:
 	while fz + 0.6 <= iz1 - 1.3:
 		_fridge(b, Vector3(fridge_x, fl, fz))
 		for row_y: float in [0.6, 1.2]:
-			for dz: float in [-0.27, 0.27]:
-				slots.append({"kind": "fridge", "xf": Transform3D(Basis(Vector3.UP, -PI * 0.5), Vector3(fridge_x - 0.05, fl + row_y, fz + dz))})
+			slots.append({"kind": "fridge", "xf": Transform3D(Basis(Vector3.UP, -PI * 0.5), Vector3(fridge_x - 0.05, fl + row_y, fz))})
 		fz += 1.25
 	if fz > iz0 + 0.8:
 		_aisle_sign(Vector3(fridge_x - 0.4, fh - 0.55, iz0 + 1.0), "DRINKS")
@@ -716,11 +715,11 @@ func _shelf_unit(b: SlumBuilder, at: Vector3, n: Vector3, length: float, height:
 				SlumMats.color(Color(1.0, 0.9, 0.3), 0.6), false, false)
 	var goods := [Color(0.85, 0.2, 0.15), Color(0.95, 0.75, 0.15), Color(0.2, 0.55, 0.85), Color(0.25, 0.7, 0.35), Color(0.9, 0.9, 0.85)]
 	var slots: Array = []
-	var count := maxi(int(length / 0.9), 1)
+	var count := maxi(int(length / 1.1), 1)
 	for bi: int in boards.size():
 		var y := boards[bi]
-		# Boden 2 und 3 tragen die echte Ware, die anderen Füllware (Kartons, Packungen).
-		if bi == 1 or bi == 2:
+		# Boden 3 trägt die echte Ware, die anderen Füllware (Kartons, Packungen).
+		if bi == 2:
 			for k: int in count:
 				var x := -length * 0.5 + (k + 0.5) * length / count
 				slots.append({"kind": kind, "xf": xf * Transform3D(Basis.IDENTITY, Vector3(x, y + 0.015, depth * 0.12))})

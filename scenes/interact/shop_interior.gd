@@ -121,6 +121,8 @@ var armed := false
 var camera_alive := false
 ## Eigener Warenkorb (bei Clients vom Host gemeldet).
 var my_unpaid := 0
+## Schüsse des bewaffneten Verkäufers (für Tests und Anzeige).
+var shots_fired := 0
 
 var _rng := RandomNumberGenerator.new()
 var _catalog: Dictionary = {}
@@ -578,6 +580,7 @@ func _tick_shooting(delta: float) -> void:
 		chance *= 0.7
 	if Vector2(target.velocity.x, target.velocity.z).length() > 4.0:
 		chance *= 0.7
+	shots_fired += 1
 	var end := target.global_position + Vector3.UP * 1.1
 	if _rng.randf() < chance:
 		target.apply_damage(SHOT_DAMAGE, &"shopkeeper")
@@ -928,6 +931,8 @@ func _refresh_slot(i: int) -> void:
 	if i >= _slot_nodes.size():
 		return
 	if _slot_nodes[i] != null:
+		# Erst aus dem Baum, damit der neue Knoten denselben Namen bekommt.
+		remove_child(_slot_nodes[i])
 		_slot_nodes[i].queue_free()
 		_slot_nodes[i] = null
 	var item := item_at(i)

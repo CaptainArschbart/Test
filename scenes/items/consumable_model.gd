@@ -592,6 +592,7 @@ static func _build_shard(root: Node3D, color: Color) -> void:
 	crystal.radial_segments = 6
 	crystal.rings = 1
 	_part(root, crystal, _neon(color, 2.2), Vector3(0.0, 0.015, 0.0))
+	_part(root, ProcMesh.tube(0.0105, 0.0105, 0.004), _neon(color, 1.0), Vector3(0.0, -0.009, 0.0))
 
 
 static func _label3d(text: String, color: Color, pixel: float) -> Label3D:
