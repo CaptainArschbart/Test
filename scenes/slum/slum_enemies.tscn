@@ -15,6 +15,7 @@
 [node name="Director" type="Node3D" parent="."]
 script = ExtResource("1_director")
 source_root = NodePath("../..")
+bake_area = AABB(-140, -3, -140, 280, 45, 280)
 
 [node name="Routes" type="Node3D" parent="."]
 
