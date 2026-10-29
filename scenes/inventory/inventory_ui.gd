@@ -50,7 +50,8 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	# Zu, aber die Sperre klebt noch: dann wieder laufen lassen. Die Fläche fängt nichts.
-	if player == null or overlay == null or overlay.visible or get_tree().paused:
+	if player == null or overlay == null or overlay.visible or get_tree().paused \
+			or player.open_panel != null:
 		return
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	player.input_locked = false
@@ -67,7 +68,7 @@ func force_close() -> void:
 func _input(event: InputEvent) -> void:
 	# Echo würde Tab auf- und wieder zuklappen. Bei Pause bleibt das Inventar zu
 	# (dieses HUD erbt den Prozessmodus und läuft im angehaltenen Baum nicht).
-	if event.is_echo() or get_tree().paused or inventory == null:
+	if event.is_echo() or get_tree().paused or inventory == null or player.open_panel != null:
 		return
 	if event.is_action_pressed("inventory"):
 		_set_open(not overlay.visible)

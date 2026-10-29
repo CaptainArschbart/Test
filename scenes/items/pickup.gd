@@ -7,6 +7,11 @@ extends Area3D
 ## Fallengelassene Items fliegen per throw() ein Stück und landen auf dem Boden.
 ## Waffen (WeaponData mit view_scene) zeigen ihr Modell statt des Würfels, Verbrauchsitems
 ## mit Modell (ConsumableData.model) ihr ConsumableModel, vergrößert und leicht schräg.
+##
+## Multiplayer: net_id kennzeichnet das Pickup auf allen Rechnern (siehe WorldSync). Neue Pickups
+## entstehen über WorldSync.spawn_pickup, Aufheben fragt den Host (take_pending bis zur Antwort).
+
+const GROUP := &"item_pickup"
 
 @export var item: ItemData
 @export_range(1, 999) var count := 1
@@ -19,6 +24,11 @@ var _falling := false
 var _pickup_delay := 0.0
 var _time := randf() * TAU
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+## Kennung im Multiplayer. Leer bei Pickups aus der Map-Szene, _ready setzt dann "s:<Pfad>".
+var net_id := ""
+## Online: Aufheben ist beim Host angefragt, die Antwort fehlt noch.
+var take_pending := false
+var _pending_since := 0
 
 @onready var visual: Node3D = $Visual
 @onready var mesh: MeshInstance3D = $Visual/Mesh
@@ -31,6 +41,9 @@ func _ready() -> void:
 		push_warning("ItemPickup ohne Item: %s" % get_path())
 		queue_free()
 		return
+	add_to_group(GROUP)
+	if net_id.is_empty():
+		net_id = WorldSync.static_pickup_id(self)
 	var material := StandardMaterial3D.new()
 	material.albedo_color = item.color
 	material.emission_enabled = true
@@ -74,6 +87,9 @@ func get_interact_text(_player: Player) -> String:
 func interact(player: Player) -> void:
 	if _pickup_delay > 0.0 or is_queued_for_deletion():
 		return
+	if WorldSync.is_online():
+		_request_take(player)
+		return
 	var left := player.inventory.add_item(item, count)
 	if left == 0:
 		queue_free()
@@ -82,6 +98,26 @@ func interact(player: Player) -> void:
 		_update_label()
 	else:
 		player.item_user.show_message("Inventar voll")
+
+
+## Neue Menge (vom Host im Multiplayer).
+func set_count(value: int) -> void:
+	count = value
+	_update_label()
+
+
+## Online: so viel anfragen, wie ins Inventar passt. Der Host antwortet über WorldSync._grant.
+func _request_take(player: Player) -> void:
+	# Ohne Antwort nach 2 s darf man es erneut versuchen (Paket verloren, Host weg).
+	if take_pending and Time.get_ticks_msec() - _pending_since < 2000:
+		return
+	var amount := mini(player.inventory.space_for(item), count)
+	if amount <= 0:
+		player.item_user.show_message("Inventar voll")
+		return
+	take_pending = true
+	_pending_since = Time.get_ticks_msec()
+	WorldSync.request_take(net_id, amount)
 
 
 func _fall(delta: float) -> void:

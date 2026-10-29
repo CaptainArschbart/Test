@@ -141,16 +141,15 @@ func _check_vending() -> void:
 func _check_death_drop() -> void:
 	_inventory.call("take_all_money")
 	_inventory.call("add_money", 77)
-	var parent := _player.get_parent()
-	var before := parent.get_child_count()
+	var before := get_nodes_in_group("item_pickup")
 	_player.call("_drop_all_items")
 	await _frames(2)
 	_check(_money() == 0, "Tod: Konto leer")
+	# Neue Pickups landen in der Map-Szene (WorldSync.spawn_pickup), nicht neben dem Player.
 	var stack: Node = null
-	for i in range(before, parent.get_child_count()):
-		var child := parent.get_child(i)
+	for child: Node in get_nodes_in_group("item_pickup"):
 		var item: Resource = child.get("item")
-		if item != null and item.get("id") == "credchip":
+		if not before.has(child) and item != null and item.get("id") == "credchip":
 			stack = child
 	_check(stack != null and int(stack.get("count")) == 77, "Tod: Credchip-Stapel mit 77 liegt da")
 
