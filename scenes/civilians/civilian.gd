@@ -54,11 +54,18 @@ var _shape: CollisionShape3D
 var _voice: AudioStreamPlayer3D
 var _steps: AudioStreamPlayer3D
 var _label: Label3D
+## Multiplayer: Beim Client läuft der Fußgänger nicht selbst, sondern folgt dem Host (net_apply).
+var net_puppet := false
+var net_seed := 0
+var _net_pos := Vector3.INF
+var _net_yaw := 0.0
+var _net_speed := 0.0
 
 
 func setup(new_crowd: CrowdDirector, node: int, seed_value: int) -> void:
 	crowd = new_crowd
 	_rng.seed = seed_value
+	net_seed = seed_value
 	walk_speed = _rng.randf_range(1.1, 1.75)
 	run_speed = _rng.randf_range(3.6, 4.8)
 	_to = node
@@ -103,7 +110,8 @@ func _ready() -> void:
 	add_child(_label)
 	_face_yaw = rotation.y
 	_last_pos = global_position
-	_choose_leg()
+	if not net_puppet:
+		_choose_leg()
 
 
 func _audio(db: float, reach: float) -> AudioStreamPlayer3D:
@@ -149,6 +157,11 @@ func relocate(pos: Vector3, toward: int) -> void:
 func take_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 	if state == State.DEAD:
 		return
+	if WorldSync.is_client():
+		# Der Host rechnet die Fußgänger: Treffer dorthin, hier nur zucken.
+		WorldSync.forward_hit(self, &"take_hit", [damage, point, normal])
+		model.flinch = 1.0
+		return
 	var amount := damage
 	if point.y > global_position.y + 1.5:
 		amount *= 2.0
@@ -162,6 +175,9 @@ func take_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 
 
 func emp_hit(damage: float, point: Vector3, normal: Vector3) -> void:
+	if WorldSync.is_client():
+		WorldSync.forward_hit(self, &"emp_hit", [damage, point, normal])
+		return
 	take_hit(damage * 0.5, point, normal)
 
 
@@ -186,6 +202,8 @@ func hit_by_car(push: Vector3, speed: float) -> void:
 
 ## Von StealthNoise (Schüsse, Explosionen).
 func hear_noise(position: Vector3, radius: float, _source: Node, kind: StringName) -> void:
+	if WorldSync.is_client():
+		return
 	if state == State.DEAD or state == State.DOWN or lod == Lod.SLEEP:
 		return
 	if kind != StealthNoise.SHOT and kind != StealthNoise.EXPLOSION:
@@ -217,6 +235,9 @@ func panic(from: Vector3) -> void:
 # --- Takt ---------------------------------------------------------------------------------
 
 func _physics_process(delta: float) -> void:
+	if net_puppet:
+		_puppet_tick(delta)
+		return
 	if state == State.DEAD:
 		return
 	if lod == Lod.SLEEP and state != State.FLEE:
@@ -560,3 +581,58 @@ func _die(push: Vector3) -> void:
 	collision_mask = 0
 	if crowd != null:
 		crowd.on_civilian_died(self)
+
+
+# --- Multiplayer --------------------------------------------------------------------------
+
+## Host → Clients (über CrowdDirector.net_get_state): Position, Blick, Zustand, Tempo.
+func net_entry() -> Array:
+	return [global_position, rotation.y, int(state), Vector2(velocity.x, velocity.z).length()]
+
+
+## Client: Stand vom Host. Zustandswechsel lösen Umfallen, Aufstehen, Tod und Schreie aus.
+func net_apply(pos: Vector3, yaw: float, new_state: int, speed: float) -> void:
+	var first := _net_pos == Vector3.INF
+	_net_pos = pos
+	_net_yaw = yaw
+	_net_speed = speed
+	if first or global_position.distance_to(pos) > 4.0:
+		global_position = pos
+		rotation.y = yaw
+	if new_state == state or state == State.DEAD:
+		return
+	var old := state
+	state = new_state as State
+	_state_time = 0.0
+	match state:
+		State.DEAD:
+			_label.visible = false
+			model.fall(-global_basis.z)
+			if not first:
+				_voice.stream = SoundGen.voice(&"death", _rng.randf_range(1.2, 1.5), 0)
+				_voice.play()
+			collision_layer = 0
+			collision_mask = 0
+		State.DOWN:
+			model.fall(-global_basis.z)
+			_say_scream(true)
+		State.FLEE, State.COWER:
+			if old != State.FLEE and old != State.COWER and not first:
+				_say_scream(false)
+	if old == State.DOWN and state != State.DEAD and model.is_fallen():
+		model.get_up()
+
+
+## Client: weich zur Position des Hosts gleiten und passend animieren.
+func _puppet_tick(delta: float) -> void:
+	_scream_cd = maxf(_scream_cd - delta, 0.0)
+	if _net_pos == Vector3.INF:
+		return
+	if state != State.DEAD:
+		global_position = global_position.lerp(_net_pos, minf(delta * 10.0, 1.0))
+		rotation.y = lerp_angle(rotation.y, _net_yaw, minf(delta * 10.0, 1.0))
+	model.speed = _net_speed if state != State.DEAD and state != State.DOWN else 0.0
+	var cower := 1.0 if state == State.COWER else 0.0
+	model.cower = move_toward(model.cower, cower, delta * 5.0)
+	model.crouch = move_toward(model.crouch, cower, delta * 5.0)
+	model.animate(delta)
