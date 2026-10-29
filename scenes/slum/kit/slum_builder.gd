@@ -11,6 +11,9 @@ extends RefCounted
 var root: Node3D
 ## Physik-Layer der Kollision (1 = world).
 var collision_layer := 1
+## Sichtweite der Meshes in Metern (0 = immer sichtbar). Spart Draw-Calls in der großen Map.
+var solid_range := 0.0
+var detail_range := 0.0
 
 var _solid := {}  # Material -> SurfaceTool, wirft Schatten
 var _flat := {}  # Material -> SurfaceTool, Details ohne Schatten
@@ -265,14 +268,15 @@ func railing(a: Vector3, b: Vector3, mat: Material, height := 1.0, post_spacing 
 
 ## Baut die Meshes. Danach ist der Builder leer und kann weiterbenutzt werden.
 func finish() -> void:
-	_commit(_solid, "Mesh", GeometryInstance3D.SHADOW_CASTING_SETTING_ON)
-	_commit(_flat, "Details", GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
+	_commit(_solid, "Mesh", GeometryInstance3D.SHADOW_CASTING_SETTING_ON, solid_range)
+	_commit(_flat, "Details", GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, detail_range)
 	_solid.clear()
 	_flat.clear()
 	_body = null
 
 
-func _commit(table: Dictionary, node_name: String, shadow: GeometryInstance3D.ShadowCastingSetting) -> void:
+func _commit(table: Dictionary, node_name: String, shadow: GeometryInstance3D.ShadowCastingSetting,
+		visible_range := 0.0) -> void:
 	if table.is_empty():
 		return
 	var mesh := ArrayMesh.new()
@@ -284,4 +288,8 @@ func _commit(table: Dictionary, node_name: String, shadow: GeometryInstance3D.Sh
 	mi.name = node_name
 	mi.mesh = mesh
 	mi.cast_shadow = shadow
+	if visible_range > 0.0:
+		mi.visibility_range_end = visible_range
+		mi.visibility_range_end_margin = 8.0
+		mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	root.add_child(mi)
