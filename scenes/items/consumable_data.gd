@@ -15,10 +15,8 @@ extends ItemData
 ## Erscheint nach dem Benutzen, z. B. "getrunken".
 @export var use_verb := "benutzt"
 
-@export_group("Modell und Animation")
-## Modell aus ConsumableModel: "injector", "can", "noodles", "bandage". Leer = Neon-Würfel wie bisher.
-## Dasselbe Modell erscheint als Pickup, in der Hand und als Icon im Inventar.
-@export var model: StringName = &""
+@export_group("Animation")
+# Das Modell steht in ItemData.model (z. B. "injector", "can", "noodles", "bandage").
 ## Benutz-Animation aus ConsumableUse: "inject", "drink", "eat", "bandage".
 ## Leer = sofort verbraucht (altes Verhalten, ohne Animation).
 @export var use_animation: StringName = &""

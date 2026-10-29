@@ -6,7 +6,7 @@ extends Area3D
 ##
 ## Fallengelassene Items fliegen per throw() ein Stück und landen auf dem Boden.
 ## Waffen (WeaponData mit view_scene) zeigen ihr Modell statt des Würfels, Verbrauchsitems
-## mit Modell (ConsumableData.model) ihr ConsumableModel, vergrößert und leicht schräg.
+## mit Modell (ItemData.model, z. B. Essen, Medizin, Wertsachen) ihr ConsumableModel, vergrößert und leicht schräg.
 ##
 ## Multiplayer: net_id kennzeichnet das Pickup auf allen Rechnern (siehe WorldSync). Neue Pickups
 ## entstehen über WorldSync.spawn_pickup, Aufheben fragt den Host (take_pending bis zur Antwort).
@@ -158,12 +158,11 @@ func _show_weapon_model() -> void:
 
 
 func _show_consumable_model() -> void:
-	var consumable := item as ConsumableData
-	if consumable == null or not ConsumableModel.has_model(consumable.model):
+	if item is WeaponData or not ConsumableModel.has_model(item.model):
 		return
-	var model := ConsumableModel.build(consumable.model, consumable.color)
+	var model := ConsumableModel.build(item.model, item.color)
 	model.name = "ConsumableModel"
-	model.scale = Vector3.ONE * ConsumableModel.pickup_scale(consumable.model)
+	model.scale = Vector3.ONE * ConsumableModel.pickup_scale(item.model)
 	model.rotation_degrees = Vector3(0.0, 0.0, 14.0)
 	visual.add_child(model)
 	mesh.visible = false

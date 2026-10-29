@@ -18,6 +18,11 @@ extends Resource
 @export_range(1, 999) var max_stack := 1
 ## Währung: landet nicht in einem Slot, sondern als Geld im Inventar (Inventory.money).
 @export var is_currency := false
+## Grundpreis in Credchips (Läden verkaufen ungefähr dazu, der Hehler zahlt etwa die Hälfte). 0 = unverkäuflich.
+@export var value := 0
+## 3D-Modell aus ConsumableModel (z. B. "can", "phone", "watch"). Leer = Neon-Würfel bzw. Raute.
+## Dasselbe Modell erscheint als Pickup, in der Hand, im Ladenregal und als Icon im Inventar.
+@export var model: StringName = &""
 
 
 func is_same(other: ItemData) -> bool:

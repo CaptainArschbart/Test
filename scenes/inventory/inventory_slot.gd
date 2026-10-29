@@ -73,7 +73,7 @@ func _draw() -> void:
 	if item.icon:
 		var icon_size := size * 0.7
 		draw_texture_rect(item.icon, Rect2(center - icon_size / 2.0, icon_size), false)
-	elif item is ConsumableData and ConsumableModel.has_model(item.model):
+	elif ConsumableModel.has_model(item.model):
 		ConsumableModel.draw_icon(self, item.model, center, size.x, item.color)
 	else:
 		var r := size.x * 0.3
