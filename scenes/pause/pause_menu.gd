@@ -99,6 +99,8 @@ func _close_inventory() -> void:
 	var hud := player.get_node_or_null("InventoryUI")
 	if hud != null and hud.has_method("force_close"):
 		hud.call("force_close")
+	if player.open_panel != null and player.open_panel.has_method("close"):
+		player.open_panel.call("close")
 	player.input_locked = false
 
 
