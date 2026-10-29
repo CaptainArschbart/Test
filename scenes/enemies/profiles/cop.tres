@@ -4,6 +4,7 @@
 [ext_resource type="Resource" path="res://scenes/items/data/stim_pack.tres" id="2_stim"]
 [ext_resource type="Resource" path="res://scenes/items/data/energy_drink.tres" id="3_drink"]
 [ext_resource type="Resource" path="res://scenes/items/data/nano_bandage.tres" id="4_bandage"]
+[ext_resource type="Resource" path="res://scenes/items/data/contact_grenade.tres" id="9_cgren"]
 
 [resource]
 script = ExtResource("1_profile")
@@ -32,8 +33,8 @@ magazine = 10
 reload_time = 2.2
 accuracy = 0.35
 aim_time = 0.9
-loot_items = Array[Resource]([ExtResource("2_stim"), ExtResource("3_drink"), ExtResource("4_bandage")])
-loot_chances = PackedFloat32Array(0.3, 0.4, 0.25)
+loot_items = Array[Resource]([ExtResource("2_stim"), ExtResource("3_drink"), ExtResource("4_bandage"), ExtResource("9_cgren")])
+loot_chances = PackedFloat32Array(0.3, 0.4, 0.25, 0.3)
 credits_min = 5
 credits_max = 15
 voice_pitch = 0.95

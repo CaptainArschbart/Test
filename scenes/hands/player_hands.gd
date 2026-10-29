@@ -11,7 +11,8 @@ extends Node3D
 ## den Griff, die linke stützt (beidhändig). Beim Nachladen holt die linke Hand das
 ## Magazin. Die Griffposen hängen an der Waffenszene im %WeaponHolder und folgen damit
 ## Rückstoß und Nachlade-Kippen. Eine Waffenszene kann Marker3D "HandGripRight" und
-## "HandGripLeft" mitbringen, sonst gelten die Pistolenwerte unten.
+## "HandGripLeft" mitbringen, sonst gelten die Pistolenwerte unten. Beim Nachladen folgt die linke
+## Hand einem Marker "Magazine/HandReloadLeft" (Magazin vor dem Griff, z. B. SMG), falls vorhanden.
 ##
 ## Idle atmet leicht, Gehen und Sprint wackeln stärker, Umschauen zieht die Hände
 ## etwas nach, Landen drückt sie kurz runter. Die Pose aus der Szene bleibt die Mitte;
@@ -26,6 +27,8 @@ extends Node3D
 ## Beim Klettern (PlayerMovement) greifen beide Hände fest an die Kante.
 ## Verbrauchsitems: die rechte Hand hält das Modell (Griff aus ConsumableModel über ItemUser.get_held_grip),
 ## beim Benutzen gibt ConsumableUse auch die linke Hand vor (ItemUser.get_left_hand_target).
+## Boxen (PlayerMelee): Fäuste in der Deckung, abwechselnde Schläge, rechte Faust zieht zum Aufladen
+## zurück und schlägt nach dem Dash zu. Eine weggesteckte Waffe gibt beide Hände frei.
 
 @export var bob_frequency: float = 2.2
 @export var walk_bob_amplitude: float = 0.012
@@ -179,6 +182,57 @@ const POSE_SPRINT := {
 const SPRINT_BACK_OFFSET := Vector3(0.05, -0.15, 0.15)
 const SPRINT_BACK_PITCH := -40.0
 
+## Boxen (rechte Hand, links gespiegelt): Deckung vor dem Gesicht, Daumen außen, Handrücken nach außen.
+const POSE_GUARD := {
+	"pos": Vector3(0.155, -0.16, -0.32),
+	"fingers": Vector3(-0.2, 0.85, -0.5),
+	"back": Vector3(1.0, 0.1, 0.25),
+	"curl": [[72.0, 82.0, 40.0], [76.0, 84.0, 42.0], [78.0, 84.0, 42.0], [80.0, 84.0, 42.0]],
+	"spread": 0.5,
+	"thumb": Vector3(-62.0, 6.0, 55.0),
+	"thumb_curl": [36.0, 30.0],
+}
+## Gerader Schlag: Faust zur Bildmitte, Knöchel vorn, Handrücken oben.
+const POSE_PUNCH := {
+	"pos": Vector3(0.04, -0.075, -0.56),
+	"fingers": Vector3(-0.08, 0.08, -1.0),
+	"back": Vector3(0.3, 1.0, 0.0),
+	"curl": [[74.0, 84.0, 42.0], [78.0, 86.0, 44.0], [80.0, 86.0, 44.0], [82.0, 86.0, 44.0]],
+	"spread": 0.0,
+	"thumb": Vector3(-66.0, 4.0, 55.0),
+	"thumb_curl": [40.0, 34.0],
+}
+## Haken: kommt von außen, Faust schwingt quer zur Mitte.
+const POSE_HOOK := {
+	"pos": Vector3(-0.02, -0.06, -0.47),
+	"fingers": Vector3(-0.75, 0.05, -0.65),
+	"back": Vector3(0.15, 1.0, 0.25),
+	"curl": [[74.0, 84.0, 42.0], [78.0, 86.0, 44.0], [80.0, 86.0, 44.0], [82.0, 86.0, 44.0]],
+	"spread": 0.0,
+	"thumb": Vector3(-66.0, 4.0, 55.0),
+	"thumb_curl": [40.0, 34.0],
+}
+## Aufladen: Faust weit zurück und tief, Ellbogen nach hinten.
+const POSE_WINDUP := {
+	"pos": Vector3(0.22, -0.2, -0.27),
+	"fingers": Vector3(-0.15, 0.45, -0.88),
+	"back": Vector3(1.0, 0.25, 0.1),
+	"curl": [[76.0, 86.0, 44.0], [80.0, 86.0, 44.0], [82.0, 86.0, 44.0], [84.0, 86.0, 44.0]],
+	"spread": 0.0,
+	"thumb": Vector3(-66.0, 4.0, 55.0),
+	"thumb_curl": [40.0, 34.0],
+}
+## Powerschlag nach dem Dash: weit in die Bildmitte, leicht gedreht.
+const POSE_POWER := {
+	"pos": Vector3(0.015, -0.05, -0.62),
+	"fingers": Vector3(-0.12, 0.12, -1.0),
+	"back": Vector3(0.6, 1.0, 0.0),
+	"curl": [[76.0, 86.0, 44.0], [80.0, 86.0, 44.0], [82.0, 86.0, 44.0], [84.0, 86.0, 44.0]],
+	"spread": 0.0,
+	"thumb": Vector3(-66.0, 4.0, 55.0),
+	"thumb_curl": [40.0, 34.0],
+}
+
 ## Hand flach auf einer Kante, Finger greifen über die Kante (Lage kommt beim Klettern aus der Welt).
 const POSE_LEDGE := {
 	"pos": Vector3.ZERO,
@@ -264,6 +318,12 @@ func wake(seconds := 1.0) -> void:
 	_idle_time = 0.0
 
 
+## Gelenk-Knoten einer Hand (1 = rechts, -1 = links), z. B. für das Leuchten beim Aufladen.
+func get_fist(side: int) -> Node3D:
+	var hand := _right if side > 0 else _left
+	return hand.get("root") as Node3D
+
+
 ## 0 = Hände voll sichtbar, 1 = ausgeblendet (im Stand ohne Waffe).
 func get_hide_amount() -> float:
 	return _hide
@@ -301,6 +361,8 @@ func _needs_hands(horizontal_speed: float) -> bool:
 	if _wake_left > 0.0 or horizontal_speed > move_speed_epsilon or not _player.is_on_floor():
 		return true
 	if _weapon_view() != null or _held_item() != null:
+		return true
+	if _player.melee != null and _player.melee.get_guard_weight() > 0.0:
 		return true
 	var movement := _player.movement
 	if movement != null and (movement.get_grab_weight() > 0.0 or movement.is_sliding() or movement.is_mantling()):
@@ -350,19 +412,24 @@ func update_pose(delta: float) -> void:
 			_set_viewmodel_layer(view)
 	var target_right := _resting_pose(1.0)
 	var target_left := _resting_pose(-1.0)
-	if view != null:
+	var melee := _player.melee
+	# Boxen mit weggesteckter Waffe: beide Hände sind frei.
+	var holstered := melee != null and melee.is_holstering()
+	if view != null and not holstered:
 		var holder := _player.weapon_holder
 		var space := holder.transform * view.transform
 		var arm_space := holder.transform * Transform3D(Basis.IDENTITY, view.position)
 		var reloading := holder.is_reloading()
 		_sprint_weight = 0.0
-		target_right = _pose_in_space(POSE_GRIP_RIGHT, space, arm_space, view.get_node_or_null("HandGripRight"))
+		target_right = _pose_in_space(POSE_GRIP_RIGHT, space, arm_space, view.get_node_or_null("HandGripRight"), view)
 		var left_pose := POSE_RELOAD_LEFT if reloading else POSE_GRIP_LEFT
-		var left_marker: Node = null if reloading else view.get_node_or_null("HandGripLeft")
-		target_left = _pose_in_space(left_pose, space, arm_space, left_marker)
+		var left_marker: Node = view.get_node_or_null("HandGripLeft")
+		if reloading:
+			left_marker = view.get_node_or_null("Magazine/HandReloadLeft")
+		target_left = _pose_in_space(left_pose, space, arm_space, left_marker, view)
 		# Der Griff sitzt fest: die rechte Hand folgt der Waffe sofort (Rückstoß).
 		_pose_right = _blend_pose(_pose_right, target_right, maxf(weight, 0.6))
-	elif _held_item() != null:
+	elif _held_item() != null and not holstered:
 		# Klinge oder Granate: rechte Hand greift, linke bleibt locker unten.
 		_sprint_weight = 0.0
 		var held := _held_item()
@@ -395,6 +462,12 @@ func update_pose(delta: float) -> void:
 			target_left = _blend_pose(target_left, _sprint_pose(-1.0, phase), _sprint_weight)
 			# Die Fäuste folgen dem Takt direkt, sonst hinkt das Pumpen hinterher.
 			weight = maxf(weight, _sprint_weight * 0.7)
+		var guard: float = melee.get_guard_weight() if melee != null else 0.0
+		if guard > 0.001:
+			target_right = _blend_pose(target_right, _melee_pose(1.0), guard)
+			target_left = _blend_pose(target_left, _melee_pose(-1.0), guard)
+			# Schläge dauern nur Zehntelsekunden: die Fäuste folgen direkt, die Deckung blendet selbst weich.
+			weight = lerpf(weight, 1.0, guard)
 		_pose_right = _blend_pose(_pose_right, target_right, weight)
 	_pose_left = _blend_pose(_pose_left, target_left, weight)
 	# Ein wenig Leben in den Fingern, auch beim Stillstehen.
@@ -406,7 +479,8 @@ func update_pose(delta: float) -> void:
 		_apply_pose(_right, _blend_pose(_pose_right, _ledge_pose(grips[0]), grab))
 		_apply_pose(_left, _blend_pose(_pose_left, _ledge_pose(grips[1]), grab))
 		return
-	_apply_pose(_right, _pose_right, breath if view == null and _held_item() == null else 0.0)
+	var relaxed := (view == null or holstered) and _held_item() == null and (melee == null or melee.get_guard_weight() < 0.01)
+	_apply_pose(_right, _pose_right, breath if relaxed else 0.0)
 	_apply_pose(_left, _pose_left, breath)
 
 
@@ -499,12 +573,39 @@ func _held_item() -> Node3D:
 
 
 func _resting_pose(side: float) -> Dictionary:
-	var pose := POSE_RELAXED.duplicate()
+	return _mirrored(POSE_RELAXED, side)
+
+
+## Pose mit "fingers"/"back" für eine Seite (links über x gespiegelt).
+func _mirrored(definition: Dictionary, side: float) -> Dictionary:
+	var pose := definition.duplicate()
 	var mirror := Vector3(side, 1.0, 1.0)
 	pose.pos = pose.pos * mirror
 	pose.fingers = pose.fingers * mirror
 	pose.back = pose.back * mirror
 	return _to_runtime(pose)
+
+
+## Box-Pose einer Hand aus dem Zustand von PlayerMelee: Deckung, Ausholen, Schlag.
+func _melee_pose(side: float) -> Dictionary:
+	var melee := _player.melee
+	var pose := _mirrored(POSE_GUARD, side)
+	if side > 0.0:
+		var windup: float = melee.get_windup()
+		if windup > 0.0:
+			pose = _blend_pose(pose, _mirrored(POSE_WINDUP, side), windup)
+			# Voll geladen zittert die Faust vor Spannung.
+			var t := Time.get_ticks_msec() * 0.001
+			pose.pos += Vector3(sin(t * 61.0), sin(t * 47.0 + 1.0), 0.0) * 0.004 * melee.charge
+	var extension: float = melee.get_extension(int(side))
+	if extension > 0.0:
+		var target := POSE_PUNCH
+		if melee.is_power():
+			target = POSE_POWER
+		elif melee.is_hook():
+			target = POSE_HOOK
+		pose = _blend_pose(pose, _mirrored(target, side), extension)
+	return pose
 
 
 ## Basis aus Fingerrichtung und Handrücken-Richtung (siehe Posen oben).
@@ -516,11 +617,17 @@ static func _hand_basis(fingers: Vector3, back: Vector3) -> Basis:
 
 ## Pose aus dem Raum der Waffe in den Raum der Hände. Ein Marker ersetzt Lage und Drehung.
 ## arm_space ist die Waffe ohne eigene Drehung: der Unterarm macht Kippen nicht mit.
-func _pose_in_space(pose: Dictionary, space: Transform3D, arm_space: Transform3D, marker: Node) -> Dictionary:
+## Der Marker darf tiefer in der Szene hängen (z. B. am Magazin), gemessen wird relativ zu `root`.
+func _pose_in_space(pose: Dictionary, space: Transform3D, arm_space: Transform3D, marker: Node,
+		root: Node3D = null) -> Dictionary:
 	var result := _to_runtime(pose)
 	var local := Transform3D(result.basis, result.pos)
 	if marker is Node3D:
 		local = (marker as Node3D).transform
+		var parent := marker.get_parent() as Node3D
+		while parent != null and parent != root and root != null:
+			local = parent.transform * local
+			parent = parent.get_parent() as Node3D
 	var placed := space * local
 	result.pos = placed.origin
 	result.basis = placed.basis.orthonormalized()
