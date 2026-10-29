@@ -460,6 +460,7 @@ func _build_keeper() -> void:
 	_keeper.add_child(shape)
 	add_child(_keeper)
 	_keeper.position = keeper_at
+	_keeper.rotation.y = PI
 	_add_model()
 	_bark = Label3D.new()
 	_bark.font_size = 40
@@ -565,7 +566,8 @@ func _animate_keeper(delta: float) -> void:
 	var before := _keeper_pos
 	_keeper_pos = move_toward(_keeper_pos, target, delta * 0.9)
 	_keeper.position = keeper_at + Vector3(0, 0, -1.1 * _keeper_pos)
-	var want_yaw := PI if busy and _keeper_pos > 0.95 else 0.0
+	# Figuren blicken nach -Z: PI = zum Eingang (+Z), 0 = zur Rückwand.
+	var want_yaw := 0.0 if busy and _keeper_pos > 0.95 else PI
 	_keeper.rotation.y = lerp_angle(_keeper.rotation.y, want_yaw, minf(delta * 5.0, 1.0))
 	_model.speed = absf(_keeper_pos - before) / maxf(delta, 0.001) * 1.1
 	_model.cower = move_toward(_model.cower, 1.0 if keeper_state == Keeper.SURRENDER else 0.0, delta * 4.0)
@@ -651,7 +653,7 @@ class KeeperBody extends StaticBody3D:
 	func interact(player: Player) -> void:
 		if not bool(shop.call("is_open_for_business")):
 			return
-		var ui: CanvasLayer = ShopUIScript.call("for_player", player)
+		var ui: CanvasLayer = ShopUIScript.for_player(player)
 		ui.call("open", shop)
 
 	func take_hit(damage: float, _point: Vector3, _normal: Vector3) -> void:
