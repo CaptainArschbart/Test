@@ -127,6 +127,31 @@ func _build(b: SlumBuilder) -> void:
 		Style.WAREHOUSE: _warehouse(b)
 		Style.SHANTY: _shanty(b)
 		Style.TOWER: _tower(b)
+	_add_occluder()
+
+
+## Unsichtbarer Block im Inneren fürs Occlusion Culling: Was ganz dahinter steht, wird nicht
+## gezeichnet. Nur massive Teile: kein begehbares Erdgeschoss (Laden), keine Lagerhalle, keine Hütte.
+func _add_occluder() -> void:
+	var y0 := 0.3
+	match style:
+		Style.RESIDENTIAL, Style.TOWER:
+			pass
+		Style.SHOP:
+			if floors < 2:
+				return
+			y0 = floor_height + 0.3
+		_:
+			return
+	var top := _h - 0.2
+	if top - y0 < 1.5 or _w < 2.0 or _d < 2.0:
+		return
+	var occ := OccluderInstance3D.new()
+	occ.name = "Occluder"
+	var box := BoxOccluder3D.new()
+	box.size = Vector3(_w - 0.6, top - y0, _d - 0.6)
+	occ.occluder = box
+	add_gen(occ, Vector3(0, (y0 + top) * 0.5, 0))
 
 
 # ================================================================== Wohnblock

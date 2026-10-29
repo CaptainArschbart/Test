@@ -78,6 +78,11 @@ const LAYER_PUDDLE := 0.045
 const LAYER_TRASH := 0.055
 
 
+## Linien, Zebrastreifen, Pfützen und Müll.
+func _detail_range() -> float:
+	return 100.0
+
+
 func _build(b: SlumBuilder) -> void:
 	match kind:
 		Kind.ROAD: _road(b)
