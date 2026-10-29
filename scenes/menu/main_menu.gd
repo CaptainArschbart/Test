@@ -38,6 +38,7 @@ var _lobby: Control
 var _net_box: VBoxContainer
 var _ip_field: LineEdit
 var _host_port: LineEdit
+var _map_select: OptionButton
 var _join_port: LineEdit
 var _token_field: LineEdit
 var _share_label: Label
@@ -275,6 +276,8 @@ func _create_lobby() -> Control:
 	var back := _net_button("ZURÜCK")
 	back.pressed.connect(_hide_lobby)
 	_net_box.add_child(back)
+	_map_select = _create_map_select()
+	_net_box.add_child(_map_select)
 	_host_port = _net_field("Lokaler Port", "7777")
 	_net_box.add_child(_host_port)
 	var host_port := _net_button("HOST (PORTFREIGABE)")
@@ -329,6 +332,45 @@ func _create_lobby() -> Control:
 	_ip_http.request_completed.connect(_on_public_ip)
 	add_child(_ip_http)
 	return scroll
+
+
+## Map für den Multiplayer (dieselbe Liste wie bei "Start"). Der Host lädt sie, Clients bekommen sie von ihm.
+func _create_map_select() -> OptionButton:
+	var select := OptionButton.new()
+	select.name = "MapSelect"
+	select.custom_minimum_size = Vector2(0, 44)
+	select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	select.tooltip_text = "Map für die Sitzung"
+	for label: String in maps:
+		var path: String = maps[label]
+		select.add_item("MAP: " + label)
+		var index := select.item_count - 1
+		select.set_item_metadata(index, path)
+		select.set_item_disabled(index, not ResourceLoader.exists(path))
+	if select.item_count == 0:
+		select.add_item("MAP: " + game_scene.get_file().get_basename().to_upper())
+		select.set_item_metadata(0, game_scene)
+	# Vorauswahl wie bisher: game_scene (Testmap).
+	for i: int in select.item_count:
+		if str(select.get_item_metadata(i)) == game_scene:
+			select.select(i)
+	select.item_selected.connect(_on_map_selected)
+	return select
+
+
+## Gewählte Map (Pfad). Ohne Auswahl die Standard-Szene.
+func _selected_map() -> String:
+	if _map_select == null or _map_select.selected < 0:
+		return game_scene
+	var path: Variant = _map_select.get_item_metadata(_map_select.selected)
+	return str(path) if path != null and not str(path).is_empty() else game_scene
+
+
+## Läuft schon ein Host, gilt die neue Map für alle, die ab jetzt beitreten, und für "SPIEL STARTEN".
+func _on_map_selected(_index: int) -> void:
+	if NetworkManager.has_session() and multiplayer.is_server():
+		NetworkManager.map_path = _selected_map()
+		_set_status("Map: %s" % _map_select.get_item_text(_map_select.selected).trim_prefix("MAP: "))
 
 
 func _net_button(label: String) -> Button:
@@ -395,7 +437,7 @@ func _on_host_port_pressed() -> void:
 	if port <= 0:
 		_set_status("Port ungültig.")
 		return
-	var err := NetworkManager.host_map(game_scene, port)
+	var err := NetworkManager.host_map(_selected_map(), port)
 	if err != OK:
 		_set_status(NetworkManager.error_text(err))
 		return
@@ -415,7 +457,7 @@ func _on_host_ngrok_pressed() -> void:
 	if port <= 0:
 		_set_status("Port ungültig.")
 		return
-	var err := NetworkManager.host_map(game_scene, port, true)
+	var err := NetworkManager.host_map(_selected_map(), port, true)
 	if err != OK:
 		_set_status(NetworkManager.error_text(err))
 		return
@@ -479,7 +521,7 @@ func _on_play_online_pressed() -> void:
 		_set_status("Erst einen Host starten.")
 		return
 	_net_launch = true
-	_start_game(game_scene)
+	_start_game(_selected_map())
 
 
 func _split_join_fields() -> void:

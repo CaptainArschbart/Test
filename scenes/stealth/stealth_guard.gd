@@ -87,6 +87,7 @@ var _arms: Array[Node3D] = []
 func _ready() -> void:
 	add_to_group(StealthNoise.GROUP)
 	add_to_group("stealth_guard")
+	add_to_group(WorldSync.NPC_GROUP)
 	collision_layer = 1
 	collision_mask = 1 | 2
 	health = max_health
@@ -98,10 +99,12 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if WorldSync.is_client():
+		_puppet_tick(delta)
+		return
 	if state == State.DOWN:
 		return
-	if _player == null or not is_instance_valid(_player):
-		_player = get_tree().get_first_node_in_group("player") as Player
+	_find_player()
 	_state_time += delta
 	_attack_cooldown = maxf(_attack_cooldown - delta, 0.0)
 	_update_sight(delta)
@@ -175,6 +178,8 @@ func _update_sight(delta: float) -> void:
 
 ## Von StealthNoise aufgerufen.
 func hear_noise(position: Vector3, radius: float, source: Node, kind: StringName) -> void:
+	if WorldSync.is_client():
+		return
 	if state == State.DOWN:
 		return
 	var effective := radius * hearing_scale
@@ -214,8 +219,13 @@ func hear_noise(position: Vector3, radius: float, source: Node, kind: StringName
 func take_hit(damage: float, _point: Vector3, _normal: Vector3) -> void:
 	if state == State.DOWN:
 		return
+	if WorldSync.is_client():
+		WorldSync.forward_hit(self, &"take_hit", [damage, _point, _normal])
+		_flash_hit()
+		return
 	health -= damage
 	_flash_hit()
+	WorldSync.npc_event(self, &"hit")
 	if health <= 0.0:
 		_go_down()
 		return
@@ -312,7 +322,12 @@ func _alert(delta: float) -> void:
 
 func _attack() -> void:
 	_attack_cooldown = attack_interval
-	_player.stats.damage(attack_damage, PlayerStats.CAUSE_GUARD)
+	_player.apply_damage(attack_damage, PlayerStats.CAUSE_GUARD)
+	_swing_arm()
+	WorldSync.npc_event(self, &"attack")
+
+
+func _swing_arm() -> void:
 	if _arms.size() > 1:
 		var arm := _arms[1]
 		var tween := create_tween()
@@ -521,3 +536,105 @@ func _part(parent: Node3D, mesh: Mesh, material: Material, offset: Vector3) -> M
 	instance.position = offset
 	parent.add_child(instance)
 	return instance
+
+
+# --- Multiplayer --------------------------------------------------------------------------
+# Wie bei Enemy: Nur der Host rechnet, Clients zeigen den Stand aus WorldSync.
+
+var _net_position := Vector3.INF
+var _net_yaw := 0.0
+var _net_target := 0
+var _net_shown := 0.0
+var _retarget_at := 0
+
+
+## Offline die (einzige) Spielerfigur, online der nächste lebende Spieler (jede Sekunde neu).
+func _find_player() -> void:
+	if not WorldSync.is_online():
+		if _player == null or not is_instance_valid(_player):
+			_player = get_tree().get_first_node_in_group("player") as Player
+		return
+	var now := Time.get_ticks_msec()
+	var current_ok := _player != null and is_instance_valid(_player) and _alive(_player)
+	if current_ok and (now < _retarget_at or state == State.ALERT and _sees_player):
+		return
+	_retarget_at = now + 1000
+	var best_distance := INF
+	for node: Node in get_tree().get_nodes_in_group("player"):
+		var player := node as Player
+		if player == null or not _alive(player):
+			continue
+		var distance := player.global_position.distance_squared_to(global_position)
+		if distance < best_distance:
+			best_distance = distance
+			_player = player
+
+
+static func _alive(player: Player) -> bool:
+	return not player.dead and not player.noclip and player.stats.is_alive()
+
+
+func net_set_attacker(attacker: Player) -> void:
+	if attacker != null and _alive(attacker):
+		_player = attacker
+		_retarget_at = Time.get_ticks_msec() + 3000
+
+
+func net_targets(player: Player) -> bool:
+	return _player == player
+
+
+func net_get_state() -> Array:
+	var target := 0
+	var shown := 0.0
+	if _player != null and is_instance_valid(_player) and state != State.DOWN:
+		target = _player.get_multiplayer_authority()
+		if awareness > 0.01:
+			shown = 1.0 if state == State.ALERT else minf(awareness, 0.99)
+	return [global_position, rotation.y, int(state), health, target, shown]
+
+
+func net_apply_state(data: Array) -> void:
+	if data.size() < 6:
+		return
+	var first := _net_position == Vector3.INF
+	_net_position = data[0]
+	_net_yaw = float(data[1])
+	health = float(data[3])
+	_net_target = int(data[4])
+	_net_shown = float(data[5])
+	var new_state: State = int(data[2])
+	if first:
+		global_position = _net_position
+		rotation.y = _net_yaw
+	if new_state == state:
+		return
+	if new_state == State.DOWN:
+		_go_down()
+	else:
+		_set_state(new_state)
+
+
+func net_event(event: StringName, _args: Array) -> void:
+	match event:
+		&"attack":
+			_swing_arm()
+		&"hit":
+			_flash_hit()
+
+
+func _puppet_tick(delta: float) -> void:
+	if state == State.DOWN or _net_position == Vector3.INF:
+		return
+	var before := global_position
+	if before.distance_to(_net_position) > 4.0:
+		global_position = _net_position
+	else:
+		global_position = before.lerp(_net_position, 1.0 - exp(-12.0 * delta))
+	rotation.y = lerp_angle(rotation.y, _net_yaw, 1.0 - exp(-12.0 * delta))
+	velocity = (global_position - before) / maxf(delta, 0.001)
+	_animate(delta)
+	if _net_shown > 0.01 and _net_target == WorldSync.local_peer():
+		var local := WorldSync.player_of(_net_target)
+		if local != null and local.stealth != null:
+			local.stealth.report_awareness(self, _net_shown)

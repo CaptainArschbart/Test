@@ -35,6 +35,8 @@ var net_crouch := 0.0
 var net_climb := -1.0
 var net_aim := 0.0
 var net_reload := -1.0
+## Sichtbarkeit fürs Schleichen (PlayerStealth.visibility). Der Host braucht sie für seine Gegner.
+var net_visibility := 1.0
 var net_held := "":
 	set(value):
 		if value == net_held:
@@ -98,6 +100,7 @@ func _process(delta: float) -> void:
 	if _body == null:
 		return
 	var flags := net_flags
+	_mirror_state(flags)
 	_body.look_pitch = _player.head.rotation.x
 	_body.crouch = net_crouch
 	_body.sliding = flags & Flag.SLIDE != 0
@@ -132,6 +135,20 @@ func _collect() -> void:
 	net_reload = holder.get_reload_progress()
 	var item := _player.inventory.get_selected_item()
 	net_held = item.id if item != null else ""
+	if _player.stealth != null:
+		net_visibility = _player.stealth.visibility
+
+
+## Fremde Figur: Zustände, die Gegner beim Host abfragen (Tod, Noclip, Hocken, Tempo,
+## Sichtbarkeit), auf die Figur spiegeln. Sonst sähe die KI eine stehende, lebende Figur.
+func _mirror_state(flags: int) -> void:
+	_player.dead = flags & Flag.DEAD != 0
+	_player.noclip = flags & Flag.NOCLIP != 0
+	_player.velocity = net_velocity
+	if _player.movement != null:
+		_player.movement.crouching = net_crouch > 0.5
+	if _player.stealth != null:
+		_player.stealth.visibility = net_visibility
 
 
 ## Fremde Figur: ganzer Körper sichtbar, Ego-Hände und ihre Waffe aus, Schritte selbst.

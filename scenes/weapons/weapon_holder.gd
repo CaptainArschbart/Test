@@ -253,17 +253,33 @@ func _shoot_ray() -> void:
 		var axis := camera.global_basis.x * cos(angle) + camera.global_basis.y * sin(angle)
 		direction = direction.rotated(axis.normalized(), amount)
 	var to := from + direction * _weapon.max_range
-	var query := PhysicsRayQueryParameters3D.create(from, to, 1, [_player.get_rid()])
+	# Layer world und player: andere Spieler sind im Multiplayer treffbar, die eigene Figur nicht.
+	var query := PhysicsRayQueryParameters3D.create(from, to, 1 | 2, [_player.get_rid()])
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	if hit.is_empty():
 		return
 	var collider: Object = hit.collider
 	if collider != null and collider.has_method("take_hit"):
 		collider.take_hit(_weapon.damage, hit.position, hit.normal)
-	_spawn_impact(hit.position, hit.normal)
+	var body := collider is CharacterBody3D
+	_show_impact(hit.position, hit.normal, body)
+	if WorldSync.is_online():
+		_remote_impact.rpc(hit.position, hit.normal, body)
+
+
+## Einschlag eines Schusses dieses Spielers auf den anderen Rechnern.
+@rpc("any_peer", "unreliable", "call_remote")
+func _remote_impact(point: Vector3, normal: Vector3, body: bool) -> void:
+	if multiplayer.get_remote_sender_id() != get_multiplayer_authority():
+		return
+	_show_impact(point, normal, body)
+
+
+func _show_impact(point: Vector3, normal: Vector3, body: bool) -> void:
+	_spawn_impact(point, normal)
 	# Treffer auf Körper zeigen keinen Staub, sondern nur den Funken.
-	if not (collider is CharacterBody3D):
-		_spawn_debris(hit.position, hit.normal)
+	if not body:
+		_spawn_debris(point, normal)
 
 
 ## Kurzer Funke am Einschlag, verschwindet nach 0,15 s.

@@ -20,6 +20,8 @@ signal peer_left(id: int)
 signal connection_failed
 signal session_ended
 signal client_connected
+## Host: ein Client hat die Map geladen (WorldSync schickt ihm dann den Stand der Welt).
+signal client_ready(id: int)
 
 var map_path := ""
 var listen_port := PORT
@@ -271,6 +273,7 @@ func client_map_ready() -> void:
 			_pending_spawns.append(id)
 		return
 	_spawn_player(id)
+	client_ready.emit(id)
 
 
 func _on_peer_connected(id: int) -> void:
@@ -324,6 +327,7 @@ func _setup_map(scene: Node) -> void:
 	_spawn_player(multiplayer.get_unique_id())
 	for id: int in _pending_spawns:
 		_spawn_player(id)
+		client_ready.emit(id)
 	_pending_spawns.clear()
 	for id: int in multiplayer.get_peers():
 		_spawn_player(id)

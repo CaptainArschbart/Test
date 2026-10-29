@@ -12,9 +12,16 @@ const CameraShakeScript := preload("res://scenes/player/camera_shake.gd")
 
 var data: GrenadeData
 var thrower: Player
+## Multiplayer: Kopie der Granate eines anderen Spielers. Macht keinen Schaden und geht erst hoch,
+## wenn der Werfer die Explosion meldet (explode_remote), an seiner Stelle.
+var remote := false
+## Kennung im Multiplayer (WorldSync).
+var net_id := ""
 
 ## Feste Lebenszeit, falls eine Kontaktgranate nie etwas trifft (aus der Welt gefallen).
 const CONTACT_MAX_FLIGHT := 8.0
+## So lange wartet eine Kopie nach ihrer eigenen Zündzeit auf die Meldung des Werfers.
+const REMOTE_GRACE := 2.0
 
 var _fuse := 0.0
 var _light: OmniLight3D
@@ -51,9 +58,10 @@ func _ready() -> void:
 	_fuse = data.fuse_time
 	if data.contact_fuse:
 		_fuse = CONTACT_MAX_FLIGHT
-		contact_monitor = true
-		max_contacts_reported = 4
-		body_entered.connect(_on_contact)
+		if not remote:
+			contact_monitor = true
+			max_contacts_reported = 4
+			body_entered.connect(_on_contact)
 		material.bounce = 0.0
 		# Leuchtring, damit man die Flugbahn sieht.
 		var ring := MeshInstance3D.new()
@@ -71,6 +79,15 @@ func _physics_process(delta: float) -> void:
 	# Blinkt schneller, je näher die Zündung kommt. Kontaktgranaten leuchten durchgehend.
 	if not data.contact_fuse:
 		_light.visible = fmod(_fuse, 0.1 + _fuse * 0.2) > 0.05
+	if remote:
+		# Meldung des Werfers kam nicht: hier zeigen und verschwinden.
+		if _fuse <= -REMOTE_GRACE:
+			WorldSync.forget_grenade(net_id)
+			if data.contact_fuse:
+				queue_free()
+			else:
+				explode_remote(global_position)
+		return
 	if _fuse <= 0.0:
 		if data.contact_fuse:
 			queue_free()
@@ -86,11 +103,12 @@ func _on_contact(_body: Node) -> void:
 
 ## Sofort zünden (auch für Tests).
 func explode() -> void:
-	if _exploded:
+	if _exploded or remote:
 		return
 	_exploded = true
 	set_physics_process(false)
 	var center := global_position
+	WorldSync.announce_explosion(self, center)
 	StealthNoise.emit(get_tree(), center, data.noise_radius, self, StealthNoise.EXPLOSION)
 	CameraShakeScript.explosion(get_tree(), center, data.radius)
 	var space := get_world_3d().direct_space_state
@@ -119,12 +137,31 @@ func explode() -> void:
 				thrower.item_user.show_message("EMP! Ausdauer leer", data.color)
 			if data.self_damage_factor > 0.0:
 				thrower.stats.damage(amount * data.self_damage_factor, &"grenade")
+		elif collider is Player:
+			# Andere Spieler (Multiplayer): Schaden geht an den Rechner, der die Figur steuert.
+			(collider as Player).apply_damage(amount, &"pvp_grenade")
 		elif data.drains_stamina and collider.has_method("emp_hit"):
 			# Gegner mit Elektronik (Enemy): Schaden und Betäubung.
 			collider.emp_hit(amount, target, (center - target).normalized())
 		elif collider.has_method("take_hit"):
 			var normal := (center - target).normalized()
 			collider.take_hit(amount, target, normal)
+	if data.blast == GrenadeData.Blast.FRAG:
+		_spawn_frag_blast(center)
+	else:
+		_spawn_blast(center)
+	_play_explosion(center)
+	queue_free()
+
+
+## Kopie im Multiplayer: Explosion nur zeigen und hören (Blitz, Ton, Kamerawackeln), ohne Schaden.
+func explode_remote(center: Vector3) -> void:
+	if _exploded:
+		return
+	_exploded = true
+	set_physics_process(false)
+	global_position = center
+	CameraShakeScript.explosion(get_tree(), center, data.radius)
 	if data.blast == GrenadeData.Blast.FRAG:
 		_spawn_frag_blast(center)
 	else:

@@ -274,6 +274,21 @@ func select_next(direction: int) -> void:
 	select(selected + direction)
 
 
+## Wie viele Stück von `item` noch ins Inventar passen (bei Währung: bis MAX_MONEY).
+func space_for(item: ItemData) -> int:
+	if item == null:
+		return 0
+	if item.is_currency:
+		return MAX_MONEY - money
+	var space := 0
+	for i: int in _items.size():
+		if _items[i] == null:
+			space += item.max_stack
+		elif item.is_same(_items[i]):
+			space += maxi(item.max_stack - _counts[i], 0)
+	return space
+
+
 func _merge_into(item: ItemData, amount: int, indices: Array) -> int:
 	for i: int in indices:
 		if amount <= 0:

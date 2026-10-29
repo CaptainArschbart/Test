@@ -18,6 +18,8 @@ extends Node3D
 @export var interact_range := 2.6
 
 const LAYER_WORLD := 1
+## Andere Spielerfiguren (Multiplayer), damit Klinge und Waffen sie treffen.
+const LAYER_PLAYER := 2
 const LAYER_INTERACT := 4
 const GRENADE_SCRIPT := preload("res://scenes/items/grenade.gd")
 ## Wurfablauf in Sekunden: Ausholen bis zum Loslassen, danach Durchschwingen.
@@ -321,6 +323,7 @@ func _release(item: GrenadeData) -> void:
 	grenade.linear_velocity = forward * item.throw_speed + Vector3.UP * 3.0 \
 		+ Vector3(_player.velocity.x, 0.0, _player.velocity.z)
 	grenade.add_collision_exception_with(_player)
+	WorldSync.announce_grenade(grenade)
 	action_performed.emit()
 
 
@@ -364,7 +367,7 @@ func _strike(item: MeleeData) -> bool:
 	var camera := _player.camera
 	var from := camera.global_position
 	var to := from - camera.global_basis.z * item.reach
-	var query := PhysicsRayQueryParameters3D.create(from, to, LAYER_WORLD, [_player.get_rid()])
+	var query := PhysicsRayQueryParameters3D.create(from, to, LAYER_WORLD | LAYER_PLAYER, [_player.get_rid()])
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	if not hit.is_empty():
 		var collider: Object = hit.collider
