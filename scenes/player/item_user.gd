@@ -17,6 +17,9 @@ const LAYER_WORLD := 1
 const LAYER_INTERACT := 4
 const GRENADE_SCRIPT := preload("res://scenes/items/grenade.gd")
 
+## Granate geworfen oder mit der Klinge zugeschlagen (für PlayerAvatarSync).
+signal action_performed
+
 var _player: Player
 var _item: ItemData
 var _target: Object
@@ -188,12 +191,14 @@ func _throw(item: GrenadeData) -> bool:
 	grenade.add_collision_exception_with(_player)
 	_cooldown = item.throw_interval
 	_swing = 1.0
+	action_performed.emit()
 	return true
 
 
 func _strike(item: MeleeData) -> bool:
 	_cooldown = item.swing_interval
 	_swing = 1.0
+	action_performed.emit()
 	var camera := _player.camera
 	var from := camera.global_position
 	var to := from - camera.global_basis.z * item.reach

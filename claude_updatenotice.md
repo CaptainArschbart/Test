@@ -404,6 +404,49 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
   - Gegner reagieren nicht auf tote Fußgänger, und der Spieler kann noch nicht fahren.
   - Neue Klassen (`RoadNetwork`, `TrafficDirector`, `TrafficCar`, `VehicleModel`, `Civilian`, `CivilianModel`, `CrowdDirector`): Projekt im Editor einmal neu laden.
 
+### 2026-10-28 · Bessere Sounds statt 8-Bit-Töne · Claude (für Arschi) · PR #39
+- Auftrag: Arschi findet die Sounds „8-bit und trashy“. Alle Effekte durch hochwertigere ersetzen.
+- Bestand vorher: 10 WAVs unter `assets/audio` (22 kHz, je ein Sinus/Rauschen) und Laufzeit-Synthese in `enemy_sounds.gd` (Gegnerstimmen als Formant-Brummen mit Bit-Reduktion, also echtes 8-Bit-Klangbild, dazu Wusch, Aufprall, Zap) und `vital_sounds.gd` (Herz, Atem, Flatline). Musik (`sounds/*.mp3`) nicht angefasst.
+- Quelle: Freesound, OpenGameArt, Kenney sind aus dem Container gesperrt. Deshalb neu `tools/gen_sounds.py` (numpy/scipy, 44,1 kHz, fester Seed): Schüsse geschichtet aus Knall-Transiente, Mündungsknall, Druckstoß, Tiefbass und Verschlussmechanik, dazu Straßenschlucht-Hall (synthetische Impulsantwort mit Hauswand-Echos, Gewehr mit langem Nachrollen). Nachladen als Abfolge echter Handgriffe (Modal-Synthese für Metallklicks, Reibegeräusche). Schritte: Ferse, Abrollen, Sohle, Kies. Gegnerrufe sind jetzt echte deutsche Sprache (Piper-TTS, Stimme Thorsten, CC0), Text passt zur Sprechblase (`Enemy.BARKS`, gleiche Reihenfolge), drei Stimmlagen.
+- Neu/ersetzt in `assets/audio`: gleiche Namen für `pistol_shot`, `sniper_shot`, `pistol_reload`, `sniper_reload`, `pistol_empty`, `footstep_01–03`, `land_01–02` (uids bleiben, `player.tscn` und Waffen-`.tres` unverändert). Neu: `pistol_shot_world`, `sniper_shot_world` (mono für Gegner in 3D), `melee_swing`, `melee_thud`, `emp_zap`, `heartbeat`, `breath_loop`, `flatline_loop` (Loop im Import), `voices/<ruf>_<0-2>_<low|mid|high>.wav` (81 Dateien, 22 kHz), `CREDITS.md`.
+- Code: `scenes/enemies/enemy_sounds.gd` und `scenes/survival/vital_sounds.gd` laden jetzt Dateien statt zu synthetisieren. Funktionen und Konstanten gleich (`voice(line, pitch, variant)`, `swing()`, `thud()`, `zap()`, `step()`, `PISTOL_SHOT`, `RIFLE_SHOT`, `RELOAD`, `heartbeat()`, `breath()`, `flatline()`). `voice()` nimmt die Stimmlage, die `voice_pitch` am nächsten liegt, und gleicht den Rest über `mix_rate` einer Kopie aus. `enemy.gd` nicht angefasst.
+- Pegel: Schritte und Landen auf dem alten Niveau gehalten (RMS −32/−25 dB), Schüsse Peak −0,6 dB, Mechanik −2,5 dB. Lautstärke im Spiel weiter über die Player und den SFX-Bus.
+- Tests: neu `tools/tests/check_audio_levels.py` (ohne Godot, `python3 tools/tests/check_audio_levels.py`): Format, kein Clipping, kein Gleichanteil, kein Knacken an Anfang/Ende, 3D-Sounds mono, Schleifen-Naht, `loop_end` im Import, alle `res://assets/audio/...`-Verweise in `scenes/` existieren. Ergebnis `CHECKS 1199 FAILS 0`. Neu `tools/tests/test_audio.gd` (Godot headless, lädt alles über die echten Schnittstellen, alle Profile-Stimmlagen, Loops, Nachladesound ≤ `reload_time`). GDScript per `gdparse`/`gdlint` geprüft.
+- Nicht getestet: Godot selbst lief im Container nicht (Download-Binary nicht erlaubt), `test_audio.gd` also noch nicht ausgeführt. Kein Hörtest möglich, nur Pegel und Spektrogramme angesehen. Bitte einmal im Editor importieren lassen und reinhören.
+- Hinweise für die Nächsten: Neue Sounds (SMG, Kontaktgranate, Consumables, Autos) gern ebenfalls als Funktion in `tools/gen_sounds.py` ergänzen und den Dateinamen in `EXPECTED` von `check_audio_levels.py` eintragen. Sounds für 3D-Player mono halten. Wer `Enemy.BARKS` ändert, muss `VOICE_LINES` in `gen_sounds.py` anpassen und die Stimmen neu erzeugen (`--voices`).
+
+### 2026-10-29 · main in PR #39 geholt, Mergekonflikte gelöst · Claude (für Arschi)
+
+### 2026-10-28 · Multiplayer: ganzes Playermodel für andere Spieler · Claude (für Arschi) · PR #34
+- Auftrag: Im Multiplayer sah man andere Spieler nur als ein paar Hände und Füße. Sie sollen als ganze Figur mit passenden, synchronisierten Animationen erscheinen.
+- Ursache: Die fremde Figur nutzte denselben `PlayerBody` wie die Ego-Sicht (`first_person = true`: Oberkörper, Arme, Kopf nur Schatten), die Ego-Hände hingen sichtbar an der fremden Kamera, und weil Physik bei fremden Figuren aus ist, war `velocity` 0, die Beine bewegten sich also nicht. Synchronisiert wurden nur Position, Drehung und Kopf, ungeglättet mit 20 Hz.
+- Neu `scenes/player/player_avatar_sync.gd` (`PlayerAvatarSync`, Knoten `AvatarSync` in `player.tscn`, `process_mode` ALWAYS):
+  - Eigene Figur: sammelt jedes Physik-Frame `net_position`, `net_yaw`, `net_pitch`, `net_velocity`, `net_flags` (Boden, Rutschen, Tod, Noclip), `net_crouch`, `net_climb`, `net_aim`, `net_reload`, `net_held` (Item-id) und Zähler `net_shots` / `net_actions` (Schuss bzw. Schlag/Wurf).
+  - Fremde Figur: `PlayerBody.first_person = false` und `external_drive = true`, `PlayerHands` unsichtbar und ohne Prozess. Position, Yaw und Blick werden 0,1 s hinter dem neuesten Paket zwischen zwei Paketen gemischt (über 4 m Sprung = Teleport, z. B. Respawn). Steigt ein Zähler: Rückstoß, Mündungsfeuer und Schuss-Sound (`RemoteShot`, 3D) bzw. Schlag/Wurf. Schritte der fremden Figur spielen auf ihrem `%Footsteps` im Takt der Beine (`PlayerBody.stepped`), leiser beim Hocken.
+- `scenes/player/player.tscn`: `PlayerSync` überträgt `.:position`, `.:rotation`, `Head:rotation` nur noch beim Spawn (`replication_mode` 0), dazu 12 `AvatarSync:net_*`-Felder (Item und Zähler „on change“, Rest immer; `net_position` steht absichtlich zuletzt, sein Setter legt das Paket ab). `PlayerSync.process_mode` ALWAYS, damit der Tod (Player ist dann DISABLED) noch ankommt.
+- `scenes/player/player_body.gd` (auf dem neuen Laufzyklus aus PR #32 aufgesetzt, der bleibt für die eigene Figur unverändert):
+  - `animate_remote(delta, velocity, on_floor)`: Becken dreht in die Laufrichtung (seitwärts bis 50°, Oberkörper bleibt in Blickrichtung), rückwärts läuft der Zyklus rückwärts, Sprint ab 6 m/s.
+  - Überlagerungen mit weichen Gewichten (`_update_overlays`, `_apply_overlays`): Hocken (Knie/Hüfte, Becken sinkt über die Beinlänge), Rutschen (rechtes Bein vorn gestreckt, linkes untergeschlagen, zurückgelehnt, linke Hand stützt), Klettern in drei Phasen wie `PlayerMovement` (über Kopf greifen, hochdrücken, Bein über die Kante), Oberkörper und Kopf folgen dem Blick (`look_pitch`).
+  - Waffen: `set_held_item(item)` hängt das `view_scene` der Waffe (Pistole, Gewehr) bzw. eine Klinge/Granate an `WeaponMount` am Oberkörper (`Hold` PISTOL/RIFLE/MELEE/GRENADE). Haltung Hüfte ↔ Anschlag (zeigt genau in Blickrichtung), Nachladen kippt die Waffe und die linke Hand holt das Magazin, `trigger_fire()` Rückstoß + Mündungsfeuer, `trigger_action()` Schlag bzw. Wurf. Hände greifen per Zwei-Gelenk-IK (`_solve_arm`), Gewehr nutzt `HandGripRight/Left` aus `sniper_view.tscn`.
+  - Tod: Knie knicken ein, Figur kippt nach hinten und bleibt liegen; Respawn setzt zurück.
+  - Für die eigene Figur sind alle neuen Gewichte 0, `animate()` wird wie bisher aus `_process` aufgerufen.
+- Kleine Haken: `WeaponHolder` Signal `fired` und `get_reload_progress()`; `ItemUser` Signal `action_performed` (Granate geworfen, Klinge geschlagen); `PlayerMovement.get_climb_progress()` (−1 oder Phase + Anteil 0…3).
+- Getestet (Godot 4.7.2, Prüfskripte nur im Scratchpad, nicht im Repo):
+  - Zwei echte Prozesse Host + Client über ENet (127.0.0.1), Host headless spielt 18 Zustände durch, Client fotografiert die Host-Figur: stehen, gehen, rennen, seitwärts, hocken, Hockgang, rutschen, Pistole, Pistole zielen + hochschauen, Schuss, nachladen, Gewehr, Gewehr zielen, Klinge, Granate, klettern (1,8-m-Mauer im Kletterhof), Tod, Respawn. Alle Werte kommen beim Client an, fremde Hände bleiben unsichtbar, eigene Figur bleibt Ego-Modell. Gerendert unter Xvfb mit Forward+ (Vulkan über lavapipe) und Compatibility (OpenGL), ohne Skriptfehler.
+  - Glättung: Client headless mit ~145 fps, Gehen 219 Frames ohne einen Stillstand-Frame (ohne Glättung stünde die Figur zwischen 20-Hz-Paketen).
+  - Host beendet → Client landet im Hauptmenü ohne Fehler; Client beendet → Host räumt die Figur ohne Fehler ab.
+  - Einzelspieler: Testmap und Sektor 7 je 10 s ohne Skriptfehler, `tools/tests/test_sector7_enemies.gd` `CHECKS 15 FAILS 0`.
+  - Posen-Übersicht aller Zustände in Forward+ (Seite und schräg vorn). Screenshots im Projektordner `multiplayer-playermodel/`.
+- Nicht getestet: echtes Spiel mit zwei Menschen über LAN/Internet und echter GPU, Paketverlust/hoher Ping (Glättung puffert 0,1 s), Ton auf echter Soundkarte.
+- Offene Punkte Multiplayer (nicht in diesem PR):
+  - Gegner und Beute sind nicht synchronisiert (laufen auf jedem Rechner für sich, siehe PR #30).
+  - Kein Schaden zwischen Spielern und keine Treffer auf fremde Figuren (Schüsse sind nur sichtbar/hörbar). Granaten fremder Spieler erscheinen nicht.
+  - Host wählt weiter `game_scene` (Testmap), Sektor 7 als Host-Map fehlt im Menü.
+  - Klettern: fremde Hände greifen nicht exakt an der Kante (Kante wird nicht übertragen), nur Pose.
+- Hinweise: Neue Zustände für fremde Figuren → Feld in `PlayerAvatarSync` (`_collect` + `_process`) und Pfad in `PlayerSync` von `player.tscn` ergänzen, Pose als Gewicht in `PlayerBody._update_overlays`/`_apply_overlays`. Ein `-s`-Testskript darf `PlayerBody`/`Player` nicht typisiert verwenden (wird vor den Autoloads kompiliert).
+
+### 2026-10-29 · main in PR #34 geholt, Mergekonflikte gelöst · Claude (für Arschi)
+
 ### 2026-10-28 · Nahkampf: Boxen und aufgeladener Dash-Schlag · Claude (für Arschi) · PR #38
 - Auftrag: Unbewaffnet einen normalen Angriff (Boxen) und einen aufgeladenen Angriff (Vorschlag Dash + Schlag) einbauen.
 - Bedienung:

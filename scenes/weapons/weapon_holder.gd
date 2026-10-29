@@ -20,6 +20,9 @@ const SCOPE_SHADER := preload("res://scenes/weapons/scope_overlay.gdshader")
 
 const IMPACT_COLOR := Color(1.0, 0.75, 0.3)
 
+## Ein Schuss ist raus (für PlayerAvatarSync: andere Spieler sehen Rückstoß und Mündungsfeuer).
+signal fired
+
 var _player: Player
 var _weapon: WeaponData
 var _view: Node3D
@@ -117,6 +120,7 @@ func try_fire() -> bool:
 	if _player.stealth != null:
 		_player.stealth.make_noise(_weapon.noise_radius, StealthNoise.SHOT)
 	_shoot_ray()
+	fired.emit()
 	# Kamera springt erst nach dem Strahl hoch, sonst ginge der Schuss daneben.
 	_player.head.rotation.x = clampf(_player.head.rotation.x + deg_to_rad(_weapon.view_kick_degrees),
 		-deg_to_rad(_player.max_pitch_degrees), deg_to_rad(_player.max_pitch_degrees))
@@ -157,6 +161,13 @@ func get_weapon() -> WeaponData:
 
 func is_reloading() -> bool:
 	return _reload_left > 0.0
+
+
+## Fortschritt beim Nachladen 0…1, -1 = lädt nicht nach.
+func get_reload_progress() -> float:
+	if _reload_left <= 0.0 or _weapon == null:
+		return -1.0
+	return clampf(1.0 - _reload_left / maxf(_weapon.reload_time, 0.001), 0.0, 1.0)
 
 
 func _finish_reload() -> void:

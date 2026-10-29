@@ -708,3 +708,17 @@ func _play_climb_sound(grab: bool) -> void:
 	_climb_audio.pitch_scale = randf_range(0.68, 0.76) if grab else randf_range(1.12, 1.2)
 	_climb_audio.volume_db = -1.0 if grab else -7.0
 	_climb_audio.play()
+
+
+## Kletterstand für PlayerAvatarSync: -1 = klettert nicht, sonst Phase plus Anteil
+## (0…1 Greifen, 1…2 Hochziehen, 2…3 Rüberschwingen).
+func get_climb_progress() -> float:
+	if state != State.MANTLE:
+		return -1.0
+	var start := 0.0
+	for i in 3:
+		var d: float = _mantle_phase_times[i]
+		if _mantle_time < start + d or i == 2:
+			return float(i) + clampf((_mantle_time - start) / maxf(d, 0.001), 0.0, 1.0)
+		start += d
+	return 3.0
