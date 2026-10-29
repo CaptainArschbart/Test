@@ -912,8 +912,9 @@ func _update_goods_lod(delta: float) -> void:
 		return
 	_near_check = 0.4
 	var cam := get_viewport().get_camera_3d()
-	var near := true
-	# Ohne Kamera (Server ohne Bild, Tests) gilt der Laden als nah, sonst gäbe es keine Benutzflächen.
+	# Ohne Kamera (Map lädt noch, Spieler noch nicht da) wird nichts gebaut, sonst entstünden in allen
+	# 41 Läden auf einmal ~1700 Warenmodelle.
+	var near := false
 	if cam != null:
 		var dist := cam.global_position.distance_to(to_global(bounds.get_center()))
 		near = dist < GOODS_NEAR or (_near and dist < GOODS_FAR)
