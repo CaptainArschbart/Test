@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ConsumableData" format=3]
+
+[ext_resource type="Script" path="res://scenes/items/consumable_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+id = "medkit"
+display_name = "Trauma-Medkit"
+description = "Kompletter Notfallkoffer mit Nano-Gel und Klammern. Dauert, heilt dafür fast alles. Rechtsklick benutzt."
+glyph = "MK"
+color = Color(1, 0.2, 0.25, 1)
+max_stack = 2
+value = 18
+model = &"medkit"
+heal = 100.0
+use_verb = "benutzt"
+use_animation = &"bandage"
+use_time = 4.5

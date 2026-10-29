@@ -28,6 +28,9 @@ const NPC_MISSING_TIME := 3.0
 ## Größe eines NPC-Pakets in Bytes, ab der ein neues angefangen wird (unter der ENet-MTU von 1392,
 ## sonst wird das unzuverlässige Paket zerlegt und geht bei Verlust ganz verloren).
 const PACKET_BUDGET := 1100
+## Unveränderte Zustände (z. B. Läden, stehende Autos) gehen nur so oft raus, damit Clients sie nicht
+## als verschwunden abräumen (NPC_MISSING_TIME).
+const UNCHANGED_RESEND := 1.5
 const PICKUP_SCENE := preload("res://scenes/items/pickup.tscn")
 const GRENADE_SCRIPT := preload("res://scenes/items/grenade.gd")
 
@@ -36,6 +39,8 @@ var _state_timer := 0.0
 ## Client: wann jeder NPC zuletzt in einem Paket stand (Pfad → Sekunden).
 var _npc_seen := {}
 var _npc_packets := 0
+## Host: zuletzt gesendeter Zustand je NPC-Pfad [Hash, Zeit].
+var _npc_sent := {}
 ## Granaten, die gerade fliegen (net_id → ThrownGrenade).
 var _grenades := {}
 ## Host: Peer, dessen weitergeleiteter Treffer gerade verarbeitet wird (0 = eigener Treffer).
@@ -377,7 +382,14 @@ func _send_npc_states() -> void:
 		if path.is_empty():
 			continue
 		var state: Variant = node.call("net_get_state")
-		var bytes := var_to_bytes(state).size() + path.length() + 12
+		var encoded := var_to_bytes(state)
+		var digest := hash(encoded)
+		var now := Time.get_ticks_msec() / 1000.0
+		var last: Array = _npc_sent.get(path, [0, -INF])
+		if int(last[0]) == digest and now - float(last[1]) < UNCHANGED_RESEND:
+			continue
+		_npc_sent[path] = [digest, now]
+		var bytes := encoded.size() + path.length() + 12
 		if size + bytes > PACKET_BUDGET and not states.is_empty():
 			_npc_states.rpc(map, states)
 			states = {}

@@ -4,9 +4,12 @@ extends SceneTree
 ## Aufruf (Projektordner), zwei Prozesse gleichzeitig, Host zuerst:
 ##   godot --headless --path . -s res://tools/tests/test_shop_net.gd -- host
 ##   godot --headless --path . -s res://tools/tests/test_shop_net.gd -- client
-## Ablauf: Der Host schickt den Verkäufer von Laden A nach hinten, der Client klaut dort unbemerkt
-## (Item beim Client, Regal bei beiden leer). Der Client erschießt den Verkäufer von Laden B (Treffer
-## gehen an den Host, Tod bei beiden) und räumt die Kasse aus (Geld beim Client, Kasse bei beiden leer).
+## Ablauf:
+##   1. Der Host macht Laden A „sicher zum Testen“ (keine Sicherung, Kamera aus, Verkäufer räumt ein).
+##   2. Der Client nimmt Ware: Item beim Client, Warenkorb beim Client, Regal bei beiden kleiner.
+##   3. Der Client bezahlt: Geld weg, Warenkorb leer.
+##   4. Der Client nimmt noch etwas und geht raus: geklaut, kein Alarm, Warenkorb leer.
+##   5. Der Client erschießt den Verkäufer von Laden B (Tod bei beiden) und knackt die Kasse (Geld beim Client).
 ## Ergebnis in der letzten Zeile: "CHECKS n FAILS m", Exitcode 0 = alles grün.
 
 const SLUM := "res://scenes/slum/slum.tscn"
@@ -16,7 +19,7 @@ var _checks := 0
 var _fails := 0
 var _host := false
 var _start := 0
-var _me: Node
+var _me: Node3D
 
 
 func _initialize() -> void:
@@ -53,7 +56,7 @@ func _have_both() -> bool:
 			continue
 		if bool(player.call("controls_local_body")):
 			local = true
-			_me = player
+			_me = player as Node3D
 		else:
 			remote = true
 	return local and remote
@@ -65,6 +68,13 @@ func _shops() -> Array:
 	return list
 
 
+func _shelf_slot(shop: Node) -> int:
+	for i in (shop.get("slots") as Array).size():
+		if shop.call("slot_kind", i) == "shelf" and shop.call("item_at", i) != null:
+			return i
+	return -1
+
+
 func _count(id: String) -> int:
 	var inventory: Node = _me.get("inventory")
 	var total := 0
@@ -73,6 +83,16 @@ func _count(id: String) -> int:
 		if item != null and item.get("id") == id:
 			total += int(inventory.call("get_count", i))
 	return total
+
+
+func _inside_spot(shop: Node) -> Vector3:
+	var b: AABB = shop.get("bounds")
+	return (shop as Node3D).to_global(Vector3(b.get_center().x, float(shop.get("floor_y")) + 0.05, b.end.z - 1.0))
+
+
+func _outside_spot(shop: Node) -> Vector3:
+	var b: AABB = shop.get("bounds")
+	return (shop as Node3D).to_global(Vector3(0.0, float(shop.get("floor_y")) + 0.05, b.end.z + 1.5))
 
 
 func _run() -> void:
@@ -95,43 +115,77 @@ func _run() -> void:
 	var b: Node = shops[6]
 	var inventory: Node = _me.get("inventory")
 
-	# 1) Klauen, während der Verkäufer hinten ist.
+	# 1) Host richtet Laden A ein.
 	await _phase(2.0)
 	if _host:
+		a.set("has_sensor", false)
+		a.set("camera_alive", false)
 		a.set("busy", true)
-		a.set("_busy_left", 60.0)
+		a.set("_busy_left", 999.0)
 	await _phase(5.0)
-	var items: Array = a.get("slot_items")
-	var id := str((items[0] as Resource).get("id"))
-	var stock_before := int(a.call("stock_left"))
-	if not _host:
-		_check(bool(a.get("busy")), "Client sieht: Verkäufer ist hinten")
-		var before := _count(id)
-		(a.get("_goods") as Array)[0].call("interact", _me)
-		var got := await _wait_for(func() -> bool: return _count(id) > before, 5000)
-		_check(got, "Client hat %s geklaut" % id)
-	await _phase(9.0)
-	_check(not bool(a.get("stock")[0]), "Regalplatz ist bei beiden leer")
-	_check(int(a.get("keeper_state")) == 0, "Kein Alarm")
+	_check(bool(a.get("busy")) and not bool(a.get("camera_alive")), "Laden A: Verkäufer räumt ein, Kamera aus (bei beiden)")
 
-	# 2) Client erschießt den Verkäufer von Laden B und räumt die Kasse aus.
+	# 2) Client nimmt Ware.
+	var slot := _shelf_slot(a)
+	var item: Resource = a.call("item_at", slot)
+	var id := str(item.get("id")) if item else ""
+	var price := int(a.call("price_of", item)) if item else 0
+	var stock_before := int(a.call("stock_total"))
+	if not _host:
+		_me.global_position = _inside_spot(a)
+		await create_timer(0.3).timeout
+		inventory.call("take_all_money")
+		inventory.call("add_money", 50)
+		a.call("request", _me, &"take", slot)
+		var got := await _wait_for(func() -> bool: return _count(id) == 1, 5000)
+		_check(got and int(a.get("my_unpaid")) == price, "Client hat %s genommen, Warenkorb %d ¢" % [id, int(a.get("my_unpaid"))])
+	await _phase(9.0)
+	var smaller := await _wait_for(func() -> bool: return int(a.call("stock_total")) < stock_before, 10000)
+	_check(smaller, "Regal ist bei beiden kleiner (%d → %d)" % [stock_before, int(a.call("stock_total"))])
+
+	# 3) Client bezahlt.
+	if not _host:
+		a.call("request", _me, &"pay")
+		var paid := await _wait_for(func() -> bool: return int(inventory.get("money")) == 50 - price, 5000)
+		_check(paid and int(a.get("my_unpaid")) == 0, "Bezahlt: Bargeld %d, Warenkorb leer" % int(inventory.get("money")))
+
+	# 4) Client nimmt noch etwas und geht raus.
+	await _phase(12.0)
+	var slot2 := _shelf_slot(a)
+	var id2 := str((a.call("item_at", slot2) as Resource).get("id")) if slot2 >= 0 else ""
+	if not _host and slot2 >= 0:
+		var before := _count(id2)
+		a.call("request", _me, &"take", slot2)
+		await _wait_for(func() -> bool: return _count(id2) > before, 5000)
+		_me.global_position = _outside_spot(a)
+		var cleared := await _wait_for(func() -> bool: return int(a.get("my_unpaid")) == 0, 5000)
+		_check(cleared and _count(id2) > before, "Mit unbezahltem %s raus: geklaut, Warenkorb leer" % id2)
+	await _phase(16.0)
+	_check(int(a.get("keeper_state")) == 0, "Kein Alarm in Laden A")
+
+	# 5) Laden B: Verkäufer erschießen, Kasse knacken.
 	var cash := int(b.get("cash"))
 	if not _host:
 		var keeper: Node = b.get("_keeper")
 		keeper.call("take_hit", 35.0, Vector3.ZERO, Vector3.FORWARD)
 		keeper.call("take_hit", 35.0, Vector3.ZERO, Vector3.FORWARD)
-	await _phase(13.0)
-	_check(int(b.get("keeper_state")) == 3, "Verkäufer von Laden B ist bei beiden tot")
+	await _phase(19.0)
+	var dead := await _wait_for(func() -> bool: return int(b.get("keeper_state")) == 3, 10000)
+	_check(dead, "Verkäufer von Laden B ist bei beiden tot")
 	if not _host:
+		var register: Node3D = b.get("_register")
+		_me.global_position = register.global_position + (b as Node3D).global_basis.x.normalized() * 0.9
+		_me.global_position.y = (b as Node3D).global_position.y + float(b.get("floor_y")) + 0.02
+		await create_timer(0.3).timeout
 		inventory.call("take_all_money")
-		b.get("_register").call("interact", _me)
-		var paid := await _wait_for(func() -> bool: return int(inventory.get("money")) > 0, 5000)
-		_check(paid and int(inventory.get("money")) == cash, "Client hat die Kasse ausgeräumt (+%d ¢)" % int(inventory.get("money")))
-	await _phase(17.0)
-	_check(int(b.get("cash")) == 0, "Kasse von Laden B ist bei beiden leer")
-	if _host:
-		_check(int(inventory.get("money")) != cash or cash == 0, "Host hat das Geld nicht bekommen")
-	await _phase(20.0)
+		register.call("interact", _me)
+		var robbed := await _wait_for(func() -> bool: return int(inventory.get("money")) > 0, 6000)
+		_check(robbed and int(inventory.get("money")) == cash, "Kasse von Laden B geknackt (+%d ¢)" % int(inventory.get("money")))
+	await _phase(25.0)
+	var empty := await _wait_for(func() -> bool: return int(b.get("cash")) == 0, 12000)
+	_check(empty, "Kasse von Laden B ist bei beiden leer")
+	# Der Host bleibt länger, damit der Client fertig wird, bevor die Sitzung endet.
+	await _phase(45.0 if _host else 30.0)
 	_finish()
 
 

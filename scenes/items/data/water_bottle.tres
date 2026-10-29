@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ConsumableData" format=3]
+
+[ext_resource type="Script" path="res://scenes/items/consumable_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+id = "water_bottle"
+display_name = "Aqua-Pure"
+description = "Gefiltertes Wasser in der Flasche. Schmeckt nach nichts, und das ist gut so. Rechtsklick trinkt."
+glyph = "AQ"
+color = Color(0.3, 0.85, 1, 1)
+max_stack = 6
+value = 2
+model = &"bottle"
+water = 45.0
+use_verb = "getrunken"
+use_animation = &"drink"

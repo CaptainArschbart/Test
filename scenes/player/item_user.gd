@@ -113,9 +113,9 @@ func _process(delta: float) -> void:
 		_held.visible = _player.melee == null or not _player.melee.is_holstering()
 	if _throw_time >= 0.0:
 		_update_throw(delta)
-	elif _held != null and _item is ConsumableData:
+	elif _held != null and _item != null and ConsumableModel.has_model(_item.model):
 		_raise = maxf(_raise - delta / 0.25, 0.0)
-		var hold := ConsumableModel.hold_transform((_item as ConsumableData).model)
+		var hold := ConsumableModel.hold_transform(_item.model)
 		var low := smoothstep(0.0, 1.0, _raise)
 		_held.transform = Transform3D(hold.basis, hold.origin + ConsumableUse.LOW_OFFSET * low)
 		_held.visible = _held.visible and (_use == null or not _use.is_active())
@@ -391,7 +391,7 @@ func _update_item() -> void:
 	if _held != null:
 		_held.queue_free()
 		_held = null
-	if item is ConsumableData and ConsumableModel.has_model(item.model):
+	if item != null and ConsumableModel.has_model(item.model):
 		_held = ConsumableModel.build(item.model, item.color, true)
 		_held.transform = ConsumableModel.hold_transform(item.model)
 		_raise = 1.0
@@ -425,10 +425,10 @@ func _update_item() -> void:
 
 
 ## Gehaltenes Item oder das aus der laufenden Benutz-Animation.
-func _use_item_data() -> ConsumableData:
+func _use_item_data() -> ItemData:
 	if _use != null and _use.is_active():
 		return _use.get_item()
-	return _item as ConsumableData
+	return _item
 
 
 func _on_use_finished(completed: bool) -> void:
