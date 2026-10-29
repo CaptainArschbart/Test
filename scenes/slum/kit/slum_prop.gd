@@ -35,6 +35,19 @@ enum Kind {
 		queue_rebuild()
 
 
+## Große Teile (Container, Masten, Laternen, Zäune …) bleiben sichtbar, Kleinkram endet im Nebel.
+const BIG_KINDS := [Kind.CONTAINER, Kind.POWER_POLE, Kind.STREET_LAMP, Kind.WATER_TANK, Kind.MARKET_STALL,
+		Kind.FENCE, Kind.CAR_WRECK, Kind.CONCRETE_BARRIER, Kind.GENERATOR]
+
+
+func _solid_range() -> float:
+	return 0.0 if kind in BIG_KINDS else 95.0
+
+
+func _detail_range() -> float:
+	return 110.0 if kind in BIG_KINDS else 70.0
+
+
 func _build(b: SlumBuilder) -> void:
 	match kind:
 		Kind.CRATE: _crate(b, Vector3(0, 0, 0), 0.8, 0.0)

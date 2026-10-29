@@ -32,14 +32,13 @@ static func tube(top: float, bottom: float, height: float) -> Mesh:
 
 
 ## Abgerundeter Block (Superellipsoid). roundness 0 = Kiste, 1 = Ellipsoid.
-static func rounded_box(size: Vector3, roundness: float) -> Mesh:
-	var key := "b%s_%.3f" % [size, roundness]
+## rings/segments: Auflösung (weniger für viele Figuren, z. B. Fußgänger).
+static func rounded_box(size: Vector3, roundness: float, rings := 14, segments := 24) -> Mesh:
+	var key := "b%s_%.3f_%d_%d" % [size, roundness, rings, segments]
 	if _cache.has(key):
 		return _cache[key]
 	var e := clampf(roundness, 0.05, 1.0)
 	var half := size * 0.5
-	var rings := 14
-	var segments := 24
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for i in rings + 1:
