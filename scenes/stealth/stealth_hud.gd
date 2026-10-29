@@ -20,10 +20,11 @@ var _noise: VitalBar
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Unter dem Vitals-Rahmen (16,56 bis 316,204).
+	# Kompakt gehalten, das Geldfeld der SurvivalHud steht direkt darunter.
 	position = Vector2(16.0, 212.0)
-	size = Vector2(300.0, 66.0)
-	_sight = _make_bar("SICHT", Color(0.85, 0.95, 1.0), 26.0)
-	_noise = _make_bar("LÄRM", MAGENTA, 44.0)
+	size = Vector2(200.0, 46.0)
+	_sight = _make_bar("SICHT", Color(0.85, 0.95, 1.0), 19.0)
+	_noise = _make_bar("LÄRM", MAGENTA, 31.0)
 
 
 func _make_bar(caption: String, accent: Color, y: float) -> VitalBar:
@@ -32,14 +33,16 @@ func _make_bar(caption: String, accent: Color, y: float) -> VitalBar:
 	bar.accent = accent
 	bar.warn_ratio = -1.0
 	bar.segments = 10
-	bar.bar_height = 10.0
-	bar.caption_width = 50.0
-	bar.number_width = 34.0
-	bar.caption_size = 11
+	bar.bar_height = 7.0
+	bar.slant = 4.0
+	bar.caption_width = 36.0
+	bar.number_width = 26.0
+	bar.caption_size = 9
+	bar.number_size = 10
 	bar.max_value = 100.0
 	bar.step = 0.0
-	bar.position = Vector2(18.0, y)
-	bar.size = Vector2(238.0, 16.0)
+	bar.position = Vector2(14.0, y)
+	bar.size = Vector2(154.0, 12.0)
 	add_child(bar)
 	return bar
 
@@ -97,14 +100,13 @@ func _draw() -> void:
 		Vector2(3.0, 4.0), Vector2(6.5, 4.0), Vector2(3.5, h - CHAMFER), Vector2(0.0, h - CHAMFER),
 	]), MAGENTA)
 	var font := get_theme_default_font()
-	draw_string(font, Vector2(18.0, 17.0), "STEALTH", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.95, 0.97, 1.0))
-	draw_string(font, Vector2(84.0, 17.0), "// SIGNATUR", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(1.0, 0.25, 0.8, 0.9))
+	draw_string(font, Vector2(14.0, 13.0), "STEALTH", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.95, 0.97, 1.0))
 	var color := status_color()
 	if status == "ENTDECKT" or status == "VERDACHT":
 		var blink := 0.6 + 0.4 * sin(float(Time.get_ticks_msec()) * 0.012)
 		color = Color(color, blink)
-	draw_string(font, Vector2(w - 104.0, 17.0), status, HORIZONTAL_ALIGNMENT_RIGHT, 92.0, 11, color)
-	_draw_eye(Vector2(w - 18.0, 44.0), color)
+	draw_string(font, Vector2(w - 90.0, 13.0), status, HORIZONTAL_ALIGNMENT_RIGHT, 80.0, 9, color)
+	_draw_eye(Vector2(w - 16.0, 31.0), color)
 
 
 ## Kleines Auge rechts: offen = gesehen, Strich = verborgen.
