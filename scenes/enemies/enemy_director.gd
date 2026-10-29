@@ -21,7 +21,7 @@ const GROUP := &"enemy_director"
 @export var bake_on_ready := true
 ## Ab hier wird die Geometrie fürs Navmesh gesammelt (die Map). Leer = Elternknoten.
 @export var source_root: NodePath
-## Bereich, in dem gebacken wird (Sektor 7: ±80 m).
+## Bereich, in dem gebacken wird (Standard ±82 m; Sektor 7 setzt seit der Erweiterung ±140 m).
 @export var bake_area := AABB(Vector3(-82, -3, -82), Vector3(164, 45, 164))
 @export var agent_radius := 0.25
 @export var agent_height := 1.8
