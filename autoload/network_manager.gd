@@ -296,6 +296,10 @@ func _on_connected_to_server() -> void:
 
 
 func _on_connection_failed() -> void:
+	# close() in stop() darf nicht als Fehler der Gegenseite zählen und die Session
+	# ein zweites Mal schließen.
+	if _stopping:
+		return
 	connection_failed.emit()
 	stop()
 

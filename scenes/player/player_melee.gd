@@ -749,7 +749,7 @@ static func _punch_curve(t: float, hit: float, duration: float) -> float:
 
 func _can_act() -> bool:
 	return _player.controls_local_body() and not _player.input_locked and not _player.noclip \
-			and not _player.dead and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not get_tree().paused
+			and not _player.dead and _player.pointer_captured() and not get_tree().paused
 
 
 func _make_audio(volume: float) -> AudioStreamPlayer:

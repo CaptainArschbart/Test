@@ -460,7 +460,7 @@ func _set_flash(on: bool) -> void:
 
 func _can_use() -> bool:
 	return _player.controls_local_body() and not _player.input_locked and not _player.noclip \
-			and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not get_tree().paused and not _holstered()
+			and _player.pointer_captured() and not get_tree().paused and not _holstered()
 
 
 func _holstered() -> bool:

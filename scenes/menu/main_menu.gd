@@ -360,6 +360,7 @@ func _show_lobby() -> void:
 
 
 func _hide_lobby() -> void:
+	_cancel_join_wait()
 	_ip_http.cancel_request()
 	_lobby.hide()
 	title_box.show()
@@ -391,6 +392,8 @@ func _show_share(address: String) -> void:
 
 
 func _on_host_port_pressed() -> void:
+	# Sonst feuert die Join-Wartezeit später und reißt den neuen Host ab.
+	_cancel_join_wait()
 	var port := _read_port(_host_port)
 	if port <= 0:
 		_set_status("Port ungültig.")
@@ -408,6 +411,7 @@ func _on_host_port_pressed() -> void:
 
 
 func _on_host_ngrok_pressed() -> void:
+	_cancel_join_wait()
 	if OS.has_feature("web"):
 		_set_status("ngrok läuft im Browser nicht.")
 		return
@@ -475,6 +479,7 @@ func _on_copy_pressed() -> void:
 
 
 func _on_play_online_pressed() -> void:
+	_cancel_join_wait()
 	if not NetworkManager.has_session() or not multiplayer.is_server():
 		_set_status("Erst einen Host starten.")
 		return
@@ -497,6 +502,7 @@ func _split_join_fields() -> void:
 
 
 func _on_join_pressed() -> void:
+	_cancel_join_wait()
 	_split_join_fields()
 	var port := _read_port(_join_port)
 	if port <= 0:
@@ -522,6 +528,12 @@ func _on_join_pressed() -> void:
 	_begin_join_wait()
 
 
+func _cancel_join_wait() -> void:
+	_join_pending = false
+	if _join_timer != null:
+		_join_timer.stop()
+
+
 func _begin_join_wait() -> void:
 	_join_pending = true
 	if _join_timer == null:
@@ -537,6 +549,11 @@ func _on_join_timeout() -> void:
 	if not _join_pending:
 		return
 	_join_pending = false
+	if _join_timer != null:
+		_join_timer.stop()
+	# Zwischenzeitlich kann ein Host stehen. Den darf die alte Wartezeit nicht schließen.
+	if NetworkManager.has_session() and multiplayer.is_server():
+		return
 	NetworkManager.stop()
 	_play_button.disabled = true
 	_set_status(_join_failure("Zeitüberschreitung nach 10 Sekunden."))
@@ -554,13 +571,13 @@ func _join_failure(reason: String) -> String:
 
 
 func _on_net_failed() -> void:
-	_play_button.disabled = true
+	# Eigenes stop() (Lobby zu, neuer Host) ist kein fehlgeschlagener Beitritt.
 	if not _join_pending:
-		_set_status(_join_failure("Server nicht erreichbar."))
 		return
 	_join_pending = false
 	if _join_timer != null:
 		_join_timer.stop()
+	_play_button.disabled = true
 	_set_status(_join_failure("Server nicht erreichbar."))
 
 

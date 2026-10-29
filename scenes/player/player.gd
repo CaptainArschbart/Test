@@ -266,6 +266,14 @@ func _physics_process(delta: float) -> void:
 		respawn()
 
 
+## Im Fenster nur bei gefangener Maus. Headless hat keinen Zeiger, dort gilt die Sperre nicht,
+## sonst feuern Waffen und Schläge in der Prüfung nie und die Schleife kommt nicht zurück.
+func pointer_captured() -> bool:
+	if DisplayServer.get_name() == "headless":
+		return true
+	return Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+
+
 ## Offline ist jeder Spieler lokal. Online nur der Peer mit Autorität.
 ## Ohne Peer wirft is_multiplayer_authority() einen Fehler und liefert falsch.
 func controls_local_body() -> bool:
