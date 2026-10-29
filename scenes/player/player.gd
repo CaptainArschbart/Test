@@ -98,6 +98,9 @@ signal revived
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 ## Wird vom Inventar-Fenster gesetzt: keine Bewegung, kein Umschauen.
 var input_locked := false
+## Offenes Fenster außer dem Inventar (z. B. BankUI). Solange gesetzt, gibt das Inventar-HUD
+## die Sperre nicht frei und öffnet sich nicht.
+var open_panel: Node = null
 
 ## Flugmodus ohne Kollision und Schwerkraft (umschalten mit set_noclip).
 var noclip := false
@@ -151,6 +154,7 @@ func _ready() -> void:
 		return
 	_ensure_play_input()
 	stats.died.connect(_on_stats_died)
+	inventory.transfer_received.connect(_on_transfer_received)
 	_life_started_msec = Time.get_ticks_msec()
 	low_health_fx = LowHealthFxScript.new()
 	add_child(low_health_fx)
@@ -323,6 +327,11 @@ func respawn() -> void:
 	_stair_grace = 0.0
 	_fall_speed = 0.0
 	_stop_sounds()
+
+
+func _on_transfer_received(amount: int, from_name: String) -> void:
+	if item_user != null:
+		item_user.show_message("Überweisung: +%d ¢ von %s" % [amount, from_name], Color(0.3, 1.0, 0.55))
 
 
 func _on_stats_died() -> void:
