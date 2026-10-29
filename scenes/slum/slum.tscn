@@ -22,6 +22,7 @@
 [ext_resource type="Resource" path="res://scenes/items/data/sniper.tres" id="i_sniper"]
 [ext_resource type="PackedScene" path="res://scenes/slum/slum_enemies.tscn" id="e_enemies"]
 [ext_resource type="PackedScene" path="res://scenes/slum/slum_life.tscn" id="l_life"]
+[ext_resource type="Script" path="res://scenes/interact/bank_terminal.gd" id="i_bank"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
 sky_top_color = Color(0.02, 0.025, 0.05, 1)
@@ -6788,6 +6789,10 @@ script = ExtResource("i_vending")
 product = ExtResource("i_stim")
 price = 6
 currency = ExtResource("i_credchip")
+
+[node name="BankTerminal" type="StaticBody3D" parent="Vending"]
+transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 7.0, 0.15, 50.6)
+script = ExtResource("i_bank")
 
 [node name="SlumEnemies" parent="." instance=ExtResource("e_enemies")]
 

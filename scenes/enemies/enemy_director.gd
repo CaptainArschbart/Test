@@ -162,16 +162,25 @@ func _physics_process(delta: float) -> void:
 
 
 func _update_lod() -> void:
+	var eyes: Array[Vector3] = []
 	var cam := get_viewport().get_camera_3d()
-	if cam == null:
+	if cam != null:
+		eyes.append(cam.global_position)
+	# Host im Multiplayer: Gegner bei jedem Spieler wach halten, nicht nur bei der eigenen Kamera.
+	if WorldSync.is_online() and multiplayer.is_server():
+		for node: Node in get_tree().get_nodes_in_group("player"):
+			eyes.append((node as Node3D).global_position + Vector3.UP * 1.6)
+	if eyes.is_empty():
 		return
-	var eye := cam.global_position
 	var list: Array = []
 	for node: Node in get_tree().get_nodes_in_group(Enemy.GROUP):
 		var enemy := node as Enemy
 		if enemy == null or enemy.is_dead():
 			continue
-		list.append([enemy.global_position.distance_squared_to(eye), enemy])
+		var nearest := INF
+		for eye: Vector3 in eyes:
+			nearest = minf(nearest, enemy.global_position.distance_squared_to(eye))
+		list.append([nearest, enemy])
 	list.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
 	var full := 0
 	for entry: Array in list:
