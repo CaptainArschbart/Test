@@ -37,4 +37,5 @@ loot_items = Array[Resource]([ExtResource("2_shard"), ExtResource("3_stim")])
 loot_chances = PackedFloat32Array(0.8, 0.4)
 credits_min = 20
 credits_max = 45
+xp_reward = 50
 voice_pitch = 0.75

@@ -70,6 +70,10 @@ enum Look { GANGSTER, SECURITY, SNIPER, COP }
 @export var credits_min := 0
 @export var credits_max := 0
 
+@export_group("Erfahrung")
+## XP für den Spieler, wenn er diesen Gegner tötet.
+@export var xp_reward := 25
+
 @export_group("Stimme")
 ## Tonhöhe der Rufe und Grunzer.
 @export var voice_pitch := 1.0

@@ -20,6 +20,7 @@ extends CharacterBody3D
 ## %PlayerStealth: Sichtbarkeit und Geräuschpegel für Gegner (Schleichen).
 ## PlayerMelee (im Code angelegt, Player.melee): Boxen ("melee" oder "fire" mit leeren Händen),
 ## Halten lädt einen Dash-Schlag auf.
+## PlayerXp (Player.xp) und XpHud: Erfahrung aus Gegner-Kills, Stufen, Leiste oben mittig.
 ## "noclip" schaltet den Flugmodus um: durch Wände fliegen in Blickrichtung,
 ## "jump" hoch, "noclip_down" runter, "sprint" schneller. Im Noclip gibt es keinen HP-Verlust.
 ## Low-Health-Effekte (LowHealthFx) und der Death-Screen „FLATLINE“ (DeathScreen) werden im Code
@@ -92,6 +93,8 @@ const LowHealthFxScript := preload("res://scenes/survival/low_health_fx.gd")
 const DeathScreenScript := preload("res://scenes/survival/death_screen.gd")
 const CameraShakeScript := preload("res://scenes/player/camera_shake.gd")
 const PlayerMeleeScript := preload("res://scenes/player/player_melee.gd")
+const PlayerXpScript := preload("res://scenes/player/player_xp.gd")
+const XpHudScript := preload("res://scenes/survival/xp_hud.gd")
 
 signal revived
 
@@ -109,6 +112,8 @@ var death_screen: DeathScreenScript
 var camera_shake: CameraShakeScript
 ## Faustkampf und Dash-Schlag (nur beim lokalen Spieler, sonst null).
 var melee: PlayerMeleeScript
+## Erfahrung und Stufe (im Code angelegt). Gegner geben beim Tod XP, die Leiste steht oben mittig.
+var xp: PlayerXpScript
 
 var _spawn_transform: Transform3D
 var _noclip_label: Label
@@ -160,6 +165,13 @@ func _ready() -> void:
 	melee = PlayerMeleeScript.new()
 	melee.name = "PlayerMelee"
 	add_child(melee)
+	xp = PlayerXpScript.new()
+	xp.name = "PlayerXp"
+	add_child(xp)
+	var xp_hud := XpHudScript.new()
+	xp_hud.name = "XpHud"
+	xp_hud.xp = xp
+	add_child(xp_hud)
 	_create_noclip_label()
 	death_screen = DeathScreenScript.new()
 	add_child(death_screen)
