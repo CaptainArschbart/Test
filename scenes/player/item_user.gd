@@ -5,7 +5,9 @@ extends Node3D
 ## "interact" (E, belegbar): Strahl aus der Bildschirmmitte bis interact_range. Trifft er
 ## einen Knoten mit interact(player) (Pickups auf Layer interact, Automaten auf world),
 ## steht unter dem Fadenkreuz "[E] …" aus get_interact_text(player).
-## "use_item" (Rechtsklick): ConsumableData im gewählten Slot wird verbraucht.
+## "use_item" (Rechtsklick): ConsumableData im gewählten Slot wird verbraucht. Mit use_animation
+## läuft erst die Benutz-Animation (ConsumableUse), der Effekt greift an ihrem Ende.
+## Verbrauchsitems mit Modell (ConsumableModel) liegen sichtbar in der rechten Hand.
 ## "fire" (Linksklick): GrenadeData wird geworfen, MeleeData schlägt zu.
 ## Wurf: Ausholen (THROW_WINDUP), Loslassen, Durchschwingen; die rechte Hand folgt der Granate.
 ## Ist eine Granate gewählt, zeigt unten rechts die Anzeige, wie viele davon im Inventar sind.
@@ -35,6 +37,9 @@ var _prompt: Label
 var _message: Label
 var _boost_label: Label
 var _message_tween: Tween
+var _use: ConsumableUse
+## 1 = gehaltenes Verbrauchsitem ganz unten (kommt nach dem Benutzen neu ins Bild), 0 = in der Hand.
+var _raise := 0.0
 var _grenade_label: Label
 var _audio: AudioStreamPlayer
 ## Läuft ein Wurf: Zeit seit dem Klick, sonst -1.
@@ -55,6 +60,11 @@ func _ready() -> void:
 	add_child(_audio)
 	if not _player.is_node_ready():
 		await _player.ready
+	_use = ConsumableUse.new()
+	_use.name = "ConsumableUse"
+	add_child(_use)
+	_use.setup(_player, self)
+	_use.finished.connect(_on_use_finished)
 	_player.inventory.changed.connect(_update_item)
 	_player.inventory.changed.connect(_update_grenade_hud)
 	_player.inventory.selected_changed.connect(_update_item.unbind(1))
@@ -71,7 +81,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		interact()
 	elif event.is_action_pressed("use_item") and _item is ConsumableData:
 		get_viewport().set_input_as_handled()
-		use_selected()
+		if not is_using_consumable():
+			use_selected()
 	elif event.is_action_pressed("fire") and (_item is GrenadeData or _item is MeleeData) \
 			and (_player.melee == null or not _player.melee.is_busy()):
 		get_viewport().set_input_as_handled()
@@ -100,6 +111,12 @@ func _process(delta: float) -> void:
 		_held.visible = _player.melee == null or not _player.melee.is_holstering()
 	if _throw_time >= 0.0:
 		_update_throw(delta)
+	elif _held != null and _item is ConsumableData:
+		_raise = maxf(_raise - delta / 0.25, 0.0)
+		var hold := ConsumableModel.hold_transform((_item as ConsumableData).model)
+		var low := smoothstep(0.0, 1.0, _raise)
+		_held.transform = Transform3D(hold.basis, hold.origin + ConsumableUse.LOW_OFFSET * low)
+		_held.visible = _held.visible and (_use == null or not _use.is_active())
 	elif _held != null:
 		# Klinge schwingt von rechts oben nach links unten, Granate holt aus.
 		var t := sin(_swing * PI)
@@ -157,9 +174,36 @@ func use_selected() -> bool:
 	return false
 
 
-## Klinge oder Granate in der Hand (für die Griffpose der Hände), sonst null.
+## Klinge, Granate oder Verbrauchsitem in der Hand (für die Griffpose der Hände), sonst null.
+## Während der Benutz-Animation ist es deren Modell.
 func get_held_view() -> Node3D:
+	if _use != null and _use.is_active():
+		return _use.get_view()
 	return _held
+
+
+## Griff der rechten Hand im Raum des gehaltenen Modells (Verbrauchsitems), leer = PlayerHands entscheidet.
+func get_held_grip() -> Dictionary:
+	var item := _use_item_data()
+	if item != null and ConsumableModel.has_model(item.model):
+		return ConsumableModel.grip_pose(item.model)
+	return {}
+
+
+## Ziel der linken Hand während der Benutz-Animation: {"pose", "space", "follow"}, leer = locker.
+func get_left_hand_target() -> Dictionary:
+	if _use == null:
+		return {}
+	return _use.get_left_target()
+
+
+## Läuft gerade eine Benutz-Animation (inklusive Wegstecken)?
+func is_using_consumable() -> bool:
+	return _use != null and _use.is_active()
+
+
+func get_consumable_use() -> ConsumableUse:
+	return _use
 
 
 func get_held_item() -> ItemData:
@@ -179,10 +223,21 @@ func show_message(text: String, color := Color(0.0, 1.0, 0.95)) -> void:
 
 
 func _consume(item: ConsumableData) -> bool:
-	var stats := _player.stats
-	if not stats.is_alive():
+	if not _player.stats.is_alive():
 		return false
-	_player.inventory.remove_at(_player.inventory.selected)
+	if item.use_animation != &"" and ConsumableUse.has_animation(item.use_animation) \
+			and ConsumableModel.has_model(item.model):
+		return _use.start(item, _player.inventory.selected)
+	return apply_consumable(item, _player.inventory.selected)
+
+
+## Verbraucht ein Stück aus `slot` und wendet die Werte an (von _consume direkt oder am Ende der
+## Benutz-Animation). false, wenn der Slot das Item nicht mehr hat oder der Spieler tot ist.
+func apply_consumable(item: ConsumableData, slot: int) -> bool:
+	var stats := _player.stats
+	if not stats.is_alive() or not item.is_same(_player.inventory.get_item(slot)):
+		return false
+	_player.inventory.remove_at(slot)
 	if item.heal > 0.0:
 		stats.heal(item.heal)
 	if item.stamina > 0.0:
@@ -329,10 +384,15 @@ func _update_item() -> void:
 		return
 	_item = item
 	_swing = 0.0
+	_raise = 0.0
 	if _held != null:
 		_held.queue_free()
 		_held = null
-	if item is MeleeData:
+	if item is ConsumableData and ConsumableModel.has_model(item.model):
+		_held = ConsumableModel.build(item.model, item.color, true)
+		_held.transform = ConsumableModel.hold_transform(item.model)
+		_raise = 1.0
+	elif item is MeleeData:
 		_held = _make_held(BoxMesh.new(), item.color)
 		(_held.get_child(0) as MeshInstance3D).mesh.size = Vector3(0.015, 0.03, 0.5)
 		_held.get_child(0).position = Vector3(0.0, 0.0, -0.22)
@@ -359,6 +419,20 @@ func _update_item() -> void:
 			_add_held_part(cap, Color(1.0, 0.85, 0.3), Vector3(0.0, 0.05, 0.0), Vector3.ZERO)
 	if _held != null:
 		add_child(_held)
+
+
+## Gehaltenes Item oder das aus der laufenden Benutz-Animation.
+func _use_item_data() -> ConsumableData:
+	if _use != null and _use.is_active():
+		return _use.get_item()
+	return _item as ConsumableData
+
+
+func _on_use_finished(completed: bool) -> void:
+	# Nach dem Benutzen kommt das nächste Stück von unten ins Bild, nach einem Abbruch steht es schon da.
+	if completed:
+		_raise = 1.0
+	_player.hands.wake()
 
 
 func _add_held_part(mesh: PrimitiveMesh, color: Color, pos: Vector3, rot: Vector3) -> void:

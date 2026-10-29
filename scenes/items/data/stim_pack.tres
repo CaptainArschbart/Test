@@ -12,3 +12,5 @@ color = Color(0.3, 1, 0.45, 1)
 max_stack = 8
 heal = 45.0
 use_verb = "injiziert"
+model = &"injector"
+use_animation = &"inject"

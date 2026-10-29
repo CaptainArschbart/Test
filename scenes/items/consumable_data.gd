@@ -14,3 +14,14 @@ extends ItemData
 @export var boost_duration := 0.0
 ## Erscheint nach dem Benutzen, z. B. "getrunken".
 @export var use_verb := "benutzt"
+
+@export_group("Modell und Animation")
+## Modell aus ConsumableModel: "injector", "can", "noodles", "bandage". Leer = Neon-Würfel wie bisher.
+## Dasselbe Modell erscheint als Pickup, in der Hand und als Icon im Inventar.
+@export var model: StringName = &""
+## Benutz-Animation aus ConsumableUse: "inject", "drink", "eat", "bandage".
+## Leer = sofort verbraucht (altes Verhalten, ohne Animation).
+@export var use_animation: StringName = &""
+## Dauer des eigentlichen Benutzens in Sekunden (ohne Ziehen und Wegstecken).
+## 0 = Standard der Animation. Der Effekt greift erst, wenn die Zeit ganz durch ist.
+@export var use_time := 0.0

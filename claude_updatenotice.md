@@ -511,3 +511,32 @@ Die Einträge bis einschließlich PR #8 sind rückwirkend aus dem Arbeitslog in 
 - `scenes/player/item_user.gd`: Der neue Wurfablauf aus diesem PR bleibt. Dazu kommen aus main das Wegstecken beim Boxen (`_held.visible` in `_process`) und `action_performed.emit()`, jetzt in `_release`, wenn die Granate die Hand verlässt.
 - `scenes/weapons/weapon_holder.gd`: Hülsenauswurf aus diesem PR und `fired.emit()` aus main, beides behalten.
 - Nur statisch geprüft (keine Konfliktmarker, keine fehlenden `res://`-Pfade), nicht in Godot geladen.
+
+### 2026-10-28 · Consumables mit 3D-Modellen und Benutz-Animationen · Claude (für Arschi) · PR #37
+- Auftrag: Verbrauchsitems sollen echte Modelle haben und beim Benutzen animiert werden.
+- Modelle (neu `scenes/items/consumable_model.gd`, `ConsumableModel`): aus Grundformen gebaut, ein Modell für Pickup (vergrößert), Hand (echte Größe, Ebene der Ego-Hände) und Inventar-Icon (Linienzeichnung im Neon-Stil, `draw_icon`). Auto-Injektor (Stim, Sichtfenster mit leuchtender Flüssigkeit, Kolben, Schutzkappe), NeoCola-Dose (Neonringe, Schriftzug, Lasche), Nudelbecher (Banderole, Foliendeckel, Nudeln), Nano-Verband (Rolle mit Siegelband). Griffposen der rechten Hand (`GRIPS`) und Haltelage (`HOLD`) stehen dort zentral.
+- Item-Daten (`consumable_data.gd`): neue Felder `model`, `use_animation`, `use_time` (0 = Standard der Animation). Leer = altes Verhalten (sofort verbraucht, Würfel als Pickup). Werte der bestehenden Items unverändert, nur die zwei neuen Felder in `stim_pack`, `energy_drink`, `noodles`.
+- Neues Item `nano_bandage.tres` (Nano-Verband, +70 HP, 3 s Anlegen, Stapel 4): zwei Stück auf `Spot_Plaza4` der Testmap, Beute beim Streifenpolizisten (`cop.tres`, 25 %).
+- Benutz-Animation (neu `scenes/player/consumable_use.gd`, `ConsumableUse`, legt `ItemUser` im Code an): Ziehen → Benutzen → Wegstecken als Zeitleiste mit Schlüsseln (`ANIMATIONS`). Injizieren (linker Unterarm wird hingehalten, Kappe ab, Nadel auf die Innenseite, Kolben und Flüssigkeit gehen runter), Trinken (linke Hand zieht die Lasche, Dose an den Mund, drei Schlucke), Essen (linke Hand zieht den Deckel ab, Dampf, zweimal schlürfen), Verband (Rolle kreist 2,5-mal um den linken Unterarm, Verband wächst sichtbar mit). Fortschrittsbalken unter dem Fadenkreuz mit Restzeit.
+- Effekt (`ItemUser.apply_consumable`, gleicher Code wie vorher) greift erst am Ende von „Benutzen“, erst dann wird ein Stück aus dem Slot genommen. Abbruch davor ohne Verbrauch: Slot-/Waffenwechsel, Tod, Noclip (sofort), Treffer, Sprint, Klettern, Rutschen, gesperrte Eingabe (Item geht weich zurück). HP-Verlust durch Hunger/Durst bricht nicht ab. Zweiter Rechtsklick während der Animation tut nichts.
+- Hände (`player_hands.gd`): Verbrauchsitems liegen sichtbar in der rechten Hand (dadurch kein Ausblenden im Stand), Griff aus `ItemUser.get_held_grip()`, linke Hand aus `ItemUser.get_left_hand_target()`. Unterarm zeigt bei Verbrauchsitems zur Schulter (`SHOULDER_RIGHT`, `_arm_toward`), sonst stach er beim Trinken in die Kamera. Neu `get_arm_node(side)`. Waffen, Klinge, Granate, Sprint-Fäuste und Klettern unverändert.
+- Sounds (neu `scenes/items/consumable_sounds.gd`, prozedural wie `EnemySounds`): Rascheln, Kappe, Zischen, Klick, Dose öffnen mit Sprudeln, Schlucken, Folie, Schlürfen, Reißen, Wickeln, Heil-Ton, Abbruch. Effekte: CPU-Partikel (Kappe, Nebel und Funken beim Injizieren, Sprudeln, Dampf, Nano-Funken), kurze Bildschirm-Tönung in Itemfarbe beim Wirken.
+- Dateien: neu `scenes/items/consumable_model.gd`, `scenes/items/consumable_sounds.gd`, `scenes/player/consumable_use.gd` (+ `.uid`), `scenes/items/data/nano_bandage.tres`, `tools/tests/test_consumables.gd`, `tools/tests/shot_consumables.gd`; geändert `scenes/items/consumable_data.gd`, `scenes/items/pickup.gd`, `scenes/player/item_user.gd`, `scenes/hands/player_hands.gd`, `scenes/inventory/inventory_slot.gd`, `scenes/items/data/{stim_pack,energy_drink,noodles}.tres`, `scenes/enemies/profiles/cop.tres`, `scenes/testmap/testmap.tscn`.
+- Getestet: Godot 4.7.2 headless, `tools/tests/test_consumables.gd` `CHECKS 45 FAILS 0` (Modelle, Pickups, Werte unverändert, Effekt erst am Ende, Abbruch durch Slotwechsel/Treffer/Sprint ohne Verbrauch, Hunger bricht nicht ab, Hände bleiben sichtbar, Verband wächst, letzte Dose → leere Hand). `test_sector7_enemies.gd` weiter 15/15, Sektor 7 und Hauptmenü ohne Skriptfehler. Screenshots je Item (Pickup, in der Hand, drei Animationsphasen) unter Xvfb in Compatibility und Forward+ (lavapipe), abgelegt im Projektordner `consumables/`. `tools/tests/shot_consumables.gd` erzeugt sie neu (`SHOT_OUT`, `SHOT_ONLY`, `SHOT_TIMES` = Anteile der Benutz-Phase, `SHOT_BRIGHT=1` für helles Licht beim Posen-Tuning).
+- Offen / Hinweise für die Nächsten:
+  - Multiplayer: Die Animation läuft nur lokal. Fremde Spieler sehen weder Modell noch Animation (das volle Playermodel aus PR #34 könnte `ConsumableUse` später über einen Zustand im Sync zeigen).
+  - Ton nur mit Dummy-Audio geprüft (Länge/Erzeugung ja, Klang nicht gehört). Gefühl mit echter Maus nicht getestet.
+  - Neues Verbrauchsitem: `.tres` mit `model` und `use_animation` reicht. Neue Animation: Eintrag in `ConsumableUse.ANIMATIONS` (und ggf. `LEFT_POSES`), neues Modell: `build_*`, `GRIPS`, `HOLD`, `PICKUP_SCALE` und Icon in `ConsumableModel`.
+  - PR #36 (SMG/Kontaktgranate) ändert ebenfalls `item_user.gd` und `player_hands.gd`; wer später mergt, bitte beide Haken (`get_held_grip`, `get_left_hand_target`) und die SMG-Posen behalten.
+
+### 2026-10-29 · main in PR #37 geholt, Mergekonflikte gelöst · Claude (für Arschi)
+
+- Aktuellen main (#35) in den Branch gemergt. Konflikt in `claude_updatenotice.md` gelöst, alle Einträge aus main und aus diesem PR behalten.
+- Geprüft: keine Konfliktmarker, keine fehlenden `res://`-Pfade. Nicht in Godot geladen.
+
+### 2026-10-29 · PR #37 an main angepasst (nach Merge von #34, #36, #38) · Claude (für Arschi)
+
+- `scenes/player/item_user.gd`: Benutz-Animation und gehaltene Verbrauchsitems aus diesem PR mit Wurfablauf/Granatenanzeige (#36) und Boxen (#38) aus main zusammengeführt. In `_process` hat ein laufender Wurf Vorrang, danach kommt das Verbrauchsitem. Beim Boxen wird auch das Verbrauchsitem weggesteckt.
+- `scenes/enemies/profiles/cop.tres`: Beute enthält jetzt beides, Nano-Bandage (25 %) und Kontaktgranate (30 %).
+- `scenes/hands/player_hands.gd`: Kommentare aus beiden Seiten behalten.
+- Nur statisch geprüft, nicht in Godot geladen.

@@ -1,4 +1,4 @@
-[gd_scene load_steps=50 format=3]
+[gd_scene load_steps=51 format=3]
 
 [ext_resource type="Script" path="res://scenes/testmap/testmap.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" path="res://scenes/testmap/shooting_range.tscn" id="98_shooting_range"]
 [ext_resource type="Script" path="res://scenes/interact/vending_machine.gd" id="99_vending"]
 [ext_resource type="Resource" path="res://scenes/items/data/noodles.tres" id="100_noodles"]
+[ext_resource type="Resource" path="res://scenes/items/data/nano_bandage.tres" id="101_nano_bandage"]
 [ext_resource type="Texture2D" path="res://assets/textures/slum/asphalt.png" id="t_asphalt"]
 [ext_resource type="Texture2D" path="res://assets/textures/slum/sidewalk.png" id="t_sidewalk"]
 [ext_resource type="Texture2D" path="res://assets/textures/slum/concrete.png" id="t_concrete"]
@@ -2808,6 +2809,11 @@ count = 3
 [node name="Pickup" parent="Pickups/SpawnPoints/Spot_Plaza2" instance=ExtResource("90_pickup")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
 item = ExtResource("100_noodles")
+count = 2
+
+[node name="Pickup" parent="Pickups/SpawnPoints/Spot_Plaza4" instance=ExtResource("90_pickup")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+item = ExtResource("101_nano_bandage")
 count = 2
 
 [node name="Vending" type="Node3D" parent="."]

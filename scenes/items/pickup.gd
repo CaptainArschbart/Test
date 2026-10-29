@@ -5,7 +5,8 @@ extends Area3D
 ## bleibt der Rest liegen.
 ##
 ## Fallengelassene Items fliegen per throw() ein Stück und landen auf dem Boden.
-## Waffen (WeaponData mit view_scene) zeigen ihr Modell statt des Würfels.
+## Waffen (WeaponData mit view_scene) zeigen ihr Modell statt des Würfels, Verbrauchsitems
+## mit Modell (ConsumableData.model) ihr ConsumableModel, vergrößert und leicht schräg.
 
 @export var item: ItemData
 @export_range(1, 999) var count := 1
@@ -38,6 +39,7 @@ func _ready() -> void:
 	mesh.material_override = material
 	glow.light_color = item.color
 	_show_weapon_model()
+	_show_consumable_model()
 	_update_label()
 
 
@@ -116,6 +118,18 @@ func _show_weapon_model() -> void:
 		var node := model.get_node_or_null(flash)
 		if node != null:
 			node.queue_free()
+	mesh.visible = false
+
+
+func _show_consumable_model() -> void:
+	var consumable := item as ConsumableData
+	if consumable == null or not ConsumableModel.has_model(consumable.model):
+		return
+	var model := ConsumableModel.build(consumable.model, consumable.color)
+	model.name = "ConsumableModel"
+	model.scale = Vector3.ONE * ConsumableModel.pickup_scale(consumable.model)
+	model.rotation_degrees = Vector3(0.0, 0.0, 14.0)
+	visual.add_child(model)
 	mesh.visible = false
 
 
