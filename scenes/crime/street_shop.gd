@@ -54,8 +54,9 @@ func _build_guns() -> void:
 
 func _build_gas() -> void:
 	_canopy()
-	_pump(Vector3(-2.2, 0.0, 1.4))
-	_pump(Vector3(2.2, 0.0, 1.4))
+	# Vor dem offenen Schaufenster, unter dem Vordach, nicht im Verkaufsraum.
+	_pump(Vector3(-2.6, 0.0, 4.2))
+	_pump(Vector3(2.6, 0.0, 4.2))
 	_shell(Vector3(5.0, 3.0, 4.0), "TANKE")
 	var drinks := _machine(WATER, 2, Vector3(-1.4, 0.0, 3.2))
 	drinks.consume_now = true

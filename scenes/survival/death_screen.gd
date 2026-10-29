@@ -289,9 +289,11 @@ func _build() -> void:
 	_respawn_button = _button(buttons, "RESPAWN", respawn)
 	_respawn_button.name = "RespawnButton"
 	_respawn_button.unique_name_in_owner = true
+	_respawn_button.owner = self
 	_menu_button = _button(buttons, "HAUPTMENÜ", go_to_main_menu)
 	_menu_button.name = "MenuButton"
 	_menu_button.unique_name_in_owner = true
+	_menu_button.owner = self
 
 	_blackout = ColorRect.new()
 	_blackout.name = "Blackout"

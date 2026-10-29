@@ -41,6 +41,7 @@ func _ready() -> void:
 	_hud.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_hud.add_theme_font_size_override("font_size", 22)
 	_hud.add_theme_color_override("font_color", Color(1.0, 0.82, 0.25))
+	_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_hud)
 	_hud.owner = layer
 	_refresh_hud()
@@ -105,11 +106,15 @@ func _sync_police(player: Node3D) -> void:
 	var scene := get_tree().current_scene
 	if scene == null:
 		return
-	while wanted.size() < goal:
+	var tries := 0
+	while wanted.size() < goal and tries < 8:
+		tries += 1
 		var angle := randf() * TAU
 		var flat := Vector3(cos(angle), 0.0, sin(angle)) * randf_range(22.0, 36.0)
 		var pos := player.global_position + flat
 		pos.y = player.global_position.y
+		if not _spawn_clear(player, pos):
+			continue
 		var anchor := Node3D.new()
 		anchor.name = "CopAnchor"
 		scene.add_child(anchor)
@@ -152,7 +157,10 @@ func _despawn_all() -> void:
 
 
 func _any_cop_sees(player: Node3D) -> bool:
-	var space := player.get_world_3d().direct_space_state
+	var world := player.get_world_3d()
+	if world == null:
+		return false
+	var space := world.direct_space_state
 	if space == null:
 		return false
 	for node in _units():
@@ -199,3 +207,18 @@ func _refresh_hud() -> void:
 		text += "★" if i < stars else "☆"
 	_hud.text = "WANTED  " + text
 	_hud.visible = true
+
+
+func _spawn_clear(player: Node3D, pos: Vector3) -> bool:
+	var world := player.get_world_3d()
+	if world == null:
+		return false
+	var space := world.direct_space_state
+	var shape := SphereShape3D.new()
+	shape.radius = 0.7
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = shape
+	query.transform = Transform3D(Basis(), pos + Vector3.UP * 1.0)
+	query.collision_mask = 1
+	query.exclude = [player.get_rid()]
+	return space.intersect_shape(query, 1).is_empty()

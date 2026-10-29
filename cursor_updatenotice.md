@@ -429,3 +429,26 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: Fenster, Controller, echter Tag-Nacht-Lauf über 480 s, Raytraced High und FSR2 im Bild (kein Screenshot), ob die neuen Gebäude in vorhandene Kit-Häuser ragen, Multiplayer-Client bei Fahndung und Taschendiebstahl, `test_sector7_city`. Echte `user://settings.cfg` nicht gelöscht. `pictures/maxresdefault.jpg.import`, die Torrent-Datei, `_test_appdata/` und fremde neue `.uid` (`shop_interior`, `shop_ui`, `player_xp`, `xp_hud`) nicht mit committed.
 - Git: auf `main`. `git pull` zu Beginn dieses Auftrags: Fast-forward `aa52244..13f3d8b` (PR #52). Dieser Eintrag gehört zum Commit der Änderung, danach `git push origin main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-29 · Audit: Überlappungen, GI, Fahndung · Cursor (für EnScapeZ) · main
+- Auftrag: Nach `6fd42db` die neuen Gebäude gegen Sektor 7 prüfen, Grafik, Wanted, Tod und Survival nachziehen, gefundene Fehler beheben.
+- Befund aus `scenes/slum/slum.tscn` (Fußabdrücke der `k_building`-Knoten, Welt-AABB): 7 von 8 Standorten schnitten Außenblöcke. Getroffen waren `OuterWest/Shop40`, `OuterNorth/Res19`, `OuterSouth/Shop26`, `OuterEast/Warehouse8`, `OuterWest/Shanty30`, `OuterWest/Shanty39`, `OuterNorth/Shanty24`. Der Waffenladen bei `(112, -36)` schnitt kein Gebäude, lag aber am Rand der Lagerhallen.
+- Neu platziert, auf Bodenplatten und mindestens 1 m von Kit-Gebäuden, nicht auf `kind` Straße/Kreuzung. Danach 0 Schnitte mit denselben AABBs:
+  - Wohnung `apt_a` `(-110, 0, -82)`, Tür nach +X, yaw 90.
+  - Wohnung `apt_b` `(-70, 0, 26)`, yaw 0, Schlüsselkarte `apt_a` darin.
+  - Wohnung `apt_c` `(84, 0, 98)`, yaw 180, Schlüsselkarte `apt_b` darin.
+  - Waffenläden `(-110, 0, 60)` yaw 90 und `(70, 0, 64)` yaw 0.
+  - Tankstellen `(-111, 0, 88)` yaw 90, `(-48, 0, -71)` yaw 0, `(90, 0, -101)` yaw 0 mit Schlüsselkarte `apt_c`.
+- Weiter behoben:
+  - `scenes/crime/apartment_block.gd`: Türspalt 1,4 m (Wandstücke je 3,1 m), Türblatt 1,1 m schneidet die Laibung nicht mehr. Bewohner steht auf y 0,12, über der Bodenplatte (Oberkante y 0,1).
+  - `scenes/crime/street_shop.gd`: Zapfsäulen von z 1,4 (im Verkaufsraum) nach `(-2,6, 4,2)` und `(2,6, 4,2)`, vor der offenen Front und unter dem Vordach. Automaten bleiben bei z 3,2 links und rechts der Tür, Mitte frei.
+  - `scenes/crime/civilian_crime.gd`: Hocken und E ohne die Bedingungen für Taschendiebstahl ruft nicht mehr die Polizei. Alarm nur, wenn der Versuch gesehen wird (`visibility` über 0,72).
+  - `autoload/wanted_manager.gd`: Polizei-Spawn prüft eine Kugel mit Radius 0,7 m (`intersect_shape`, Maske 1). Bis zu 8 Versuche, sonst in diesem Frame keiner. Sterne weiter einer alle 18 s ohne Sicht (`HIDE_SECONDS`). HUD `Stars` hat `MOUSE_FILTER_IGNORE`. `get_world_3d()` null bricht die Sichtprüfung ab.
+  - `scenes/options/options_menu.gd`: Beschriftungen und der Upscale-Hinweis `MOUSE_FILTER_IGNORE`. `DrawDistanceSlider` und `DrawDistanceValue` gehören der Options-Wurzel, Unique Names bleiben.
+  - `scenes/survival/death_screen.gd`: `RespawnButton` und `MenuButton` mit `owner` auf dem Deathscreen, damit `%RespawnButton` und `%MenuButton` greifen.
+- Grafik, am duplizierten Environment geprüft, nicht nur an der Vorlage: GI 0 schaltet SDFGI und SSR aus, Tiefennebel bleibt an. GI 1 schaltet SSR an, SDFGI aus. GI 2 schaltet SDFGI an und SSR mit 96 Steps. Volumetrischer Nebel folgt dem Schalter. Upscale bleibt ein einzelner Faktor auf `scaling_3d_scale` (Qualität 0,77, Leistung 0,5, Hybrid 0,45, sonst bilinear 1). Kein anderes Seitenverhältnis, die UI skaliert weiter über `canvas_items`. Standard-Renderdistanz 500 m sieht die Spielgrenze bei ±136 m. 80 m schneidet die Außenringe, das ist der Regler.
+- Keine neue Input-Aktion. `slum.tscn` unverändert, nur Laufzeit-Positionen. `claude_updatenotice.md` nicht angefasst.
+- Getestet (Godot 4.7.2 stable, headless): `test_content_update.gd` CHECKS 46 FAILS 0. `slum.tscn --quit-after 20` ohne `SCRIPT ERROR`, `Parse Error` oder `ERROR`.
+- Nicht getestet: Fenster, 2K/4K-Bild, ob FSR 2 im Fenster schwarz wird, Raytraced High auf der vollen Stadt über mehrere Sekunden, Laufwege zu den neuen Flecken zu Fuß. An den neuen Flecken lag kein Prop-Ursprung innerhalb von 7 m. Echte `user://settings.cfg` nicht gelöscht.
+- Git: auf `main`, Notice in diesem Commit, danach `git push origin main`. `pictures/maxresdefault.jpg.import`, Torrent, `_test_appdata/` und fremde `.uid` nicht mit committed. Das Prüfskript `tools/tests/_audit_overlap.py` nach dem Lauf gelöscht.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`

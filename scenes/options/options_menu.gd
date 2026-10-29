@@ -384,6 +384,7 @@ func _build_nextgen_rows() -> void:
 		_set_draft(upscale_option.get_item_id(index), "upscale_mode"))
 	var hint := Label.new()
 	hint.name = "UpscaleHint"
+	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.text = "Die Stufen steuern scaling_3d_mode (FSR 2) und scaling_3d_scale. Nvidia DLSS 5 Frame Generation gibt es in Godot 4.7 nicht; Hybrid senkt nur die interne Auflösung."
 	page.add_child(hint)
@@ -392,6 +393,7 @@ func _build_nextgen_rows() -> void:
 	page.add_child(row)
 	var caption := Label.new()
 	caption.text = "Renderdistanz"
+	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	caption.custom_minimum_size = Vector2(220, 0)
 	row.add_child(caption)
 	draw_distance_slider = HSlider.new()
@@ -402,9 +404,12 @@ func _build_nextgen_rows() -> void:
 	draw_distance_slider.step = 10.0
 	draw_distance_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(draw_distance_slider)
+	draw_distance_slider.owner = self
 	draw_distance_value = Label.new()
 	draw_distance_value.name = "DrawDistanceValue"
 	draw_distance_value.unique_name_in_owner = true
+	draw_distance_value.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	draw_distance_value.owner = self
 	draw_distance_value.custom_minimum_size = Vector2(72, 0)
 	row.add_child(draw_distance_value)
 	draw_distance_slider.value_changed.connect(func(meters: float) -> void:
@@ -426,6 +431,7 @@ func _add_option(page: VBoxContainer, node_name: String, caption: String, items:
 	page.add_child(row)
 	var label := Label.new()
 	label.text = caption
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.custom_minimum_size = Vector2(220, 0)
 	row.add_child(label)
 	var option := OptionButton.new()

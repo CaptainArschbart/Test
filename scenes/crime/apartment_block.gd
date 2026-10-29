@@ -22,8 +22,9 @@ func _ready() -> void:
 	_box(Vector3(0.0, 1.4, -3.4), Vector3(8.0, 2.6, 0.2), Color(0.28, 0.22, 0.26))
 	_box(Vector3(-3.9, 1.4, 0.0), Vector3(0.2, 2.6, 7.0), Color(0.24, 0.2, 0.22))
 	_box(Vector3(3.9, 1.4, 0.0), Vector3(0.2, 2.6, 7.0), Color(0.24, 0.2, 0.22))
-	_box(Vector3(-2.2, 1.4, 3.4), Vector3(3.4, 2.6, 0.2), Color(0.28, 0.22, 0.26))
-	_box(Vector3(2.2, 1.4, 3.4), Vector3(3.4, 2.6, 0.2), Color(0.28, 0.22, 0.26))
+	# Lücke 1,4 m, Türblatt 1,1 m, damit das Blatt die Wandenden nicht schneidet.
+	_box(Vector3(-2.25, 1.4, 3.4), Vector3(3.1, 2.6, 0.2), Color(0.28, 0.22, 0.26))
+	_box(Vector3(2.25, 1.4, 3.4), Vector3(3.1, 2.6, 0.2), Color(0.28, 0.22, 0.26))
 	var door := LockedDoor.new()
 	door.name = "Door"
 	door.key_id = key_id
@@ -48,7 +49,7 @@ func _ready() -> void:
 		var person := Civilian.new()
 		person.name = "Resident"
 		person.stay_put = true
-		person.position = Vector3(0.2, 0.05, -0.4)
+		person.position = Vector3(0.2, 0.12, -0.4)
 		add_child(person)
 	var sign := Label3D.new()
 	sign.text = "WOHNUNG"

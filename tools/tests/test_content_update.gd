@@ -28,6 +28,7 @@ func _run() -> void:
 	_door_and_loot()
 	_wanted_and_upscale()
 	_models()
+	_graphics()
 	print("CHECKS %d FAILS %d" % [_checks, _fails])
 	quit(_fails)
 
@@ -121,6 +122,48 @@ func _models() -> void:
 		var node: Node = model.call("build", kind, Color.WHITE, false)
 		_check(node is Node3D and node.get_child_count() > 0, "Mesh %s" % kind)
 		node.free()
+
+
+func _graphics() -> void:
+	var script: Script = load("res://autoload/wanted_manager.gd")
+	_check(float(script.get("HIDE_SECONDS")) == 18.0, "Fahndung fällt nach 18 s einen Stern")
+	var settings: Node = root.get_node("Settings")
+	var saved_gi := int(settings.get("gi_mode"))
+	var saved_fog := bool(settings.get("volumetric_fog"))
+	var saved_far := float(settings.get("draw_distance"))
+	var host := Node3D.new()
+	root.add_child(host)
+	var world := WorldEnvironment.new()
+	var env := Environment.new()
+	env.fog_density = 0.009
+	world.environment = env
+	world.name = "WorldEnvironment"
+	host.add_child(world)
+	var sun := DirectionalLight3D.new()
+	sun.name = "Moon"
+	host.add_child(sun)
+	var atmosphere: Node = load("res://scenes/world/world_atmosphere.gd").new()
+	host.add_child(atmosphere)
+	env = world.environment
+	settings.set("gi_mode", 0)
+	settings.set("volumetric_fog", false)
+	atmosphere.call("_apply_graphics")
+	_check(env.fog_enabled and not env.sdfgi_enabled and not env.ssr_enabled, "GI aus: Nebel an, SDFGI und SSR aus")
+	_check(not env.volumetric_fog_enabled, "volumetrischer Nebel aus")
+	settings.set("gi_mode", 1)
+	settings.set("volumetric_fog", true)
+	atmosphere.call("_apply_graphics")
+	_check(env.ssr_enabled and not env.sdfgi_enabled and env.volumetric_fog_enabled, "GI normal: SSR an, SDFGI aus")
+	settings.set("gi_mode", 2)
+	atmosphere.call("_apply_graphics")
+	_check(env.sdfgi_enabled and env.ssr_enabled and env.ssr_max_steps == 96, "Raytraced High: SDFGI und SSR 96")
+	_check(is_equal_approx(saved_far, 500.0) or saved_far >= 80.0, "Renderdistanz im erlaubten Bereich %.0f" % saved_far)
+	var quality: Dictionary = settings.call("upscale_for", 1)
+	var performance: Dictionary = settings.call("upscale_for", 3)
+	_check(float(quality["scale"]) > float(performance["scale"]), "Qualität rendert feiner als Leistung")
+	settings.set("gi_mode", saved_gi)
+	settings.set("volumetric_fog", saved_fog)
+	host.free()
 
 
 func _all(node: Node) -> Array[Node]:

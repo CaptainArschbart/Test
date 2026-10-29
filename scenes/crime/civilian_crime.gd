@@ -53,9 +53,6 @@ func interact(player: Player) -> void:
 		return
 	if _can_pickpocket(player):
 		_pickpocket(player)
-		return
-	if player.movement.crouching:
-		_caught(player, &"pickpocket")
 
 
 func on_burglary() -> void:
