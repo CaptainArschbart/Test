@@ -404,11 +404,17 @@ func _apply_3d_scale() -> void:
 	var scale := render_scale
 	if fullscreen:
 		scale *= fullscreen_factor(fullscreen_resolution, size)
-	scale = scale_for_window(scale, size)
+	# Deckel (Full HD) und Upscaling-Stufe nicht multiplizieren: bei 4K wurde sonst aus
+	# 0.5 × 0.77 ein Bild mit 1478 px Breite, das FSR2 auf 4K hochzog (pixelig und teuer).
+	# Der Regler wirkt auf den kleineren der beiden Faktoren und greift so auch über 1920 px.
 	var upscale := upscale_for(upscale_mode)
-	scale *= float(upscale["scale"])
+	scale *= scale_for_window(float(upscale["scale"]), size)
 	scale = clampf(scale, RENDER_SCALE_MIN * 0.5, 1.0)
 	var mode: int = int(upscale["mode"])
+	# Ohne Upscaling-Stufe, aber unter voller Auflösung (4K-Deckel, Regler, Vollbild-
+	# Auflösung): FSR 1 statt bilinear. Kostet kaum etwas und schärft nach.
+	if mode == Viewport.SCALING_3D_MODE_BILINEAR and scale < 0.999:
+		mode = Viewport.SCALING_3D_MODE_FSR
 	if viewport.scaling_3d_mode != mode:
 		viewport.scaling_3d_mode = mode as Viewport.Scaling3DMode
 	if is_equal_approx(viewport.scaling_3d_scale, scale):

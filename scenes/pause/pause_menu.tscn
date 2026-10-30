@@ -97,4 +97,5 @@ alignment = 0
 [node name="Options" parent="Root/Center/Panel/Pages" instance=ExtResource("3_options")]
 unique_name_in_owner = true
 visible = false
+custom_minimum_size = Vector2(720, 520)
 layout_mode = 2

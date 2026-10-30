@@ -67,5 +67,31 @@ func _run() -> void:
 	_check(apply.get_global_rect().end.y <= host_rect.end.y + 1.0, "Übernehmen bleibt nach dem Scrollen sichtbar")
 	var min_h := options.get_combined_minimum_size().y
 	_check(min_h <= 430.0, "Options-Mindesthöhe %.1f passt ins 430-px-Feld" % min_h)
+	host.queue_free()
+	await _check_pause_menu()
 	print("CHECKS %d FAILS %d" % [_checks, _fails])
 	quit(_fails)
+
+
+## Im Pausemenü sitzen die Optionen in einem CenterContainer. Ohne Mindestgröße klappten
+## die Scroll-Listen dort auf Höhe 0 zusammen und ingame war nur der Kopf zu sehen.
+func _check_pause_menu() -> void:
+	var pause := load("res://scenes/pause/pause_menu.tscn").instantiate() as CanvasLayer
+	root.add_child(pause)
+	await process_frame
+	pause.call("open")
+	pause.call("_show_options")
+	await process_frame
+	await process_frame
+	var options := pause.get_node(^"%Options") as Control
+	var scroll := options.get_node(^"Tabs/ContentScroll") as ScrollContainer
+	var fullscreen := options.get_node(^"%FullscreenCheck") as Control
+	_check(options.visible, "Pausemenü zeigt die Optionen")
+	_check(scroll.size.y > 200.0, "Pausemenü: Grafikliste %.1f px hoch" % scroll.size.y)
+	_check(fullscreen.is_visible_in_tree() and fullscreen.get_global_rect().intersects(scroll.get_global_rect()), "Pausemenü: Vollbild-Schalter sichtbar")
+	var view := pause.get_viewport().get_visible_rect()
+	var apply := options.get_node(^"%ApplyButton") as Control
+	_check(view.encloses(apply.get_global_rect()), "Pausemenü: Übernehmen im Bild")
+	pause.call("close")
+	pause.queue_free()
+	await process_frame

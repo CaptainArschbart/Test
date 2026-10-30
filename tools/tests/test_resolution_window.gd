@@ -140,7 +140,9 @@ func _window_modes() -> void:
 		var viewport := root.get_viewport()
 		var expect: float = _settings.call("scale_for_window", 1.0, win)
 		_check(is_equal_approx(viewport.scaling_3d_scale, expect), "scaling_3d_scale %.4f erwartet %.4f" % [viewport.scaling_3d_scale, expect])
-		_check(viewport.scaling_3d_mode == Viewport.SCALING_3D_MODE_BILINEAR, "ohne Upscale bilinear")
+		# Unter voller Auflösung (4K-Deckel) schärft FSR 1 nach, sonst bleibt es bilinear.
+		var want_mode := Viewport.SCALING_3D_MODE_BILINEAR if expect >= 0.999 else Viewport.SCALING_3D_MODE_FSR
+		_check(viewport.scaling_3d_mode == want_mode, "ohne Upscale Modus %d, ist %d" % [want_mode, viewport.scaling_3d_mode])
 		var title := menu.find_child("Header", true, false) as Control
 		if title != null:
 			var title_scale := title.get_global_transform_with_canvas()
