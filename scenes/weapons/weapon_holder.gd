@@ -200,6 +200,16 @@ func get_spread_degrees() -> float:
 	return base + _bloom * lerpf(1.0, _weapon.aim_bloom_factor, _aim)
 
 
+func refill_magazine() -> int:
+	if _weapon == null:
+		return 0
+	var missing := _weapon.magazine_size - get_ammo()
+	if missing <= 0:
+		return 0
+	_ammo[_weapon.id] = _weapon.magazine_size
+	return missing
+
+
 func get_ammo() -> int:
 	if _weapon == null:
 		return 0

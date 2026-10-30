@@ -484,3 +484,26 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: Mausrad und Controller im echten Fenster, Pause-Menü als Bild.
 - Git: auf `main`, dieser Eintrag im selben Commit, danach `git push origin main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-30 · Vier Waffenläden, Innenausbau · Cursor (für EnScapeZ) · main
+- Auftrag: Zwei weitere Waffenläden (insgesamt vier) und alle vier innen ausbauen: Vitrine, Wandregale, Kasse, Automat, verschlossene Kammer, Neon, Händler, Handel mit Credchips.
+- Keine eigene `gun_shop.tscn`. Der Laden entsteht weiter in `scenes/crime/street_shop.gd` (`Kind.GUNS`), `CityContent` setzt ihn auf die Map.
+- Koordinaten, Grundfläche 8×7 m, yaw 0 außer dem ersten. Abstandsprüfung gegen alle `k_building`-Fußabdrücke, Straßen/Kreuzungen und die anderen neuen Gebäude, Puffer 1 m: 0 Schnitte, nicht auf der Fahrbahn.
+  - `(-110, 0, 60)`, yaw 90 (bestand).
+  - `(70, 0, 64)`, yaw 0 (bestand).
+  - `(-70, 0, -46)`, yaw 0 (neu).
+  - `(-16, 0, -42)`, yaw 0 (neu).
+- Innen, lokal, Front nach +Z, Eingang 3 m breit zwischen den Pfeilern:
+  - Theke und Glaskasten. Darauf kaufbar: Pistole 40 ¢, SMG 80 ¢, M4 120 ¢, AK-47 110 ¢, Scharfschützengewehr 200 ¢, Eddy 15 ¢. Drei Munitionskisten nur als Modell.
+  - Lochwand links und rechts mit M4, AK-47, SMG und Scharfschützengewehr als Ansichtsmodelle, ohne Kollision.
+  - `%Clerk` an der Thekenvorderkante: gewählte Waffe oder Nahkampf wird für die Hälfte von `value` verkauft (mindestens 1 ¢, ohne `value` 8 ¢). Leeres Magazin der gehaltenen Waffe kostet 2 ¢ pro fehlender Patrone (`WeaponHolder.refill_magazine`).
+  - `%Shopkeeper`: Zivilist, `stay_put`, Blick zur Tür, Zeile „Waffen?“. Friedlich, bis jemand zielt oder trifft (bestehendes CivilianCrime).
+  - `%BackDoor` in der Trennwand, Schlüssel-id `gun_back`, zu. Auf mit Eddy oder einer Karte dieser id. Spalt 1,2 m, Türblatt 1,1 m.
+  - Dahinter Werkbank und `%ArmoryCrate` (versiegeltes Scharfschützengewehr). `%Register` ist eine versiegelte Kasse, 4× Bargeld.
+  - `%Atm`: bestehender Bankautomat, Front in den Raum. Neon „WAFFEN“ plus Deckenlicht cyan und magenta, Schatten aus.
+- Geändert: `scenes/crime/city_content.gd`, `scenes/crime/street_shop.gd`, `scenes/weapons/weapon_holder.gd` (`refill_magazine`). Neu: `tools/tests/test_gun_shops.gd`.
+- Keine neue Input-Aktion. `slum.tscn` nicht angefasst. `claude_updatenotice.md` nicht angefasst.
+- Getestet (Godot 4.7.2 stable, headless): `test_gun_shops.gd` CHECKS 29 FAILS 0. Vier Läden, jeder mit Händler, Clerk, Automat, verschlossener Kammer, Vitrine, Neon, Waffenkiste. Kein `SCRIPT ERROR`.
+- Nicht getestet: Laufweg im Fenster, ob die Theke im Bild die Sicht auf den Händler verdeckt, Navmesh-Bake nach den neuen Wänden (die Map backt Kollision beim Start wie bisher).
+- Git: auf `main`, dieser Eintrag im selben Commit, danach `git push origin main`. Das Hilfsskript `tools/tests/_gun_sites.py` nach dem Lauf gelöscht.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
