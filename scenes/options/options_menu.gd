@@ -88,6 +88,15 @@ func _ready() -> void:
 
 	_build_key_grid()
 	_build_nextgen_rows()
+	tabs.set_tab_title(0, "GRAFIK")
+	tabs.set_tab_title(1, "AUDIO")
+	tabs.set_tab_title(2, "STEUERUNG")
+	for scroll_name: String in ["ContentScroll", "AudioScroll", "ControlsScroll"]:
+		var scroll := tabs.get_node(NodePath(scroll_name)) as ScrollContainer
+		scroll.mouse_filter = Control.MOUSE_FILTER_PASS
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+		scroll.follow_focus = true
 
 	# F11 ändert Settings, während die Seite offen ist: Vollbild im Entwurf nachziehen.
 	Settings.changed.connect(_on_settings_changed)
@@ -373,7 +382,7 @@ func _select_id(option: OptionButton, id: int) -> void:
 
 
 func _build_nextgen_rows() -> void:
-	var page := tabs.get_node("GRAFIK") as VBoxContainer
+	var page := tabs.get_node(^"ContentScroll/GrafikList") as VBoxContainer
 	gi_option = _add_option(page, "GiOption", "Raytracing / GI", ["Aus", "Normal", "Raytraced High"])
 	gi_option.item_selected.connect(func(index: int) -> void:
 		_set_draft(gi_option.get_item_id(index), "gi_mode"))

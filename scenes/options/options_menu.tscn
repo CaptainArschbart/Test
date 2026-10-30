@@ -19,60 +19,71 @@ size_flags_vertical = 3
 current_tab = 0
 use_hidden_tabs_for_min_size = true
 
-[node name="GRAFIK" type="VBoxContainer" parent="Tabs"]
+[node name="ContentScroll" type="ScrollContainer" parent="Tabs"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 10
+size_flags_vertical = 3
+mouse_filter = 1
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 1
+follow_focus = true
 metadata/_tab_index = 0
 
-[node name="FullscreenCheck" type="CheckButton" parent="Tabs/GRAFIK"]
+[node name="GrafikList" type="VBoxContainer" parent="Tabs/ContentScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 1
+theme_override_constants/separation = 10
+
+[node name="FullscreenCheck" type="CheckButton" parent="Tabs/ContentScroll/GrafikList"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Vollbild"
 
-[node name="ResolutionRow" type="HBoxContainer" parent="Tabs/GRAFIK"]
+[node name="ResolutionRow" type="HBoxContainer" parent="Tabs/ContentScroll/GrafikList"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="ResolutionLabel" type="Label" parent="Tabs/GRAFIK/ResolutionRow"]
+[node name="ResolutionLabel" type="Label" parent="Tabs/ContentScroll/GrafikList/ResolutionRow"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Auflösung"
 
-[node name="ResolutionOption" type="OptionButton" parent="Tabs/GRAFIK/ResolutionRow"]
+[node name="ResolutionOption" type="OptionButton" parent="Tabs/ContentScroll/GrafikList/ResolutionRow"]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Fenster: Fenstergröße. Vollbild: Auflösung der 3D-Welt (Monitor = volle Schärfe, kleiner = mehr FPS). Menüs bleiben immer scharf."
 size_flags_horizontal = 3
 
-[node name="VsyncCheck" type="CheckButton" parent="Tabs/GRAFIK"]
+[node name="VsyncCheck" type="CheckButton" parent="Tabs/ContentScroll/GrafikList"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "VSync"
 
-[node name="MsaaRow" type="HBoxContainer" parent="Tabs/GRAFIK"]
+[node name="MsaaRow" type="HBoxContainer" parent="Tabs/ContentScroll/GrafikList"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="MsaaLabel" type="Label" parent="Tabs/GRAFIK/MsaaRow"]
+[node name="MsaaLabel" type="Label" parent="Tabs/ContentScroll/GrafikList/MsaaRow"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Kantenglättung"
 
-[node name="MsaaOption" type="OptionButton" parent="Tabs/GRAFIK/MsaaRow"]
+[node name="MsaaOption" type="OptionButton" parent="Tabs/ContentScroll/GrafikList/MsaaRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="RenderScaleRow" type="HBoxContainer" parent="Tabs/GRAFIK"]
+[node name="RenderScaleRow" type="HBoxContainer" parent="Tabs/ContentScroll/GrafikList"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="RenderScaleLabel" type="Label" parent="Tabs/GRAFIK/RenderScaleRow"]
+[node name="RenderScaleLabel" type="Label" parent="Tabs/ContentScroll/GrafikList/RenderScaleRow"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "3D-Auflösung"
 
-[node name="RenderScaleSlider" type="HSlider" parent="Tabs/GRAFIK/RenderScaleRow"]
+[node name="RenderScaleSlider" type="HSlider" parent="Tabs/ContentScroll/GrafikList/RenderScaleRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -81,29 +92,40 @@ min_value = 50.0
 step = 5.0
 value = 100.0
 
-[node name="RenderScaleValue" type="Label" parent="Tabs/GRAFIK/RenderScaleRow"]
+[node name="RenderScaleValue" type="Label" parent="Tabs/ContentScroll/GrafikList/RenderScaleRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(56, 0)
 layout_mode = 2
 text = "100%"
 horizontal_alignment = 2
 
-[node name="AUDIO" type="VBoxContainer" parent="Tabs"]
+[node name="AudioScroll" type="ScrollContainer" parent="Tabs"]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
-theme_override_constants/separation = 10
+size_flags_vertical = 3
+mouse_filter = 1
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 1
+follow_focus = true
 metadata/_tab_index = 1
 
-[node name="OutputDeviceRow" type="HBoxContainer" parent="Tabs/AUDIO"]
+[node name="AudioList" type="VBoxContainer" parent="Tabs/AudioScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 1
+theme_override_constants/separation = 10
+
+[node name="OutputDeviceRow" type="HBoxContainer" parent="Tabs/AudioScroll/AudioList"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="OutputDeviceLabel" type="Label" parent="Tabs/AUDIO/OutputDeviceRow"]
+[node name="OutputDeviceLabel" type="Label" parent="Tabs/AudioScroll/AudioList/OutputDeviceRow"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Ausgabegerät"
 
-[node name="OutputDeviceOption" type="OptionButton" parent="Tabs/AUDIO/OutputDeviceRow"]
+[node name="OutputDeviceOption" type="OptionButton" parent="Tabs/AudioScroll/AudioList/OutputDeviceRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
@@ -111,16 +133,16 @@ size_flags_horizontal = 3
 clip_text = true
 fit_to_longest_item = false
 
-[node name="MasterRow" type="HBoxContainer" parent="Tabs/AUDIO"]
+[node name="MasterRow" type="HBoxContainer" parent="Tabs/AudioScroll/AudioList"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="MasterLabel" type="Label" parent="Tabs/AUDIO/MasterRow"]
+[node name="MasterLabel" type="Label" parent="Tabs/AudioScroll/AudioList/MasterRow"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Gesamt (Master)"
 
-[node name="MasterSlider" type="HSlider" parent="Tabs/AUDIO/MasterRow"]
+[node name="MasterSlider" type="HSlider" parent="Tabs/AudioScroll/AudioList/MasterRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -128,23 +150,23 @@ size_flags_vertical = 4
 step = 5.0
 value = 80.0
 
-[node name="MasterValue" type="Label" parent="Tabs/AUDIO/MasterRow"]
+[node name="MasterValue" type="Label" parent="Tabs/AudioScroll/AudioList/MasterRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(56, 0)
 layout_mode = 2
 text = "80%"
 horizontal_alignment = 2
 
-[node name="MusicRow" type="HBoxContainer" parent="Tabs/AUDIO"]
+[node name="MusicRow" type="HBoxContainer" parent="Tabs/AudioScroll/AudioList"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="MusicLabel" type="Label" parent="Tabs/AUDIO/MusicRow"]
+[node name="MusicLabel" type="Label" parent="Tabs/AudioScroll/AudioList/MusicRow"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Musik"
 
-[node name="MusicSlider" type="HSlider" parent="Tabs/AUDIO/MusicRow"]
+[node name="MusicSlider" type="HSlider" parent="Tabs/AudioScroll/AudioList/MusicRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -152,23 +174,23 @@ size_flags_vertical = 4
 step = 5.0
 value = 100.0
 
-[node name="MusicValue" type="Label" parent="Tabs/AUDIO/MusicRow"]
+[node name="MusicValue" type="Label" parent="Tabs/AudioScroll/AudioList/MusicRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(56, 0)
 layout_mode = 2
 text = "100%"
 horizontal_alignment = 2
 
-[node name="SfxRow" type="HBoxContainer" parent="Tabs/AUDIO"]
+[node name="SfxRow" type="HBoxContainer" parent="Tabs/AudioScroll/AudioList"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="SfxLabel" type="Label" parent="Tabs/AUDIO/SfxRow"]
+[node name="SfxLabel" type="Label" parent="Tabs/AudioScroll/AudioList/SfxRow"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Soundeffekte"
 
-[node name="SfxSlider" type="HSlider" parent="Tabs/AUDIO/SfxRow"]
+[node name="SfxSlider" type="HSlider" parent="Tabs/AudioScroll/AudioList/SfxRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -176,29 +198,40 @@ size_flags_vertical = 4
 step = 5.0
 value = 100.0
 
-[node name="SfxValue" type="Label" parent="Tabs/AUDIO/SfxRow"]
+[node name="SfxValue" type="Label" parent="Tabs/AudioScroll/AudioList/SfxRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(56, 0)
 layout_mode = 2
 text = "100%"
 horizontal_alignment = 2
 
-[node name="STEUERUNG" type="VBoxContainer" parent="Tabs"]
+[node name="ControlsScroll" type="ScrollContainer" parent="Tabs"]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
-theme_override_constants/separation = 10
+size_flags_vertical = 3
+mouse_filter = 1
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 1
+follow_focus = true
 metadata/_tab_index = 2
 
-[node name="SensitivityRow" type="HBoxContainer" parent="Tabs/STEUERUNG"]
+[node name="ControlsList" type="VBoxContainer" parent="Tabs/ControlsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 1
+theme_override_constants/separation = 10
+
+[node name="SensitivityRow" type="HBoxContainer" parent="Tabs/ControlsScroll/ControlsList"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="SensitivityLabel" type="Label" parent="Tabs/STEUERUNG/SensitivityRow"]
+[node name="SensitivityLabel" type="Label" parent="Tabs/ControlsScroll/ControlsList/SensitivityRow"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Mausempfindlichkeit"
 
-[node name="SensitivitySlider" type="HSlider" parent="Tabs/STEUERUNG/SensitivityRow"]
+[node name="SensitivitySlider" type="HSlider" parent="Tabs/ControlsScroll/ControlsList/SensitivityRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -208,28 +241,28 @@ max_value = 3.0
 step = 0.05
 value = 1.0
 
-[node name="SensitivityValue" type="Label" parent="Tabs/STEUERUNG/SensitivityRow"]
+[node name="SensitivityValue" type="Label" parent="Tabs/ControlsScroll/ControlsList/SensitivityRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(56, 0)
 layout_mode = 2
 text = "1.00x"
 horizontal_alignment = 2
 
-[node name="InvertYCheck" type="CheckButton" parent="Tabs/STEUERUNG"]
+[node name="InvertYCheck" type="CheckButton" parent="Tabs/ControlsScroll/ControlsList"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Maus-Y invertieren"
 
-[node name="CameraShakeRow" type="HBoxContainer" parent="Tabs/STEUERUNG"]
+[node name="CameraShakeRow" type="HBoxContainer" parent="Tabs/ControlsScroll/ControlsList"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="CameraShakeLabel" type="Label" parent="Tabs/STEUERUNG/CameraShakeRow"]
+[node name="CameraShakeLabel" type="Label" parent="Tabs/ControlsScroll/ControlsList/CameraShakeRow"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 text = "Kamerawackeln"
 
-[node name="CameraShakeSlider" type="HSlider" parent="Tabs/STEUERUNG/CameraShakeRow"]
+[node name="CameraShakeSlider" type="HSlider" parent="Tabs/ControlsScroll/ControlsList/CameraShakeRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -237,26 +270,26 @@ size_flags_vertical = 4
 step = 5.0
 value = 100.0
 
-[node name="CameraShakeValue" type="Label" parent="Tabs/STEUERUNG/CameraShakeRow"]
+[node name="CameraShakeValue" type="Label" parent="Tabs/ControlsScroll/ControlsList/CameraShakeRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(56, 0)
 layout_mode = 2
 text = "100%"
 horizontal_alignment = 2
 
-[node name="KeyHint" type="Label" parent="Tabs/STEUERUNG"]
+[node name="KeyHint" type="Label" parent="Tabs/ControlsScroll/ControlsList"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.95, 1, 0.6)
 theme_override_font_sizes/font_size = 13
 text = "TASTENBELEGUNG  //  Feld anklicken, neue Taste drücken (Esc = abbrechen)"
 
-[node name="KeyScroll" type="ScrollContainer" parent="Tabs/STEUERUNG"]
+[node name="KeyScroll" type="ScrollContainer" parent="Tabs/ControlsScroll/ControlsList"]
 custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="KeyGrid" type="GridContainer" parent="Tabs/STEUERUNG/KeyScroll"]
+[node name="KeyGrid" type="GridContainer" parent="Tabs/ControlsScroll/ControlsList/KeyScroll"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3

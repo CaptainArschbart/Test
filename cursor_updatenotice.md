@@ -471,3 +471,16 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: ein physischer 1440p- oder 4K-Monitor, Screenshot vom FSR-Bild, Raytraced High auf der ganzen Slum-Map über Minuten. Die Settings-Datei auf der Platte wurde nicht überschrieben.
 - Git: auf `main`, dieser Eintrag im selben Commit, danach `git push origin main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-30 · Optionsmenü scrollt, Knöpfe bleiben · Cursor (für EnScapeZ) · main
+- Auftrag: Das Optionsmenü schneidet auf 1080p und kleiner die unteren Punkte ab (Volumetrischer Nebel, Übernehmen). Nur die Liste soll scrollen, Kopf, Reiter und Knöpfe bleiben stehen.
+- Ursache: Das Optionsfeld im Hauptmenü ist fest 620×430 px (`offset` −310/−240 bis 310/190). Die Grafikseite ist mit den neuen Zeilen höher. Der TabContainer hat die Mindesthöhe der Liste nach oben durchgereicht, das Feld wuchs über den sichtbaren Bereich.
+- Geändert:
+  - `scenes/options/options_menu.tscn`: Jeder Reiter ist ein `ScrollContainer`. `%ContentScroll` / `GrafikList`, `%AudioScroll` / `AudioList`, `%ControlsScroll` / `ControlsList`. `size_flags_vertical` = Expand+Fill, `horizontal_scroll_mode` aus, `vertical_scroll_mode` automatisch, `mouse_filter` = PASS, `follow_focus` an. Die innere Liste füllt nur die Breite, nicht die Höhe, damit der Scrollbalken kommt. Kopf, `Tabs`, `ActionRow` (Übernehmen, Standard, Zurück) und `StatusLabel` bleiben außerhalb.
+  - `scenes/options/options_menu.gd`: Reitertitel weiter GRAFIK, AUDIO, STEUERUNG. Neue Grafikzeilen hängen an `ContentScroll/GrafikList`. Die drei ScrollContainer bekommen dieselben Scroll- und Mauswerte noch einmal im `_ready`, falls die Szene sie verliert.
+- Keine neue Input-Aktion. Keine Map-Änderung. `claude_updatenotice.md` nicht angefasst.
+- Getestet (Godot 4.7.2 stable, headless): `tools/tests/test_options_scroll.gd` im 620×430-Feld, CHECKS 23 FAILS 0. Übernehmen endet bei y 397 von 430. Grafikliste 543 px bei 278 px sichtbar. Fokus auf Volumetrischer Nebel setzt `scroll_vertical` auf 265, der Eintrag liegt danach im sichtbaren Bereich, Übernehmen bleibt sichtbar. Mindesthöhe der ganzen Seite 152 px. Alle drei ScrollContainer: Mausfilter PASS, kein Quer-Scroll, Hoch-Scroll automatisch, Fokus folgt.
+- Beim Prozessende dieselbe Abschlusszeile wie bei früheren Headless-Läufen: `ERROR: 1 resources still in use at exit` und 2 ObjectDB-Leaks. Kein `SCRIPT ERROR`, kein `Invalid owner`.
+- Nicht getestet: Mausrad und Controller im echten Fenster, Pause-Menü als Bild.
+- Git: auf `main`, dieser Eintrag im selben Commit, danach `git push origin main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
