@@ -409,9 +409,9 @@ func _build_nextgen_rows() -> void:
 	draw_distance_value.name = "DrawDistanceValue"
 	draw_distance_value.unique_name_in_owner = true
 	draw_distance_value.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	draw_distance_value.owner = self
 	draw_distance_value.custom_minimum_size = Vector2(72, 0)
 	row.add_child(draw_distance_value)
+	draw_distance_value.owner = self
 	draw_distance_slider.value_changed.connect(func(meters: float) -> void:
 		_set_draft(meters, "draw_distance"))
 	shadow_option = _add_option(page, "ShadowOption", "Schattenqualität", ["Niedrig", "Mittel", "Hoch", "Ultra"])

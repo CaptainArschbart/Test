@@ -452,3 +452,22 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: Fenster, 2K/4K-Bild, ob FSR 2 im Fenster schwarz wird, Raytraced High auf der vollen Stadt über mehrere Sekunden, Laufwege zu den neuen Flecken zu Fuß. An den neuen Flecken lag kein Prop-Ursprung innerhalb von 7 m. Echte `user://settings.cfg` nicht gelöscht.
 - Git: auf `main`, Notice in diesem Commit, danach `git push origin main`. `pictures/maxresdefault.jpg.import`, Torrent, `_test_appdata/` und fremde `.uid` nicht mit committed. Das Prüfskript `tools/tests/_audit_overlap.py` nach dem Lauf gelöscht.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-30 · Fenster, Auflösung, GI-Umschalten · Cursor (für EnScapeZ) · main
+- Auftrag: Nach `9d5907f` Auflösung 1080p / 2K / 4K im Fenster und randlos prüfen, dazu ob GI sofort auf das laufende Environment geht, ohne die UI zu verzerren.
+- Neu: `tools/tests/test_resolution_window.gd`. Läuft mit Fenster (Vulkan). `apply()` speichert nicht. Am Ende werden die geladenen Settings zurückgesetzt, `user://settings.cfg` wird nicht geschrieben.
+- Behoben: `scenes/options/options_menu.gd`, `DrawDistanceValue` bekam `owner = self`, bevor der Label im Baum hing. Godot meldete `Invalid owner. Owner must be an ancestor in the tree` in `_build_nextgen_rows` Zeile 412, sobald das Optionsmenü instanziiert wurde. `add_child` steht jetzt davor.
+- Gemessen auf diesem Rechner, Godot 4.7.2, Vulkan, AMD Radeon RX 9070 XT, Monitor `1920×1080`:
+  - Stretch `canvas_items` (Modus 1), Aspekt `expand` (4).
+  - Fenster `1920×1080`: `scaling_3d_scale` 1.0000, bilinear, UI-Skalierung x=1 y=1, Probe bleibt 2:1, Menütitel uniform.
+  - Dieselben Werte noch einmal für die angefragten `2560×1440` und `3840×2160`, weil `_apply_resolution` auf die Monitorgröße klemmt. Ein echtes 2K- oder 4K-Fenster geht auf diesem Monitor nicht auf.
+  - Rechnung ohne Fenster: `scale_for_window(1, 2560×1440)` = 0.7500, `scale_for_window(1, 3840×2160)` = 0.5000. Ein Faktor, kein zweites Seitenverhältnis.
+  - Fenster `1280×800` (nicht 16:9): ebenfalls x=1 y=1, Probe 2:1, `scaling_3d_scale` 1.0000.
+  - Upscale „DLSS Qualität“: Modus FSR 2, `scaling_3d_scale` 0.7700, UI danach weiter uniform.
+  - Vollbild: `WINDOW_MODE_FULLSCREEN` (3), das ist Godots randloses Vollbild, nicht exklusiv. UI x=1 y=1.
+  - GI 0/1/2, achtmal hintereinander, sofort: SDFGI nur bei 2, SSR ab 1. Dieselbe Environment-Instanz. Nach 10 Frames unverändert. Objektzahl in allen 8 Zyklen 1698, Differenz 0.
+- Keine neue Input-Aktion. Keine Szenenänderung. `claude_updatenotice.md` nicht angefasst.
+- Getestet: `test_resolution_window.gd` CHECKS 43 FAILS 0. Kein `Invalid owner` mehr. Kein `SCRIPT ERROR`.
+- Nicht getestet: ein physischer 1440p- oder 4K-Monitor, Screenshot vom FSR-Bild, Raytraced High auf der ganzen Slum-Map über Minuten. Die Settings-Datei auf der Platte wurde nicht überschrieben.
+- Git: auf `main`, dieser Eintrag im selben Commit, danach `git push origin main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
