@@ -100,6 +100,11 @@ enum Side { NONE, LEFT, RIGHT }
 	set(v):
 		open_right = v
 		queue_rebuild()
+## Erdgeschoss hohl, zwei Stockwerke mit je zwei Wohnungen, Flur und Treppe.
+@export var walk_in_apartments := false:
+	set(v):
+		walk_in_apartments = v
+		queue_rebuild()
 
 ## Abstand der Decals vor der Wand. Jede Art hat einen eigenen Abstand, damit überlappende Decals
 ## nicht in derselben Ebene liegen (Z-Fighting). Mindestens 2 cm, sonst flackert es auf Entfernung.
@@ -111,6 +116,7 @@ const DECAL_TAG := 0.05
 const DECAL_POSTER := 0.055
 
 const ShopInteriorScript := preload("res://scenes/interact/shop_interior.gd")
+const ApartmentHouseScript := preload("res://scenes/crime/apartment_house.gd")
 
 var _w := 10.0
 var _d := 8.0
@@ -144,6 +150,8 @@ func _add_occluder() -> void:
 	var y0 := 0.3
 	match style:
 		Style.RESIDENTIAL, Style.TOWER:
+			if walk_in_apartments:
+				return
 			pass
 		Style.SHOP:
 			if floors < 2:
@@ -166,14 +174,22 @@ func _add_occluder() -> void:
 
 func _residential(b: SlumBuilder) -> void:
 	var ground := SlumMats.surface(ground_wall, wall_tint) if ground_wall != "" else _wall_mat
-	b.box(Vector3(0, floor_height * 0.5, 0), Vector3(_w, floor_height, _d), ground)
-	if floors > 1:
-		b.box_on(Vector3(0, floor_height + (_h - floor_height) * 0.5, 0), Vector3(_w, _h - floor_height, _d), _wall_mat)
-	_plinth(b)
+	if walk_in_apartments:
+		_hollow_shell(b, ground)
+	else:
+		b.box(Vector3(0, floor_height * 0.5, 0), Vector3(_w, floor_height, _d), ground)
+		if floors > 1:
+			b.box_on(Vector3(0, floor_height + (_h - floor_height) * 0.5, 0), Vector3(_w, _h - floor_height, _d), _wall_mat)
+	if not walk_in_apartments:
+		_plinth(b)
 	_ledges(b, 1)
 	_roof(b, _gap_for_stairs())
 	_facade_windows(b, 1, [Vector3.BACK, Vector3.FORWARD, Vector3.RIGHT, Vector3.LEFT])
-	_ground_floor_front(b)
+	if walk_in_apartments:
+		_fixed_entrance(b)
+		_spawn_apartment_house()
+	else:
+		_ground_floor_front(b)
 	_pipes(b)
 	_wall_clutter(b)
 	if stair_side != Side.NONE:
@@ -185,6 +201,41 @@ func _residential(b: SlumBuilder) -> void:
 				SlumMats.decal("stencil_" + number.to_lower()))
 	if side_sign != "":
 		_vertical_sign(b, Vector3(_w * 0.5 - 0.7, minf(_h - 2.5, 7.0), _d * 0.5), side_sign)
+
+
+func _hollow_shell(b: SlumBuilder, ground: Material) -> void:
+	var t := 0.24
+	var ymid := _h * 0.5
+	b.box(Vector3(-_w * 0.5 + t * 0.5, ymid, 0), Vector3(t, _h, _d), _wall_mat)
+	b.box(Vector3(_w * 0.5 - t * 0.5, ymid, 0), Vector3(t, _h, _d), _wall_mat)
+	b.box(Vector3(0, ymid, -_d * 0.5 + t * 0.5), Vector3(_w, _h, t), _wall_mat)
+	var gap := 1.5
+	var front_z := _d * 0.5 - t * 0.5
+	var side_w := (_w - gap) * 0.5
+	var side_c := gap * 0.5 + side_w * 0.5
+	b.box(Vector3(-side_c, ymid, front_z), Vector3(side_w, _h, t), ground)
+	b.box(Vector3(side_c, ymid, front_z), Vector3(side_w, _h, t), ground)
+	var lintel_h := maxf(_h - 2.6, 0.2)
+	b.box(Vector3(0, 2.6 + lintel_h * 0.5, front_z), Vector3(gap + 0.08, lintel_h, t), ground)
+	b.box(Vector3(0, 0.06, 0), Vector3(_w - 0.6, 0.12, _d - 0.6), _trim_mat)
+	if floors > 3:
+		var y0 := 3.0 * floor_height
+		b.box_on(Vector3(0, y0 + (_h - y0) * 0.5, 0), Vector3(_w - 0.55, _h - y0, _d - 0.55), _wall_mat)
+
+
+func _fixed_entrance(b: SlumBuilder) -> void:
+	b.box(Vector3(0, 0.08, _d * 0.5 + 0.35), Vector3(1.6, 0.16, 0.7), _trim_mat)
+	b.box(Vector3(0, 2.32, _d * 0.5 + 0.06), Vector3(1.7, 0.12, 0.12), _trim_mat, false)
+	add_light(Vector3(0, 2.4, _d * 0.5 + 0.6), Color(0.55, 0.85, 1.0), 1.2, 6.0, 0.0)
+
+
+func _spawn_apartment_house() -> void:
+	var house := ApartmentHouseScript.new()
+	house.name = "ApartmentHouse"
+	house.set("building_width", _w)
+	house.set("building_depth", _d)
+	house.set("floor_height", floor_height)
+	add_gen(house)
 
 
 func _plinth(b: SlumBuilder) -> void:

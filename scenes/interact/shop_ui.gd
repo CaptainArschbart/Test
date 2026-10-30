@@ -277,7 +277,7 @@ func _build() -> void:
 	counter_rows = VBoxContainer.new()
 	counter_rows.add_theme_constant_override("separation", 4)
 	box.add_child(counter_rows)
-	fence_title = _label("ANKAUF – WERTSACHEN, KEINE FRAGEN", 13, DIM_COLOR)
+	fence_title = _label("VERKAUFEN – WERTSACHEN, KEINE FRAGEN", 13, DIM_COLOR)
 	box.add_child(fence_title)
 	fence_rows = VBoxContainer.new()
 	fence_rows.add_theme_constant_override("separation", 4)

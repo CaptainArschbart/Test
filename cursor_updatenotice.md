@@ -519,3 +519,19 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: Fenster, ob Sofa und Kühlschrank den Weg zur Tür im Bild freilassen, Controller.
 - Git: auf `main`, dieser Eintrag im selben Commit, danach `git push origin main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-30 · Wohnungen im Block Res2, Verkaufspult · Cursor (für EnScapeZ) · main
+- Auftrag: Die freien Wohnungskästen weg, stattdessen 4 Wohnungen in einem bestehenden Haus mit Flur und Treppe. Diebesgut an Waffenläden, Tankstellen und beim Hehler verkaufen.
+- Gebäude: `scenes/slum/slum.tscn` Knoten `NorthEast/Res2`, Position `(13, 0, -56.5)`, Grundfläche 12×10 m, 6 Stockwerke, `walk_in_apartments = true`.
+- `scenes/slum/kit/slum_building.gd`: neues Export `walk_in_apartments`. Wenn an, kein massiver Füllkörper und kein Occluder im unteren Haus. Dünne Außenwände, Türschlitz 1,5 m breit und 2,6 m hoch in der Frontmitte, Stufe davor. Ab dem dritten Obergeschoss (y = 3×Etagenhöhe) bleibt der Block massiv. `ApartmentHouse` wird als generiertes Kind eingehängt.
+- `scenes/crime/apartment_house.gd`: Flur, zwei Treppenläufe (Erdgeschoss nach Stock 1, Stock 1 nach Stock 2). Vier Einheiten, Tür zum Flur:
+  - Stock 1 links `apt_1`, rechts `apt_2` (Karte für `apt_1` liegt darin).
+  - Stock 2 links `apt_3` (Karte für `apt_2`), rechts `apt_c` (Karte für `apt_3`). `apt_c` ist dieselbe id wie die Schlüsselkarte an der Tankstelle `(90, -101)`.
+  - Einheiten etwa 7,2×4,2 m, Decke 2,75 m. Jede mit Sofa, Bett, Küche, Licht, und der Beute Schmuck, Juwelen (versiegelt), Bargeld, Fernseher, Bild, Computer, Handy. Bewohner weiter 35 %, 1 oder 2. Tür zu, Eddy oder passende Karte, Lärm 18 m, eine Fahndungsstufe.
+- `scenes/crime/city_content.gd`: die drei Wohnungen auf freien Platten sind raus.
+- Verkauf: `scenes/crime/loot_sell_pad.gd`, Pult `%SellPad` mit Schild VERKAUFEN in jedem Waffenladen und jeder Tankstelle. Sortiment `jewelry`, `jewels`, `cash_wad`, `tv_set`, `painting`, `computer`, `smartphone`, Preis die Hälfte von `value` (mindestens 1 ¢). Schmuck 40→20 ¢, Fernseher 55→27 ¢. Stück weg, Credchips sofort drauf. Der Hehler in `scenes/interact/shop_ui.gd` heißt die Sektion jetzt „VERKAUFEN – WERTSACHEN, KEINE FRAGEN“ und zahlt weiter 50 % ab 8 ¢ Wert.
+- Fesseln und Einbruch aus dem Eintrag davor bleiben. Keine neue Input-Aktion. `claude_updatenotice.md` nicht angefasst.
+- Getestet (Godot 4.7.2 stable, headless): `test_apartments.gd` CHECKS 44 FAILS 0. Quote weiter 0,334 bei Seed 42. Haus: 4 verschlossene Türen, Schlüssel `apt_1` und `apt_c`. Verkauf 20 ¢ und das Item ist weg. `test_gun_shops.gd` CHECKS 29 FAILS 0. `slum.tscn --quit-after 8` ohne `SCRIPT ERROR` und ohne `Parse Error`.
+- Nicht getestet: der Weg vom Hauseingang die Treppe hoch im Fenster, ob die Treppenstufen an der Flurdecke schneiden, Mausklick auf VERKAUFEN im Bild.
+- Git: auf `main`, dieser Eintrag im selben Commit, danach `git push origin main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`

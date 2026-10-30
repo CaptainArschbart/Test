@@ -11,6 +11,7 @@ const CASH := preload("res://scenes/items/data/cash_wad.tres")
 const TV := preload("res://scenes/items/data/tv_set.tres")
 const ART := preload("res://scenes/items/data/painting.tres")
 const PC := preload("res://scenes/items/data/computer.tres")
+const PHONE := preload("res://scenes/items/data/smartphone.tres")
 const KEY := preload("res://scenes/items/data/keycard.tres")
 
 const RESIDENT_CHANCE := 0.35
@@ -19,15 +20,21 @@ const RESIDENT_CHANCE := 0.35
 ## -1 = Würfel. 0, 1 oder 2 erzwingen die Bewohnerzahl.
 @export var resident_count := -1
 @export var hidden_key := ""
+@export var unit_width := 8.0
+@export var unit_depth := 7.0
 
 var theme := 0
 var spawned_residents := 0
+var _sx := 1.0
+var _sz := 1.0
 
 
 func _ready() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(key_id) ^ hash(str(global_position))
 	theme = rng.randi_range(0, 2)
+	_sx = unit_width / 8.0
+	_sz = unit_depth / 7.0
 	_build_shell(_palette())
 	_furnish()
 	var door := LockedDoor.new()
@@ -35,7 +42,7 @@ func _ready() -> void:
 	door.unique_name_in_owner = true
 	door.key_id = key_id
 	door.locked = true
-	door.position = Vector3(0.0, 0.0, 3.4)
+	door.position = Vector3(0.0, 0.0, _front_z())
 	add_child(door)
 	door.owner = self
 	_place_loot()
@@ -46,7 +53,7 @@ func _ready() -> void:
 		stash.name = "SpareKey"
 		stash.item = key
 		stash.prompt_name = "Schlüsselkarte"
-		stash.position = Vector3(2.6, 0.55, 2.2)
+		stash.position = _xz(Vector3(2.6, 0.55, 2.2))
 		add_child(stash)
 	spawned_residents = resolve_resident_count(rng, resident_count)
 	_spawn_residents(spawned_residents)
@@ -54,7 +61,7 @@ func _ready() -> void:
 	var sign := Label3D.new()
 	sign.name = "Sign"
 	sign.text = "WOHNUNG"
-	sign.position = Vector3(0.0, 2.55, 3.72)
+	sign.position = Vector3(0.0, 2.55, _front_z() + 0.3)
 	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	sign.font_size = 48
 	sign.pixel_size = 0.01
@@ -102,37 +109,49 @@ func _palette() -> Dictionary:
 			}
 
 
+func _front_z() -> float:
+	return unit_depth * 0.5 - 0.08
+
+
+func _xz(v: Vector3) -> Vector3:
+	return Vector3(v.x * _sx, v.y, v.z * _sz)
+
+
 func _build_shell(colors: Dictionary) -> void:
-	_box(Vector3(0.0, 0.05, 0.0), Vector3(8.0, 0.1, 7.0), colors["floor"])
-	_box(Vector3(0.0, 2.75, 0.0), Vector3(8.0, 0.1, 7.0), colors["trim"])
-	_box(Vector3(0.0, 1.4, -3.4), Vector3(8.0, 2.7, 0.16), colors["wall"])
-	_box(Vector3(-3.92, 1.4, 0.0), Vector3(0.16, 2.7, 7.0), colors["wall"])
-	_box(Vector3(3.92, 1.4, 0.0), Vector3(0.16, 2.7, 7.0), colors["wall"])
-	# Türspalt 1,4 m in der Mitte, Blatt 1,1 m.
-	_box(Vector3(-2.25, 1.4, 3.42), Vector3(3.1, 2.7, 0.16), colors["wall"])
-	_box(Vector3(2.25, 1.4, 3.42), Vector3(3.1, 2.7, 0.16), colors["wall"])
+	var fz := _front_z()
+	_box(Vector3(0.0, 0.05, 0.0), Vector3(unit_width, 0.1, unit_depth), colors["floor"])
+	_box(Vector3(0.0, 2.75, 0.0), Vector3(unit_width, 0.1, unit_depth), colors["trim"])
+	_box(Vector3(0.0, 1.4, -unit_depth * 0.5 + 0.08), Vector3(unit_width, 2.7, 0.16), colors["wall"])
+	_box(Vector3(-unit_width * 0.5 + 0.08, 1.4, 0.0), Vector3(0.16, 2.7, unit_depth), colors["wall"])
+	_box(Vector3(unit_width * 0.5 - 0.08, 1.4, 0.0), Vector3(0.16, 2.7, unit_depth), colors["wall"])
+	var opening := 1.35
+	var side_w := maxf((unit_width - opening) * 0.5, 0.3)
+	var side_c := opening * 0.5 + side_w * 0.5
+	_box(Vector3(-side_c, 1.4, fz), Vector3(side_w, 2.7, 0.16), colors["wall"])
+	_box(Vector3(side_c, 1.4, fz), Vector3(side_w, 2.7, 0.16), colors["wall"])
 
 
 func _furnish() -> void:
 	var colors := _palette()
-	_prop("Sofa", Vector3(-2.15, 0.32, -2.35), Vector3(1.8, 0.55, 0.8), colors["cloth"])
-	_prop("Bed", Vector3(-2.2, 0.28, 0.7), Vector3(1.7, 0.45, 1.35), colors["cloth"])
-	_prop("Nightstand", Vector3(-3.15, 0.28, -0.15), Vector3(0.45, 0.5, 0.4), colors["trim"])
-	_prop("Kitchen", Vector3(2.85, 0.48, 0.15), Vector3(1.5, 0.9, 2.0), colors["trim"])
-	_prop("Fridge", Vector3(3.35, 0.85, -1.55), Vector3(0.7, 1.6, 0.65), Color(0.75, 0.78, 0.8))
-	_prop("Desk", Vector3(1.55, 0.4, 1.15), Vector3(1.2, 0.72, 0.6), colors["trim"])
-	_prop("Table", Vector3(0.15, 0.22, -1.15), Vector3(1.0, 0.38, 0.55), colors["trim"])
-	_lamp(Vector3(-2.2, 0.85, -0.15), colors["light"])
-	_lamp(Vector3(2.5, 1.15, 0.15), colors["neon"])
+	_prop("Sofa", _xz(Vector3(-2.15, 0.32, -2.35)), Vector3(1.8 * _sx, 0.55, 0.8 * _sz), colors["cloth"])
+	_prop("Bed", _xz(Vector3(-2.2, 0.28, 0.7)), Vector3(1.7 * _sx, 0.45, 1.35 * _sz), colors["cloth"])
+	_prop("Nightstand", _xz(Vector3(-3.15, 0.28, -0.15)), Vector3(0.45 * _sx, 0.5, 0.4 * _sz), colors["trim"])
+	_prop("Kitchen", _xz(Vector3(2.85, 0.48, 0.15)), Vector3(1.5 * _sx, 0.9, 2.0 * _sz), colors["trim"])
+	_prop("Fridge", _xz(Vector3(3.35, 0.85, -1.55)), Vector3(0.7 * _sx, 1.6, 0.65 * _sz), Color(0.75, 0.78, 0.8))
+	_prop("Desk", _xz(Vector3(1.55, 0.4, 1.15)), Vector3(1.2 * _sx, 0.72, 0.6 * _sz), colors["trim"])
+	_prop("Table", _xz(Vector3(0.15, 0.22, -1.15)), Vector3(1.0 * _sx, 0.38, 0.55 * _sz), colors["trim"])
+	_lamp(_xz(Vector3(-2.2, 0.85, -0.15)), colors["light"])
+	_lamp(_xz(Vector3(2.5, 1.15, 0.15)), colors["neon"])
 
 
 func _place_loot() -> void:
-	_loot("Schmuck", JEWELRY, Vector3(-3.15, 0.6, -0.15), false, &"Jewelry")
-	_loot("Juwelen", JEWELS, Vector3(-2.15, 0.7, -2.15), true, &"Jewels")
-	_loot("Bargeld", CASH, Vector3(0.15, 0.5, -1.15), false, &"Cash")
-	_loot("Fernseher", TV, Vector3(2.35, 0.85, -2.55), false, &"Television")
-	_loot("Bild", ART, Vector3(-3.55, 1.45, 0.9), false, &"Artwork")
-	_loot("Computer", PC, Vector3(1.55, 0.85, 1.15), false, &"Computer")
+	_loot("Schmuck", JEWELRY, _xz(Vector3(-3.15, 0.6, -0.15)), false, &"Jewelry")
+	_loot("Juwelen", JEWELS, _xz(Vector3(-2.15, 0.7, -2.15)), true, &"Jewels")
+	_loot("Bargeld", CASH, _xz(Vector3(0.15, 0.5, -1.15)), false, &"Cash")
+	_loot("Fernseher", TV, _xz(Vector3(2.35, 0.85, -2.55)), false, &"Television")
+	_loot("Bild", ART, _xz(Vector3(-3.55, 1.45, 0.9)), false, &"Artwork")
+	_loot("Computer", PC, _xz(Vector3(1.55, 0.85, 1.15)), false, &"Computer")
+	_loot("Handy", PHONE, _xz(Vector3(1.15, 0.82, 1.25)), false, &"Phone")
 
 
 func _spawn_residents(count: int) -> void:
@@ -142,7 +161,7 @@ func _spawn_residents(count: int) -> void:
 		person.name = "Resident%d" % (i + 1)
 		person.unique_name_in_owner = true
 		person.stay_put = true
-		person.position = spots[i]
+		person.position = _xz(spots[i])
 		person.rotation.y = PI if i == 0 else 0.0
 		add_child(person)
 		person.owner = self
@@ -150,8 +169,8 @@ func _spawn_residents(count: int) -> void:
 
 func _lights() -> void:
 	var colors := _palette()
-	_omni(Vector3(0.0, 2.45, 0.2), colors["light"], 1.1)
-	_omni(Vector3(-2.0, 2.2, -1.4), colors["neon"], 0.45)
+	_omni(_xz(Vector3(0.0, 2.45, 0.2)), colors["light"], 1.1)
+	_omni(_xz(Vector3(-2.0, 2.2, -1.4)), colors["neon"], 0.45)
 
 
 func _loot(title: String, item: ItemData, at: Vector3, sealed: bool, node_name: StringName) -> void:

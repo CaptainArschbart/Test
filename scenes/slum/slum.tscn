@@ -832,6 +832,7 @@ ground_wall = "concrete_dark"
 stair_side = 1
 balcony_chance = 0.35
 seed_value = 5573
+walk_in_apartments = true
 
 [node name="Res3" type="Node3D" parent="NorthEast"]
 transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 12.5, 0.0, -69.5)

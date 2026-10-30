@@ -19,6 +19,7 @@ const KEY := preload("res://scenes/items/data/keycard.tres")
 const SNIPER := preload("res://scenes/items/data/sniper.tres")
 const SMG := preload("res://scenes/items/data/smg.tres")
 const BANK := preload("res://scenes/interact/bank_terminal.gd")
+const SELL_PAD := preload("res://scenes/crime/loot_sell_pad.gd")
 
 enum Kind { GUNS, GAS }
 
@@ -100,6 +101,12 @@ func _build_guns() -> void:
 	clerk.position = Vector3(0.9, 0.95, 1.55)
 	add_child(clerk)
 	clerk.owner = self
+	var sell := SELL_PAD.new() as Node3D
+	sell.name = "SellPad"
+	sell.unique_name_in_owner = true
+	sell.position = Vector3(-0.8, 0.95, 1.55)
+	add_child(sell)
+	sell.owner = self
 
 
 func _room(size: Vector3) -> void:
@@ -266,6 +273,12 @@ func _build_gas() -> void:
 		prop.item = card
 		prop.position = Vector3(-1.4, 0.9, -0.6)
 		add_child(prop)
+	var sell := SELL_PAD.new() as Node3D
+	sell.name = "SellPad"
+	sell.unique_name_in_owner = true
+	sell.position = Vector3(0.0, 0.9, 0.8)
+	add_child(sell)
+	sell.owner = self
 
 
 func _shell(size: Vector3, title: String) -> void:
