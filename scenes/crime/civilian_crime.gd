@@ -8,6 +8,7 @@ extends Node
 
 const CUFFS := "handcuffs"
 const TIES := "zipties"
+const JEWELRY := preload("res://scenes/items/data/jewelry.tres")
 const QUIET_NOISE := 0.35
 const QUIET_SPEED := 2.2
 
@@ -17,6 +18,7 @@ var pocket_cents := 0
 var robbed := false
 var _threat_sent := false
 var _aim_tick := 0.0
+var _jewelry := false
 
 var _body: Civilian
 
@@ -26,6 +28,7 @@ func _ready() -> void:
 	if _body == null:
 		return
 	pocket_cents = 2 + (_body.net_seed % 17)
+	_jewelry = _body.net_seed % 3 == 0
 
 
 func prompt(player: Player) -> String:
@@ -34,6 +37,8 @@ func prompt(player: Player) -> String:
 	if restrained and not robbed:
 		return "Ausrauben"
 	if held_up and not restrained and _holding_restraint(player):
+		return "Fesseln"
+	if not restrained and _holding_restraint(player) and _unaware(player):
 		return "Fesseln"
 	if _can_pickpocket(player):
 		return "Tasche durchsuchen"
@@ -46,7 +51,7 @@ func interact(player: Player) -> void:
 	if restrained and not robbed:
 		_rob(player)
 		return
-	if held_up and not restrained and _consume_restraint(player):
+	if not restrained and _holding_restraint(player) and (held_up or _unaware(player)) and _consume_restraint(player):
 		restrained = true
 		_body.hold_up()
 		player.item_user.show_message("Gefesselt.", Color(0.5, 0.9, 1.0))
@@ -60,6 +65,7 @@ func on_burglary() -> void:
 		return
 	_body.panic(_body.global_position)
 	_body.show_line("Polizei!")
+	_call_police(&"burglary")
 
 
 func _physics_process(delta: float) -> void:
@@ -141,16 +147,30 @@ func _behind(player: Player) -> bool:
 
 
 func _isolated() -> bool:
-	var near := 0
+	var home := _body.get_parent()
 	for node in get_tree().get_nodes_in_group(Civilian.GROUP):
 		var other := node as Node3D
 		if other == null or other == _body:
 			continue
+		if home != null and other.get_parent() == home:
+			continue
 		if other.get("state") == Civilian.State.DEAD:
 			continue
 		if other.global_position.distance_to(_body.global_position) < 8.0:
-			near += 1
-	return near == 0
+			return false
+	return true
+
+
+func _unaware(player: Player) -> bool:
+	if player == null or held_up or restrained or not _isolated():
+		return false
+	if not player.movement.crouching:
+		return false
+	if player.stealth != null and player.stealth.noise_level > QUIET_NOISE:
+		return false
+	if player.velocity.length() > QUIET_SPEED:
+		return false
+	return _behind(player)
 
 
 func _pickpocket(player: Player) -> void:
@@ -172,20 +192,34 @@ func _caught(player: Player, kind: StringName) -> void:
 
 
 func _rob(player: Player) -> void:
-	if pocket_cents <= 0:
+	if pocket_cents <= 0 and not _jewelry:
 		robbed = true
 		player.item_user.show_message("Nichts mehr zu holen.", Color(0.8, 0.8, 0.8))
 		return
 	var amount := pocket_cents
 	pocket_cents = 0
 	robbed = true
-	player.inventory.add_money(amount)
-	player.item_user.show_message("Ausgeraubt: %d ¢" % amount, Color(0.95, 0.85, 0.3))
-	WantedManager.report(&"pickpocket", _body.global_position, _body.get_instance_id())
+	if amount > 0:
+		player.inventory.add_money(amount)
+	var took_jewelry := false
+	if _jewelry:
+		var left := player.inventory.add_item(JEWELRY, 1)
+		took_jewelry = left == 0
+		if took_jewelry:
+			_jewelry = false
+	var text := "Durchsucht: %d ¢" % amount
+	if took_jewelry:
+		text += " und Schmuck"
+	player.item_user.show_message(text, Color(0.95, 0.85, 0.3))
 
 
 func _call_police(kind: StringName) -> void:
-	WantedManager.report(kind, _body.global_position, _body.get_instance_id())
+	var token := _body.get_instance_id()
+	if kind == &"burglary":
+		var home := _body.get_parent()
+		if home != null:
+			token = home.get_instance_id()
+	WantedManager.report(kind, _body.global_position, token)
 
 
 func _holding_restraint(player: Player) -> bool:

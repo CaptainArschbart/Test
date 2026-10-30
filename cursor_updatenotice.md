@@ -507,3 +507,15 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: Laufweg im Fenster, ob die Theke im Bild die Sicht auf den Händler verdeckt, Navmesh-Bake nach den neuen Wänden (die Map backt Kollision beim Start wie bisher).
 - Git: auf `main`, dieser Eintrag im selben Commit, danach `git push origin main`. Das Hilfsskript `tools/tests/_gun_sites.py` nach dem Lauf gelöscht.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-30 · Wohnungen, 35 % Bewohner, Fesseln · Cursor (für EnScapeZ) · main
+- Auftrag: Wohnungen einrichten, Beute fest drin, Tür mit Karte oder Eddy, in 35 % der Wohnungen 1 oder 2 Bewohner, Kabelbinder und Handschellen fesseln, danach durchsuchen ohne neuen Kampf.
+- `scenes/crime/apartment_block.gd`: Drei Themen aus `key_id` (Neon, warm, kalt). Boden, Decke, Wände, Sofa, Bett, Nachttisch, Küchenzeile, Kühlschrank, Schreibtisch, Tisch, zwei Lampen, zwei Lichter ohne Schatten. Tür `%Door` startet zu, Spalt 1,4 m. Beute mit Unique Names, jedes Stück ein `.tres` mit Modell und Icon: `%Jewelry` Schmuck, `%Jewels` Juwelen (versiegelt, Eddy), `%Cash` Bargeld, `%Television` Fernseher, `%Artwork` Bild, `%Computer` Computer.
+- Bewohner: `RESIDENT_CHANCE` 0,35. Darüber 0. Darunter 1 oder 2, je Hälfte. `resident_count` >= 0 erzwingt die Zahl. Mitbewohner im selben Elternknoten zählen nicht als Menge auf der Straße.
+- `scenes/crime/locked_door.gd`: Eddy macht weiter Lärm 18 m (`NoiseManager`, `BURGLARY`) und eine Fahndungsstufe. Token ist die Wohnung, nicht die Tür.
+- `scenes/crime/civilian_crime.gd`: Hört der Bewohner den Einbruch, Panik, Zeile „Polizei!“, dieselbe Fahndungsstufe (gleicher Token, also nicht noch ein Stern). Fesseln mit `handcuffs` oder `zipties`, wenn die Hände oben sind oder die Person isoliert, von hinten, geduckt und leise ist. Durchsuchen nimmt das Bargeld in der Tasche und, bei jedem dritten Seed, ein Schmuckstück. Dabei keine neue Fahndung.
+- Keine neue Input-Aktion. Grundfläche der Wohnung bleibt 8×7 m, die drei Standorte unverändert. `claude_updatenotice.md` nicht angefasst.
+- Getestet (Godot 4.7.2 stable, headless): `tools/tests/test_apartments.gd` CHECKS 32 FAILS 0. 4000 Würfe, Seed 42: Quote 0,334 (1334 von 4000), davon 678 mit einem und 656 mit zwei Bewohnern. Erzwungen 0 und 2. Leere und volle Wohnung haben Tür, die sechs Beutestücke, Sofa, Bett, Küche. Juwelen versiegelt, Tür zu. Eddy auf eine Wohnung mit zwei Bewohnern: Tür auf, Wanted genau 1.
+- Nicht getestet: Fenster, ob Sofa und Kühlschrank den Weg zur Tür im Bild freilassen, Controller.
+- Git: auf `main`, dieser Eintrag im selben Commit, danach `git push origin main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`

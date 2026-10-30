@@ -61,9 +61,12 @@ func break_open(player: Node) -> void:
 	_unlock(true)
 	var body := player as Node3D
 	var at := global_position if body == null else body.global_position
+	var token := get_instance_id()
+	if get_parent() != null:
+		token = get_parent().get_instance_id()
 	NoiseManager.emit_noise(at, 18.0, player, StealthNoise.BURGLARY)
 	if not WorldSync.is_client():
-		WantedManager.report(&"burglary", at, get_instance_id())
+		WantedManager.report(&"burglary", at, token)
 
 
 func _unlock(forced: bool) -> void:
