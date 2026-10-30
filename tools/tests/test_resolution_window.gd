@@ -47,10 +47,8 @@ func _run() -> void:
 
 
 func _formula() -> void:
-	for size: Vector2i in TARGETS:
-		var scale: float = _settings.call("scale_for_window", 1.0, size)
-		var expect := 1.0 if maxi(size.x, size.y) <= 1920 else 1920.0 / float(maxi(size.x, size.y))
-		_check(is_equal_approx(scale, expect), "3D-Faktor %s = %.4f" % [size, scale])
+	# Kein Full-HD-Deckel mehr: bei 4K wurde sonst nur 1920 × 1080 gerendert (pixelig).
+	_check(not _settings.has_method("scale_for_window"), "kein fester 3D-Deckel")
 	var quality: Dictionary = _settings.call("upscale_for", 1)
 	var off: Dictionary = _settings.call("upscale_for", 0)
 	_check(float(off["scale"]) == 1.0 and int(off["mode"]) == Viewport.SCALING_3D_MODE_BILINEAR, "Upscale aus bleibt bilinear")
@@ -138,11 +136,9 @@ func _window_modes() -> void:
 		_check(sx > 0.01 and is_equal_approx(sx, sy), "UI-Skalierung uniform x=%.4f y=%.4f bei %s" % [sx, sy, win])
 		_check(is_equal_approx(probe.size.x / probe.size.y, 2.0), "Probe bleibt 2:1, ist %.3f" % (probe.size.x / probe.size.y))
 		var viewport := root.get_viewport()
-		var expect: float = _settings.call("scale_for_window", 1.0, win)
-		_check(is_equal_approx(viewport.scaling_3d_scale, expect), "scaling_3d_scale %.4f erwartet %.4f" % [viewport.scaling_3d_scale, expect])
-		# Unter voller Auflösung (4K-Deckel) schärft FSR 1 nach, sonst bleibt es bilinear.
-		var want_mode := Viewport.SCALING_3D_MODE_BILINEAR if expect >= 0.999 else Viewport.SCALING_3D_MODE_FSR
-		_check(viewport.scaling_3d_mode == want_mode, "ohne Upscale Modus %d, ist %d" % [want_mode, viewport.scaling_3d_mode])
+		# Regler 100 %, kein Upscaling: volle Fensterauflösung auch bei 4K, bilinear (= 1:1).
+		_check(is_equal_approx(viewport.scaling_3d_scale, 1.0), "scaling_3d_scale %.4f nativ bei %s" % [viewport.scaling_3d_scale, win])
+		_check(viewport.scaling_3d_mode == Viewport.SCALING_3D_MODE_BILINEAR, "ohne Upscale bilinear, ist %d" % viewport.scaling_3d_mode)
 		var title := menu.find_child("Header", true, false) as Control
 		if title != null:
 			var title_scale := title.get_global_transform_with_canvas()
@@ -152,8 +148,7 @@ func _window_modes() -> void:
 	await process_frame
 	var win_now := DisplayServer.window_get_size()
 	var quality_scale: float = float((_settings.call("upscale_for", 1) as Dictionary)["scale"])
-	var expect_up: float = _settings.call("scale_for_window", quality_scale, win_now)
-	expect_up = clampf(expect_up, 0.25, 1.0)
+	var expect_up := clampf(quality_scale, 0.25, 1.0)
 	var canvas_after := probe.get_global_transform_with_canvas()
 	_check(is_equal_approx(root.get_viewport().scaling_3d_scale, expect_up), "FSR2-Faktor %.4f erwartet %.4f" % [root.get_viewport().scaling_3d_scale, expect_up])
 	_check(root.get_viewport().scaling_3d_mode == Viewport.SCALING_3D_MODE_FSR2, "Upscale-Modus ist FSR2")

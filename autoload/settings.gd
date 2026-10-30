@@ -21,9 +21,6 @@ const DEFAULT_OUTPUT_DEVICE := "Default"
 
 ## Kleinste einstellbare 3D-Auflösung (Faktor auf die Fenstergröße).
 const RENDER_SCALE_MIN := 0.5
-## 3D wird höchstens auf diese Kantenlänge gerendert. Darüber würde ein 2K-/4K-Puffer
-## den Frame so lang machen, dass die Steuerung stehen bleibt.
-const RENDER_LONG_EDGE := 1920
 ## Auswählbare Fenstergrößen. Im Menü erscheinen nur die, die auf den Monitor passen.
 const RESOLUTIONS: Array[Vector2i] = [
 	Vector2i(1280, 720),
@@ -370,15 +367,6 @@ func _apply_resolution() -> void:
 	DisplayServer.window_set_position(origin + (screen_size - size) / 2)
 
 
-## Faktor fürs 3D-Bild. Unter oder bei 1920 px bleibt der Reglerwert. Darüber wird
-## auf etwa Full HD begrenzt. Fenstergröße 0 (noch kein Fenster) teilt nicht.
-static func scale_for_window(scale: float, window_size: Vector2i) -> float:
-	var longest := maxi(window_size.x, window_size.y)
-	if longest <= RENDER_LONG_EDGE:
-		return scale
-	return minf(scale, float(RENDER_LONG_EDGE) / float(longest))
-
-
 ## Faktor, um den die Vollbild-Auflösung kleiner ist als das Fenster (1.0 = nativ).
 static func fullscreen_factor(target: Vector2i, window_size: Vector2i) -> float:
 	if target == Vector2i.ZERO or window_size.x <= 0 or window_size.y <= 0:
@@ -404,15 +392,14 @@ func _apply_3d_scale() -> void:
 	var scale := render_scale
 	if fullscreen:
 		scale *= fullscreen_factor(fullscreen_resolution, size)
-	# Deckel (Full HD) und Upscaling-Stufe nicht multiplizieren: bei 4K wurde sonst aus
-	# 0.5 × 0.77 ein Bild mit 1478 px Breite, das FSR2 auf 4K hochzog (pixelig und teuer).
-	# Der Regler wirkt auf den kleineren der beiden Faktoren und greift so auch über 1920 px.
+	# Kein fester Deckel mehr: 100 % ist volle Monitorauflösung, auch bei 4K. Wer FPS
+	# braucht, senkt den Regler (bei 4K: 50 % = Full HD) oder nimmt eine Upscaling-Stufe.
 	var upscale := upscale_for(upscale_mode)
-	scale *= scale_for_window(float(upscale["scale"]), size)
+	scale *= float(upscale["scale"])
 	scale = clampf(scale, RENDER_SCALE_MIN * 0.5, 1.0)
 	var mode: int = int(upscale["mode"])
-	# Ohne Upscaling-Stufe, aber unter voller Auflösung (4K-Deckel, Regler, Vollbild-
-	# Auflösung): FSR 1 statt bilinear. Kostet kaum etwas und schärft nach.
+	# Ohne Upscaling-Stufe, aber unter voller Auflösung (Regler, Vollbild-Auflösung):
+	# FSR 1 statt bilinear. Kostet kaum etwas und schärft nach.
 	if mode == Viewport.SCALING_3D_MODE_BILINEAR and scale < 0.999:
 		mode = Viewport.SCALING_3D_MODE_FSR
 	if viewport.scaling_3d_mode != mode:
