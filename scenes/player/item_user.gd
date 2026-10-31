@@ -513,10 +513,10 @@ func _create_hud() -> void:
 	_pick_bar.anchor_right = 0.5
 	_pick_bar.anchor_top = 0.5
 	_pick_bar.anchor_bottom = 0.5
-	_pick_bar.offset_left = -240.0
-	_pick_bar.offset_right = 240.0
-	_pick_bar.offset_top = 104.0
-	_pick_bar.offset_bottom = 128.0
+	_pick_bar.offset_left = -PICKPOCKET_BAR.SIZE.x * 0.5
+	_pick_bar.offset_right = PICKPOCKET_BAR.SIZE.x * 0.5
+	_pick_bar.offset_top = 100.0
+	_pick_bar.offset_bottom = 100.0 + PICKPOCKET_BAR.SIZE.y
 	_pick_bar.visible = false
 	layer.add_child(_pick_bar)
 	# Granaten-Anzeige unten rechts, an der Stelle der Munitionsanzeige der Waffen.

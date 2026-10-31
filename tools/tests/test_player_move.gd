@@ -1,6 +1,5 @@
 extends SceneTree
-## Startet Sektor 7 über das Menü und prüft, ob der Spieler mit W läuft, springt und sich nach
-## einem Taschendiebstahl-Versuch wieder bewegen kann.
+## Startet Sektor 7 über das Menü und prüft, ob die Stadtinhalte gebaut sind und der Spieler mit W läuft.
 ##
 ## Aufruf (Projektordner):
 ##   godot --headless --path . -s res://tools/tests/test_player_move.gd
@@ -47,6 +46,9 @@ func _run() -> void:
 			break
 		await physics_frame
 	await _wait(60)
+	# Kompiliert ein Skript mit neuem class_name nicht (Klassen-Cache), fehlen Läden und Wohnungen.
+	var content := current_scene.get_node_or_null("CityContent")
+	_check(content != null and content.get_child_count() > 0, "Läden und Tankstellen gebaut (CityContent)")
 	var player := get_first_node_in_group("player") as CharacterBody3D
 	_check(player != null, "Spieler gespawnt")
 	if player == null:

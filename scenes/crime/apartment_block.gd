@@ -9,6 +9,8 @@ extends Node3D
 ## 35 % der Wohnungen haben beim Laden 1 oder 2 Bewohner (gleich oft).
 ## Die übrigen sind leer. `resident_count` >= 0 erzwingt die Zahl (Tests).
 
+## Per preload statt class_name SafeProp: Der Klassen-Cache kennt neue Klassen erst nach einem Editor-Scan.
+const SAFE_PROP := preload("res://scenes/crime/safe_prop.gd")
 const JEWELRY := preload("res://scenes/items/data/jewelry.tres")
 const JEWELS := preload("res://scenes/items/data/jewels.tres")
 const CASH := preload("res://scenes/items/data/cash_wad.tres")
@@ -446,7 +448,7 @@ func _place_loot(rng: RandomNumberGenerator) -> void:
 	(get_node(^"%Artwork") as Node3D).rotation.y = PI * 0.5 * _flip
 	_loot("Computer", PC, _at(x0 + 0.35, 0.77, desk - 0.2), false, &"Computer")
 	_loot("Handy", PHONE, _at(x0 + 0.35, 0.77, desk + 0.4), false, &"Phone")
-	var safe := SafeProp.new()
+	var safe := SAFE_PROP.new()
 	safe.name = "Safe"
 	safe.unique_name_in_owner = true
 	safe.prompt_name = "Tresor"
