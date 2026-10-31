@@ -7,7 +7,8 @@ extends Node
 ## steigt der Verdacht, schneller bei Licht und Lärm. Die Person bleibt solange stehen (Civilian fragt
 ## is_being_picked), läuft also nicht aus der Reichweite. Erreicht der Verdacht 100 %,
 ## merkt sie es: „Dieb!“, Flucht, Fahndung. Bleibt er darunter, keine Fahndung. Hocke verlassen,
-## zu schnell oder nicht mehr hinter ihr: abgebrochen, ohne Beute.
+## zu schnell oder nicht mehr hinter ihr: abgebrochen, ohne Beute. Beides sieht der Dieb als
+## Doppel-Slider (PickpocketBar im ItemUser-HUD); laufende Griffe stehen in PICKING_GROUP.
 ## Bewaffneter Raub (laut): Waffe auf eine isolierte Person zielen, sie hebt die Hände, E fordert die
 ## Tasche. Ziel halten (ROB_TIME), dann gibt sie alles her. Waffe runter, bevor sie fertig ist:
 ## sie rennt weg. Lässt man sie nach dem Raub laufen, ruft sie die Polizei (eine Stufe mehr).
@@ -23,6 +24,7 @@ const QUIET_SPEED := 2.2
 const PICK_TIME := 1.2
 const PICK_REACH := 2.6
 const ROB_TIME := 1.6
+const PICKING_GROUP := &"pickpocket_running"
 
 var held_up := false
 var restrained := false
@@ -63,7 +65,7 @@ func prompt(player: Player) -> String:
 	if _body == null or _body.is_dead():
 		return ""
 	if pick_progress >= 0.0:
-		return "Klauen … %d %%   Verdacht %d %%" % [int(pick_progress * 100.0), int(minf(suspicion, 1.0) * 100.0)]
+		return "Klauen …"
 	if rob_progress >= 0.0:
 		return "Tasche her! … %d %%" % int(rob_progress * 100.0)
 	if restrained and not robbed and not _pocket_empty():
@@ -102,11 +104,29 @@ func interact(player: Player) -> void:
 		suspicion = 0.0
 		_alert = _rng.randf_range(0.6, 1.1)
 		_thief = player
+		add_to_group(PICKING_GROUP)
 
 
 ## Läuft gerade ein Griff in die Tasche? Dann bleibt die Person stehen.
 func is_being_picked() -> bool:
 	return pick_progress >= 0.0
+
+
+## Der laufende Griff dieses Spielers, sonst null (für die Anzeige).
+static func picked_by(player: Player) -> CivilianCrime:
+	if player == null or not player.is_inside_tree():
+		return null
+	for node in player.get_tree().get_nodes_in_group(PICKING_GROUP):
+		var crime := node as CivilianCrime
+		if crime != null and crime.pick_progress >= 0.0 and crime._thief == player and not crime._body.is_dead():
+			return crime
+	return null
+
+
+func _end_pick() -> void:
+	pick_progress = -1.0
+	_thief = null
+	remove_from_group(PICKING_GROUP)
 
 
 func on_burglary() -> void:
@@ -122,7 +142,8 @@ func _physics_process(delta: float) -> void:
 		return
 	if restrained:
 		held_up = true
-		pick_progress = -1.0
+		if pick_progress >= 0.0:
+			_end_pick()
 		rob_progress = -1.0
 		_body.hold_up()
 		return
@@ -198,8 +219,7 @@ func _hand_over() -> void:
 func _pick_tick(delta: float) -> void:
 	var player := _thief
 	if player == null or not is_instance_valid(player) or player.dead or not _pick_ok(player):
-		pick_progress = -1.0
-		_thief = null
+		_end_pick()
 		if player != null and is_instance_valid(player):
 			player.item_user.show_message("Abgebrochen.", Color(0.8, 0.8, 0.8))
 		return
@@ -209,13 +229,11 @@ func _pick_tick(delta: float) -> void:
 	suspicion += rate * _alert * delta
 	pick_progress = minf(pick_progress + delta / PICK_TIME, 1.0)
 	if suspicion >= 1.0:
-		pick_progress = -1.0
-		_thief = null
+		_end_pick()
 		player.item_user.show_message("Erwischt!", Color(1.0, 0.35, 0.3))
 		_caught(player, &"pickpocket")
 	elif pick_progress >= 1.0:
-		pick_progress = -1.0
-		_thief = null
+		_end_pick()
 		var got := _empty_pocket(player)
 		player.item_user.show_message("Geklaut: " + got if got != "" else "Tasche leer.", Color(0.95, 0.85, 0.3))
 
