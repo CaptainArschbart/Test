@@ -58,6 +58,26 @@ func _run() -> void:
 			player.call("controls_local_body"), player.get("noclip"), player.global_position])
 	var walked := await _walk(player, 60)
 	_check(walked > 2.0, "Läuft mit W (%.2f m in 1 s)" % walked)
+	# Option „Physik 30 Hz“: gleiches Tempo, Kamera folgt dem Kopf, Interpolation an.
+	var settings := root.get_node("Settings")
+	settings.set("physics_rate", 30)
+	settings.call("apply")
+	_check(Engine.physics_ticks_per_second == 30 and physics_interpolation, "Physik 30 Hz mit Interpolation")
+	var start_ms := Time.get_ticks_msec()
+	var start := player.global_position
+	Input.action_press("move_forward")
+	while Time.get_ticks_msec() - start_ms < 1000:
+		await process_frame
+	Input.action_release("move_forward")
+	var walked30 := Vector2(player.global_position.x - start.x, player.global_position.z - start.z).length()
+	_check(walked30 > 2.0, "Läuft mit W bei 30 Hz (%.2f m in 1 s)" % walked30)
+	var camera := player.get("camera") as Camera3D
+	var head := player.get("head") as Node3D
+	_check(camera.global_position.distance_to(head.global_position) < 0.6, "Kamera bleibt am Kopf (%.2f m)"
+			% camera.global_position.distance_to(head.global_position))
+	settings.set("physics_rate", 60)
+	settings.call("apply")
+	_check(Engine.physics_ticks_per_second == 60 and not physics_interpolation, "zurück auf 60 Hz")
 	_finish()
 
 

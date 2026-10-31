@@ -10,6 +10,8 @@ extends Node
 signal changed
 
 const PATH := "user://settings.cfg"
+## Render-Thread wird hier gesetzt (Godot liest die Datei beim Start). Exportiert liegt sie neben der exe.
+const OVERRIDE_PATH_EDITOR := "res://override.cfg"
 
 ## Audio-Busse. "Master" gibt es immer. Music und SFX stehen in default_bus_layout.tres
 ## und werden bei Bedarf in _ensure_buses() nachgelegt.
@@ -114,6 +116,12 @@ var glow_enabled := true
 ## Bloom-Stärke 0 … 2 (Menü 0–200 %). Multipliziert glow_intensity und glow_bloom der Karte.
 var glow_strength := 1.0
 var volumetric_fog := true
+## Physik-Takt pro Sekunde: 60 oder 30. Bei 30 läuft Physik-Interpolation, das spart auf schwachen
+## CPUs die halbe Physik-Zeit.
+var physics_rate := 60
+## Rendering auf einem eigenen Thread (Godot: experimentell). Wirkt erst nach einem Neustart,
+## weil es über override.cfg gesetzt wird.
+var render_thread := false
 ## Aktion → physical_keycode
 var key_bindings := {}
 
@@ -161,6 +169,8 @@ func get_values() -> Dictionary:
 		"glow_enabled": glow_enabled,
 		"glow_strength": glow_strength,
 		"volumetric_fog": volumetric_fog,
+		"physics_rate": physics_rate,
+		"render_thread": render_thread,
 		"key_bindings": key_bindings.duplicate(),
 	}
 
@@ -189,6 +199,8 @@ func get_defaults() -> Dictionary:
 		"glow_enabled": true,
 		"glow_strength": 1.0,
 		"volumetric_fog": true,
+		"physics_rate": 60,
+		"render_thread": false,
 		"key_bindings": _default_bindings.duplicate(),
 	}
 
@@ -217,6 +229,8 @@ func apply_values(values: Dictionary) -> void:
 	glow_enabled = bool(values.get("glow_enabled", glow_enabled))
 	glow_strength = clampf(float(values.get("glow_strength", glow_strength)), 0.0, 2.0)
 	volumetric_fog = bool(values.get("volumetric_fog", volumetric_fog))
+	physics_rate = 30 if int(values.get("physics_rate", physics_rate)) <= 30 else 60
+	render_thread = bool(values.get("render_thread", render_thread))
 	key_bindings = values.key_bindings.duplicate()
 	apply()
 	save_settings()
@@ -239,6 +253,8 @@ func apply() -> void:
 	var viewport := get_viewport()
 	viewport.msaa_3d = msaa as Viewport.MSAA
 	_apply_3d_scale()
+	_apply_physics_rate()
+	_write_render_thread()
 
 	_apply_bus(MASTER_BUS, master_volume)
 	_apply_bus(MUSIC_BUS, music_volume)
@@ -254,6 +270,31 @@ func apply() -> void:
 		InputMap.action_add_event(action, event)
 	changed.emit()
 
+
+
+func _apply_physics_rate() -> void:
+	Engine.physics_ticks_per_second = physics_rate
+	get_tree().physics_interpolation = physics_rate < 60
+
+
+## Schreibt oder entfernt den Render-Thread in override.cfg (neben der exe, im Editor im Projektordner).
+## Godot liest die Datei beim Start, darum wirkt die Änderung erst beim nächsten Start.
+func _write_render_thread() -> void:
+	var path := OVERRIDE_PATH_EDITOR if OS.has_feature("editor") else OS.get_executable_path().get_base_dir().path_join("override.cfg")
+	var config := ConfigFile.new()
+	var exists := config.load(path) == OK
+	var has := config.has_section_key("rendering", "driver/threads/thread_model")
+	if render_thread == has:
+		return
+	var file := ProjectSettings.globalize_path(path) if path.begins_with("res://") else path
+	if render_thread:
+		config.set_value("rendering", "driver/threads/thread_model", 2)
+	elif exists:
+		config.erase_section_key("rendering", "driver/threads/thread_model")
+	if config.get_sections().is_empty():
+		DirAccess.remove_absolute(file)
+	else:
+		config.save(file)
 
 ## Vollbild direkt umschalten (F11) und merken.
 func toggle_fullscreen() -> void:
@@ -300,6 +341,8 @@ func load_settings() -> void:
 	glow_enabled = bool(config.get_value("video", "glow_enabled", glow_enabled))
 	glow_strength = clampf(float(config.get_value("video", "glow_strength", glow_strength)), 0.0, 2.0)
 	volumetric_fog = bool(config.get_value("video", "volumetric_fog", volumetric_fog))
+	physics_rate = 30 if int(config.get_value("video", "physics_rate", physics_rate)) <= 30 else 60
+	render_thread = bool(config.get_value("video", "render_thread", render_thread))
 	for action: String in REBINDABLE_ACTIONS:
 		key_bindings[action] = config.get_value("keys", action, key_bindings[action])
 
@@ -320,6 +363,8 @@ func save_settings() -> void:
 	config.set_value("video", "glow_enabled", glow_enabled)
 	config.set_value("video", "glow_strength", glow_strength)
 	config.set_value("video", "volumetric_fog", volumetric_fog)
+	config.set_value("video", "physics_rate", physics_rate)
+	config.set_value("video", "render_thread", render_thread)
 	config.set_value("audio", "master_volume", master_volume)
 	config.set_value("audio", "music_volume", music_volume)
 	config.set_value("audio", "sfx_volume", sfx_volume)

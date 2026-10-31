@@ -172,6 +172,7 @@ func _self_lod(delta: float) -> void:
 ## Vom CrowdDirector: an einen anderen Knoten verlegen (weit weg von der Kamera).
 func relocate(pos: Vector3, toward: int) -> void:
 	global_position = pos + Vector3.UP * 0.05
+	reset_physics_interpolation()
 	_last_pos = global_position
 	_hvel = Vector3.ZERO
 	_vy = 0.0
@@ -687,6 +688,7 @@ func net_apply(pos: Vector3, yaw: float, new_state: int, speed: float) -> void:
 	if first or global_position.distance_to(pos) > 4.0:
 		global_position = pos
 		rotation.y = yaw
+		reset_physics_interpolation()
 	if new_state == state or state == State.DEAD:
 		return
 	var old := state

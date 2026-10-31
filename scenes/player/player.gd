@@ -154,6 +154,8 @@ func _ready() -> void:
 	add_to_group("player")
 	_spawn_transform = global_transform
 	_head_height = head.position.y
+	# Mausblick sofort zeigen, auch bei Physik-Interpolation (siehe PlayerMovement.refresh_camera).
+	camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	floor_snap_length = max_step_height
 	floor_max_angle = deg_to_rad(floor_angle_degrees)
 	max_slides = slide_count
@@ -354,6 +356,7 @@ func _ensure_play_input() -> void:
 ## Setzt den Spieler an den Startpunkt zurück.
 func respawn() -> void:
 	global_transform = _spawn_transform
+	reset_physics_interpolation()
 	velocity = Vector3.ZERO
 	_view_step_offset = 0.0
 	_stair_grace = 0.0

@@ -271,6 +271,11 @@ func refresh_camera() -> void:
 		shake_offset = _player.camera_shake.get_position_offset()
 	_apply_camera_drop(shake_offset)
 	_player.camera.rotation = Vector3(_camera_pitch, 0.0, _camera_tilt) + shake_rotation
+	# Physik 30 Hz: Die Kamera ist nicht interpoliert (Mausblick sofort), folgt aber der
+	# interpolierten Körperposition, sonst ruckelt sie im Physik-Takt.
+	if _player.get_tree().physics_interpolation:
+		var lag := _player.get_global_transform_interpolated().origin - _player.global_position
+		_player.camera.global_position += lag
 
 
 ## Die Kamera hängt am nickenden Kopf. Die Absenkung muss senkrecht in der Welt sein,
