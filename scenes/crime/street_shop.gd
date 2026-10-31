@@ -205,7 +205,7 @@ func _neon(at: Vector3) -> void:
 	mat.albedo_color = Color(1.0, 0.15, 0.35)
 	mat.emission_enabled = true
 	mat.emission = Color(1.0, 0.1, 0.3)
-	mat.emission_energy_multiplier = 3.0
+	mat.emission_energy_multiplier = 1.3
 	board.material_override = mat
 	add_child(board)
 	var sign := Label3D.new()
@@ -235,7 +235,7 @@ func _ceiling_light(at: Vector3, color: Color, energy: float) -> void:
 	mat.albedo_color = color
 	mat.emission_enabled = true
 	mat.emission = color
-	mat.emission_energy_multiplier = 2.0
+	mat.emission_energy_multiplier = 1.3
 	mesh.material_override = mat
 	add_child(mesh)
 	var light := OmniLight3D.new()

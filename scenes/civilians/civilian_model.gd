@@ -4,17 +4,14 @@ extends EnemyModel
 ## Kleidung (keine Waffe, keine Statusfarbe) und mit weniger Polygonen (viele Figuren auf einmal).
 ##
 ## Stile: Kapuzenjacke, langer Mantel, Regenjacke, Arbeiter mit Warnweste, Punk mit LED-Weste.
-## Manche tragen einen Neon-Regenschirm. Zusätzliche Posen: `cower` (geduckt, Hände über dem Kopf)
-## und get_up() nach dem Umfallen (Auto).
+## Zusätzliche Posen: `cower` (geduckt, Hände über dem Kopf) und get_up() nach dem Umfallen (Auto).
 
 enum Outfit { HOODIE, COAT, RAINCOAT, WORKER, PUNK }
 
 ## 0 = normal, 1 = geduckt mit Händen über dem Kopf.
 var cower := 0.0
 var outfit := Outfit.HOODIE
-var has_umbrella := false
 
-var _umbrella: Node3D
 var _hair_colors := [Color(0.06, 0.05, 0.05), Color(0.3, 0.18, 0.1), Color(0.75, 0.7, 0.6), Color(0.9, 0.2, 0.6),
 		Color(0.2, 0.8, 1.0), Color(0.55, 0.3, 1.0)]
 
@@ -95,10 +92,7 @@ func build_civilian(variant_seed: int) -> void:
 		_box(_spine, Vector3(0.3, 0.02, 0.02), accent, Vector3(0, 0.2, 0.31), 0.2)
 	elif roll < 0.5:
 		_box(_hips[0], Vector3(0.08, 0.26, 0.3), _mat("satchel", Color(0.35, 0.22, 0.12), 0.8), Vector3(-0.12, -0.05, 0), 0.4)
-	has_umbrella = outfit != Outfit.RAINCOAT and _rng.randf() < 0.3
 	_commit()
-	if has_umbrella:
-		_build_umbrella(accent_color)
 
 
 func animate(delta: float) -> void:
@@ -112,12 +106,6 @@ func animate(delta: float) -> void:
 			_shoulders[i].rotation.z = lerpf(_shoulders[i].rotation.z, 0.35 * sign, cower)
 			_elbows[i].rotation.x = lerpf(_elbows[i].rotation.x, 2.3, cower)
 		_head.rotation.x = lerpf(_head.rotation.x, 0.45, cower)
-	if _umbrella != null:
-		_umbrella.visible = cower < 0.5
-		if cower < 0.5:
-			_shoulders[1].rotation.x = 0.5
-			_shoulders[1].rotation.z = 0.0
-			_elbows[1].rotation.x = 1.3
 
 
 ## Nach dem Umfallen wieder aufstehen (fall() hat den Körper gekippt).
@@ -154,54 +142,6 @@ func _hair() -> void:
 			var cap := _mat("cap", [Color(0.1, 0.1, 0.1), Color(0.6, 0.1, 0.15), Color(0.1, 0.3, 0.5)][_rng.randi() % 3], 0.7)
 			_box(_head, Vector3(0.24, 0.08, 0.25), cap, Vector3(0, 0.24, 0), 0.6)
 			_box(_head, Vector3(0.18, 0.02, 0.1), cap, Vector3(0, 0.21, -0.15), 0.3)
-
-
-func _build_umbrella(color: Color) -> void:
-	_umbrella = Node3D.new()
-	_umbrella.name = "Umbrella"
-	add_child(_umbrella)
-	var shaft := MeshInstance3D.new()
-	var stick := CylinderMesh.new()
-	stick.top_radius = 0.012
-	stick.bottom_radius = 0.012
-	stick.height = 0.95
-	stick.radial_segments = 4
-	stick.rings = 1
-	shaft.mesh = stick
-	shaft.material_override = _mat("stick", Color(0.2, 0.2, 0.22), 0.5, 0.5)
-	shaft.position = Vector3(0.25, 1.72, -0.42)
-	_umbrella.add_child(shaft)
-	var canopy := MeshInstance3D.new()
-	var cone := CylinderMesh.new()
-	cone.top_radius = 0.03
-	cone.bottom_radius = 0.62
-	cone.height = 0.24
-	cone.radial_segments = 8
-	cone.rings = 1
-	canopy.mesh = cone
-	var cloth := StandardMaterial3D.new()
-	cloth.albedo_color = Color(color.r * 0.25, color.g * 0.25, color.b * 0.25, 0.75)
-	cloth.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	cloth.emission_enabled = true
-	cloth.emission = color
-	cloth.emission_energy_multiplier = 0.6
-	cloth.cull_mode = BaseMaterial3D.CULL_DISABLED
-	canopy.material_override = cloth
-	canopy.position = Vector3(0.25, 2.25, -0.42)
-	canopy.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_umbrella.add_child(canopy)
-	var rim := MeshInstance3D.new()
-	var ring := TorusMesh.new()
-	ring.inner_radius = 0.6
-	ring.outer_radius = 0.64
-	ring.rings = 12
-	ring.ring_segments = 3
-	rim.mesh = ring
-	rim.material_override = _emit("rim", color, 3.0)
-	rim.position = Vector3(0.25, 2.13, -0.42)
-	_umbrella.add_child(rim)
-	for mi: MeshInstance3D in [shaft, canopy, rim]:
-		mi.visibility_range_end = 80.0
 
 
 # Weniger Polygone als die Gegner: es laufen viele Fußgänger gleichzeitig herum.

@@ -58,6 +58,8 @@ var draw_distance_value: Label
 var shadow_option: OptionButton
 var ssao_check: CheckButton
 var glow_check: CheckButton
+var glow_strength_slider: HSlider
+var glow_strength_value: Label
 var volumetric_check: CheckButton
 
 
@@ -353,6 +355,7 @@ func _refresh_options() -> void:
 		draw_distance_slider.set_value_no_signal(float(_draft.get("draw_distance", 500.0)))
 		ssao_check.set_pressed_no_signal(bool(_draft.get("ssao_enabled", true)))
 		glow_check.set_pressed_no_signal(bool(_draft.get("glow_enabled", true)))
+		glow_strength_slider.set_value_no_signal(float(_draft.get("glow_strength", 1.0)) * 100.0)
 		volumetric_check.set_pressed_no_signal(bool(_draft.get("volumetric_fog", true)))
 	for action: String in _key_buttons:
 		var button: Button = _key_buttons[action]
@@ -373,6 +376,8 @@ func _refresh_labels() -> void:
 	camera_shake_value.text = "AUS" if shake <= 0.0 else "%d%%" % roundi(shake * 100.0)
 	if draw_distance_value != null:
 		draw_distance_value.text = "%d m" % roundi(float(_draft.get("draw_distance", 500.0)))
+	if glow_strength_value != null:
+		glow_strength_value.text = "%d %%" % roundi(float(_draft.get("glow_strength", 1.0)) * 100.0)
 
 
 func _select_id(option: OptionButton, id: int) -> void:
@@ -428,6 +433,32 @@ func _build_nextgen_rows() -> void:
 		_set_draft(shadow_option.get_item_id(index), "shadow_quality"))
 	ssao_check = _add_check(page, "SsaoCheck", "SSAO")
 	glow_check = _add_check(page, "GlowCheck", "Glow")
+	var glow_row := HBoxContainer.new()
+	glow_row.name = "GlowStrengthRow"
+	page.add_child(glow_row)
+	var glow_caption := Label.new()
+	glow_caption.text = "Bloom-Stärke"
+	glow_caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow_caption.custom_minimum_size = Vector2(220, 0)
+	glow_row.add_child(glow_caption)
+	glow_strength_slider = HSlider.new()
+	glow_strength_slider.name = "GlowStrengthSlider"
+	glow_strength_slider.unique_name_in_owner = true
+	glow_strength_slider.min_value = 0.0
+	glow_strength_slider.max_value = 200.0
+	glow_strength_slider.step = 5.0
+	glow_strength_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	glow_row.add_child(glow_strength_slider)
+	glow_strength_slider.owner = self
+	glow_strength_value = Label.new()
+	glow_strength_value.name = "GlowStrengthValue"
+	glow_strength_value.unique_name_in_owner = true
+	glow_strength_value.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow_strength_value.custom_minimum_size = Vector2(72, 0)
+	glow_row.add_child(glow_strength_value)
+	glow_strength_value.owner = self
+	glow_strength_slider.value_changed.connect(func(percent: float) -> void:
+		_set_draft(percent / 100.0, "glow_strength"))
 	volumetric_check = _add_check(page, "VolumetricFogCheck", "Volumetrischer Nebel")
 	ssao_check.toggled.connect(_set_draft.bind("ssao_enabled"))
 	glow_check.toggled.connect(_set_draft.bind("glow_enabled"))

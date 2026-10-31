@@ -44,6 +44,9 @@ var _sun: DirectionalLight3D
 var _rain: GPUParticles3D
 var _sky_mat: ShaderMaterial
 var _base_fog := 0.004
+# Glow-Werte der Karte, Settings.glow_strength skaliert sie.
+var _base_glow_intensity := 0.5
+var _base_glow_bloom := 0.02
 # Weich nachgeführte Wetterwerte (siehe WEATHER_LOOK).
 var _cover := 0.46
 var _dim := 1.0
@@ -67,6 +70,8 @@ func _ready() -> void:
 		_env = world.environment.duplicate(true) as Environment
 		world.environment = _env
 		_base_fog = maxf(_env.fog_density, 0.004)
+		_base_glow_intensity = _env.glow_intensity
+		_base_glow_bloom = _env.glow_bloom
 		_setup_sky()
 	_snap_weather()
 	if not Settings.changed.is_connected(_apply_graphics):
@@ -219,7 +224,9 @@ func _apply_graphics() -> void:
 	_env.fog_enabled = true
 	_env.volumetric_fog_enabled = Settings.volumetric_fog
 	_env.ssao_enabled = Settings.ssao_enabled
-	_env.glow_enabled = Settings.glow_enabled
+	_env.glow_enabled = Settings.glow_enabled and Settings.glow_strength > 0.0
+	_env.glow_intensity = _base_glow_intensity * Settings.glow_strength
+	_env.glow_bloom = _base_glow_bloom * Settings.glow_strength
 	var high := Settings.gi_mode >= Settings.GI_HIGH
 	var normal := Settings.gi_mode >= Settings.GI_NORMAL
 	_env.ssr_enabled = normal
