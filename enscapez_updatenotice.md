@@ -578,3 +578,22 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
   - Fahndung durch eine Säulenexplosion: nicht angebunden.
 - Git: Branch `enscapez/tankstellen-ausbau`, PR #59. Auf Anweisung von EnScapeZ gemerged, obwohl `test_shop_net` und `test_mp_world` rot und ungeklärt sind. `arschi_updatenotice.md` fehlte zu Arbeitsbeginn auf `origin/main`, kam während der Arbeit dazu (NPC-Raub) und wurde danach gelesen, keine Überschneidung. `origin/main` ist inzwischen weiter (#56, #57), GitHub meldet den PR als konfliktfrei. `origin/main` per Merge-Commit in den Branch geholt statt Rebase, weil der Branch schon gepusht war und Force-Push verboten ist. Danach `test_gas_stations` CHECKS 59 FAILS 0, die übrigen Prüfskripte liefen nur auf dem Stand davor. Lose `*.uid` von Fremden und `_test_appdata/` nicht mitcommittet.
 - Offen: `test_shop_net` und `test_mp_world` gegen die Basis prüfen. `test_content_update` reparieren.
+
+### 2026-10-31 · Wohnungen in acht Häusern von Sektor 7, Tresore, Brechstange · Claude (für EnScapeZ) · enscapez/wohnungen-sektor7
+- Auftrag: Wohnungen in Sektor 7 begehbar machen und detailliert in die ungenutzten Häuser einbauen, Türen und Tresore mit der Brechstange aufbrechen, Schlüssel für später (Taschendiebstahl), Eddy in Brechstange umbenennen, alles testen. Multiplayer ist laut EnScapeZ vorerst egal.
+- Neu:
+  - `scenes/crime/safe_prop.gd`: Tresor (`SafeProp`, erbt von `LootProp`). Nur mit der Brechstange offen, Lärm wie versiegelte Beute, eine Fahndungsstufe (gleiche Sperre wie die Wohnungstür). E räumt aus, der Kasten bleibt offen stehen.
+  - `tools/tests/test_apartments_walk.gd`: echte Spielerfigur in Sektor 7, Treppe, Türen, Tresor, Schlüssel, alle Zimmer.
+- Geändert:
+  - `scenes/crime/apartment_house.gd` neu: Die alte Flurplatte hatte kein Treppenloch, nach oben kam man nicht. Jetzt gegenläufige Treppe in zwei Spuren, Absatz hinten im 1. Stock, vorn im 2. Stock, Eingangshalle mit Briefkästen, Mülltonne, Wandleuchten. `key_prefix` je Haus.
+  - `scenes/crime/apartment_block.gd` neu: Grundriss mit Flur, Bad (WC, Waschtisch, Dusche), Wohnküche (Küchenzeile, Kühlschrank, Sofa, Couchtisch, Fernsehbank), Schlafzimmer (Bett, Nachttisch, Schreibtisch, Kleiderschrank, Tresor), Fenster, Türschild. Geometrie über `SlumBuilder` zusammengefasst, Innenleben ab 44 m nicht mehr gezeichnet, Lichter ohne Schatten mit Distanz-Fade. Statisch `key_item(id)` für Schlüssel.
+  - `scenes/slum/kit/slum_building.gd`: Export `apartment_prefix`. Gesimse bei `walk_in_apartments` nur noch außen herum, die Platte lag sonst sichtbar im Treppenhaus.
+  - `scenes/slum/slum.tscn`: `walk_in_apartments` zusätzlich an `Res4`, `Res6`, `Res9`, `Res12`, `Res14`, `Res15`, `Res17` (mit `Res2` acht Häuser, 32 Wohnungen).
+  - `scenes/crime/locked_door.gd`: Hinweis „Linksklick bricht auf“ mit Brechstange in der Hand, `open_offset`. `scenes/crime/loot_prop.gd`: Klotz verdeckt das Modell nicht mehr, Hooks `_build_look` und `_after_take`.
+  - `scenes/items/data/crowbar.tres`: Name Brechstange, Kürzel BS. Die Item-id bleibt `crowbar`.
+  - `tools/tests/test_content_update.gd`: Testfehler „Einbruch +1 Stern“ behoben, die zweite Tür hat einen eigenen Elternknoten.
+- Entscheidungen: `Res2` behält die Schlüssel ohne Präfix, die Karte `apt_c` an der Tankstelle passt weiter. Die anderen Häuser haben Präfixe wie `res4_`. Taschendiebstahl gibt noch keine Schlüssel, das kommt laut Auftrag später und soll `ApartmentBlock.key_item` nutzen. Der Tagestresor der Tankstelle bleibt unverändert.
+- Getestet (Godot 4.7.2 stable, headless, isoliertes APPDATA): `test_apartments_walk` CHECKS 96 FAILS 0, `test_content_update` CHECKS 47 FAILS 0, `test_gas_stations` 59/0, `test_gun_shops` 29/0, `test_shop` 43/0, `test_money` 25/0, `test_bank` 41/0, `test_consumables` 45/0, `test_enemy_xp` 29/0, `test_audio` 18/0, `test_player_melee` 42/0, `test_weapons_smg_grenade` 47/0, `test_sector7_enemies` 15/0, `test_sector7_city` 44/0. Nach dem Rebase auf `origin/main` erneut: `test_apartments` 55/0, `test_npc_robbery` 34/0. Kein `SCRIPT ERROR`.
+- Nicht getestet: Aussehen im Fenster und Bildrate mit den 32 Wohnungen, keine Screenshots. Multiplayer-Tests bewusst nicht gelaufen.
+- Git: Branch `enscapez/wohnungen-sektor7` gepusht. `gh` war nicht angemeldet, Draft-PR und Merge stehen noch aus.
+- Offen: PR anlegen und mergen, Schlüssel als Taschendiebstahl-Beute.
