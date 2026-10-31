@@ -14,3 +14,12 @@
 - `tools/tests/shot_sky.gd` (neu): macht Screenshots zu 8 Tageszeiten bei klarem Wetter und bei Regen. Aufruf: `godot --path . -s res://tools/tests/shot_sky.gd -- <ordner>`.
 - Nicht geändert: Die Tageslänge bleibt bei 8 Minuten (`DAY_LENGTH`). Die Tageszeit wird im Multiplayer weiterhin nicht synchronisiert, wie vorher.
 - Getestet mit Godot 4.7.2 unter Windows: `test_sector7_city` 44/0. Die Screenshots aller Phasen wurden angesehen.
+
+## 2026-10-31 · Bloom-Regler, schwächeres Leuchten, kein Neon-Regenschirm
+
+- Optionen › Grafik: neuer Regler „Bloom-Stärke“ (0–200 %, Standard 100 %) unter dem Glow-Schalter. `Settings.glow_strength` (0–2) wird in `settings.cfg` gespeichert. `world_atmosphere.gd` multipliziert damit `glow_intensity` und `glow_bloom` der Karte. Bei 0 % ist Glow aus.
+- Glow allgemein schwächer: Slum `glow_intensity` von 0,9 auf 0,5, `glow_bloom` von 0,05 auf 0,02, `glow_hdr_threshold` von 1,1 auf 1,4. Testmap: Intensität von 1,0 auf 0,55, Bloom von 0,08 auf 0,03, Schwelle neu 1,4.
+- Leuchtende Materialien schwächer: `SlumMats.EMISSION_SCALE = 0.65` für alle Kit-Materialien (Neon, Schilder, Fenster). `EnemyModel._emit` ebenfalls ×0,65, das gilt auch für Akzente der Passanten. Ladenschilder und Wohnblock-Leuchten von 2–3 auf 1,3.
+- Unverändert: Statusfarbe der Gegner, Visier der Wachen, Bremslichter, Schießscheiben.
+- Neon-Regenschirm der Passanten komplett entfernt (`civilian_model.gd`). Der Zufallsgenerator zieht dafür keine Zahl mehr, deshalb sehen die Passanten bei gleichem Seed etwas anders aus.
+- Getestet mit Godot 4.7.2 headless: `test_options_scroll` 27/0, `test_resolution_window` 6/0, `test_sector7_city` 44/0. `test_content_update` 45/1: „Einbruch +1 Stern“ schlägt jedes Mal fehl. Das liegt in `locked_door`/`WantedManager`, nicht in dieser Änderung.
