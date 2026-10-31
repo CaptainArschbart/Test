@@ -12,14 +12,12 @@ const CROWBAR := preload("res://scenes/items/data/crowbar.tres")
 const CUFFS := preload("res://scenes/items/data/handcuffs.tres")
 const TIES := preload("res://scenes/items/data/zipties.tres")
 const CRED := preload("res://scenes/items/data/credchip.tres")
-const WATER := preload("res://scenes/items/data/water_bottle.tres")
-const BAR := preload("res://scenes/items/data/soy_bar.tres")
 const CASH := preload("res://scenes/items/data/cash_wad.tres")
-const KEY := preload("res://scenes/items/data/keycard.tres")
 const SNIPER := preload("res://scenes/items/data/sniper.tres")
 const SMG := preload("res://scenes/items/data/smg.tres")
 const BANK := preload("res://scenes/interact/bank_terminal.gd")
 const SELL_PAD := preload("res://scenes/crime/loot_sell_pad.gd")
+const GAS_STATION := preload("res://scenes/crime/gas_station.gd")
 
 enum Kind { GUNS, GAS }
 
@@ -248,65 +246,10 @@ func _ceiling_light(at: Vector3, color: Color, energy: float) -> void:
 
 
 func _build_gas() -> void:
-	_canopy()
-	# Vor dem offenen Schaufenster, unter dem Vordach, nicht im Verkaufsraum.
-	_pump(Vector3(-2.6, 0.0, 4.2))
-	_pump(Vector3(2.6, 0.0, 4.2))
-	_shell(Vector3(5.0, 3.0, 4.0), "TANKE")
-	var drinks := _machine(WATER, 2, Vector3(-1.4, 0.0, 3.2))
-	drinks.consume_now = true
-	var snacks := _machine(BAR, 2, Vector3(1.4, 0.0, 3.2))
-	snacks.consume_now = true
-	var stash := LootProp.new()
-	stash.prompt_name = "Kasse"
-	stash.item = CASH
-	stash.count = 2
-	stash.sealed = true
-	stash.position = Vector3(0.4, 0.9, -0.4)
-	add_child(stash)
-	if not shop_key.is_empty():
-		var card := KEY.duplicate() as ItemData
-		card.id = shop_key
-		card.display_name = "Schlüsselkarte"
-		var prop := LootProp.new()
-		prop.prompt_name = "Schlüsselkarte"
-		prop.item = card
-		prop.position = Vector3(-1.4, 0.9, -0.6)
-		add_child(prop)
-	var sell := SELL_PAD.new() as Node3D
-	sell.name = "SellPad"
-	sell.unique_name_in_owner = true
-	sell.position = Vector3(0.0, 0.9, 0.8)
-	add_child(sell)
-	sell.owner = self
-
-
-func _shell(size: Vector3, title: String) -> void:
-	_solid(Vector3(0.0, 0.05, 0.0), Vector3(size.x, 0.1, size.z), Color(0.15, 0.15, 0.16))
-	_solid(Vector3(0.0, size.y - 0.1, 0.0), Vector3(size.x, 0.12, size.z), Color(0.1, 0.1, 0.12))
-	var hx := size.x * 0.5 - 0.1
-	var hz := size.z * 0.5 - 0.1
-	_solid(Vector3(-hx, size.y * 0.5, 0.0), Vector3(0.16, size.y, size.z), Color(0.2, 0.16, 0.18))
-	_solid(Vector3(hx, size.y * 0.5, 0.0), Vector3(0.16, size.y, size.z), Color(0.2, 0.16, 0.18))
-	_solid(Vector3(0.0, size.y * 0.5, -hz), Vector3(size.x, size.y, 0.16), Color(0.2, 0.16, 0.18))
-	var sign := Label3D.new()
-	sign.text = title
-	sign.position = Vector3(0.0, size.y - 0.4, hz + 0.2)
-	sign.font_size = 56
-	sign.pixel_size = 0.012
-	sign.modulate = Color(1.0, 0.45, 0.15)
-	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	add_child(sign)
-
-
-func _canopy() -> void:
-	_solid(Vector3(0.0, 3.4, 4.5), Vector3(8.0, 0.12, 5.0), Color(0.85, 0.15, 0.2))
-	_solid(Vector3(-3.6, 1.7, 2.4), Vector3(0.2, 3.4, 0.2), Color(0.3, 0.3, 0.32))
-	_solid(Vector3(3.6, 1.7, 6.4), Vector3(0.2, 3.4, 0.2), Color(0.3, 0.3, 0.32))
-
-
-func _pump(at: Vector3) -> void:
-	_solid(at + Vector3(0.0, 0.7, 0.0), Vector3(0.5, 1.4, 0.35), Color(0.1, 0.35, 0.55))
+	var station := GAS_STATION.new() as Node3D
+	station.name = "Station"
+	station.set("shop_key", shop_key)
+	add_child(station)
 
 
 func _solid(at: Vector3, size: Vector3, color: Color) -> void:
@@ -337,16 +280,6 @@ func _sale(item: ItemData, price: int, at: Vector3) -> void:
 	counter.currency = CRED
 	counter.position = at
 	add_child(counter)
-
-
-func _machine(product: ItemData, price: int, at: Vector3) -> VendingMachine:
-	var machine := VendingMachine.new()
-	machine.product = product
-	machine.price = price
-	machine.currency = CRED
-	machine.position = at
-	add_child(machine)
-	return machine
 
 
 class SaleCounter extends StaticBody3D:

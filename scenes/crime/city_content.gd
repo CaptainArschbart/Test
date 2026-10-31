@@ -1,15 +1,15 @@
 class_name CityContent
 extends Node3D
 ## Vier Waffenläden und drei Tankstellen. Wohnungen sitzen im Wohnblock Res2, nicht auf freien Platten.
-## Waffenläden 8×7 m, Tankstellen inklusive Vordach etwa 8×9 m.
+## Waffenläden 8×7 m, Tankstellen 15×14 m (siehe gas_station.gd).
 const PLACES: Array[Dictionary] = [
 	{"kind": "guns", "at": Vector3(-110.0, 0.0, 60.0), "yaw": 90.0},
 	{"kind": "guns", "at": Vector3(70.0, 0.0, 64.0), "yaw": 0.0},
 	{"kind": "guns", "at": Vector3(-70.0, 0.0, -46.0), "yaw": 0.0},
 	{"kind": "guns", "at": Vector3(-16.0, 0.0, -42.0), "yaw": 0.0},
 	{"kind": "gas", "at": Vector3(-111.0, 0.0, 88.0), "yaw": 90.0},
-	{"kind": "gas", "at": Vector3(-48.0, 0.0, -71.0), "yaw": 0.0},
-	{"kind": "gas", "at": Vector3(90.0, 0.0, -101.0), "key": "apt_c", "yaw": 0.0},
+	{"kind": "gas", "at": Vector3(-41.0, 0.0, -68.0), "yaw": 180.0},
+	{"kind": "gas", "at": Vector3(86.0, 0.0, -101.0), "key": "apt_c", "yaw": 0.0},
 ]
 
 
@@ -27,6 +27,8 @@ func _ready() -> void:
 			var shop := StreetShop.new()
 			shop.kind = StreetShop.Kind.GAS if str(place["kind"]) == "gas" else StreetShop.Kind.GUNS
 			shop.shop_key = str(place.get("key", ""))
+			# Feste Namen: WorldSync und die Laden-RPCs gehen über den Pfad.
+			shop.name = "Shop%d" % get_child_count()
 			node = shop
 		node.position = at
 		node.rotation.y = yaw

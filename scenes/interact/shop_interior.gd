@@ -55,12 +55,15 @@ const CATALOG := {
 		"cabinet": [["cigarettes", 3], ["smartphone", 2], ["stim_pack", 1], ["neuro_chip", 1]]},
 	"sign_shop": {"shelf": [["data_shard", 2], ["soy_bar", 1], ["cigarettes", 2], ["smartphone", 1]],
 		"cabinet": [["smartphone", 2], ["neuro_chip", 2], ["gold_watch", 2]]},
+	"sign_gas": {"shelf": [["soy_bar", 3], ["noodles", 2], ["onigiri", 2], ["cigarettes", 2], ["painkillers", 1]],
+		"fridge": [["water_bottle", 3], ["energy_drink", 3], ["beer", 2], ["coffee", 2]],
+		"cabinet": [["cigarettes", 3], ["stim_pack", 1], ["smartphone", 1]]},
 	"default": {"shelf": [["soy_bar", 3], ["noodles", 2], ["onigiri", 1], ["painkillers", 1]],
 		"fridge": [["water_bottle", 3], ["energy_drink", 3], ["beer", 2], ["coffee", 1]],
 		"cabinet": [["cigarettes", 3], ["smartphone", 1], ["stim_pack", 1]]},
 }
 ## Aufschlag auf ItemData.value je Ladenschild.
-const MARKUP := {"sign_24h": 1.3, "sign_bar": 1.4, "sign_pharmacy": 1.2, "sign_shop": 1.1}
+const MARKUP := {"sign_gas": 1.4, "sign_24h": 1.3, "sign_bar": 1.4, "sign_pharmacy": 1.2, "sign_shop": 1.1}
 ## Hehler zahlt diesen Anteil vom Wert.
 const FENCE_RATE := 0.5
 
@@ -83,7 +86,7 @@ const ROB_TIME_FREE := 1.0
 const ROB_REACH := 1.9
 const CASH_MIN := 40
 const CASH_MAX := 160
-const ARMED_CHANCE := {"sign_bar": 0.6, "sign_24h": 0.45, "sign_shop": 0.7}
+const ARMED_CHANCE := {"sign_gas": 0.4, "sign_bar": 0.6, "sign_24h": 0.45, "sign_shop": 0.7}
 const ARMED_DEFAULT := 0.25
 ## Bewaffneter Verkäufer: Abstand zwischen Schüssen, Treffer-Wahrscheinlichkeit, Schaden.
 const SHOT_INTERVAL := 1.1
