@@ -1,24 +1,48 @@
 class_name CivilianCrime
 extends Node
-## Taschendiebstahl, Bedrohung, Fesseln und Ausrauben für einen Civilian.
+## Taschendiebstahl, bewaffneter Raub, Fesseln und Ausrauben für einen Civilian.
 ##
-## Friedlich, solange niemand zielt, schlägt oder einbricht. Taschendiebstahl nur
-## von hinten, im Hocken und bei wenig Lärm. Fesseln nur, wenn die Person schon
-## die Hände oben hat (isoliert und bedroht).
+## Friedlich, solange niemand zielt, schlägt oder einbricht.
+## Taschendiebstahl (leise): von hinten, im Hocken, langsam. E startet den Griff (PICK_TIME). Dabei
+## steigt der Verdacht, schneller bei Licht, Lärm und wenn die Person steht. Erreicht er 100 %,
+## merkt sie es: „Dieb!“, Flucht, Fahndung. Bleibt er darunter, keine Fahndung. Hocke verlassen,
+## zu schnell oder nicht mehr hinter ihr: abgebrochen, ohne Beute.
+## Bewaffneter Raub (laut): Waffe auf eine isolierte Person zielen, sie hebt die Hände, E fordert die
+## Tasche. Ziel halten (ROB_TIME), dann gibt sie alles her. Waffe runter, bevor sie fertig ist:
+## sie rennt weg. Lässt man sie nach dem Raub laufen, ruft sie die Polizei (eine Stufe mehr).
+## Gefesselt wird sie nicht mehr gemeldet. Fesseln wie bisher: Hände oben oder ahnungslos.
 
 const CUFFS := "handcuffs"
 const TIES := "zipties"
 const JEWELRY := preload("res://scenes/items/data/jewelry.tres")
+const PHONE := preload("res://scenes/items/data/smartphone.tres")
+const WATCH := preload("res://scenes/items/data/gold_watch.tres")
 const QUIET_NOISE := 0.35
 const QUIET_SPEED := 2.2
+const PICK_TIME := 1.4
+const PICK_REACH := 2.2
+const ROB_TIME := 1.6
 
 var held_up := false
 var restrained := false
 var pocket_cents := 0
 var robbed := false
+## Laufender Griff in die Tasche: 0–1, sonst -1.
+var pick_progress := -1.0
+## Verdacht beim Taschendiebstahl: ab 1 erwischt.
+var suspicion := 0.0
+## Laufende Übergabe beim bewaffneten Raub: 0–1, sonst -1.
+var rob_progress := -1.0
 var _threat_sent := false
 var _aim_tick := 0.0
 var _jewelry := false
+var _phone := false
+var _watch := false
+var _armed_robbed := false
+var _alert := 1.0
+var _thief: Player
+var _robber: Player
+var _rng := RandomNumberGenerator.new()
 
 var _body: Civilian
 
@@ -29,27 +53,43 @@ func _ready() -> void:
 		return
 	pocket_cents = 2 + (_body.net_seed % 17)
 	_jewelry = _body.net_seed % 3 == 0
+	_rng.seed = _body.net_seed + 7
+	_phone = _rng.randf() < 0.3
+	_watch = _rng.randf() < 0.1
 
 
 func prompt(player: Player) -> String:
 	if _body == null or _body.is_dead():
 		return ""
-	if restrained and not robbed:
+	if pick_progress >= 0.0:
+		return "Klauen … %d %%   Verdacht %d %%" % [int(pick_progress * 100.0), int(minf(suspicion, 1.0) * 100.0)]
+	if rob_progress >= 0.0:
+		return "Tasche her! … %d %%" % int(rob_progress * 100.0)
+	if restrained and not robbed and not _pocket_empty():
 		return "Ausrauben"
+	if held_up and not restrained and not _armed_robbed:
+		return "Ausrauben (bedroht)"
 	if held_up and not restrained and _holding_restraint(player):
 		return "Fesseln"
 	if not restrained and _holding_restraint(player) and _unaware(player):
 		return "Fesseln"
 	if _can_pickpocket(player):
-		return "Tasche durchsuchen"
+		return "Taschendiebstahl"
 	return ""
 
 
 func interact(player: Player) -> void:
 	if _body == null or _body.is_dead() or WorldSync.is_client():
 		return
-	if restrained and not robbed:
+	if pick_progress >= 0.0 or rob_progress >= 0.0:
+		return
+	if restrained and not robbed and not _pocket_empty():
 		_rob(player)
+		return
+	if held_up and not restrained and not _armed_robbed:
+		rob_progress = 0.0
+		_robber = player
+		_body.show_line("Okay, okay …")
 		return
 	if not restrained and _holding_restraint(player) and (held_up or _unaware(player)) and _consume_restraint(player):
 		restrained = true
@@ -57,7 +97,10 @@ func interact(player: Player) -> void:
 		player.item_user.show_message("Gefesselt.", Color(0.5, 0.9, 1.0))
 		return
 	if _can_pickpocket(player):
-		_pickpocket(player)
+		pick_progress = 0.0
+		suspicion = 0.0
+		_alert = _rng.randf_range(0.7, 1.3)
+		_thief = player
 
 
 func on_burglary() -> void:
@@ -73,17 +116,24 @@ func _physics_process(delta: float) -> void:
 		return
 	if restrained:
 		held_up = true
+		pick_progress = -1.0
+		rob_progress = -1.0
 		_body.hold_up()
 		return
+	if pick_progress >= 0.0:
+		_pick_tick(delta)
+	if rob_progress >= 0.0:
+		rob_progress = minf(rob_progress + delta / ROB_TIME, 1.0)
+		if rob_progress >= 1.0:
+			_hand_over()
 	_aim_tick -= delta
 	if _aim_tick > 0.0:
 		return
 	_aim_tick = 0.2
 	var player := _aimed_player()
 	if player == null:
-		if held_up and not restrained:
-			held_up = false
-			_threat_sent = false
+		if held_up:
+			_release()
 		return
 	if _isolated():
 		held_up = true
@@ -93,11 +143,77 @@ func _physics_process(delta: float) -> void:
 			_call_police(&"threat")
 			_body.show_line("Hände hoch …")
 	else:
+		if rob_progress >= 0.0:
+			_cancel_rob()
 		held_up = false
 		_body.panic(player.global_position)
 		if not _threat_sent:
 			_threat_sent = true
 			_call_police(&"threat")
+
+
+## Waffe runter: Raub abbrechen oder, nach dem Raub, die Polizei rufen. Danach weglaufen.
+func _release() -> void:
+	held_up = false
+	_threat_sent = false
+	if rob_progress >= 0.0:
+		_cancel_rob()
+	elif _armed_robbed:
+		_body.show_line("Polizei!")
+		_call_police(&"robbery")
+	else:
+		return
+	_body.panic(_body.global_position)
+
+
+func _cancel_rob() -> void:
+	rob_progress = -1.0
+	if _robber != null and is_instance_valid(_robber):
+		_robber.item_user.show_message("Raub abgebrochen.", Color(0.8, 0.8, 0.8))
+	_robber = null
+
+
+func _hand_over() -> void:
+	rob_progress = -1.0
+	_armed_robbed = true
+	var player := _robber
+	_robber = null
+	if player == null or not is_instance_valid(player):
+		return
+	var got := _empty_pocket(player)
+	if got == "":
+		_body.show_line("Ich hab nichts!")
+		player.item_user.show_message("Nichts zu holen.", Color(0.8, 0.8, 0.8))
+		return
+	_body.show_line("Nimm's, nimm's!")
+	player.item_user.show_message("Geraubt: " + got, Color(0.95, 0.85, 0.3))
+
+
+func _pick_tick(delta: float) -> void:
+	var player := _thief
+	if player == null or not is_instance_valid(player) or player.dead or not _pick_ok(player):
+		pick_progress = -1.0
+		_thief = null
+		if player != null and is_instance_valid(player):
+			player.item_user.show_message("Abgebrochen.", Color(0.8, 0.8, 0.8))
+		return
+	var light := player.stealth.visibility if player.stealth != null else 0.5
+	var noise := player.stealth.noise_level if player.stealth != null else 0.0
+	var rate := 0.15 + light * 0.75 + noise * 1.2
+	if _body.velocity.length() < 0.3:
+		rate *= 1.3
+	suspicion += rate * _alert * delta
+	pick_progress = minf(pick_progress + delta / PICK_TIME, 1.0)
+	if suspicion >= 1.0:
+		pick_progress = -1.0
+		_thief = null
+		player.item_user.show_message("Erwischt!", Color(1.0, 0.35, 0.3))
+		_caught(player, &"pickpocket")
+	elif pick_progress >= 1.0:
+		pick_progress = -1.0
+		_thief = null
+		var got := _empty_pocket(player)
+		player.item_user.show_message("Geklaut: " + got if got != "" else "Tasche leer.", Color(0.95, 0.85, 0.3))
 
 
 func _aimed_player() -> Player:
@@ -125,23 +241,32 @@ func _aimed_player() -> Player:
 
 
 func _can_pickpocket(player: Player) -> bool:
-	if player == null or held_up or restrained or robbed or pocket_cents <= 0:
+	if player == null or held_up or restrained or _pocket_empty():
 		return false
+	return _quiet(player) and _behind(player, 1.8)
+
+
+## Während des Griffs etwas mehr Abstand erlaubt, damit man einer gehenden Person folgen kann.
+func _pick_ok(player: Player) -> bool:
+	if held_up or restrained or _body.is_panicking():
+		return false
+	return _quiet(player) and _behind(player, PICK_REACH)
+
+
+func _quiet(player: Player) -> bool:
 	if not player.movement.crouching:
 		return false
 	if player.stealth != null and player.stealth.noise_level > QUIET_NOISE:
 		return false
-	if player.velocity.length() > QUIET_SPEED:
-		return false
-	return _behind(player)
+	return player.velocity.length() <= QUIET_SPEED
 
 
-func _behind(player: Player) -> bool:
+func _behind(player: Player, reach := 1.8) -> bool:
 	var forward := -_body.global_basis.z
 	forward.y = 0.0
 	var to_player := player.global_position - _body.global_position
 	to_player.y = 0.0
-	if forward.length() < 0.01 or to_player.length() < 0.2 or to_player.length() > 1.8:
+	if forward.length() < 0.01 or to_player.length() < 0.2 or to_player.length() > reach:
 		return false
 	return forward.normalized().dot(to_player.normalized()) < -0.35
 
@@ -164,25 +289,7 @@ func _isolated() -> bool:
 func _unaware(player: Player) -> bool:
 	if player == null or held_up or restrained or not _isolated():
 		return false
-	if not player.movement.crouching:
-		return false
-	if player.stealth != null and player.stealth.noise_level > QUIET_NOISE:
-		return false
-	if player.velocity.length() > QUIET_SPEED:
-		return false
-	return _behind(player)
-
-
-func _pickpocket(player: Player) -> void:
-	var seen := player.stealth != null and player.stealth.visibility > 0.72
-	var amount := pocket_cents
-	pocket_cents = 0
-	player.inventory.add_money(amount)
-	player.item_user.show_message("Geklaut: %d ¢" % amount, Color(0.95, 0.85, 0.3))
-	if seen:
-		_caught(player, &"pickpocket")
-	else:
-		WantedManager.report(&"pickpocket", _body.global_position, _body.get_instance_id())
+	return _quiet(player) and _behind(player)
 
 
 func _caught(player: Player, kind: StringName) -> void:
@@ -192,25 +299,40 @@ func _caught(player: Player, kind: StringName) -> void:
 
 
 func _rob(player: Player) -> void:
-	if pocket_cents <= 0 and not _jewelry:
-		robbed = true
+	robbed = true
+	var got := _empty_pocket(player)
+	if got == "":
 		player.item_user.show_message("Nichts mehr zu holen.", Color(0.8, 0.8, 0.8))
 		return
-	var amount := pocket_cents
-	pocket_cents = 0
-	robbed = true
-	if amount > 0:
-		player.inventory.add_money(amount)
-	var took_jewelry := false
-	if _jewelry:
-		var left := player.inventory.add_item(JEWELRY, 1)
-		took_jewelry = left == 0
-		if took_jewelry:
-			_jewelry = false
-	var text := "Durchsucht: %d ¢" % amount
-	if took_jewelry:
-		text += " und Schmuck"
-	player.item_user.show_message(text, Color(0.95, 0.85, 0.3))
+	player.item_user.show_message("Durchsucht: " + got, Color(0.95, 0.85, 0.3))
+
+
+func _pocket_empty() -> bool:
+	return pocket_cents <= 0 and not _jewelry and not _phone and not _watch
+
+
+## Gibt dem Spieler Bargeld und Wertsachen. Was nicht ins Inventar passt, bleibt in der Tasche.
+## Ergebnis: Text für die Meldung, leer, wenn nichts da war.
+func _empty_pocket(player: Player) -> String:
+	var parts: PackedStringArray = []
+	if pocket_cents > 0:
+		player.inventory.add_money(pocket_cents)
+		parts.append("%d ¢" % pocket_cents)
+		pocket_cents = 0
+	if _jewelry and _give(player, JEWELRY):
+		_jewelry = false
+		parts.append(JEWELRY.display_name)
+	if _phone and _give(player, PHONE):
+		_phone = false
+		parts.append(PHONE.display_name)
+	if _watch and _give(player, WATCH):
+		_watch = false
+		parts.append(WATCH.display_name)
+	return ", ".join(parts)
+
+
+func _give(player: Player, item: ItemData) -> bool:
+	return player.inventory.add_item(item, 1) == 0
 
 
 func _call_police(kind: StringName) -> void:
