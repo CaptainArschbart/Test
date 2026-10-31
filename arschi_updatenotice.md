@@ -16,3 +16,16 @@ Arbeitslog von Arschis Seite (Claude für Arschi). Neuer Eintrag ganz unten. `en
 - Nicht getestet: im Fenster mit Maus, wie gut man einer gehenden Person hockend folgen kann, Werte bei echten Lichtern in Sektor 7. Multiplayer: wie bisher rechnet nur der Host, ein Client kann Passanten nicht berauben.
 - Offen: Nahkampfwaffe als Drohung, Animation der Übergabe, Sync für Clients.
 - Git: Branch `claude/npc-raub` aus `origin/main` (e22f2f6), Draft-PR mit Basis `main`.
+
+### 2026-10-31 · Taschendiebstahl leichter, Person bleibt stehen · Claude (für Arschi) · Branch `claude/taschendieb-leichter`
+- Auftrag: Taschendiebstahl etwas leichter machen, und die Person soll nicht aus der Reichweite laufen.
+- `scenes/civilians/civilian.gd`: Während eines Griffs (`crime.is_being_picked()`) bleibt eine gehende, wartende oder stehende Person stehen. Weg und Blickrichtung bleiben, danach geht sie weiter. Bei Panik, Ducken oder Umfallen greift das nicht.
+- `scenes/crime/civilian_crime.gd`:
+  - Neu `is_being_picked()`.
+  - Griff 1,2 s statt 1,4 s.
+  - Start-Reichweite 2,0 m statt 1,8 m. Beim Griff 2,6 m statt 2,2 m, und der Winkel hinter der Person ist weiter (Skalarprodukt < -0,1 statt < -0,35).
+  - Verdacht pro Sekunde `0,08 + Sichtbarkeit × 0,5 + Lärm × 0,9` statt `0,15 + × 0,75 + × 1,2`. Der Aufschlag ×1,3 für stehende Personen fällt weg, weil jetzt jede Person beim Griff steht. Wachsamkeit 0,6–1,1 statt 0,7–1,3.
+- `tools/tests/test_npc_robbery.gd`: neuer Fall mit einer gehenden Person.
+- Getestet (Godot 4.7.2 stable, headless): `test_npc_robbery.gd` CHECKS 34 FAILS 0. Die gehende Person bewegt sich während des Griffs 0,03 m (Abbremsen), danach geht sie weiter. Verdacht bei unbemerktem Griff im Dunkeln 0,14 (vorher 0,45). `test_apartments.gd` CHECKS 44 FAILS 0.
+- Nicht getestet: Gefühl im Fenster mit Maus, Werte bei echten Lichtern in Sektor 7.
+- Git: Branch `claude/taschendieb-leichter` aus `origin/main` (7d5689d), PR mit Basis `main`.

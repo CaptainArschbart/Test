@@ -4,7 +4,8 @@ extends Node
 ##
 ## Friedlich, solange niemand zielt, schlägt oder einbricht.
 ## Taschendiebstahl (leise): von hinten, im Hocken, langsam. E startet den Griff (PICK_TIME). Dabei
-## steigt der Verdacht, schneller bei Licht, Lärm und wenn die Person steht. Erreicht er 100 %,
+## steigt der Verdacht, schneller bei Licht und Lärm. Die Person bleibt solange stehen (Civilian fragt
+## is_being_picked), läuft also nicht aus der Reichweite. Erreicht der Verdacht 100 %,
 ## merkt sie es: „Dieb!“, Flucht, Fahndung. Bleibt er darunter, keine Fahndung. Hocke verlassen,
 ## zu schnell oder nicht mehr hinter ihr: abgebrochen, ohne Beute.
 ## Bewaffneter Raub (laut): Waffe auf eine isolierte Person zielen, sie hebt die Hände, E fordert die
@@ -19,8 +20,8 @@ const PHONE := preload("res://scenes/items/data/smartphone.tres")
 const WATCH := preload("res://scenes/items/data/gold_watch.tres")
 const QUIET_NOISE := 0.35
 const QUIET_SPEED := 2.2
-const PICK_TIME := 1.4
-const PICK_REACH := 2.2
+const PICK_TIME := 1.2
+const PICK_REACH := 2.6
 const ROB_TIME := 1.6
 
 var held_up := false
@@ -99,8 +100,13 @@ func interact(player: Player) -> void:
 	if _can_pickpocket(player):
 		pick_progress = 0.0
 		suspicion = 0.0
-		_alert = _rng.randf_range(0.7, 1.3)
+		_alert = _rng.randf_range(0.6, 1.1)
 		_thief = player
+
+
+## Läuft gerade ein Griff in die Tasche? Dann bleibt die Person stehen.
+func is_being_picked() -> bool:
+	return pick_progress >= 0.0
 
 
 func on_burglary() -> void:
@@ -199,9 +205,7 @@ func _pick_tick(delta: float) -> void:
 		return
 	var light := player.stealth.visibility if player.stealth != null else 0.5
 	var noise := player.stealth.noise_level if player.stealth != null else 0.0
-	var rate := 0.15 + light * 0.75 + noise * 1.2
-	if _body.velocity.length() < 0.3:
-		rate *= 1.3
+	var rate := 0.08 + light * 0.5 + noise * 0.9
 	suspicion += rate * _alert * delta
 	pick_progress = minf(pick_progress + delta / PICK_TIME, 1.0)
 	if suspicion >= 1.0:
@@ -243,14 +247,14 @@ func _aimed_player() -> Player:
 func _can_pickpocket(player: Player) -> bool:
 	if player == null or held_up or restrained or _pocket_empty():
 		return false
-	return _quiet(player) and _behind(player, 1.8)
+	return _quiet(player) and _behind(player, 2.0)
 
 
 ## Während des Griffs etwas mehr Abstand erlaubt, damit man einer gehenden Person folgen kann.
 func _pick_ok(player: Player) -> bool:
 	if held_up or restrained or _body.is_panicking():
 		return false
-	return _quiet(player) and _behind(player, PICK_REACH)
+	return _quiet(player) and _behind(player, PICK_REACH, -0.1)
 
 
 func _quiet(player: Player) -> bool:
@@ -261,14 +265,14 @@ func _quiet(player: Player) -> bool:
 	return player.velocity.length() <= QUIET_SPEED
 
 
-func _behind(player: Player, reach := 1.8) -> bool:
+func _behind(player: Player, reach := 1.8, cone := -0.35) -> bool:
 	var forward := -_body.global_basis.z
 	forward.y = 0.0
 	var to_player := player.global_position - _body.global_position
 	to_player.y = 0.0
 	if forward.length() < 0.01 or to_player.length() < 0.2 or to_player.length() > reach:
 		return false
-	return forward.normalized().dot(to_player.normalized()) < -0.35
+	return forward.normalized().dot(to_player.normalized()) < cone
 
 
 func _isolated() -> bool:
