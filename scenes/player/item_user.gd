@@ -249,7 +249,7 @@ func apply_consumable(item: ConsumableData, slot: int) -> bool:
 		return false
 	_player.inventory.remove_at(slot)
 	if item.heal > 0.0:
-		stats.heal(item.heal)
+		stats.heal(item.heal * _player.skill_mult(&"heal_mult"))
 	if item.stamina > 0.0:
 		stats.add_stamina(item.stamina)
 	if item.food > 0.0:
@@ -328,7 +328,7 @@ func _release(item: GrenadeData) -> void:
 	grenade.thrower = _player
 	get_tree().current_scene.add_child(grenade)
 	grenade.global_position = camera.global_position + forward * 0.5 + Vector3.DOWN * 0.1
-	grenade.linear_velocity = forward * item.throw_speed + Vector3.UP * 3.0 \
+	grenade.linear_velocity = forward * item.throw_speed * _player.skill_mult(&"throw_mult") + Vector3.UP * 3.0 \
 		+ Vector3(_player.velocity.x, 0.0, _player.velocity.z)
 	grenade.add_collision_exception_with(_player)
 	WorldSync.announce_grenade(grenade)
@@ -382,7 +382,7 @@ func _strike(item: MeleeData) -> bool:
 		if item.breaks_locks and collider != null and collider.has_method("break_open"):
 			collider.call("break_open", _player)
 		elif collider != null and collider.has_method("take_hit"):
-			collider.take_hit(item.damage, hit.position, hit.normal)
+			collider.take_hit(item.damage * _player.skill_mult(&"melee_mult"), hit.position, hit.normal)
 	return true
 
 

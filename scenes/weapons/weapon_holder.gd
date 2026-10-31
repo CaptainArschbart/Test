@@ -40,6 +40,8 @@ var _flash_light: Light3D
 var _ammo := {}
 var _cooldown := 0.0
 var _reload_left := 0.0
+## Volle Nachladezeit dieses Nachladens (mit Skill kürzer als reload_time).
+var _reload_total := 0.0
 var _flash_left := 0.0
 var _recoil := 0.0
 ## Zusätzliche Streuung durch Dauerfeuer (Grad).
@@ -180,7 +182,9 @@ func try_fire() -> bool:
 func start_reload() -> void:
 	if _weapon == null or _reload_left > 0.0 or get_ammo() >= _weapon.magazine_size:
 		return
-	_reload_left = _weapon.reload_time
+	# Skill Schnellladen (reload_mult) verkürzt die Zeit.
+	_reload_total = _weapon.reload_time * _player.skill_mult(&"reload_mult")
+	_reload_left = _reload_total
 	_play(_weapon.reload_sound)
 	_update_hud()
 
@@ -197,7 +201,9 @@ func get_spread_degrees() -> float:
 	if _weapon == null:
 		return 0.0
 	var base := lerpf(_weapon.hip_spread_degrees, _weapon.aim_spread_degrees, _aim)
-	return base + _bloom * lerpf(1.0, _weapon.aim_bloom_factor, _aim)
+	var spread := base + _bloom * lerpf(1.0, _weapon.aim_bloom_factor, _aim)
+	# Skill Ruhige Hand (spread_mult).
+	return spread * (_player.skill_mult(&"spread_mult") if _player != null else 1.0)
 
 
 func refill_magazine() -> int:
@@ -241,7 +247,7 @@ func is_reloading() -> bool:
 func get_reload_progress() -> float:
 	if _reload_left <= 0.0 or _weapon == null:
 		return -1.0
-	return clampf(1.0 - _reload_left / maxf(_weapon.reload_time, 0.001), 0.0, 1.0)
+	return clampf(1.0 - _reload_left / maxf(_reload_total, 0.001), 0.0, 1.0)
 
 
 func _finish_reload() -> void:
