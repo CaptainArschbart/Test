@@ -545,3 +545,36 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: Hook in Cursor im echten Commit. Kein Godot-Lauf, kein Spielcode geändert.
 - Git: auf `main`, dieser Eintrag im selben Commit, danach `git push origin main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/enscapez_updatenotice.md`
+
+### 2026-10-31 · Tankstellen in Sektor 7 ausgebaut · Claude (für EnScapeZ) · enscapez/tankstellen-ausbau
+- Auftrag: Die Tankstellen in Sektor 7 weiter ausarbeiten.
+- Neu:
+  - `scenes/crime/gas_station.gd`: Anlage 15×14 m. Laden 10×6 m mit Glasfront, Theke, Vitrine, Regalgängen, Kühlschränken, `ShopInterior` mit Verkäufer, Kamera, Tagestresor und `%SellPad` auf der Theke. Vordach, zwei Inseln, vier Zapfsäulen, geparktes Auto, Automaten, Geldautomat, Luftstation, Schilder, Preisstele.
+  - `scenes/crime/gas_pump.gd`: Zapfsäule mit 45 Leben. Zerschossen explodiert sie (95 Schaden, 6 m Radius, 60 m Lärm), zündet Säulen bis 6 m, brennt 30 s, steht nach 240 s wieder. Host rechnet, Zustand läuft über `WorldSync`.
+  - `tools/tests/test_gas_stations.gd`.
+- Geändert:
+  - `scenes/crime/street_shop.gd`: `_build_gas` legt nur noch die neue Anlage als Kind `Station` an, alte Hülle, Vordach, Säulen und Automaten entfernt.
+  - `scenes/crime/city_content.gd`: Tankstellen stehen jetzt bei `(-41, 0, -68)` mit Yaw 180 zur Straße (vorher `(-48, -71)`, Yaw 0) und `(86, 0, -101)` (vorher `(90, -101)`, Karte `apt_c` bleibt dort), `(-111, 88)` unverändert. Läden heißen `Shop%d`, damit die Netzpfade stabil sind. Die Angabe `(90, -101)` in älteren Einträgen ist damit überholt.
+  - `scenes/interact/shop_interior.gd`: Eintrag `sign_gas` im Katalog, Aufschlag 1,4, Waffenchance 0,4.
+- Gelöscht: nichts im Repo. Eigene Wegwerfskripte `_scan_gas.gd` und `_shot_gas.gd` nie committet.
+- Entscheidungen:
+  - Vorher hatte die Tanke nur eine Hülle mit schwebender Kasse, Karte und Pult. Darum neu statt geflickt, mit dem vorhandenen `ShopInterior`.
+  - Theke links, weil der Verkäufer fest nach lokal +X blickt und die Tür bei `bounds.end.z` liegt.
+  - Eigene Kettenprüfung über `ignite()`: Die Vordachsäule blockierte den Sichtstrahl der Granate, die Nachbarsäule ging sonst nicht mit hoch.
+  - Explosion nutzt `ThrownGrenade` mit eigenen Werten statt eigener Schadenslogik.
+  - Kühlschrank und Vordach überstrahlten, daher eigene schwächere Materialien. Preise lagen im Pfeiler, daher zwei feste Label vor den Flächen.
+- Getestet (Godot 4.7.2 stable, headless, Stand Commit 31a3136):
+  - `test_gas_stations` CHECKS 59 FAILS 0.
+  - `test_gun_shops` CHECKS 29 FAILS 0, `test_shop` CHECKS 43 FAILS 0, `test_apartments` CHECKS 44 FAILS 0, `test_money` CHECKS 25 FAILS 0, `test_bank` CHECKS 41 FAILS 0, `test_consumables` CHECKS 45 FAILS 0, `test_enemy_xp` CHECKS 29 FAILS 0, `test_sector7_enemies` CHECKS 15 FAILS 0, `test_audio` CHECKS 18 FAILS 0.
+  - `test_mp_sync` (Karte slum) Host CHECKS 9 FAILS 0, Client CHECKS 10 FAILS 0.
+  - `test_content_update` CHECKS 46 FAILS 1, „Einbruch +1 Stern (1 -> 1)“. Gleicher Fehler ohne diese Änderung auf `e22f2f6`. Beide Testtüren hängen unter `root`, teilen vermutlich das Token von `WantedManager.report`.
+  - `test_sector7_city` CHECKS 44 FAILS 1 auf dem Branch, in zwei Läufen mit wechselnder Meldung (Fußgänger an der Kreuzung, Fußgänger weggelaufen). Auf `e22f2f6` ebenfalls CHECKS 44 FAILS 1 (Fußgänger an der Kreuzung).
+  - `test_shop_net` Host CHECKS 8 FAILS 3 (Regal, Verkäufer und Kasse von Laden B), Client bricht mit `SCRIPT ERROR` ab (freigegebene Instanz). **Ursache nicht geklärt.** Der Test wählt Läden nach Pfad-Sortierung, die Umbenennung auf `Shop%d` und die neuen Läden können das beeinflussen. Vergleich mit `e22f2f6` abgebrochen, ein Fehler durch diese Änderung ist nicht ausgeschlossen.
+  - `test_mp_world` Host CHECKS 12 FAILS 1 („Gegner ist tot“), Client CHECKS 14 FAILS 0. Ursache nicht geklärt, kein Vergleich mit der Basis.
+  - Der erste Lauf der drei MP-Tests ohne Host-Partner war mein Bedienfehler und zählt nicht.
+- Nicht getestet:
+  - Multiplayer an Tankstellen, Säulen und Laden: EnScapeZ hat den Multiplayer für diese Aufgabe ausgeklammert.
+  - Echtes Spielen im Fenster: Tests nur headless. Screenshots von Tag, Nacht, Innenraum, Explosion und Stele entstanden, bevor die Regel „keine Screenshot-Tests“ kam, und vor der letzten Senkung der Vordach-Helligkeit.
+  - Fahndung durch eine Säulenexplosion: nicht angebunden.
+- Git: Branch `enscapez/tankstellen-ausbau`, PR #59. Auf Anweisung von EnScapeZ gemerged, obwohl `test_shop_net` und `test_mp_world` rot und ungeklärt sind. `arschi_updatenotice.md` fehlte zu Arbeitsbeginn auf `origin/main`, kam während der Arbeit dazu (NPC-Raub) und wurde danach gelesen, keine Überschneidung. `origin/main` ist inzwischen weiter (#56, #57), GitHub meldet den PR als konfliktfrei. `origin/main` per Merge-Commit in den Branch geholt statt Rebase, weil der Branch schon gepusht war und Force-Push verboten ist. Danach `test_gas_stations` CHECKS 59 FAILS 0, die übrigen Prüfskripte liefen nur auf dem Stand davor. Lose `*.uid` von Fremden und `_test_appdata/` nicht mitcommittet.
+- Offen: `test_shop_net` und `test_mp_world` gegen die Basis prüfen. `test_content_update` reparieren.
