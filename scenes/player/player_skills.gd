@@ -122,8 +122,10 @@ func _ready() -> void:
 	if _player != null:
 		set_multiplayer_authority(_player.get_multiplayer_authority(), false)
 	_rebuild_effects()
+	# Kurz warten: Die in der Map platzierte Figur entfernt NetworkManager erst beim Map-Start, sie
+	# soll nicht beim Host nach einem Knoten fragen, den es dort nicht gibt.
 	if _is_puppet():
-		_net_request.call_deferred()
+		get_tree().create_timer(0.5).timeout.connect(_net_request)
 
 
 func _is_puppet() -> bool:

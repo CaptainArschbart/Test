@@ -185,11 +185,12 @@ func _ready() -> void:
 	xp = PlayerXpScript.new()
 	xp.name = "PlayerXp"
 	add_child(xp)
+	# Vor der Leiste: Das geladene Profil soll dort nicht als XP-Gewinn aufblinken.
+	_setup_skills()
 	var xp_hud := XpHudScript.new()
 	xp_hud.name = "XpHud"
 	xp_hud.xp = xp
 	add_child(xp_hud)
-	_setup_skills()
 	_create_noclip_label()
 	death_screen = DeathScreenScript.new()
 	add_child(death_screen)
