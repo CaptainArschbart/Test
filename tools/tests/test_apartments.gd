@@ -66,12 +66,13 @@ func _one(script: Script, residents: int) -> void:
 	home.set("key_id", "apt_test_%d" % residents)
 	root.add_child(home)
 	await process_frame
-	for node_name: String in ["Door", "Jewelry", "Jewels", "Cash", "Television", "Artwork", "Computer", "Phone", "Sofa", "Bed", "Kitchen"]:
+	for node_name: String in ["Door", "Safe", "Jewelry", "Jewels", "Cash", "Television", "Artwork", "Computer", "Phone", "Sofa", "Bed", "Kitchen", "Toilet", "Shower", "Wardrobe"]:
 		_check(home.get_node_or_null(NodePath(node_name)) != null, "Wohnung hat %s" % node_name)
 	var door := home.get_node(^"Door")
 	_check(bool(door.get("locked")), "Tür startet zu")
 	var jewels := home.get_node(^"Jewels")
 	_check(bool(jewels.get("sealed")), "Juwelen sind verschlossen")
+	_check(bool(home.get_node(^"Safe").get("sealed")), "Tresor ist verschlossen")
 	var found := 0
 	for child in home.get_children():
 		if str(child.name).begins_with("Resident"):
@@ -91,7 +92,7 @@ func _break_in(script: Script) -> void:
 	wanted.call("set_stars", 0)
 	var door: Node = home.get_node(^"Door")
 	door.call("break_open", null)
-	_check(not bool(door.get("locked")), "Eddy öffnet die Tür")
+	_check(not bool(door.get("locked")), "Brechstange öffnet die Tür")
 	var listeners := 0
 	for node in get_nodes_in_group(&"noise_listener"):
 		listeners += 1
@@ -114,6 +115,7 @@ func _house() -> void:
 		keys.append(str(door.get("key_id")))
 		_check(bool(door.get("locked")), "Tür %s zu" % door.get("key_id"))
 	_check(keys.has("apt_c") and keys.has("apt_1"), "Schlüssel apt_1 und apt_c")
+	_check(house.find_children("Safe", "", true, false).size() == 4, "Jede Wohnung hat einen Tresor")
 	house.queue_free()
 
 

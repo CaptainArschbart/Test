@@ -14,6 +14,12 @@ var _mesh: MeshInstance3D
 func _ready() -> void:
 	collision_layer = 1
 	collision_mask = 1
+	_build_look()
+
+
+## Kollision und Aussehen. Der Klotz ist nur Ersatz oder Schatulle: Mit Modell bleibt er bei
+## offener Beute weg, sonst verdeckt er das Modell.
+func _build_look() -> void:
 	var shape := CollisionShape3D.new()
 	var box := BoxShape3D.new()
 	box.size = Vector3(0.6, 0.5, 0.4)
@@ -34,9 +40,10 @@ func _ready() -> void:
 	add_child(_mesh)
 	if item != null and ConsumableModel.has_model(item.model):
 		var model := ConsumableModel.build(item.model, item.color, false)
-		model.position = Vector3(0.0, 0.35, 0.0)
+		model.position = Vector3(0.0, 0.55 if sealed else 0.14, 0.0)
 		model.scale = Vector3.ONE * ConsumableModel.pickup_scale(item.model)
 		add_child(model)
+		_mesh.visible = sealed
 
 
 func get_interact_text(_player: Player) -> String:
@@ -62,6 +69,8 @@ func break_open(player: Node) -> void:
 			_give(player as Player)
 		return
 	sealed = false
+	if item != null and ConsumableModel.has_model(item.model) and _mesh != null:
+		_mesh.visible = false
 	var body := player as Node3D
 	var at := global_position if body == null else body.global_position
 	NoiseManager.emit_noise(at, 12.0, player, StealthNoise.BURGLARY)
@@ -80,7 +89,11 @@ func _give(player: Player) -> void:
 			player.item_user.show_message("Inventar voll", Color(1.0, 0.2, 0.35))
 			return
 	taken = true
+	_after_take()
+	player.item_user.show_message("%s eingesteckt" % prompt_name, Color(0.4, 1.0, 0.7))
+
+
+func _after_take() -> void:
 	visible = false
 	collision_layer = 0
 	collision_mask = 0
-	player.item_user.show_message("%s eingesteckt" % prompt_name, Color(0.4, 1.0, 0.7))
