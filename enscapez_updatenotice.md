@@ -595,5 +595,6 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Entscheidungen: `Res2` behält die Schlüssel ohne Präfix, die Karte `apt_c` an der Tankstelle passt weiter. Die anderen Häuser haben Präfixe wie `res4_`. Taschendiebstahl gibt noch keine Schlüssel, das kommt laut Auftrag später und soll `ApartmentBlock.key_item` nutzen. Der Tagestresor der Tankstelle bleibt unverändert.
 - Getestet (Godot 4.7.2 stable, headless, isoliertes APPDATA): `test_apartments_walk` CHECKS 96 FAILS 0, `test_content_update` CHECKS 47 FAILS 0, `test_gas_stations` 59/0, `test_gun_shops` 29/0, `test_shop` 43/0, `test_money` 25/0, `test_bank` 41/0, `test_consumables` 45/0, `test_enemy_xp` 29/0, `test_audio` 18/0, `test_player_melee` 42/0, `test_weapons_smg_grenade` 47/0, `test_sector7_enemies` 15/0, `test_sector7_city` 44/0. Nach dem Rebase auf `origin/main` erneut: `test_apartments` 55/0, `test_npc_robbery` 34/0. Kein `SCRIPT ERROR`.
 - Nicht getestet: Aussehen im Fenster und Bildrate mit den 32 Wohnungen, keine Screenshots. Multiplayer-Tests bewusst nicht gelaufen.
-- Git: Branch `enscapez/wohnungen-sektor7` gepusht. `gh` war nicht angemeldet, Draft-PR und Merge stehen noch aus.
-- Offen: PR anlegen und mergen, Schlüssel als Taschendiebstahl-Beute.
+  - Nach dem Merge von PR 60 in den Branch und `--import`: `test_apartments` 55/0, `test_npc_robbery` 39/0. Ohne `--import` findet Godot die neue Klasse `PickpocketBar` nicht.
+- Git: Branch `enscapez/wohnungen-sektor7` gepusht, PR offen. Der Merge auf `main` steht noch aus und braucht die Freigabe von EnScapeZ.
+- Offen: PR mergen, Schlüssel als Taschendiebstahl-Beute.
