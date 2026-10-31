@@ -36,6 +36,7 @@ var _cooldown := 0.0
 var _swing := 0.0
 var _held: Node3D
 var _prompt: Label
+var _pick_bar: PickpocketBar
 var _message: Label
 var _boost_label: Label
 var _message_tween: Tween
@@ -101,6 +102,10 @@ func _physics_process(_delta: float) -> void:
 	_prompt.visible = text != ""
 	if _prompt.visible:
 		_prompt.text = "[%s] %s" % [_action_key("interact"), text]
+	var pick := CivilianCrime.picked_by(_player)
+	_pick_bar.visible = pick != null
+	if pick != null:
+		_pick_bar.set_values(pick.pick_progress, pick.suspicion)
 
 
 func _process(delta: float) -> void:
@@ -498,6 +503,19 @@ func _create_hud() -> void:
 	_boost_label = _make_label(layer, -150.0, 18, Color(1.0, 0.55, 0.1))
 	_boost_label.visible = false
 	_prompt.visible = false
+	# Taschendiebstahl: Griff gegen Verdacht, unter der Meldungszeile.
+	_pick_bar = PickpocketBar.new()
+	_pick_bar.name = "PickpocketBar"
+	_pick_bar.anchor_left = 0.5
+	_pick_bar.anchor_right = 0.5
+	_pick_bar.anchor_top = 0.5
+	_pick_bar.anchor_bottom = 0.5
+	_pick_bar.offset_left = -240.0
+	_pick_bar.offset_right = 240.0
+	_pick_bar.offset_top = 104.0
+	_pick_bar.offset_bottom = 128.0
+	_pick_bar.visible = false
+	layer.add_child(_pick_bar)
 	# Granaten-Anzeige unten rechts, an der Stelle der Munitionsanzeige der Waffen.
 	_grenade_label = Label.new()
 	_grenade_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
