@@ -7,6 +7,8 @@ signal opened(forced: bool)
 
 @export var key_id := "apt_key"
 @export var locked := true
+## Wo das Türblatt offen steht (lokal). Wohnungstüren gehen nach innen auf.
+@export var open_offset := Vector3(0.45, 1.1, 0.35)
 var forced_open := false
 
 var _panel: MeshInstance3D
@@ -41,7 +43,9 @@ func get_interact_text(player: Player) -> String:
 	if not locked:
 		return ""
 	if _player_has_key(player):
-		return "Aufschließen (%s)" % key_id
+		return "Aufschließen"
+	if _holds_breaker(player):
+		return "Verschlossen (Linksklick bricht auf)"
 	return "Verschlossen"
 
 
@@ -75,8 +79,15 @@ func _unlock(forced: bool) -> void:
 	collision_mask = 0
 	if _panel != null:
 		_panel.rotation.y = deg_to_rad(80.0)
-		_panel.position = Vector3(0.45, 1.1, 0.35)
+		_panel.position = open_offset
 	opened.emit(forced)
+
+
+func _holds_breaker(player: Player) -> bool:
+	if player == null or player.inventory == null:
+		return false
+	var item := player.inventory.get_selected_item() as MeleeData
+	return item != null and item.breaks_locks
 
 
 func _player_has_key(player: Player) -> bool:

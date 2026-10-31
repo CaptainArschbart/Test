@@ -100,10 +100,16 @@ enum Side { NONE, LEFT, RIGHT }
 	set(v):
 		open_right = v
 		queue_rebuild()
-## Erdgeschoss hohl, zwei Stockwerke mit je zwei Wohnungen, Flur und Treppe.
+## Erdgeschoss hohl, zwei Stockwerke mit je zwei Wohnungen, Flur und Treppe. Braucht mindestens
+## 3 Stockwerke, 11 m Breite und 9 m Tiefe.
 @export var walk_in_apartments := false:
 	set(v):
 		walk_in_apartments = v
+		queue_rebuild()
+## Präfix der Wohnungsschlüssel, je Haus ein eigener.
+@export var apartment_prefix := "":
+	set(v):
+		apartment_prefix = v
 		queue_rebuild()
 
 ## Abstand der Decals vor der Wand. Jede Art hat einen eigenen Abstand, damit überlappende Decals
@@ -235,6 +241,7 @@ func _spawn_apartment_house() -> void:
 	house.set("building_width", _w)
 	house.set("building_depth", _d)
 	house.set("floor_height", floor_height)
+	house.set("key_prefix", apartment_prefix)
 	add_gen(house)
 
 
@@ -245,6 +252,15 @@ func _plinth(b: SlumBuilder) -> void:
 
 func _ledges(b: SlumBuilder, from_floor: int) -> void:
 	for f: int in range(from_floor, floors):
+		if walk_in_apartments:
+			# Nur außen herum, eine durchgehende Platte läge im Treppenhaus.
+			var y := f * floor_height
+			var out := 0.12
+			b.box(Vector3(0, y, _d * 0.5 + out * 0.5 - 0.1), Vector3(_w + out * 2.0, 0.16, out + 0.2), _trim_mat, false)
+			b.box(Vector3(0, y, -_d * 0.5 - out * 0.5 + 0.1), Vector3(_w + out * 2.0, 0.16, out + 0.2), _trim_mat, false)
+			b.box(Vector3(_w * 0.5 + out * 0.5 - 0.1, y, 0), Vector3(out + 0.2, 0.16, _d), _trim_mat, false)
+			b.box(Vector3(-_w * 0.5 - out * 0.5 + 0.1, y, 0), Vector3(out + 0.2, 0.16, _d), _trim_mat, false)
+			continue
 		b.box(Vector3(0, f * floor_height, 0), Vector3(_w + 0.24, 0.16, _d + 0.24), _trim_mat, false)
 
 

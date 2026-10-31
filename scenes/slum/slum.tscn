@@ -856,6 +856,8 @@ side_sign = "sign_hotel"
 front_sign = "sign_vacancy"
 lit_ratio = 0.5
 seed_value = 9739
+walk_in_apartments = true
+apartment_prefix = "res4_"
 
 [node name="Shop3" type="Node3D" parent="NorthEast"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 40.5, 0.0, -12.5)
@@ -900,6 +902,8 @@ ground_wall = "concrete_dark"
 stair_side = 2
 balcony_chance = 0.4
 seed_value = 1127
+walk_in_apartments = true
+apartment_prefix = "res6_"
 
 [node name="Res7" type="Node3D" parent="NorthEast"]
 transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 60.0, 0.0, -55.0)
@@ -1581,6 +1585,8 @@ wall = "plaster"
 front_sign = "sign_hotel2"
 lit_ratio = 0.45
 seed_value = 8573
+walk_in_apartments = true
+apartment_prefix = "res9_"
 
 [node name="Shop6" type="Node3D" parent="SouthWest"]
 transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, -59.0, 0.0, 12.5)
@@ -1633,6 +1639,8 @@ wall = "concrete_dark"
 side_sign = "sign_hotel"
 lit_ratio = 0.5
 seed_value = 2247
+walk_in_apartments = true
+apartment_prefix = "res12_"
 
 [node name="Shop8" type="Node3D" parent="SouthWest"]
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -12.5, 0.0, 69.5)
@@ -2193,6 +2201,8 @@ wall = "brick"
 stair_side = 2
 number = "07"
 seed_value = 6099
+walk_in_apartments = true
+apartment_prefix = "res14_"
 
 [node name="Shop11" type="Node3D" parent="SouthEast"]
 transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 12.5, 0.0, 67.5)
@@ -2225,6 +2235,8 @@ floors = 4
 wall = "concrete_green"
 ground_wall = "brick"
 seed_value = 6393
+walk_in_apartments = true
+apartment_prefix = "res15_"
 
 [node name="Shop13" type="Node3D" parent="SouthEast"]
 transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 56.0, 0.0, 12.5)
@@ -2257,6 +2269,8 @@ ground_wall = "brick_dark"
 front_sign = "sign_bar"
 stair_side = 2
 seed_value = 5910
+walk_in_apartments = true
+apartment_prefix = "res17_"
 
 [node name="Shop14" type="Node3D" parent="SouthEast"]
 transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 44.0, 0.0, 59.0)
