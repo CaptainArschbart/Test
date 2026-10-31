@@ -576,5 +576,5 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
   - Multiplayer an Tankstellen, Säulen und Laden: EnScapeZ hat den Multiplayer für diese Aufgabe ausgeklammert.
   - Echtes Spielen im Fenster: Tests nur headless. Screenshots von Tag, Nacht, Innenraum, Explosion und Stele entstanden, bevor die Regel „keine Screenshot-Tests“ kam, und vor der letzten Senkung der Vordach-Helligkeit.
   - Fahndung durch eine Säulenexplosion: nicht angebunden.
-- Git: Branch `enscapez/tankstellen-ausbau`, PR-Nummer folgt nach dem Anlegen, nicht gemerged. `arschi_updatenotice.md` gibt es auf `origin/main` nicht, konnte nicht gelesen werden. Lose `*.uid` von Fremden und `_test_appdata/` nicht mitcommittet.
+- Git: Branch `enscapez/tankstellen-ausbau`, Draft-PR #59 mit Label `in-arbeit`, nicht gemerged, weil `test_shop_net` und `test_mp_world` rot und ungeklärt sind. `arschi_updatenotice.md` fehlte zu Arbeitsbeginn auf `origin/main`, kam während der Arbeit dazu (NPC-Raub) und wurde danach gelesen, keine Überschneidung. `origin/main` ist inzwischen weiter (#56, #57), GitHub meldet den PR als konfliktfrei. Die Prüfskripte liefen auf dem Stand ohne diese beiden Commits. Lose `*.uid` von Fremden und `_test_appdata/` nicht mitcommittet.
 - Offen: `test_shop_net` und `test_mp_world` gegen die Basis prüfen. `test_content_update` reparieren.
