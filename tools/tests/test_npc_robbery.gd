@@ -79,6 +79,11 @@ func _prompt(civ: Node) -> String:
 	return str(civ.call("get_interact_text", _player))
 
 
+## Doppel-Slider im HUD des Spielers (PickpocketBar).
+func _pick_bar() -> Control:
+	return _player.get("item_user").get("_pick_bar") as Control
+
+
 func _run() -> void:
 	_root = Node3D.new()
 	_root.name = "RobberyArena"
@@ -120,8 +125,19 @@ func _pickpocket_ok() -> void:
 	civ.call("interact", _player)
 	await _frames(20)
 	_check(_prompt(civ).begins_with("Klauen"), "Griff läuft, Anzeige: %s" % _prompt(civ))
+	var bar := _pick_bar()
+	_check(bar != null and bar.visible, "Slider sichtbar während des Griffs")
+	if bar != null:
+		var mark: float = bar.size.x * float(bar.get("DEAD_POINT"))
+		var green: float = bar.call("green_tip")
+		var red: float = bar.call("red_tip")
+		_check(green > 0.0 and green < mark, "Grün wächst von links, noch vor dem Totpunkt (%.0f < %.0f)" % [green, mark])
+		_check(red > mark and red <= bar.size.x, "Rot wächst von rechts, noch hinter dem Totpunkt (%.0f > %.0f)" % [red, mark])
+		# Ein Physik-Frame Versatz ist möglich (Reihenfolge ItemUser/CivilianCrime).
+		_check(absf(float(bar.get("progress")) - float(crime.get("pick_progress"))) < 0.05, "Slider zeigt den Griff")
 	await _frames(90)
 	_check(float(crime.get("pick_progress")) < 0.0, "Griff fertig")
+	_check(bar == null or not bar.visible, "Slider nach dem Griff ausgeblendet")
 	_check(int(_inventory.get("money")) == money + 2, "2 ¢ geklaut (%d → %d)" % [money, int(_inventory.get("money"))])
 	_check(int(_player.get("item_user").call("count_item", load("res://scenes/items/data/jewelry.tres"))) == 1, "Schmuck mitgenommen")
 	_check(int(_wanted.call("star_count")) == 0, "unbemerkt: keine Fahndung (Verdacht %.2f)" % float(crime.get("suspicion")))
