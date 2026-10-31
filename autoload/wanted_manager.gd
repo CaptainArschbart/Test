@@ -16,6 +16,7 @@ const WEIGHTS := {
 	&"burglary": 1,
 	&"pickpocket": 1,
 	&"threat": 1,
+	&"robbery": 1,
 	&"murder": 2,
 }
 
