@@ -303,6 +303,11 @@ func _tick(delta: float) -> void:
 	_state_time += delta
 	_scream_cd = maxf(_scream_cd - delta, 0.0)
 	_wish = Vector3.ZERO
+	if crime != null and crime.is_being_picked() and (state == State.WALK or state == State.IDLE or state == State.WAIT_CROSS):
+		# Taschendiebstahl läuft: kurz stehen bleiben, Weg und Blickrichtung behalten.
+		_move(delta)
+		_animate(delta)
+		return
 	match state:
 		State.WALK: _walk()
 		State.IDLE: _idle(delta)

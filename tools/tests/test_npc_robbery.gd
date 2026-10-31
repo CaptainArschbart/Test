@@ -1,6 +1,7 @@
 extends SceneTree
 ## NPC berauben (CivilianCrime): Taschendiebstahl gelingt im Dunkeln ohne Fahndung, fliegt bei hoher
-## Wachsamkeit auf, bricht ab, wenn man vor die Person geht. Bewaffneter Raub: Ziel halten, Tasche
+## Wachsamkeit auf, bricht ab, wenn man vor die Person geht, gehende Personen bleiben beim Griff stehen.
+## Bewaffneter Raub: Ziel halten, Tasche
 ## kommt, loslassen gibt eine Stufe mehr. Nach dem Raub gefesselt: keine Meldung mehr.
 ##
 ## Aufruf (Projektordner):
@@ -98,6 +99,7 @@ func _run() -> void:
 	await _pickpocket_ok()
 	await _pickpocket_caught()
 	await _pickpocket_abort()
+	await _pickpocket_walking()
 	await _armed_robbery()
 	await _armed_then_tied()
 	_wanted.call("set_stars", 0)
@@ -141,6 +143,32 @@ func _pickpocket_caught() -> void:
 	_check(bool(civ.call("is_panicking")), "Person rennt weg")
 	_check(int(_wanted.call("star_count")) == 1, "erwischt: eine Fahndungsstufe (%d)" % int(_wanted.call("star_count")))
 	_wanted.call("set_stars", 0)
+	civ.queue_free()
+
+
+## Gehende Person: bleibt während des Griffs stehen und läuft danach weiter.
+func _pickpocket_walking() -> void:
+	var civ := _civilian(Vector3(-40, 0, 40), 12)
+	civ.set("stay_put", false)
+	await _frames(4)
+	var crime := _crime(civ)
+	await _place(Vector3(-40, 0, 41.2), 0.0, true)
+	civ.call("_plan_path", Vector3(-40, 0, 20))
+	civ.set("state", 0)
+	var before: Vector3 = civ.global_position
+	await _frames(6)
+	_check(civ.global_position.distance_to(before) > 0.05, "Person geht vor dem Griff (%.2f m)" % civ.global_position.distance_to(before))
+	var money := int(_inventory.get("money"))
+	civ.call("interact", _player)
+	var start: Vector3 = civ.global_position
+	await _frames(40)
+	var moved := Vector2(civ.global_position.x - start.x, civ.global_position.z - start.z).length()
+	_check(float(crime.get("pick_progress")) >= 0.0 and moved < 0.2, "gehende Person bleibt beim Griff stehen (%.2f m)" % moved)
+	await _frames(60)
+	_check(int(_inventory.get("money")) > money, "Griff an gehender Person gelingt (%d → %d)" % [money, int(_inventory.get("money"))])
+	var after: Vector3 = civ.global_position
+	await _frames(40)
+	_check(civ.global_position.distance_to(after) > 0.3, "danach geht sie weiter")
 	civ.queue_free()
 
 
