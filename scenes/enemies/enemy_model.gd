@@ -445,7 +445,7 @@ func _emit(key: String, color: Color, energy: float) -> StandardMaterial3D:
 	var m := _mat(key, color, 0.4)
 	m.emission_enabled = true
 	m.emission = color
-	m.emission_energy_multiplier = energy
+	m.emission_energy_multiplier = energy * 0.65
 	return m
 
 

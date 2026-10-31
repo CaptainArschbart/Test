@@ -201,7 +201,7 @@ func _lamp(at: Vector3, color: Color) -> void:
 	mat.albedo_color = color
 	mat.emission_enabled = true
 	mat.emission = color
-	mat.emission_energy_multiplier = 2.0
+	mat.emission_energy_multiplier = 1.3
 	mesh.material_override = mat
 	add_child(mesh)
 

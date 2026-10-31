@@ -111,6 +111,8 @@ var draw_distance := 500.0
 var shadow_quality := 2
 var ssao_enabled := true
 var glow_enabled := true
+## Bloom-Stärke 0 … 2 (Menü 0–200 %). Multipliziert glow_intensity und glow_bloom der Karte.
+var glow_strength := 1.0
 var volumetric_fog := true
 ## Aktion → physical_keycode
 var key_bindings := {}
@@ -157,6 +159,7 @@ func get_values() -> Dictionary:
 		"shadow_quality": shadow_quality,
 		"ssao_enabled": ssao_enabled,
 		"glow_enabled": glow_enabled,
+		"glow_strength": glow_strength,
 		"volumetric_fog": volumetric_fog,
 		"key_bindings": key_bindings.duplicate(),
 	}
@@ -184,6 +187,7 @@ func get_defaults() -> Dictionary:
 		"shadow_quality": 2,
 		"ssao_enabled": true,
 		"glow_enabled": true,
+		"glow_strength": 1.0,
 		"volumetric_fog": true,
 		"key_bindings": _default_bindings.duplicate(),
 	}
@@ -211,6 +215,7 @@ func apply_values(values: Dictionary) -> void:
 	shadow_quality = clampi(int(values.get("shadow_quality", shadow_quality)), 0, 3)
 	ssao_enabled = bool(values.get("ssao_enabled", ssao_enabled))
 	glow_enabled = bool(values.get("glow_enabled", glow_enabled))
+	glow_strength = clampf(float(values.get("glow_strength", glow_strength)), 0.0, 2.0)
 	volumetric_fog = bool(values.get("volumetric_fog", volumetric_fog))
 	key_bindings = values.key_bindings.duplicate()
 	apply()
@@ -293,6 +298,7 @@ func load_settings() -> void:
 	shadow_quality = clampi(int(config.get_value("video", "shadow_quality", shadow_quality)), 0, 3)
 	ssao_enabled = bool(config.get_value("video", "ssao_enabled", ssao_enabled))
 	glow_enabled = bool(config.get_value("video", "glow_enabled", glow_enabled))
+	glow_strength = clampf(float(config.get_value("video", "glow_strength", glow_strength)), 0.0, 2.0)
 	volumetric_fog = bool(config.get_value("video", "volumetric_fog", volumetric_fog))
 	for action: String in REBINDABLE_ACTIONS:
 		key_bindings[action] = config.get_value("keys", action, key_bindings[action])
@@ -312,6 +318,7 @@ func save_settings() -> void:
 	config.set_value("video", "shadow_quality", shadow_quality)
 	config.set_value("video", "ssao_enabled", ssao_enabled)
 	config.set_value("video", "glow_enabled", glow_enabled)
+	config.set_value("video", "glow_strength", glow_strength)
 	config.set_value("video", "volumetric_fog", volumetric_fog)
 	config.set_value("audio", "master_volume", master_volume)
 	config.set_value("audio", "music_volume", music_volume)

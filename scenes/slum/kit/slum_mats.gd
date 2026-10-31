@@ -9,6 +9,8 @@ extends RefCounted
 ## Texturen liegen in assets/textures/slum/ und kommen aus tools/gen_slum_textures.py.
 
 const TEX_DIR := "res://assets/textures/slum/"
+## Dämpft alle leuchtenden Kit-Materialien (Neon, Schilder, Fenster), damit Bloom nicht überstrahlt.
+const EMISSION_SCALE := 0.65
 
 ## Meter pro Kachel, wenn ein Name hier nicht steht, gilt 2 m.
 const TILE_METERS := {
@@ -91,7 +93,7 @@ static func decal(tex_name: String, emit_name := "", emit_color := Color.BLACK, 
 		mat.emission = emit_color
 		mat.emission_texture = texture(emit_name)
 		mat.emission_operator = BaseMaterial3D.EMISSION_OP_MULTIPLY
-		mat.emission_energy_multiplier = energy
+		mat.emission_energy_multiplier = energy * EMISSION_SCALE
 	_cache[key] = mat
 	return mat
 
@@ -108,7 +110,7 @@ static func sign_mat(tex_name: String, energy := 3.0) -> StandardMaterial3D:
 		mat.emission = Color.WHITE
 		mat.emission_texture = load(emit)
 		mat.emission_operator = BaseMaterial3D.EMISSION_OP_MULTIPLY
-		mat.emission_energy_multiplier = energy
+		mat.emission_energy_multiplier = energy * EMISSION_SCALE
 	_cache[key] = mat
 	return mat
 
@@ -125,7 +127,7 @@ static func color(c: Color, emission := 0.0, roughness := 0.7, metallic := 0.0) 
 	if emission > 0.0:
 		mat.emission_enabled = true
 		mat.emission = c
-		mat.emission_energy_multiplier = emission
+		mat.emission_energy_multiplier = emission * EMISSION_SCALE
 	_cache[key] = mat
 	return mat
 
