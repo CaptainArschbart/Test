@@ -153,8 +153,8 @@ func set_lod(new_lod: Lod) -> void:
 	lod = new_lod
 
 
-## Ohne CrowdDirector (Bewohner in Wohnungen) stuft sich die Person selbst ein: nach dem Abstand zur
-## Kamera und zum nächsten Spieler, damit sie auch beim Host für Gäste in der Nähe wach bleibt.
+## Ohne CrowdDirector und ortsfest (Bewohner in Wohnungen) stuft sich die Person selbst ein: nach dem
+## Abstand zur Kamera und zum nächsten Spieler, damit sie auch beim Host für Gäste in der Nähe wach bleibt.
 func _self_lod(delta: float) -> void:
 	_self_lod_left -= delta
 	if _self_lod_left > 0.0:
@@ -309,7 +309,7 @@ func _physics_process(delta: float) -> void:
 		return
 	if state == State.DEAD:
 		return
-	if crowd == null:
+	if crowd == null and stay_put:
 		_self_lod(delta)
 	if lod == Lod.SLEEP and state != State.FLEE:
 		return
