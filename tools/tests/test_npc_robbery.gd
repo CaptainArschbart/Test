@@ -128,11 +128,11 @@ func _pickpocket_ok() -> void:
 	var bar := _pick_bar()
 	_check(bar != null and bar.visible, "Slider sichtbar während des Griffs")
 	if bar != null:
-		var mark: float = bar.size.x * float(bar.get("DEAD_POINT"))
+		var mark: float = bar.call("mark_x")
 		var green: float = bar.call("green_tip")
 		var red: float = bar.call("red_tip")
-		_check(green > 0.0 and green < mark, "Grün wächst von links, noch vor dem Totpunkt (%.0f < %.0f)" % [green, mark])
-		_check(red > mark and red <= bar.size.x, "Rot wächst von rechts, noch hinter dem Totpunkt (%.0f > %.0f)" % [red, mark])
+		_check(green > float(bar.call("bar_rect").position.x) and green < mark, "Grün wächst von links, noch vor dem Totpunkt (%.0f < %.0f)" % [green, mark])
+		_check(red > mark and red <= bar.size.x - 1.0, "Rot wächst von rechts, noch hinter dem Totpunkt (%.0f > %.0f)" % [red, mark])
 		# Ein Physik-Frame Versatz ist möglich (Reihenfolge ItemUser/CivilianCrime).
 		_check(absf(float(bar.get("progress")) - float(crime.get("pick_progress"))) < 0.05, "Slider zeigt den Griff")
 	await _frames(90)
