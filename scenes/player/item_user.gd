@@ -22,6 +22,9 @@ const LAYER_WORLD := 1
 const LAYER_PLAYER := 2
 const LAYER_INTERACT := 4
 const GRENADE_SCRIPT := preload("res://scenes/items/grenade.gd")
+## Per preload statt class_name: Nach einem Pull kennt der Klassen-Cache neue Klassen erst nach einem
+## Editor-Scan, sonst kompiliert der ganze Spieler nicht.
+const PICKPOCKET_BAR := preload("res://scenes/crime/pickpocket_bar.gd")
 ## Wurfablauf in Sekunden: Ausholen bis zum Loslassen, danach Durchschwingen.
 const THROW_WINDUP := 0.16
 const THROW_FOLLOW := 0.3
@@ -36,7 +39,7 @@ var _cooldown := 0.0
 var _swing := 0.0
 var _held: Node3D
 var _prompt: Label
-var _pick_bar: PickpocketBar
+var _pick_bar: PICKPOCKET_BAR
 var _message: Label
 var _boost_label: Label
 var _message_tween: Tween
@@ -504,7 +507,7 @@ func _create_hud() -> void:
 	_boost_label.visible = false
 	_prompt.visible = false
 	# Taschendiebstahl: Griff gegen Verdacht, unter der Meldungszeile.
-	_pick_bar = PickpocketBar.new()
+	_pick_bar = PICKPOCKET_BAR.new()
 	_pick_bar.name = "PickpocketBar"
 	_pick_bar.anchor_left = 0.5
 	_pick_bar.anchor_right = 0.5
