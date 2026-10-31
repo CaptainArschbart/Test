@@ -196,15 +196,20 @@ func item_at(slot: int) -> ItemData:
 	return load_item(ITEM_IDS[slot_item[slot]])
 
 
-func price_of(item: ItemData) -> int:
+## Mit `player` zählt dessen Skill Feilscher (price_mult).
+func price_of(item: ItemData, player: Player = null) -> int:
 	if item == null:
 		return 0
-	return maxi(roundi(item.value * float(MARKUP.get(shop_sign, 1.0))), 1)
+	var skill := player.skill_mult(&"price_mult") if player != null else 1.0
+	return maxi(roundi(item.value * float(MARKUP.get(shop_sign, 1.0)) * skill), 1)
 
 
-## Was der Hehler für `item` zahlt (0 = nimmt er nicht, z. B. Essen).
-func fence_price(item: ItemData) -> int:
-	return maxi(int(item.value * FENCE_RATE), 1) if item != null and item.value >= 8 else 0
+## Was der Hehler für `item` zahlt (0 = nimmt er nicht, z. B. Essen). Mit `player` zählt Feilscher (fence_mult).
+func fence_price(item: ItemData, player: Player = null) -> int:
+	if item == null or item.value < 8:
+		return 0
+	var skill := player.skill_mult(&"fence_mult") if player != null else 1.0
+	return maxi(int(item.value * FENCE_RATE * skill), 1)
 
 
 func is_fence() -> bool:
@@ -429,10 +434,10 @@ func _handle_take(player: Player, slot: int) -> void:
 		_give(player, item.resource_path, 1, "Erwischt an der Vitrine!")
 		_raise_alarm(player, "Finger weg von der Vitrine!")
 		return
-	_set_unpaid(player, unpaid_of(player) + price_of(item))
+	_set_unpaid(player, unpaid_of(player) + price_of(item, player))
 	if camera_alive and camera_sees(player):
 		_recorded[_peer(player)] = true
-	_give(player, item.resource_path, 1, "%s genommen – an der Kasse %d ¢" % [item.display_name, price_of(item)])
+	_give(player, item.resource_path, 1, "%s genommen – an der Kasse %d ¢" % [item.display_name, price_of(item, player)])
 
 
 func _handle_buy(player: Player, slot: int) -> void:
@@ -441,7 +446,7 @@ func _handle_buy(player: Player, slot: int) -> void:
 		_give(player, "", 0, "Nicht mehr da")
 		return
 	_take_one(slot)
-	_give(player, item.resource_path, 1, "%s gekauft" % item.display_name, price_of(item))
+	_give(player, item.resource_path, 1, "%s gekauft" % item.display_name, price_of(item, player))
 
 
 func _handle_pay(player: Player) -> void:
@@ -465,7 +470,8 @@ func _handle_rob(player: Player) -> void:
 		return
 	_rob_actor = player
 	var free := keeper_state == Keeper.DEAD or keeper_state == Keeper.SURRENDER
-	_rob_left = ROB_TIME_FREE if free else ROB_TIME
+	# Skill Großer Fang (rob_time_mult).
+	_rob_left = (ROB_TIME_FREE if free else ROB_TIME) * player.skill_mult(&"rob_time_mult")
 	_give(player, "", 0, "Kasse wird aufgebrochen … stehen bleiben")
 
 
@@ -611,6 +617,9 @@ func sees(player: Player, ignore_busy := false) -> bool:
 ## Hat die Kamera den Spieler im Bild?
 func camera_sees(player: Player) -> bool:
 	if not camera_alive or _camera == null:
+		return false
+	# Skill Kamera-Hack (camera_ghost): die Kamera nimmt diesen Spieler nicht auf.
+	if player != null and player.has_skill_flag(&"camera_ghost"):
 		return false
 	var from := _camera.global_position
 	var forward := (to_global(bounds.get_center()) - from).normalized()

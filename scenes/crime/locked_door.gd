@@ -1,6 +1,6 @@
 class_name LockedDoor
 extends StaticBody3D
-## Verschlossene Tür. Passender Schlüssel (Item-id = key_id) öffnet leise.
+## Verschlossene Tür. Passender Schlüssel (Item-id = key_id) oder der Skill Dietrich öffnet leise.
 ## break_open (Brechstange) öffnet laut und legt eine Fahndung.
 
 signal opened(forced: bool)
@@ -44,6 +44,8 @@ func get_interact_text(player: Player) -> String:
 		return ""
 	if _player_has_key(player):
 		return "Aufschließen"
+	if _can_pick(player):
+		return "Schloss knacken"
 	if _holds_breaker(player):
 		return "Verschlossen (Linksklick bricht auf)"
 	return "Verschlossen"
@@ -53,6 +55,10 @@ func interact(player: Player) -> void:
 	if not locked:
 		return
 	if not _player_has_key(player):
+		if _can_pick(player):
+			player.item_user.show_message("Schloss geknackt.", Color(0.5, 0.9, 1.0))
+			_unlock(false)
+			return
 		player.item_user.show_message("Verschlossen. Brechstange oder Schlüssel.", Color(1.0, 0.35, 0.3))
 		return
 	_unlock(false)
@@ -81,6 +87,11 @@ func _unlock(forced: bool) -> void:
 		_panel.rotation.y = deg_to_rad(80.0)
 		_panel.position = open_offset
 	opened.emit(forced)
+
+
+## Skill Dietrich (lockpick): leise wie mit Schlüssel.
+func _can_pick(player: Player) -> bool:
+	return player != null and player.has_skill_flag(&"lockpick")
 
 
 func _holds_breaker(player: Player) -> bool:

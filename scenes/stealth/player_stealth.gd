@@ -93,6 +93,9 @@ func _physics_process(delta: float) -> void:
 func make_noise(radius: float, kind: StringName = StealthNoise.STEP) -> void:
 	if radius <= 0.0 or _player == null:
 		return
+	# Skill Leise Sohlen (step_noise_mult): nur Schritte, Rutschen und Landungen, keine Schüsse.
+	if kind == StealthNoise.STEP or kind == StealthNoise.LAND or kind == StealthNoise.SLIDE:
+		radius *= _player.skill_mult(&"step_noise_mult")
 	noise_level = maxf(noise_level, clampf(radius / 20.0, 0.0, 1.0))
 	StealthNoise.emit(get_tree(), _player.global_position + Vector3.UP * 0.3, radius, _player, kind)
 
@@ -175,6 +178,8 @@ func _compute_visibility() -> float:
 		v *= 0.75
 	elif _player.stats.is_sprinting():
 		v *= 1.25
+	# Skill Schatten (visibility_mult).
+	v *= _player.skill_mult(&"visibility_mult")
 	return clampf(v, 0.0, 1.0)
 
 

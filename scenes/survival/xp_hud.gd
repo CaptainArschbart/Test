@@ -107,7 +107,7 @@ func _on_xp_changed(_level: int, _xp: int, _needed: int, gained: int) -> void:
 
 
 func _on_leveled_up(new_level: int) -> void:
-	_level_up_label.text = "STUFE %d" % new_level
+	_level_up_label.text = "STUFE %d  //  +1 SKILLPUNKT (Tab)" % new_level
 	_level_up_label.modulate.a = 1.0
 	if _level_tween:
 		_level_tween.kill()

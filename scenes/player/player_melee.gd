@@ -462,6 +462,8 @@ func _shockwave(center: Vector3, primary: Node, damage: float) -> void:
 # --- Treffer -------------------------------------------------------------------------------
 
 func _apply_hit(target: Node, damage: float, point: Vector3, normal: Vector3, push: Vector3, stun: float) -> void:
+	# Skill Schwere Fäuste (melee_mult) gilt für Jab, Hook, Power-Schlag und Schockwelle.
+	damage *= _player.skill_mult(&"melee_mult")
 	if target.has_method("melee_hit"):
 		target.melee_hit(damage, point, normal, push, stun)
 	elif target.has_method("take_hit"):

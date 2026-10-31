@@ -21,6 +21,8 @@ extends CharacterBody3D
 ## PlayerMelee (im Code angelegt, Player.melee): Boxen ("melee" oder "fire" mit leeren Händen),
 ## Halten lädt einen Dash-Schlag auf.
 ## PlayerXp (Player.xp) und XpHud: Erfahrung aus Gegner-Kills, Stufen, Leiste oben mittig.
+## PlayerSkills (Player.skills): Skill-Bäume, ein Punkt pro Stufe, Reiter „Skills“ im Inventar.
+## Systeme fragen skill_mult() und has_skill_flag(). Stufe, XP und Skills stehen in user://player_profile.cfg.
 ## "noclip" schaltet den Flugmodus um: durch Wände fliegen in Blickrichtung,
 ## "jump" hoch, "noclip_down" runter, "sprint" schneller. Im Noclip gibt es keinen HP-Verlust.
 ## Low-Health-Effekte (LowHealthFx) und der Death-Screen „FLATLINE“ (DeathScreen) werden im Code
@@ -95,6 +97,7 @@ const CameraShakeScript := preload("res://scenes/player/camera_shake.gd")
 const PlayerMeleeScript := preload("res://scenes/player/player_melee.gd")
 const PlayerXpScript := preload("res://scenes/player/player_xp.gd")
 const XpHudScript := preload("res://scenes/survival/xp_hud.gd")
+const PlayerSkillsScript := preload("res://scenes/player/player_skills.gd")
 ## PvP: Faktor auf Kopftreffer anderer Spieler.
 const PVP_HEADSHOT := 1.5
 ## Mehr Schaden nimmt ein Treffer übers Netz nicht an (Schutz vor kaputten Paketen).
@@ -121,6 +124,9 @@ var camera_shake: CameraShakeScript
 var melee: PlayerMeleeScript
 ## Erfahrung und Stufe (im Code angelegt). Gegner geben beim Tod XP, die Leiste steht oben mittig.
 var xp: PlayerXpScript
+## Skill-Bäume (im Code angelegt, bei jeder Figur). Fremde Figuren bekommen den Stand übers Netz,
+## damit der Host z. B. beim Taschendiebstahl die Skills des Diebs kennt.
+var skills: PlayerSkillsScript
 
 var _spawn_transform: Transform3D
 var _noclip_label: Label
@@ -160,6 +166,9 @@ func _ready() -> void:
 	floor_max_angle = deg_to_rad(floor_angle_degrees)
 	max_slides = slide_count
 	input_locked = false
+	skills = PlayerSkillsScript.new()
+	skills.name = "PlayerSkills"
+	add_child(skills)
 	if not controls_local_body():
 		_configure_puppet()
 		return
@@ -178,6 +187,8 @@ func _ready() -> void:
 	xp = PlayerXpScript.new()
 	xp.name = "PlayerXp"
 	add_child(xp)
+	# Vor der Leiste: Das geladene Profil soll dort nicht als XP-Gewinn aufblinken.
+	_setup_skills()
 	var xp_hud := XpHudScript.new()
 	xp_hud.name = "XpHud"
 	xp_hud.xp = xp
@@ -190,6 +201,32 @@ func _ready() -> void:
 	_apply_draw_distance()
 	if not Settings.changed.is_connected(_apply_draw_distance):
 		Settings.changed.connect(_apply_draw_distance)
+
+
+## Stufe an die Skills koppeln. Außer headless wird das Profil (Stufe, XP, Skills) geladen und bei
+## jeder Änderung gespeichert.
+func _setup_skills() -> void:
+	skills.level = xp.level
+	skills.apply_stats()
+	if DisplayServer.get_name() != "headless":
+		skills.load_profile()
+		skills.autosave = true
+	xp.leveled_up.connect(func(lvl: int) -> void:
+		skills.set_level(lvl)
+		skills.broadcast())
+	xp.xp_changed.connect(func(_l: int, _x: int, _n: int, gained: int) -> void:
+		if skills.autosave and gained > 0:
+			skills.save_profile())
+
+
+## Faktor eines Skill-Effekts (PlayerSkills.SKILLS, z. B. &"spread_mult"), 1 ohne Skill.
+func skill_mult(key: StringName) -> float:
+	return skills.mult(key) if skills != null else 1.0
+
+
+## Schalter-Effekt wie &"lockpick" oder &"camera_ghost".
+func has_skill_flag(key: StringName) -> bool:
+	return skills != null and skills.add(key) > 0.0
 
 
 func _apply_draw_distance() -> void:
@@ -402,7 +439,7 @@ func _net_damage(amount: float, cause: StringName, push: Vector3) -> void:
 func _receive_damage(amount: float, cause: StringName, push: Vector3, attacker: int) -> void:
 	if dead or not stats.is_alive():
 		return
-	stats.damage(amount, cause)
+	stats.damage(amount * skill_mult(&"damage_taken_mult"), cause)
 	if push != Vector3.ZERO:
 		velocity += push
 	if camera_shake != null:

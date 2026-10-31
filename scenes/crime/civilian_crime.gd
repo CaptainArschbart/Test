@@ -150,7 +150,10 @@ func _physics_process(delta: float) -> void:
 	if pick_progress >= 0.0:
 		_pick_tick(delta)
 	if rob_progress >= 0.0:
-		rob_progress = minf(rob_progress + delta / ROB_TIME, 1.0)
+		var rob_time := ROB_TIME
+		if _robber != null and is_instance_valid(_robber):
+			rob_time *= _robber.skill_mult(&"rob_time_mult")
+		rob_progress = minf(rob_progress + delta / rob_time, 1.0)
 		if rob_progress >= 1.0:
 			_hand_over()
 	_aim_tick -= delta
@@ -226,8 +229,9 @@ func _pick_tick(delta: float) -> void:
 	var light := player.stealth.visibility if player.stealth != null else 0.5
 	var noise := player.stealth.noise_level if player.stealth != null else 0.0
 	var rate := 0.08 + light * 0.5 + noise * 0.9
-	suspicion += rate * _alert * delta
-	pick_progress = minf(pick_progress + delta / PICK_TIME, 1.0)
+	# Skills Flinke Finger (pick_time_mult, suspicion_mult). Der Host kennt sie auch bei fremden Dieben.
+	suspicion += rate * _alert * player.skill_mult(&"suspicion_mult") * delta
+	pick_progress = minf(pick_progress + delta / (PICK_TIME * player.skill_mult(&"pick_time_mult")), 1.0)
 	if suspicion >= 1.0:
 		_end_pick()
 		player.item_user.show_message("Erwischt!", Color(1.0, 0.35, 0.3))
@@ -338,8 +342,10 @@ func _pocket_empty() -> bool:
 func _empty_pocket(player: Player) -> String:
 	var parts: PackedStringArray = []
 	if pocket_cents > 0:
-		player.inventory.add_money(pocket_cents)
-		parts.append("%d ¢" % pocket_cents)
+		# Skill Großer Fang (loot_cash_mult).
+		var cents := roundi(pocket_cents * player.skill_mult(&"loot_cash_mult"))
+		player.inventory.add_money(cents)
+		parts.append("%d ¢" % cents)
 		pocket_cents = 0
 	if _jewelry and _give(player, JEWELRY):
 		_jewelry = false

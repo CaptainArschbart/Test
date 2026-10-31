@@ -201,7 +201,9 @@ func _push_bodies(center: Vector3) -> void:
 ## Schaden in `distance` Metern Abstand: voll in der Mitte, am Rand min_damage_fraction.
 func damage_at(distance: float) -> float:
 	var t := clampf(distance / maxf(data.radius, 0.01), 0.0, 1.0)
-	return data.damage * lerpf(1.0, data.min_damage_fraction, t)
+	# Skill Sprengmeister des Werfers (grenade_mult).
+	var bonus := thrower.skill_mult(&"grenade_mult") if is_instance_valid(thrower) else 1.0
+	return data.damage * bonus * lerpf(1.0, data.min_damage_fraction, t)
 
 
 func _play_explosion(center: Vector3) -> void:
