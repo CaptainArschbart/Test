@@ -9,7 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-NOTICE = "cursor_updatenotice.md"
+NOTICE = "enscapez_updatenotice.md"
 
 
 def allow() -> None:
@@ -47,7 +47,7 @@ def current_branch() -> str:
 def command_adds_notice(command: str) -> bool:
     if re.search(r"git\s+add\s+(?:-A|--all|\.|-u)\b", command):
         return True
-    if re.search(r"git\s+add\b[^\n]*cursor_updatenotice\.md", command):
+    if re.search(r"git\s+add\b[^\n]*enscapez_updatenotice\.md", command):
         return True
     if re.search(r"git\s+commit\b[^\n]*-a\b", command):
         return True
@@ -116,7 +116,7 @@ def main() -> None:
     if is_push and not command_adds_notice(command) and "commit" not in command:
         deny(
             f"{NOTICE} ist nicht committed ({porcelain}). "
-            "Erst git add cursor_updatenotice.md, commit, dann git push origin main."
+            "Erst git add enscapez_updatenotice.md, commit, dann git push origin main."
         )
 
     if is_commit and not command_adds_notice(command):
@@ -126,7 +126,7 @@ def main() -> None:
         if untracked or (unstaged and not staged):
             deny(
                 f"{NOTICE} ist nicht gestaged ({porcelain}). "
-                "Vor jedem Commit: git add cursor_updatenotice.md."
+                "Vor jedem Commit: git add enscapez_updatenotice.md."
             )
 
     allow()

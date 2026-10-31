@@ -1,20 +1,20 @@
 ---
-description: cursor_updatenotice.md muss immer auf origin/main liegen und bei jedem Push mit hoch
+description: enscapez_updatenotice.md muss immer auf origin/main liegen und bei jedem Push mit hoch
 alwaysApply: true
 ---
 
-# cursor_updatenotice.md — immer auf main, sonst bringt das nichts
+# enscapez_updatenotice.md — immer auf main, sonst bringt das nichts
 
 Wunsch von EnScapeZ, 2026-10-25, **keine Ausnahme**.
 
-- `cursor_updatenotice.md` ist **ganz wichtig**. Nur auf einem Feature-Branch zählt sie **nicht**.
-- Nach jeder Änderung: Eintrag unten in `cursor_updatenotice.md`.
-- Jeder Commit: `git add cursor_updatenotice.md`.
+- `enscapez_updatenotice.md` ist **ganz wichtig**. Nur auf einem Feature-Branch zählt sie **nicht**.
+- Nach jeder Änderung: Eintrag unten in `enscapez_updatenotice.md`.
+- Jeder Commit: `git add enscapez_updatenotice.md`.
 - Jeder Push: Notice committed, dann **auf `origin/main`**.
 - Ablauf in demselben Arbeitsgang, **nur auf `main`**:
   1. `git checkout main` und `git pull origin main`.
-  2. Notice schreiben, `git add cursor_updatenotice.md`, committen.
+  2. Notice schreiben, `git add enscapez_updatenotice.md`, committen.
   3. `git push origin main`.
-  4. Schlussantwort erst, wenn `git ls-tree origin/main -- cursor_updatenotice.md` die neue Datei zeigt.
+  4. Schlussantwort erst, wenn `git ls-tree origin/main -- enscapez_updatenotice.md` die neue Datei zeigt.
 - Nie pushen, während die Notice ungetrackt oder lokal geändert ist.
 - „Liegt auf meinem Branch“, „kommt mit dem PR“, „später auf main“ ist verboten.

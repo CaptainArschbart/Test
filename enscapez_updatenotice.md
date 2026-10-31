@@ -1,8 +1,8 @@
-# Cursor Update-Notice
+# EnScapeZ Update-Notice
 
-Arbeitslog von **Cursor** (Grok) in diesem Repo. Nur Cursor schreibt in diese Datei; andere KIs (z. B. Claude) führen ihre eigene Update-Notice. So überschreiben sich die PRs nicht gegenseitig.
+Arbeitslog von **EnScapeZ** (mit Cursor und Claude) in diesem Repo, bis 2026-10-31 hieß die Datei `cursor_updatenotice.md`. Nur EnScapeZ und KIs im Auftrag von EnScapeZ schreiben in diese Datei; andere führen ihre eigene Update-Notice. So überschreiben sich die PRs nicht gegenseitig.
 
-**Regeln für Cursor:**
+**Regeln:**
 - Vor jeder Arbeit `main` holen und die Update-Notices der anderen KIs (`*_updatenotice.md` im Repo-Root, derzeit `claude_updatenotice.md`) lesen, aber nicht ändern. Liegt eine fremde Notice nicht im Arbeitsbaum, sie von `origin/main` lesen (`git show origin/main:claude_updatenotice.md`).
 - `AI_HANDOVER.md` nicht mehr anfassen, auch nicht Ist-Stand, Änderungsprotokoll oder Arbeitslog (Wunsch von EnScapeZ, 2026-10-25).
 - Nach jedem Arbeitsgang **unten** einen Eintrag anhängen, im selben PR wie die Änderung. Alte Einträge nicht ändern, neuester unten.
@@ -10,7 +10,7 @@ Arbeitslog von **Cursor** (Grok) in diesem Repo. Nur Cursor schreibt in diese Da
 Vorlage:
 
 ```text
-### JJJJ-MM-TT · Kurztitel · Cursor (für <Person>) · PR oder Branch
+### JJJJ-MM-TT · Kurztitel · <KI> (für <Person>) · PR oder Branch
 - Auftrag: …
 - Was: …
 - Dateien: …
@@ -535,3 +535,13 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: der Weg vom Hauseingang die Treppe hoch im Fenster, ob die Treppenstufen an der Flurdecke schneiden, Mausklick auf VERKAUFEN im Bild.
 - Git: auf `main`, dieser Eintrag im selben Commit, danach `git push origin main`.
 - Link: `https://github.com/CaptainArschbart/Test/blob/main/cursor_updatenotice.md`
+
+### 2026-10-31 · Notice in enscapez_updatenotice.md umbenannt · Claude (für EnScapeZ) · main
+- Auftrag: Die eigene Update-Notice weiterführen, nie die Claude-Notices, und die Datei in eine EnScapeZ-Notice umbenennen.
+- Was: `cursor_updatenotice.md` per `git mv` in `enscapez_updatenotice.md` umbenannt, Kopf und Vorlage angepasst. Alte Einträge nicht geändert, der alte Name steht dort weiter.
+- Dateien: `enscapez_updatenotice.md`, `.cursor/hooks/require-cursor-notice.py`, `.cursor/rules/01_update_notice_rules.mdc`, `.cursor/rules/02_cursor_notice_always_upload.mdc`, `.cursor/rules/03_main_only.mdc`, `.cursor/rules/ai-handover.mdc`.
+- Entscheidungen: Name passt zum Muster `*_updatenotice.md`. Die Dateinamen von Hook und Regeln bleiben. `claude_updatenotice.md` und `updatenotices/claude/` nicht angefasst, dort steht weiter der alte Name.
+- Getestet: `git grep` findet den alten Namen nicht mehr unter `.cursor/`. Hook lässt sich als Python parsen.
+- Nicht getestet: Hook in Cursor im echten Commit. Kein Godot-Lauf, kein Spielcode geändert.
+- Git: auf `main`, dieser Eintrag im selben Commit, danach `git push origin main`.
+- Link: `https://github.com/CaptainArschbart/Test/blob/main/enscapez_updatenotice.md`

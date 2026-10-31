@@ -11,6 +11,6 @@ Wunsch von EnScapeZ, 2026-10-25, **ganz wichtig**. Cursor arbeitet auf **demselb
 - Holen: nur `git pull origin main` (oder `git pull` auf `main`).
 - Hochladen: nur `git push origin main` (oder `git push` auf `main`).
 - Keine Feature-Branches (`cursor/…`) mehr anlegen, pullen oder pushen.
-- `cursor_updatenotice.md` liegt damit automatisch auf `main` (siehe `02_cursor_notice_always_upload.mdc`).
+- `enscapez_updatenotice.md` liegt damit automatisch auf `main` (siehe `02_cursor_notice_always_upload.mdc`).
 - Vor jeder Arbeit: `git checkout main` und `git pull origin main`.
 - Nach jeder Änderung: Notice aktualisieren, committen, `git push origin main`.
