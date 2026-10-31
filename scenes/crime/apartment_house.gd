@@ -14,6 +14,8 @@ const SPINE := 0.12
 const STEPS := 15
 const RUN := 0.27
 const FLOOR_Y := 0.12
+## Ab diesem Kameraabstand wird das Innere (Treppenhaus, Wohnungen, Lichter) nicht gezeichnet.
+const INTERIOR_FAR := 45.0
 
 @export var building_width := 12.0
 @export var building_depth := 10.0
@@ -31,6 +33,7 @@ var _inner_z := 4.7
 var _wall: Material
 var _floor: Material
 var _metal: Material
+var _view_check := 0.0
 
 
 func _ready() -> void:
@@ -54,6 +57,17 @@ func _ready() -> void:
 	_unit("apt_2", "apt_1", 1, 1, back_door, "1 R")
 	_unit("apt_3", "apt_2", 2, -1, front_door, "2 L")
 	_unit("apt_c", "apt_3", 2, 1, front_door, "2 R")
+
+
+
+func _process(delta: float) -> void:
+	_view_check -= delta
+	if _view_check > 0.0:
+		return
+	_view_check = 0.5
+	var cam := get_viewport().get_camera_3d()
+	if cam != null:
+		visible = cam.global_position.distance_to(global_position) < INTERIOR_FAR
 
 
 func _unit(key: String, hide: String, floor_index: int, side: int, door_z: float, door_plate: String) -> void:

@@ -18,6 +18,9 @@ enum Lod { FULL, LOW, SLEEP }
 const GROUP := &"civilian"
 const SoundGen := preload("res://scenes/enemies/enemy_sounds.gd")
 const SCREAMS := ["Aaah!", "Hilfe!", "Nicht schießen!", "Weg hier!", "Runter!"]
+## Eigene LOD-Stufen ohne CrowdDirector (Bewohner): voll bis hier, darüber selten, dahinter schlafend.
+const SELF_FULL_DISTANCE := 18.0
+const SELF_LOW_DISTANCE := 35.0
 
 var crowd: CrowdDirector
 var state := State.WALK
@@ -39,6 +42,7 @@ var _wait_left := 0.0
 var _panic_left := 0.0
 var _panic_from := Vector3.ZERO
 var _low_accum := 0.0
+var _self_lod_left := 0.0
 var _wish := Vector3.ZERO
 var _hvel := Vector3.ZERO
 var _vy := 0.0
@@ -149,9 +153,26 @@ func set_lod(new_lod: Lod) -> void:
 	lod = new_lod
 
 
+## Ohne CrowdDirector und ortsfest (Bewohner in Wohnungen) stuft sich die Person selbst ein: nach dem
+## Abstand zur Kamera und zum nächsten Spieler, damit sie auch beim Host für Gäste in der Nähe wach bleibt.
+func _self_lod(delta: float) -> void:
+	_self_lod_left -= delta
+	if _self_lod_left > 0.0:
+		return
+	_self_lod_left = 0.5
+	var d := INF
+	var cam := get_viewport().get_camera_3d()
+	if cam != null:
+		d = cam.global_position.distance_to(global_position)
+	for node: Node in get_tree().get_nodes_in_group("player"):
+		d = minf(d, (node as Node3D).global_position.distance_to(global_position))
+	lod = Lod.FULL if d < SELF_FULL_DISTANCE else (Lod.LOW if d < SELF_LOW_DISTANCE else Lod.SLEEP)
+
+
 ## Vom CrowdDirector: an einen anderen Knoten verlegen (weit weg von der Kamera).
 func relocate(pos: Vector3, toward: int) -> void:
 	global_position = pos + Vector3.UP * 0.05
+	reset_physics_interpolation()
 	_last_pos = global_position
 	_hvel = Vector3.ZERO
 	_vy = 0.0
@@ -288,6 +309,8 @@ func _physics_process(delta: float) -> void:
 		return
 	if state == State.DEAD:
 		return
+	if crowd == null and stay_put:
+		_self_lod(delta)
 	if lod == Lod.SLEEP and state != State.FLEE:
 		return
 	if lod == Lod.LOW:
@@ -665,6 +688,7 @@ func net_apply(pos: Vector3, yaw: float, new_state: int, speed: float) -> void:
 	if first or global_position.distance_to(pos) > 4.0:
 		global_position = pos
 		rotation.y = yaw
+		reset_physics_interpolation()
 	if new_state == state or state == State.DEAD:
 		return
 	var old := state

@@ -96,6 +96,8 @@ const BUSY_EVERY := Vector2(14.0, 26.0)
 const BUSY_TIME := Vector2(5.0, 8.0)
 const GOODS_NEAR := 32.0
 const GOODS_FAR := 42.0
+## Ab hier wird der ganze Innenraum ausgeblendet (Draw-Calls), der Verkäufer steht ab GOODS_FAR still.
+const INTERIOR_FAR := 60.0
 const GOODS_SCALE := 1.25
 
 enum Keeper { CALM, SURRENDER, ALARM, DEAD }
@@ -921,6 +923,8 @@ func _update_goods_lod(delta: float) -> void:
 	if cam != null:
 		var dist := cam.global_position.distance_to(to_global(bounds.get_center()))
 		near = dist < GOODS_NEAR or (_near and dist < GOODS_FAR)
+		# Innenraum (Regale, Verkäufer, Lichter) von weit weg nicht zeichnen.
+		visible = dist < INTERIOR_FAR
 	if near != _near:
 		_near = near
 		_refresh_all_slots()
@@ -1003,6 +1007,8 @@ func _animate_keeper(delta: float) -> void:
 		return
 	if keeper_state == Keeper.DEAD:
 		_model.animate(delta)
+		return
+	if not _near and keeper_state == Keeper.CALM:
 		return
 	# Beim Einräumen dreht er sich zur Vitrine (Rücken zum Laden).
 	var target := 1.0 if busy else 0.0

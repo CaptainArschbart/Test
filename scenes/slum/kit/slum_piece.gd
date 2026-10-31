@@ -8,6 +8,8 @@ extends Node3D
 ## Unterklassen überschreiben _build(b: SlumBuilder) und rufen für Exporte queue_rebuild() im Setter.
 
 const GEN_META := &"slum_generated"
+## Ab diesem Kameraabstand werfen Lampen keine Schatten mehr (Godot blendet sie aus).
+const SHADOW_FADE := 22.0
 
 ## Gleicher Seed = gleiches Aussehen. Für Varianten einfach ändern.
 @export var seed_value := 1:
@@ -86,6 +88,8 @@ func add_light(at: Vector3, color: Color, energy := 1.5, light_range := 6.0, fli
 	light.distance_fade_enabled = true
 	light.distance_fade_begin = 45.0
 	light.distance_fade_length = 15.0
+	# Schattenkarte nur nah: Sie wird neu gezeichnet, sobald sich darunter etwas bewegt.
+	light.distance_fade_shadow = SHADOW_FADE
 	add_gen(light, at)
 	if flicker > 0.0 and not Engine.is_editor_hint():
 		var f := SlumFlicker.new()

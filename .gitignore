@@ -9,3 +9,6 @@
 # OS
 .DS_Store
 Thumbs.db
+
+# Lokale Engine-Overrides (Render-Thread aus dem Grafikmenü)
+override.cfg

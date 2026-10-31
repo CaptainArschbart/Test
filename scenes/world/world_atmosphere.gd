@@ -252,7 +252,8 @@ func _apply_shadows() -> void:
 			_sun.shadow_blur = 0.8
 		3:
 			_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-			_sun.directional_shadow_max_distance = minf(Settings.draw_distance, 160.0)
+			# Mehr Reichweite zeichnet die halbe Stadt pro Kaskade noch einmal (CPU), sieht kaum anders aus.
+			_sun.directional_shadow_max_distance = minf(Settings.draw_distance, 100.0)
 			_sun.shadow_blur = 1.4
 		_:
 			_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS

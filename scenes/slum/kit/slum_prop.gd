@@ -316,6 +316,8 @@ func _street_lamp(b: SlumBuilder) -> void:
 		spot.distance_fade_enabled = true
 		spot.distance_fade_begin = 50.0
 		spot.distance_fade_length = 15.0
+		# Schattenkarte nur nah: Sie wird neu gezeichnet, sobald sich darunter etwas bewegt.
+		spot.distance_fade_shadow = SHADOW_FADE
 		add_gen(spot, Vector3(0, 5.6, 1.5))
 		spot.rotation_degrees = Vector3(-90, 0, 0)
 		if variant == 2 and not Engine.is_editor_hint():

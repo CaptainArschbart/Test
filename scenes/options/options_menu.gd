@@ -61,6 +61,8 @@ var glow_check: CheckButton
 var glow_strength_slider: HSlider
 var glow_strength_value: Label
 var volumetric_check: CheckButton
+var physics30_check: CheckButton
+var render_thread_check: CheckButton
 
 
 func _ready() -> void:
@@ -357,6 +359,8 @@ func _refresh_options() -> void:
 		glow_check.set_pressed_no_signal(bool(_draft.get("glow_enabled", true)))
 		glow_strength_slider.set_value_no_signal(float(_draft.get("glow_strength", 1.0)) * 100.0)
 		volumetric_check.set_pressed_no_signal(bool(_draft.get("volumetric_fog", true)))
+		physics30_check.set_pressed_no_signal(int(_draft.get("physics_rate", 60)) <= 30)
+		render_thread_check.set_pressed_no_signal(bool(_draft.get("render_thread", false)))
 	for action: String in _key_buttons:
 		var button: Button = _key_buttons[action]
 		if action == _rebinding_action:
@@ -463,6 +467,11 @@ func _build_nextgen_rows() -> void:
 	ssao_check.toggled.connect(_set_draft.bind("ssao_enabled"))
 	glow_check.toggled.connect(_set_draft.bind("glow_enabled"))
 	volumetric_check.toggled.connect(_set_draft.bind("volumetric_fog"))
+	# Leistung auf schwachen CPUs: halber Physik-Takt (mit Interpolation) und Rendering auf eigenem Thread.
+	physics30_check = _add_check(page, "Physics30Check", "Physik 30 Hz (schont die CPU)")
+	physics30_check.toggled.connect(func(on: bool) -> void: _set_draft(30 if on else 60, "physics_rate"))
+	render_thread_check = _add_check(page, "RenderThreadCheck", "Render-Thread (experimentell, nach Neustart)")
+	render_thread_check.toggled.connect(_set_draft.bind("render_thread"))
 
 
 func _add_option(page: VBoxContainer, node_name: String, caption: String, items: Array[String]) -> OptionButton:
