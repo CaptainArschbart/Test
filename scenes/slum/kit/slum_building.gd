@@ -314,8 +314,9 @@ func _facade_windows(b: SlumBuilder, from_floor: int, sides: Array) -> void:
 				b.box_x(SlumBuilder.facing(p + n * 0.06 + Vector3.DOWN * 0.74, n), Vector3(1.3, 0.08, 0.14), _trim_mat, false)
 				b.box_x(SlumBuilder.facing(p + n * 0.04 + Vector3.UP * 0.74, n), Vector3(1.24, 0.1, 0.08), _trim_mat, false)
 				var roll := rng.randf()
-				if roll < balcony_chance and n.z > 0.0 and f > 0:
-					_balcony(b, p, n, along)
+				var bal_w := minf(1.9, spacing - 0.6)  # Nachbarbalkone berühren sich nicht
+				if roll < balcony_chance and n.z > 0.0 and f > 0 and _balcony_fits(p.x, bal_w * 0.5, f):
+					_balcony(b, p, n, along, bal_w)
 				elif roll < balcony_chance + 0.15:
 					_ac_unit(b, p + Vector3.DOWN * 1.15 + n * 0.19 + along * rng.randf_range(-0.3, 0.3), n)
 				elif roll < balcony_chance + 0.2 and f < floors - 1 and c < cols - 1:
@@ -333,22 +334,41 @@ func _facade_windows(b: SlumBuilder, from_floor: int, sides: Array) -> void:
 						b.quad(a + along * (spacing * (0.25 + k * 0.25)) + Vector3.DOWN * 0.45, -n, 0.35, 0.5, cloth)
 
 
-func _balcony(b: SlumBuilder, window_center: Vector3, n: Vector3, along: Vector3) -> void:
-	var base := window_center + Vector3.DOWN * (floor_height * 0.5 + 0.1) + n * 0.55
-	var slab := SlumBuilder.facing(base + Vector3.UP * 0.06, n)
-	b.box_x(slab, Vector3(1.9, 0.12, 1.1), _trim_mat)
-	var y0 := base + Vector3.UP * 0.12
-	var l := y0 + n * 1.05 - along * 0.95
-	var r := y0 + n * 1.05 + along * 0.95
+## Balkone nur an der Vorderseite (+Z): nicht ins Ausleger-Schild und nicht vors Ladenschild.
+func _balcony_fits(x: float, half: float, f: int) -> bool:
+	if side_sign != "" and x + half > _w * 0.5 - 0.95:
+		return false
+	if style == Style.SHOP and front_sign != "" and f == 1 and absf(x) - half < 2.4:
+		return false
+	return true
+
+
+## Platte auf Höhe des Geschossbodens direkt an der Wand, Geländer auf der Platte knapp innerhalb
+## der Kante (vorn und an beiden Seiten bis zur Wand), darunter zwei Konsolen.
+func _balcony(b: SlumBuilder, window_center: Vector3, n: Vector3, along: Vector3, width: float) -> void:
+	var depth := 1.1
+	var half := width * 0.5
+	var inset := 0.05
+	var wall := window_center + Vector3.DOWN * (floor_height * 0.5 + 0.1)  # Wandfläche auf Bodenhöhe
+	b.box_x(SlumBuilder.facing(wall + n * (depth * 0.5) + Vector3.UP * 0.06, n), Vector3(width, 0.12, depth), _trim_mat)
+	var y0 := wall + Vector3.UP * 0.12
+	var front := y0 + n * (depth - inset)
+	var l := front - along * (half - inset)
+	var r := front + along * (half - inset)
 	b.railing(l, r, _metal, 1.0, 0.5)
-	b.railing(l, l - n * 1.05, _metal, 1.0, 0.5)
-	b.railing(r, r - n * 1.05, _metal, 1.0, 0.5)
-	# Blech als Sichtschutz, manchmal Pflanzen oder Kram
+	b.railing(l, l - n * (depth - inset), _metal, 1.0, 0.5)
+	b.railing(r, r - n * (depth - inset), _metal, 1.0, 0.5)
+	for s: float in [-1.0, 1.0]:
+		var foot := wall + along * (s * (half - 0.2))
+		b.tube(foot + Vector3.DOWN * 0.55, foot + n * (depth - 0.15), 0.03, _metal, 4)
+	# Blech als Sichtschutz innen am vorderen Geländer, manchmal Pflanzen oder Kram
 	if rng.randf() < 0.6:
 		var sheet := SlumMats.surface(pick(["corrugated_blue", "corrugated_rust", "corrugated_green"]))
-		b.box_x(SlumBuilder.facing(y0 + n * 1.07 + Vector3.UP * 0.45, n), Vector3(1.9, 0.9, 0.03), sheet, false)
+		b.box_x(SlumBuilder.facing(y0 + n * (depth - inset - 0.06) + Vector3.UP * 0.5, n),
+				Vector3(width - 2.0 * inset - 0.06, 0.8, 0.03), sheet, false)
 	if rng.randf() < 0.5:
-		b.box_x(SlumBuilder.facing(y0 + n * 0.5 + Vector3.UP * 0.25 + along * 0.5, n), Vector3(0.5, 0.5, 0.5), SlumMats.uv("crate_wood"), false)
+		b.box_x(SlumBuilder.facing(y0 + n * 0.4 + Vector3.UP * 0.25 + along * (half - 0.45), n),
+				Vector3(0.5, 0.5, 0.5), SlumMats.uv("crate_wood"), false)
 
 
 func _ac_unit(b: SlumBuilder, at: Vector3, n: Vector3) -> void:
