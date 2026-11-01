@@ -65,6 +65,15 @@ func _run() -> void:
 	var scroll_rect := scroll.get_global_rect()
 	_check(fog_rect.end.y <= scroll_rect.end.y + 2.0 and fog_rect.position.y >= scroll_rect.position.y - 2.0, "Nebel liegt im sichtbaren Scrollbereich")
 	_check(apply.get_global_rect().end.y <= host_rect.end.y + 1.0, "Übernehmen bleibt nach dem Scrollen sichtbar")
+	# Hinweise stehen nur noch im Tooltip, nicht als Text in der Liste.
+	_check(options.find_child("UpscaleHint", true, false) == null, "Kein Upscaling-Hinweistext in der Liste")
+	var upscale := options.get_node(^"%UpscaleOption") as Control
+	_check(not upscale.tooltip_text.is_empty(), "Upscaling hat einen Tooltip")
+	var upscale_label := upscale.get_parent().get_child(0) as Label
+	_check(upscale_label.tooltip_text == upscale.tooltip_text and upscale_label.mouse_filter == Control.MOUSE_FILTER_PASS, "Upscaling-Beschriftung zeigt den Tooltip")
+	_check(not (options.get_node(^"%RenderThreadCheck") as Control).tooltip_text.is_empty(), "Render-Thread hat einen Tooltip")
+	var key_grid := options.get_node(^"%KeyGrid") as GridContainer
+	_check(not (key_grid.get_child(1) as Control).tooltip_text.is_empty(), "Tastenfeld hat einen Tooltip")
 	var min_h := options.get_combined_minimum_size().y
 	_check(min_h <= 430.0, "Options-Mindesthöhe %.1f passt ins 430-px-Feld" % min_h)
 	host.queue_free()
@@ -80,6 +89,11 @@ func _check_pause_menu() -> void:
 	root.add_child(pause)
 	await process_frame
 	pause.call("open")
+	await process_frame
+	var panel := pause.get_node(^"Root/Center/Panel") as Control
+	_check(panel.size.x <= 400.0, "Pausemenü schmal (%.1f px)" % panel.size.x)
+	_check(pause.find_child("Hint", true, false) == null, "Pausemenü ohne Hinweiszeile")
+	_check(not (pause.get_node(^"%ResumeButton") as Control).tooltip_text.is_empty(), "Fortsetzen hat einen Tooltip")
 	pause.call("_show_options")
 	await process_frame
 	await process_frame

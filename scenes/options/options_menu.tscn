@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scenes/options/options_menu.gd" id="1_options"]
 
 [node name="Options" type="VBoxContainer"]
-theme_override_constants/separation = 10
+theme_override_constants/separation = 6
 script = ExtResource("1_options")
 
 [node name="Header" type="Label" parent="."]
@@ -33,7 +33,13 @@ metadata/_tab_index = 0
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 1
-theme_override_constants/separation = 10
+theme_override_constants/separation = 6
+
+[node name="DisplayHeader" type="Label" parent="Tabs/ContentScroll/GrafikList"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.95, 1, 0.6)
+theme_override_font_sizes/font_size = 13
+text = "ANZEIGE"
 
 [node name="FullscreenCheck" type="CheckButton" parent="Tabs/ContentScroll/GrafikList"]
 unique_name_in_owner = true
@@ -52,7 +58,6 @@ text = "Auflösung"
 [node name="ResolutionOption" type="OptionButton" parent="Tabs/ContentScroll/GrafikList/ResolutionRow"]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "Fenster: Fenstergröße. Vollbild: Auflösung der 3D-Welt (Monitor = volle Schärfe, kleiner = mehr FPS). Menüs bleiben immer scharf."
 size_flags_horizontal = 3
 
 [node name="VsyncCheck" type="CheckButton" parent="Tabs/ContentScroll/GrafikList"]
@@ -86,7 +91,6 @@ text = "3D-Auflösung"
 [node name="RenderScaleSlider" type="HSlider" parent="Tabs/ContentScroll/GrafikList/RenderScaleRow"]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "100 % = volle Monitorauflösung (bei 4K echtes 4K). Ruckelt es, auf 75 % oder 50 % (bei 4K = Full HD) senken oder eine Upscaling-Stufe wählen."
 size_flags_horizontal = 3
 size_flags_vertical = 4
 min_value = 50.0
@@ -115,7 +119,7 @@ metadata/_tab_index = 1
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 1
-theme_override_constants/separation = 10
+theme_override_constants/separation = 6
 
 [node name="OutputDeviceRow" type="HBoxContainer" parent="Tabs/AudioScroll/AudioList"]
 layout_mode = 2
@@ -221,7 +225,7 @@ metadata/_tab_index = 2
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 1
-theme_override_constants/separation = 10
+theme_override_constants/separation = 6
 
 [node name="SensitivityRow" type="HBoxContainer" parent="Tabs/ControlsScroll/ControlsList"]
 layout_mode = 2
@@ -278,11 +282,11 @@ layout_mode = 2
 text = "100%"
 horizontal_alignment = 2
 
-[node name="KeyHint" type="Label" parent="Tabs/ControlsScroll/ControlsList"]
+[node name="KeyHeader" type="Label" parent="Tabs/ControlsScroll/ControlsList"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.95, 1, 0.6)
 theme_override_font_sizes/font_size = 13
-text = "TASTENBELEGUNG  //  Feld anklicken, neue Taste drücken (Esc = abbrechen)"
+text = "TASTENBELEGUNG"
 
 [node name="KeyScroll" type="ScrollContainer" parent="Tabs/ControlsScroll/ControlsList"]
 custom_minimum_size = Vector2(0, 200)
