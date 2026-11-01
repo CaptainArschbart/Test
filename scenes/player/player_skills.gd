@@ -1,5 +1,5 @@
 extends Node
-## Skill-Bäume des Spielers (Kampf, Gauner, Tech). Der Player legt den Knoten im Code an
+## Skill-Bäume des Spielers (Kampf, Bewegung, Stealth). Der Player legt den Knoten im Code an
 ## (Player.skills), bei jeder Figur, auch bei fremden. Ohne class_name, der Player lädt das Skript per
 ## preload.
 ##
@@ -17,8 +17,8 @@ extends Node
 signal changed
 
 const PROFILE_PATH := "user://player_profile.cfg"
-const TREES := [&"combat", &"rogue", &"tech"]
-const TREE_NAMES := {&"combat": "KAMPF", &"rogue": "GAUNER", &"tech": "TECH & ÜBERLEBEN"}
+const TREES := [&"combat", &"movement", &"stealth"]
+const TREE_NAMES := {&"combat": "KAMPF", &"movement": "BEWEGUNG", &"stealth": "STEALTH"}
 
 ## tier 0–2 (oben nach unten), column 0 = links, 1 = rechts, 0.5 = mittig.
 const SKILLS := {
@@ -48,56 +48,56 @@ const SKILLS := {
 		"name": "Panzerhaut", "description": "20 % weniger Schaden durch Gegner, Spieler und Granaten.",
 		"effects": {&"damage_taken_mult": 0.8},
 	},
-	# --- Gauner --------------------------------------------------------------------------------
+	# --- Bewegung ------------------------------------------------------------------------------
+	&"sprinter": {
+		"tree": &"movement", "tier": 0, "column": 0.0, "requires": [],
+		"name": "Sprinter", "description": "Sprinten ist 12 % schneller.",
+		"effects": {&"sprint_mult": 1.12},
+	},
+	&"endurance": {
+		"tree": &"movement", "tier": 0, "column": 1.0, "requires": [],
+		"name": "Ausdauernd", "description": "30 % mehr Ausdauer, sie lädt 25 % schneller nach.",
+		"effects": {&"stamina_mult": 1.3, &"stamina_regen_mult": 1.25},
+	},
+	&"slider": {
+		"tree": &"movement", "tier": 1, "column": 0.0, "requires": [&"sprinter"],
+		"name": "Rutschpartie", "description": "Rutschen startet 20 % schneller und bremst 25 % weniger.",
+		"effects": {&"slide_mult": 1.2, &"slide_friction_mult": 0.75},
+	},
+	&"climber": {
+		"tree": &"movement", "tier": 1, "column": 1.0, "requires": [&"endurance"],
+		"name": "Kletterer", "description": "Klettern an Kanten geht 35 % schneller.",
+		"effects": {&"climb_time_mult": 0.65},
+	},
+	&"free_runner": {
+		"tree": &"movement", "tier": 2, "column": 0.5, "requires": [&"slider", &"climber"],
+		"name": "Freiläufer", "description": "Sprünge 15 % höher, Fallschaden halbiert.",
+		"effects": {&"jump_mult": 1.15, &"fall_damage_mult": 0.5},
+	},
+	# --- Stealth -------------------------------------------------------------------------------
 	&"soft_soles": {
-		"tree": &"rogue", "tier": 0, "column": 0.0, "requires": [],
+		"tree": &"stealth", "tier": 0, "column": 0.0, "requires": [],
 		"name": "Leise Sohlen", "description": "Schritte, Rutschen und Landungen sind 40 % leiser.",
 		"effects": {&"step_noise_mult": 0.6},
 	},
 	&"quick_fingers": {
-		"tree": &"rogue", "tier": 0, "column": 1.0, "requires": [],
+		"tree": &"stealth", "tier": 0, "column": 1.0, "requires": [],
 		"name": "Flinke Finger", "description": "Taschendiebstahl 35 % schneller, Verdacht steigt 25 % langsamer.",
 		"effects": {&"pick_time_mult": 0.65, &"suspicion_mult": 0.75},
 	},
 	&"shadow": {
-		"tree": &"rogue", "tier": 1, "column": 0.0, "requires": [&"soft_soles"],
+		"tree": &"stealth", "tier": 1, "column": 0.0, "requires": [&"soft_soles"],
 		"name": "Schatten", "description": "Du bist 25 % schwerer zu sehen.",
 		"effects": {&"visibility_mult": 0.75},
 	},
 	&"lockpick": {
-		"tree": &"rogue", "tier": 1, "column": 1.0, "requires": [&"quick_fingers"],
+		"tree": &"stealth", "tier": 1, "column": 1.0, "requires": [&"quick_fingers"],
 		"name": "Dietrich", "description": "Verschlossene Türen ohne Schlüssel leise knacken (E).",
 		"effects": {&"lockpick": 1.0},
 	},
-	&"big_score": {
-		"tree": &"rogue", "tier": 2, "column": 0.5, "requires": [&"shadow", &"lockpick"],
-		"name": "Großer Fang", "description": "50 % mehr Bargeld aus Taschen, Raub geht 40 % schneller.",
-		"effects": {&"loot_cash_mult": 1.5, &"rob_time_mult": 0.6},
-	},
-	# --- Tech & Überleben -----------------------------------------------------------------------
-	&"tough": {
-		"tree": &"tech", "tier": 0, "column": 0.0, "requires": [],
-		"name": "Zäh", "description": "+25 maximale Gesundheit.",
-		"effects": {&"max_hp_add": 25.0},
-	},
-	&"endurance": {
-		"tree": &"tech", "tier": 0, "column": 1.0, "requires": [],
-		"name": "Ausdauernd", "description": "30 % mehr Ausdauer, sie lädt 25 % schneller nach.",
-		"effects": {&"stamina_mult": 1.3, &"stamina_regen_mult": 1.25},
-	},
-	&"medic": {
-		"tree": &"tech", "tier": 1, "column": 0.0, "requires": [&"tough"],
-		"name": "Sanitäter", "description": "Medkits, Stims und Essen heilen 50 % mehr.",
-		"effects": {&"heal_mult": 1.5},
-	},
-	&"haggler": {
-		"tree": &"tech", "tier": 1, "column": 1.0, "requires": [&"endurance"],
-		"name": "Feilscher", "description": "Läden 15 % billiger, der Hehler zahlt 20 % mehr.",
-		"effects": {&"price_mult": 0.85, &"fence_mult": 1.2},
-	},
 	&"camera_hack": {
-		"tree": &"tech", "tier": 2, "column": 0.5, "requires": [&"medic", &"haggler"],
-		"name": "Kamera-Hack", "description": "Ladenkameras zeichnen dich nicht auf.",
+		"tree": &"stealth", "tier": 2, "column": 0.5, "requires": [&"shadow", &"lockpick"],
+		"name": "Kamera-Hack", "description": "Überwachungskameras in Läden zeichnen dich nicht auf.",
 		"effects": {&"camera_ghost": 1.0},
 	},
 }
@@ -110,7 +110,6 @@ var level := 1
 var autosave := false
 
 var _player: Node
-var _base_max_hp := -1.0
 var _base_max_stamina := -1.0
 var _base_stamina_regen := -1.0
 var _effects := {}
@@ -210,7 +209,7 @@ func mult(key: StringName) -> float:
 	return float(_effects.get(key, 1.0))
 
 
-## Summe für `key` (0 ohne passenden Skill), z. B. max_hp_add oder Schalter wie lockpick.
+## Summe für `key` (0 ohne passenden Skill), z. B. Schalter wie lockpick.
 func add(key: StringName) -> float:
 	return float(_effects.get(key, 0.0))
 
@@ -229,25 +228,20 @@ func _rebuild_effects() -> void:
 				_effects[key] = float(_effects.get(key, 0.0)) + value
 
 
-## Max-HP und Ausdauer am PlayerStats nachziehen. Die Grundwerte merkt sich der erste Aufruf.
+## Ausdauer am PlayerStats nachziehen (Ausdauernd). Die Grundwerte merkt sich der erste Aufruf.
 func apply_stats() -> void:
 	var stats: Node = _player.get_node_or_null(^"PlayerStats") if _player != null else null
 	if stats == null:
 		return
-	if _base_max_hp < 0.0:
-		_base_max_hp = stats.max_hp
+	if _base_max_stamina < 0.0:
 		_base_max_stamina = stats.max_stamina
 		_base_stamina_regen = stats.stamina_regen_per_second
-	var old_hp: float = stats.max_hp
 	var old_stamina: float = stats.max_stamina
-	stats.max_hp = _base_max_hp + add(&"max_hp_add")
 	stats.max_stamina = _base_max_stamina * mult(&"stamina_mult")
 	stats.stamina_regen_per_second = _base_stamina_regen * mult(&"stamina_regen_mult")
 	# Mehr Maximum gibt den Zuwachs gleich dazu, weniger schneidet ab.
 	if stats.is_alive():
-		stats.hp = PlayerStats.clamp_value(stats.hp + maxf(stats.max_hp - old_hp, 0.0), stats.max_hp)
 		stats.stamina = PlayerStats.clamp_value(stats.stamina + maxf(stats.max_stamina - old_stamina, 0.0), stats.max_stamina)
-	stats.stat_changed.emit("hp", stats.hp, stats.max_hp)
 	stats.stat_changed.emit("stamina", stats.stamina, stats.max_stamina)
 
 

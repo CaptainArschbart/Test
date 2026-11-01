@@ -249,7 +249,7 @@ func apply_consumable(item: ConsumableData, slot: int) -> bool:
 		return false
 	_player.inventory.remove_at(slot)
 	if item.heal > 0.0:
-		stats.heal(item.heal * _player.skill_mult(&"heal_mult"))
+		stats.heal(item.heal)
 	if item.stamina > 0.0:
 		stats.add_stamina(item.stamina)
 	if item.food > 0.0:

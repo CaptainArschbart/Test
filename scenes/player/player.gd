@@ -292,14 +292,16 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= gravity * delta
 
 	if Input.is_action_just_pressed("jump") and grounded_before and not input_locked:
-		velocity.y = jump_velocity
+		# Skill Freiläufer (jump_mult).
+		velocity.y = jump_velocity * skill_mult(&"jump_mult")
 		_stair_grace = 0.0
 
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	if input_locked:
 		input_dir = Vector2.ZERO
 	var direction := (transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
-	var speed := sprint_speed if sprinting else walk_speed
+	# Skill Sprinter (sprint_mult).
+	var speed := sprint_speed * skill_mult(&"sprint_mult") if sprinting else walk_speed
 	speed = movement.adjust_speed(speed)
 	if melee != null:
 		speed *= melee.get_move_factor()
@@ -745,7 +747,8 @@ func _update_footsteps(delta: float, sprinting: bool, target_speed: float) -> vo
 
 ## Schaden aus der Aufprallgeschwindigkeit: Höhe = v² / 2g.
 func _apply_fall_damage() -> void:
-	var amount := fall_damage_for_speed(-_fall_speed)
+	# Skill Freiläufer (fall_damage_mult).
+	var amount := fall_damage_for_speed(-_fall_speed) * skill_mult(&"fall_damage_mult")
 	if amount > 0.0 and stats.is_alive():
 		stats.damage(amount, PlayerStats.CAUSE_FALL)
 

@@ -150,10 +150,7 @@ func _physics_process(delta: float) -> void:
 	if pick_progress >= 0.0:
 		_pick_tick(delta)
 	if rob_progress >= 0.0:
-		var rob_time := ROB_TIME
-		if _robber != null and is_instance_valid(_robber):
-			rob_time *= _robber.skill_mult(&"rob_time_mult")
-		rob_progress = minf(rob_progress + delta / rob_time, 1.0)
+		rob_progress = minf(rob_progress + delta / ROB_TIME, 1.0)
 		if rob_progress >= 1.0:
 			_hand_over()
 	_aim_tick -= delta
@@ -342,10 +339,8 @@ func _pocket_empty() -> bool:
 func _empty_pocket(player: Player) -> String:
 	var parts: PackedStringArray = []
 	if pocket_cents > 0:
-		# Skill Großer Fang (loot_cash_mult).
-		var cents := roundi(pocket_cents * player.skill_mult(&"loot_cash_mult"))
-		player.inventory.add_money(cents)
-		parts.append("%d ¢" % cents)
+		player.inventory.add_money(pocket_cents)
+		parts.append("%d ¢" % pocket_cents)
 		pocket_cents = 0
 	if _jewelry and _give(player, JEWELRY):
 		_jewelry = false
