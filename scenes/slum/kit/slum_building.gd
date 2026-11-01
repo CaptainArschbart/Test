@@ -418,7 +418,7 @@ func _ground_floor_front(b: SlumBuilder) -> void:
 		b.quad(front + Vector3(x, 1.6, DECAL_OPENING), Vector3.BACK, 1.2, 1.0, SlumMats.decal("window_bars"))
 	_ground_decals(b, Vector3.BACK, _w, _d, door_x)
 	if front_sign != "":
-		_flat_sign(b, Vector3(door_x, 3.3 if floors > 1 else 2.9, _d * 0.5 + 0.18), Vector3.BACK, front_sign, 2.4)
+		_flat_sign(b, Vector3(door_x, 3.3 if floors > 1 else 2.9, _d * 0.5 + 0.18), Vector3.BACK, front_sign, 2.4, 0.9)
 
 
 ## Graffiti, Poster und Tags im Erdgeschoss.
@@ -753,7 +753,7 @@ func _shop(b: SlumBuilder) -> void:
 	add_light(Vector3(0, fh - 0.6, iz1 - 0.8), neon_col.lerp(Color(1.0, 0.85, 0.7), 0.5), 2.0, 6.0, 0.05)
 	add_light(Vector3(counter_x, fh - 0.5, counter_zc), Color(1.0, 0.9, 0.75), 1.4, 4.5)
 	if front_sign != "":
-		_flat_sign(b, Vector3(0, fh + 0.7, _d * 0.5 + 0.18), Vector3.BACK, front_sign, minf(open_w + 0.6, 4.2))
+		_flat_sign(b, Vector3(0, fh + 0.7, _d * 0.5 + 0.18), Vector3.BACK, front_sign, minf(open_w + 0.6, 3.2), 1.1)
 	if side_sign != "":
 		_vertical_sign(b, Vector3(_w * 0.5 - 0.7, fh + 2.2, _d * 0.5), side_sign)
 	_ground_decals(b, Vector3.LEFT, _d, _w, 99.0)
@@ -850,12 +850,22 @@ func _aisle_sign(at: Vector3, text: String) -> void:
 	add_gen(label, at)
 
 
-func _flat_sign(b: SlumBuilder, at: Vector3, n: Vector3, tex: String, width: float) -> void:
+## Größe eines Schilds: so groß wie möglich innerhalb max_w × max_h, ohne die Textur zu verzerren.
+## Sonst würde ein hohes Schild (薬局, ホテル) über die Tür wachsen oder ein breites weit herausragen.
+func _sign_size(tex: String, max_w: float, max_h: float) -> Vector2:
 	var t := SlumMats.texture(tex)
 	var aspect := 2.6
 	if t != null:
 		aspect = float(t.get_width()) / float(t.get_height())
-	var h := width / aspect
+	if max_w / aspect > max_h:
+		return Vector2(max_h * aspect, max_h)
+	return Vector2(max_w, max_w / aspect)
+
+
+func _flat_sign(b: SlumBuilder, at: Vector3, n: Vector3, tex: String, max_w: float, max_h: float) -> void:
+	var size := _sign_size(tex, max_w, max_h)
+	var width := size.x
+	var h := size.y
 	b.box_x(SlumBuilder.facing(at - n * (0.05 + DECAL_OPENING), n), Vector3(width + 0.12, h + 0.12, 0.1), _dark_metal, false)
 	var mat := SlumMats.sign_mat(tex, 3.0)
 	b.quad(at, n, width, h, mat)
@@ -866,12 +876,9 @@ func _flat_sign(b: SlumBuilder, at: Vector3, n: Vector3, tex: String, width: flo
 ## Senkrechtes Ausleger-Schild an der Front. at = Befestigungspunkt an der Wand (Mitte, Höhe).
 ## Das Schild steht quer zur Fassade und ist von der Straße aus beidseitig lesbar.
 func _vertical_sign(b: SlumBuilder, at: Vector3, tex: String) -> void:
-	var t := SlumMats.texture(tex)
-	var aspect := 0.4
-	if t != null:
-		aspect = float(t.get_width()) / float(t.get_height())
-	var h := 3.0
-	var w := h * aspect
+	var size := _sign_size(tex, 1.5, 3.0)
+	var w := size.x
+	var h := size.y
 	var c := at + Vector3(0, 0, 0.25 + w * 0.5)
 	for y: float in [h * 0.5 - 0.15, -h * 0.5 + 0.15]:
 		b.box(Vector3(at.x, at.y + y, at.z + 0.15), Vector3(0.06, 0.06, 0.3), _metal, false)
@@ -953,7 +960,7 @@ func _warehouse(b: SlumBuilder) -> void:
 		b.box(Vector3(lx, gate_h + 0.33, _d * 0.5 + 0.25), Vector3(0.3, 0.03, 0.2), SlumMats.color(Color(1.0, 0.85, 0.6), 5.0), false, false)
 		add_light(Vector3(lx, gate_h + 0.1, _d * 0.5 + 0.8), Color(1.0, 0.8, 0.55), 2.0, 9.0, 0.0)
 	if front_sign != "":
-		_flat_sign(b, Vector3(dx, gate_h + 0.9, _d * 0.5 + 0.18), Vector3.BACK, front_sign, 1.8)
+		_flat_sign(b, Vector3(dx, gate_h + 0.9, _d * 0.5 + 0.18), Vector3.BACK, front_sign, 1.8, 1.0)
 	_ground_decals(b, Vector3.LEFT, _d, _w, 99.0)
 	_ground_decals(b, Vector3.FORWARD, _w, _d, 99.0)
 	# Innen: Boden, Laufsteg an der Rückwand mit Treppe, Lampen
@@ -1102,7 +1109,7 @@ func _tower(b: SlumBuilder) -> void:
 		b.tube(p, p + Vector3.UP * ah, 0.08, _metal, 4)
 		b.box(p + Vector3.UP * ah, Vector3(0.25, 0.25, 0.25), SlumMats.color(Color(1.0, 0.1, 0.1), 8.0), false, false)
 	if front_sign != "":
-		_flat_sign(b, Vector3(0, _h * rng.randf_range(0.55, 0.8), _d * 0.5 + 0.2), Vector3.BACK, front_sign, minf(_w * 0.6, 9.0))
+		_flat_sign(b, Vector3(0, _h * rng.randf_range(0.55, 0.8), _d * 0.5 + 0.2), Vector3.BACK, front_sign, minf(_w * 0.6, 9.0), 4.0)
 	if side_sign != "":
 		_vertical_sign(b, Vector3(_w * 0.5 - 1.0, _h * 0.5, _d * 0.5), side_sign)
 

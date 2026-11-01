@@ -36,3 +36,11 @@ Arbeitslog von Arschis Seite (Claude für Arschi). Neuer Eintrag ganz unten. `en
 - `scenes/crime/apartment_block.gd`: `_spawn_residents()` macht im Editor nichts (`Engine.is_editor_hint()`), wie schon `ShopInterior` in `slum_building.gd`. Im Spiel ändert sich nichts. Im Editor stehen in den Wohnungen keine Bewohner mehr.
 - Getestet (Godot 4.7.2 stable, headless): `slum.tscn` im Editor geöffnet, 400 Frames. Vorher 8059 dieser Fehler, nachher 0. `test_apartments.gd` CHECKS 55 FAILS 0.
 - Git: Branch `claude/editor-bewohner` aus `origin/main` (c6c47b4), Draft-PR mit Basis `main`.
+
+### 2026-11-01 · Leuchtschilder an Gebäuden kleiner, Eingänge frei · Claude (für Arschi) · Branch `claude/schilder-kleiner`
+- Fehler: Ausleger-Schilder (z. B. NOODLES) waren viel zu groß, und vor manchen Läden hing ein Schild (薬局) vor dem Eingang.
+- Ursache: In `slum_building.gd` war bei Schildern nur eine Kante fest, die andere folgte dem Seitenverhältnis der Textur. Ausleger (`_vertical_sign`) waren immer 3 m hoch, breite Texturen (256×96) ragten so 8 m aus der Wand. Front-Schilder (`_flat_sign`) hatten eine feste Breite, hohe Texturen (薬局 80×176, ホテル 80×200) wurden bei Läden 9 m hoch und hingen bis vor die Tür.
+- `scenes/slum/kit/slum_building.gd`: neu `_sign_size(tex, max_w, max_h)` passt die Textur unverzerrt in einen Rahmen. Grenzen (Breite × Höhe): Ausleger 1,5 × 3,0 m, Laden-Front 3,2 × 1,1 m (vorher bis 4,2 m breit), Wohnhaus-Tür 2,4 × 0,9 m, Lagerhalle 1,8 × 1,0 m, Hochhaus wie bisher bis 9 m breit, höchstens 4 m hoch.
+- Beispiele: NOODLES-Ausleger 1,5 × 0,56 m (vorher 8 × 3 m), 薬局-Ausleger unverändert 1,36 × 3 m, 薬局 über dem Laden 0,5 × 1,1 m (vorher 1,9 × 4,2 m+), NOODLES über dem Laden 2,9 × 1,1 m.
+- Getestet (Godot 4.7.2 stable, headless): `slum.tscn` im Editor und das Spiel geladen, kein `SCRIPT ERROR`. Nicht im Fenster angesehen.
+- Git: Branch `claude/schilder-kleiner` aus `origin/main` (264f362), Draft-PR mit Basis `main`.
