@@ -19,6 +19,35 @@ signal closed
 ## Effektwunsch für das Hauptmenü (Glitch). Das Pausemenü braucht ihn nicht.
 signal glitch_requested(strength: float, duration: float)
 
+## Erklärungen zu den Einstellungen (Knotenname → Text). Sie stehen nicht in der Liste,
+## sondern erscheinen als Tooltip, wenn die Maus über der Zeile steht.
+const HINTS := {
+	"FullscreenCheck": "Vollbild oder Fenster. F11 schaltet jederzeit um.",
+	"ResolutionOption": "Fenster: Fenstergröße. Vollbild: Auflösung der 3D-Welt (Monitor = volle Schärfe, kleiner = mehr FPS). Menüs bleiben immer scharf.",
+	"VsyncCheck": "Bildrate an den Monitor binden. Verhindert Bildrisse, kostet etwas Reaktionszeit.",
+	"MsaaOption": "Glättet Kanten. Höhere Stufen kosten mehr Leistung.",
+	"RenderScaleSlider": "100 % = volle Monitorauflösung (bei 4K echtes 4K). Ruckelt es, auf 75 % oder 50 % (bei 4K = Full HD) senken oder eine Upscaling-Stufe wählen.",
+	"GiOption": "Indirektes Licht. Raytraced High braucht eine starke Grafikkarte.",
+	"UpscaleOption": "Die Stufen steuern scaling_3d_mode (FSR 2) und scaling_3d_scale. Nvidia DLSS 5 Frame Generation gibt es in Godot 4.7 nicht; Hybrid senkt nur die interne Auflösung.",
+	"DrawDistanceSlider": "Wie weit die Welt gezeichnet wird. Weniger = mehr FPS.",
+	"ShadowOption": "Schärfe der Schatten. Niedriger = mehr FPS.",
+	"SsaoCheck": "Umgebungsverdeckung: dunklere Ecken und Kontaktschatten.",
+	"GlowCheck": "Leuchten um Neonlichter und helle Flächen.",
+	"GlowStrengthSlider": "Stärke des Leuchtens (nur mit Glow).",
+	"VolumetricFogCheck": "Nebel, in dem Lichtkegel sichtbar werden. Kostet viel Leistung.",
+	"Physics30Check": "Halber Physik-Takt mit Interpolation. Schont schwache CPUs.",
+	"RenderThreadCheck": "Rendert auf einem eigenen Thread. Experimentell, wirkt erst nach einem Neustart.",
+	"OutputDeviceOption": "Lautsprecher oder Kopfhörer. Neu angesteckte Geräte erscheinen beim nächsten Öffnen.",
+	"MusicSlider": "Wirkt sofort zum Probehören, gespeichert wird erst mit Übernehmen.",
+	"SensitivitySlider": "Wie schnell sich die Kamera mit der Maus dreht.",
+	"InvertYCheck": "Maus nach oben = nach unten schauen.",
+	"CameraShakeSlider": "Wackeln der Kamera. 0 % = aus.",
+	"ApplyButton": "Änderungen übernehmen und speichern.",
+	"DefaultsButton": "Standardwerte laden. Gespeichert wird erst mit Übernehmen.",
+	"BackButton": "Zurück (Esc). Nicht Übernommenes wird nach Rückfrage verworfen.",
+}
+const KEY_HINT := "Anklicken, dann neue Taste drücken (Esc = abbrechen). Eine schon belegte Taste tauscht mit."
+
 ## Bearbeitete, noch nicht übernommene Einstellungen. Leer, solange die Seite zu ist.
 var _draft := {}
 ## Aktion, für die gerade eine neue Taste erwartet wird ("" = keine).
@@ -92,6 +121,7 @@ func _ready() -> void:
 
 	_build_key_grid()
 	_build_nextgen_rows()
+	_apply_hints()
 	tabs.set_tab_title(0, "GRAFIK")
 	tabs.set_tab_title(1, "AUDIO")
 	tabs.set_tab_title(2, "STEUERUNG")
@@ -392,6 +422,7 @@ func _select_id(option: OptionButton, id: int) -> void:
 
 func _build_nextgen_rows() -> void:
 	var page := tabs.get_node(^"ContentScroll/GrafikList") as VBoxContainer
+	_add_header(page, "QualityHeader", "QUALITÄT")
 	gi_option = _add_option(page, "GiOption", "Raytracing / GI", ["Aus", "Normal", "Raytraced High"])
 	gi_option.item_selected.connect(func(index: int) -> void:
 		_set_draft(gi_option.get_item_id(index), "gi_mode"))
@@ -400,20 +431,7 @@ func _build_nextgen_rows() -> void:
 	])
 	upscale_option.item_selected.connect(func(index: int) -> void:
 		_set_draft(upscale_option.get_item_id(index), "upscale_mode"))
-	var hint := Label.new()
-	hint.name = "UpscaleHint"
-	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.text = "Die Stufen steuern scaling_3d_mode (FSR 2) und scaling_3d_scale. Nvidia DLSS 5 Frame Generation gibt es in Godot 4.7 nicht; Hybrid senkt nur die interne Auflösung."
-	page.add_child(hint)
-	var row := HBoxContainer.new()
-	row.name = "DrawDistanceRow"
-	page.add_child(row)
-	var caption := Label.new()
-	caption.text = "Renderdistanz"
-	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	caption.custom_minimum_size = Vector2(220, 0)
-	row.add_child(caption)
+	var row := _add_row(page, "DrawDistanceRow", "Renderdistanz")
 	draw_distance_slider = HSlider.new()
 	draw_distance_slider.name = "DrawDistanceSlider"
 	draw_distance_slider.unique_name_in_owner = true
@@ -427,7 +445,8 @@ func _build_nextgen_rows() -> void:
 	draw_distance_value.name = "DrawDistanceValue"
 	draw_distance_value.unique_name_in_owner = true
 	draw_distance_value.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	draw_distance_value.custom_minimum_size = Vector2(72, 0)
+	draw_distance_value.custom_minimum_size = Vector2(56, 0)
+	draw_distance_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	row.add_child(draw_distance_value)
 	draw_distance_value.owner = self
 	draw_distance_slider.value_changed.connect(func(meters: float) -> void:
@@ -437,14 +456,7 @@ func _build_nextgen_rows() -> void:
 		_set_draft(shadow_option.get_item_id(index), "shadow_quality"))
 	ssao_check = _add_check(page, "SsaoCheck", "SSAO")
 	glow_check = _add_check(page, "GlowCheck", "Glow")
-	var glow_row := HBoxContainer.new()
-	glow_row.name = "GlowStrengthRow"
-	page.add_child(glow_row)
-	var glow_caption := Label.new()
-	glow_caption.text = "Bloom-Stärke"
-	glow_caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	glow_caption.custom_minimum_size = Vector2(220, 0)
-	glow_row.add_child(glow_caption)
+	var glow_row := _add_row(page, "GlowStrengthRow", "Bloom-Stärke")
 	glow_strength_slider = HSlider.new()
 	glow_strength_slider.name = "GlowStrengthSlider"
 	glow_strength_slider.unique_name_in_owner = true
@@ -458,7 +470,8 @@ func _build_nextgen_rows() -> void:
 	glow_strength_value.name = "GlowStrengthValue"
 	glow_strength_value.unique_name_in_owner = true
 	glow_strength_value.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	glow_strength_value.custom_minimum_size = Vector2(72, 0)
+	glow_strength_value.custom_minimum_size = Vector2(56, 0)
+	glow_strength_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	glow_row.add_child(glow_strength_value)
 	glow_strength_value.owner = self
 	glow_strength_slider.value_changed.connect(func(percent: float) -> void:
@@ -468,21 +481,58 @@ func _build_nextgen_rows() -> void:
 	glow_check.toggled.connect(_set_draft.bind("glow_enabled"))
 	volumetric_check.toggled.connect(_set_draft.bind("volumetric_fog"))
 	# Leistung auf schwachen CPUs: halber Physik-Takt (mit Interpolation) und Rendering auf eigenem Thread.
-	physics30_check = _add_check(page, "Physics30Check", "Physik 30 Hz (schont die CPU)")
+	_add_header(page, "PerformanceHeader", "LEISTUNG")
+	physics30_check = _add_check(page, "Physics30Check", "Physik 30 Hz")
 	physics30_check.toggled.connect(func(on: bool) -> void: _set_draft(30 if on else 60, "physics_rate"))
-	render_thread_check = _add_check(page, "RenderThreadCheck", "Render-Thread (experimentell, nach Neustart)")
+	render_thread_check = _add_check(page, "RenderThreadCheck", "Render-Thread")
 	render_thread_check.toggled.connect(_set_draft.bind("render_thread"))
 
 
-func _add_option(page: VBoxContainer, node_name: String, caption: String, items: Array[String]) -> OptionButton:
+## Zeile wie in der Szene: Beschriftung 160 px breit, 16 px Abstand zum Bedienelement.
+func _add_row(page: VBoxContainer, row_name: String, caption: String) -> HBoxContainer:
 	var row := HBoxContainer.new()
-	row.name = node_name + "Row"
+	row.name = row_name
+	row.add_theme_constant_override("separation", 16)
 	page.add_child(row)
 	var label := Label.new()
 	label.text = caption
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.custom_minimum_size = Vector2(220, 0)
+	label.custom_minimum_size = Vector2(160, 0)
 	row.add_child(label)
+	return row
+
+
+## Kleine Abschnittsüberschrift wie "ANZEIGE" in der Szene.
+func _add_header(page: VBoxContainer, node_name: String, text: String) -> void:
+	var header := Label.new()
+	header.name = node_name
+	header.text = text
+	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header.add_theme_color_override("font_color", Color(0, 0.95, 1, 0.6))
+	header.add_theme_font_size_override("font_size", 13)
+	page.add_child(header)
+
+
+## Setzt die Tooltips aus HINTS. In einer Zeile bekommt auch die Beschriftung den Text,
+## damit er schon beim Zeigen auf den Namen erscheint.
+func _apply_hints() -> void:
+	for node_name: String in HINTS:
+		var control := get_node_or_null("%" + node_name) as Control
+		if control == null:
+			continue
+		control.tooltip_text = HINTS[node_name]
+		var row := control.get_parent() as HBoxContainer
+		if row == null:
+			continue
+		for child: Node in row.get_children():
+			var label := child as Label
+			if label != null:
+				label.tooltip_text = HINTS[node_name]
+				label.mouse_filter = Control.MOUSE_FILTER_PASS
+
+
+func _add_option(page: VBoxContainer, node_name: String, caption: String, items: Array[String]) -> OptionButton:
+	var row := _add_row(page, node_name + "Row", caption)
 	var option := OptionButton.new()
 	option.name = node_name
 	option.unique_name_in_owner = true
@@ -517,6 +567,7 @@ func _build_key_grid() -> void:
 		button.custom_minimum_size.x = 120
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_font_size_override("font_size", 16)
+		button.tooltip_text = KEY_HINT
 		button.pressed.connect(_start_rebind.bind(action))
 		key_grid.add_child(button)
 		_key_buttons[action] = button

@@ -52,3 +52,11 @@ Arbeitslog von Arschis Seite (Claude für Arschi). Neuer Eintrag ganz unten. `en
 - `scenes/slum/slum.tscn`: Shop11 `(-1.5)`, Shop12 `(2.0)`, Shop39 `(-0.7)`, jeweils PowerPole11, 16 und 26.
 - Getestet (Godot 4.7.2 stable, headless): Prüfskript über alle 41 Läden in `slum.tscn`, vorher 3 Masten in Markisen, nachher 0. `slum.tscn` im Editor geladen, kein `SCRIPT ERROR`. Nicht im Fenster angesehen.
 - Git: Branch `claude/markise-masten` aus `origin/main` (4ce1772), Draft-PR mit Basis `main`.
+
+### 2026-11-01 · Pausemenü kleiner, Optionen übersichtlicher · Claude (für Arschi) · Branch `claude/pause-kompakt`
+- Wunsch: Pausemenü kleiner, Optionen übersichtlicher, Hinweise nur beim Drüberfahren mit der Maus.
+- `scenes/pause/pause_menu.tscn`: Feld 320 statt 540 px breit, Titel 24 statt 34 px, Knöpfe 18 statt 24 px. Die Zeile „SPIEL ANGEHALTEN // ESC … // F11 …“ ist weg, Esc und F11 stehen jetzt im Tooltip von FORTSETZEN und OPTIONEN. Die Optionen im Pausemenü sind 600 × 430 statt 720 × 520 px groß (wie im Hauptmenü).
+- `scenes/options/options_menu.gd/.tscn` (gilt für Haupt- und Pausemenü): Alle Erklärungen stehen in `HINTS` und erscheinen nur als Tooltip, auch über der Beschriftung der Zeile. Der lange Upscaling-Text (`UpscaleHint`) und der Text neben TASTENBELEGUNG sind keine sichtbaren Zeilen mehr. „Physik 30 Hz (schont die CPU)“ heißt jetzt „Physik 30 Hz“, „Render-Thread (experimentell, nach Neustart)“ heißt „Render-Thread“, der Rest steht im Tooltip. Grafik hat kleine Abschnitte ANZEIGE, QUALITÄT, LEISTUNG. Alle Zeilen haben dieselbe Beschriftungsbreite (160 px, vorher teils 220), Abstand zwischen Zeilen 6 statt 10 px.
+- `tools/tests/test_options_scroll.gd`: prüft Tooltips, fehlende Hinweiszeilen und die schmale Pause.
+- Getestet (Godot 4.7.2 stable, headless): `test_options_scroll.gd` CHECKS 35 FAILS 0, `test_resolution_window.gd` CHECKS 6 FAILS 0. Nicht im Fenster angesehen (Tooltip-Aussehen kommt aus dem Godot-Standard, `cyber_theme.tres` hat keinen Tooltip-Stil).
+- Git: Branch `claude/pause-kompakt` aus `origin/main` (4b40dab), Draft-PR mit Basis `main`.
