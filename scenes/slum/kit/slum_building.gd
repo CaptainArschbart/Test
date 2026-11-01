@@ -62,6 +62,12 @@ enum Side { NONE, LEFT, RIGHT }
 	set(v):
 		floor_level = v
 		queue_rebuild()
+## Laden: Lücken in der Markise an diesen x-Stellen (lokal, Mitte = 0), z. B. für einen Strommast
+## direkt vor dem Laden. Jede Lücke ist AWNING_GAP breit.
+@export var awning_gaps := PackedFloat32Array():
+	set(v):
+		awning_gaps = v
+		queue_rebuild()
 ## Senkrechtes Schild an der Ecke (z. B. sign_hotel, sign_pharmacy).
 @export var side_sign := "":
 	set(v):
@@ -120,6 +126,8 @@ const DECAL_STENCIL := 0.04
 const DECAL_GRAFFITI := 0.045
 const DECAL_TAG := 0.05
 const DECAL_POSTER := 0.055
+
+const AWNING_GAP := 0.5  # Lücke in der Markise für einen Mast (Mast 0,32 m dick)
 
 const ShopInteriorScript := preload("res://scenes/interact/shop_interior.gd")
 const ApartmentHouseScript := preload("res://scenes/crime/apartment_house.gd")
@@ -670,9 +678,13 @@ func _shop(b: SlumBuilder) -> void:
 		b.box(Vector3(s * (open_w * 0.5 + 0.06), gate_top * 0.5, _d * 0.5 + 0.06), Vector3(0.1, gate_top, 0.12), _dark_metal, false)
 	# Markise
 	var awn := SlumMats.surface(pick(["tarp_red", "tarp_blue"]))
-	var awn_x := Transform3D(Basis(Vector3.RIGHT, deg_to_rad(22)), Vector3(0, fh + 0.05, _d * 0.5 + 0.85))
-	b.box_x(awn_x, Vector3(open_w + 0.8, 0.05, 1.6), awn, false)
-	b.quad(Vector3(0, fh - 0.32, _d * 0.5 + 1.6), Vector3.BACK, open_w + 0.8, 0.24, SlumMats.decal("red_white"), Rect2(0, 0, 8, 1))
+	var awn_w := open_w + 0.8
+	for seg: Vector2 in _awning_segments(awn_w):
+		var cx := (seg.x + seg.y) * 0.5
+		var sw := seg.y - seg.x
+		var awn_x := Transform3D(Basis(Vector3.RIGHT, deg_to_rad(22)), Vector3(cx, fh + 0.05, _d * 0.5 + 0.85))
+		b.box_x(awn_x, Vector3(sw, 0.05, 1.6), awn, false)
+		b.quad(Vector3(cx, fh - 0.32, _d * 0.5 + 1.6), Vector3.BACK, sw, 0.24, SlumMats.decal("red_white"), Rect2(0, 0, 8.0 * sw / awn_w, 1))
 	# Einrichtung wie ein echter Späti: Theke seitlich am Eingang (Verkäufer sieht Tür und Gänge),
 	# dahinter eine Vitrine mit Wertsachen, Regalgänge (1,5 m hoch, man kann sich dahinter ducken),
 	# Kühlschränke an der rechten Wand, Wandregale hinten. Plätze für echte Ware bekommt ShopInterior.
@@ -775,6 +787,22 @@ func _shop(b: SlumBuilder) -> void:
 		interior.set("slots", slots)
 		interior.set("seed_value", rng.randi())
 		add_gen(interior)
+
+
+## Teilstücke der Markise (x von, x bis) zwischen den awning_gaps.
+func _awning_segments(awn_w: float) -> Array[Vector2]:
+	var gaps := Array(awning_gaps)
+	gaps.sort()
+	var out: Array[Vector2] = []
+	var x0 := -awn_w * 0.5
+	for g: float in gaps:
+		var x1 := minf(g - AWNING_GAP * 0.5, awn_w * 0.5)
+		if x1 - x0 > 0.1:
+			out.append(Vector2(x0, x1))
+		x0 = maxf(x0, g + AWNING_GAP * 0.5)
+	if awn_w * 0.5 - x0 > 0.1:
+		out.append(Vector2(x0, awn_w * 0.5))
+	return out
 
 
 func _plinth_front(b: SlumBuilder, open_w: float) -> void:
