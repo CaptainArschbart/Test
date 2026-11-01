@@ -13,6 +13,8 @@ signal opened(forced: bool)
 @export var door_size := Vector2(1.1, 2.2)
 ## So viel kleiner als die Kollision ist das Türblatt, je Richtung.
 @export var panel_gap := Vector2(0.05, 0.05)
+## Bild des Türblatts (Decal-Textur). Leer = Holzblatt.
+@export var door_texture := ""
 var forced_open := false
 
 var _panel: MeshInstance3D
@@ -32,7 +34,7 @@ func _ready() -> void:
 	mesh.size = Vector3(door_size.x - panel_gap.x, door_size.y - panel_gap.y, 0.08)
 	_panel.mesh = mesh
 	_panel.position = Vector3(0.0, door_size.y * 0.5, 0.0)
-	_panel.material_override = SlumMats.uv("door_wood", Color(0.85, 0.78, 0.72))
+	_panel.material_override = SlumMats.uv("door_wood", Color(0.85, 0.78, 0.72)) if door_texture.is_empty() else SlumMats.decal(door_texture)
 	add_child(_panel)
 
 

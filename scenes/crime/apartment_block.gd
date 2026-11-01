@@ -52,6 +52,10 @@ const VIEW_RANGE := 44.0
 @export var door_offset := 0.0
 ## Türschild.
 @export var plate := "WOHNUNG"
+## Flurseite: Wandfarbe, Rahmenfarbe und Türbild. Leer = Farben der Wohnung. Das Haus setzt sie gleich zu den festen Türen.
+@export var front_tint := Color(0, 0, 0, 0)
+@export var front_trim := Color(0, 0, 0, 0)
+@export var door_texture := "door_wood"
 
 var theme := 0
 var spawned_residents := 0
@@ -99,6 +103,7 @@ func _ready() -> void:
 	# Füllt die Wandöffnung bis unter den Sturz. Offen schwingt das Blatt um die Angel an der +X-Kante nach innen.
 	door.door_size = Vector2(DOOR_GAP, DOOR_TOP_HEIGHT)
 	door.panel_gap = Vector2.ZERO
+	door.door_texture = door_texture
 	door.open_offset = Vector3(DOOR_GAP * 0.5 * (1.0 - cos(deg_to_rad(80.0))), DOOR_TOP_HEIGHT * 0.5, -DOOR_GAP * 0.5 * sin(deg_to_rad(80.0)))
 	door.position = Vector3(_door_x * _flip, FLOOR_TOP, _front - WALL * 0.5)
 	add_child(door)
@@ -258,16 +263,21 @@ func _build_shell(b: SlumBuilder, front: SlumBuilder, colors: Dictionary) -> voi
 	_bx(b, _right - WALL, _right, FLOOR_TOP, ROOM_TOP, back_in, inner, wall)
 	var gap0 := _door_x - DOOR_GAP * 0.5
 	var gap1 := _door_x + DOOR_GAP * 0.5
-	_bx(front, _left, gap0, FLOOR_TOP, ceiling_top, inner, _front, wall)
-	_bx(front, gap1, _right, FLOOR_TOP, ceiling_top, inner, _front, wall)
-	_bx(front, gap0, gap1, 2.26, ceiling_top, inner, _front, wall)
+	var front_wall := wall if front_tint.a == 0.0 else SlumMats.surface("plaster", front_tint)
+	_bx(front, _left, gap0, 0.0, ceiling_top, inner, _front, front_wall)
+	_bx(front, gap1, _right, 0.0, ceiling_top, inner, _front, front_wall)
+	# Schwelle unter der Tür: Der Boden liegt im versteckten Innenraum, sonst bliebe hier ein Spalt.
+	_bx(front, gap0, gap1, 0.0, FLOOR_TOP, inner, _front, front_wall)
+	_bx(front, gap0, gap1, 2.26, ceiling_top, inner, _front, front_wall)
 	# Rahmen um die Tür, innen und außen.
 	var trim := SlumMats.color(colors["trim"])
+	var front_trim_mat := trim if front_trim.a == 0.0 else SlumMats.color(front_trim)
 	for z: float in [_front, inner - 0.03]:
 		var target := front if z == _front else b
-		_bx(target, gap0 - 0.07, gap0, FLOOR_TOP, 2.3, z, z + 0.03, trim, false)
-		_bx(target, gap1, gap1 + 0.07, FLOOR_TOP, 2.3, z, z + 0.03, trim, false)
-		_bx(target, gap0 - 0.07, gap1 + 0.07, 2.26, 2.33, z, z + 0.03, trim, false)
+		var tm := front_trim_mat if z == _front else trim
+		_bx(target, gap0 - 0.07, gap0, FLOOR_TOP, 2.3, z, z + 0.03, tm, false)
+		_bx(target, gap1, gap1 + 0.07, FLOOR_TOP, 2.3, z, z + 0.03, tm, false)
+		_bx(target, gap0 - 0.07, gap1 + 0.07, 2.26, 2.33, z, z + 0.03, tm, false)
 	# Wand zwischen Schlafzimmer und Wohnküche, mit breitem Durchgang nah an der Frontwand.
 	var bed_gap0 := inner - 0.1 - BED_GAP
 	var bed_gap1 := inner - 0.1

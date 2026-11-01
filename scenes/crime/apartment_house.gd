@@ -130,10 +130,18 @@ func _unit(entry: Dictionary) -> void:
 	# Linke Tür zeigt nach +X in den Flur, rechte nach -X. Lokales X läuft links nach -Z.
 	unit.door_offset = -door_z if side < 0 else door_z
 	unit.plate = entry["plate"]
+	unit.front_tint = Color(0.5, 0.52, 0.5)
+	unit.front_trim = Color(0.14, 0.12, 0.12)
+	unit.door_texture = _door_texture(entry)
 	var x := side * (corridor_half + 0.02 + unit_depth * 0.5)
 	unit.position = Vector3(x, floor_index * floor_height - ApartmentBlock.FLOOR_TOP, 0.0)
 	unit.rotation.y = PI * 0.5 if side < 0 else -PI * 0.5
 	add_child(unit)
+
+
+## Türbild der Wohnung, gleich bei begehbaren und festen Türen.
+func _door_texture(entry: Dictionary) -> String:
+	return ["door_wood", "door_metal", "door_security"][(entry["floor"] + (0 if entry["side"] < 0 else 1)) % 3]
 
 
 ## Wohnung ohne Zugang: eine geschlossene Wand zum Flur mit fester Tür, Rahmen und Schild.
@@ -147,7 +155,7 @@ func _blind_unit(b: SlumBuilder, entry: Dictionary) -> void:
 	var normal := Vector3(-side, 0.0, 0.0)
 	var trim := SlumMats.color(Color(0.14, 0.12, 0.12))
 	var door_y := y0 + ApartmentBlock.FLOOR_TOP
-	var tex: String = ["door_wood", "door_metal", "door_security"][(entry["floor"] + (0 if side < 0 else 1)) % 3]
+	var tex := _door_texture(entry)
 	b.quad(Vector3(face, door_y + 1.08, door_z), normal, ApartmentBlock.DOOR_GAP, 2.16, SlumMats.decal(tex))
 	var half := ApartmentBlock.DOOR_GAP * 0.5
 	for edge: float in [-half - 0.07, half]:
