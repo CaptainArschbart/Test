@@ -44,3 +44,11 @@ Arbeitslog von Arschis Seite (Claude für Arschi). Neuer Eintrag ganz unten. `en
 - Beispiele: NOODLES-Ausleger 1,5 × 0,56 m (vorher 8 × 3 m), 薬局-Ausleger unverändert 1,36 × 3 m, 薬局 über dem Laden 0,5 × 1,1 m (vorher 1,9 × 4,2 m+), NOODLES über dem Laden 2,9 × 1,1 m.
 - Getestet (Godot 4.7.2 stable, headless): `slum.tscn` im Editor und das Spiel geladen, kein `SCRIPT ERROR`. Nicht im Fenster angesehen.
 - Git: Branch `claude/schilder-kleiner` aus `origin/main` (264f362), Draft-PR mit Basis `main`.
+
+### 2026-11-01 · Strommasten nicht mehr durch Laden-Markisen · Claude (für Arschi) · Branch `claude/markise-masten`
+- Fehler: An drei Läden stand ein Strommast (`SlumProp` `POWER_POLE`) 0,5 m vor der Fassade, mitten in der Markise.
+- Die Masten bleiben stehen, weil die Kabel (`Cables*` unter `Power`) genau an ihren Querträgern hängen. Stattdessen bekommt die Markise eine Lücke.
+- `scenes/slum/kit/slum_building.gd`: neues Export `awning_gaps` (lokale x-Stellen, Mitte = 0). Die Markise samt rot-weißer Kante wird dort mit einer 0,5 m breiten Lücke (`AWNING_GAP`) geteilt. Ohne Einträge sieht alles aus wie vorher.
+- `scenes/slum/slum.tscn`: Shop11 `(-1.5)`, Shop12 `(2.0)`, Shop39 `(-0.7)`, jeweils PowerPole11, 16 und 26.
+- Getestet (Godot 4.7.2 stable, headless): Prüfskript über alle 41 Läden in `slum.tscn`, vorher 3 Masten in Markisen, nachher 0. `slum.tscn` im Editor geladen, kein `SCRIPT ERROR`. Nicht im Fenster angesehen.
+- Git: Branch `claude/markise-masten` aus `origin/main` (4ce1772), Draft-PR mit Basis `main`.
