@@ -253,28 +253,28 @@ func _run_testmap() -> void:
 	_check(float(guard.get("health")) <= health_before - 29.0,
 		"Wache hat 30 Schaden vom Client (%.0f → %.0f)" % [health_before, float(guard.get("health"))])
 
-	# 7) Skills: Der Client lernt Zäh und Flinke Finger, der Host kennt sie an dessen Figur (z. B. für
-	#    den Taschendiebstahl, den nur der Host rechnet). Der Host lernt Feilscher, der Client sieht es.
+	# 7) Skills: Der Client lernt Ausdauernd und Flinke Finger, der Host kennt sie an dessen Figur (z. B.
+	#    für den Taschendiebstahl, den nur der Host rechnet). Der Host lernt Sprinter und Rutschpartie.
 	var skills: Node = _me.get("skills")
 	skills.call("set_level", 3)
 	if _host:
-		skills.call("learn", &"endurance")
-		skills.call("learn", &"haggler")
+		skills.call("learn", &"sprinter")
+		skills.call("learn", &"slider")
 	else:
-		skills.call("learn", &"tough")
+		skills.call("learn", &"endurance")
 		skills.call("learn", &"quick_fingers")
 	await _phase(32.0)
 	var remote: Node = _other.get("skills")
 	if _host:
-		_check(bool(remote.call("has", &"tough")) and bool(remote.call("has", &"quick_fingers")),
+		_check(bool(remote.call("has", &"endurance")) and bool(remote.call("has", &"quick_fingers")),
 			"Host kennt die Skills des Clients (%s)" % str(remote.call("to_dict")))
 		_check(is_equal_approx(float(_other.call("skill_mult", &"pick_time_mult")), 0.65),
 			"Taschendiebstahl-Faktor des Clients beim Host")
-		_check(not bool(remote.call("has", &"haggler")), "Skills des Hosts nicht an der Client-Figur")
+		_check(not bool(remote.call("has", &"sprinter")), "Skills des Hosts nicht an der Client-Figur")
 	else:
-		_check(bool(remote.call("has", &"haggler")) and bool(remote.call("has", &"endurance")),
+		_check(bool(remote.call("has", &"slider")) and bool(remote.call("has", &"sprinter")),
 			"Client kennt die Skills des Hosts (%s)" % str(remote.call("to_dict")))
-		_check(is_equal_approx(float(_me.get("stats").get("max_hp")), 125.0), "Zäh wirkt beim Client (125 max HP)")
+		_check(is_equal_approx(float(_me.get("stats").get("max_stamina")), 130.0), "Ausdauernd wirkt beim Client (130 max Ausdauer)")
 
 
 # --- Sektor 7 ----------------------------------------------------------------------------
