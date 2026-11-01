@@ -57,9 +57,9 @@ const PICKUP_SCALE := {
 	&"cigarettes": 2.2,
 	&"shard": 2.8,
 	&"crowbar": 1.6,
-	&"jewelry": 2.4,
+	&"jewelry": 1.8,
 	&"jewels": 2.4,
-	&"cash": 2.2,
+	&"cash": 1.8,
 	&"tv": 1.3,
 	&"painting": 1.4,
 	&"computer": 1.5,
@@ -760,28 +760,115 @@ static func _build_crowbar(root: Node3D, color: Color) -> void:
 
 
 static func _build_prop(root: Node3D, kind: StringName, color: Color) -> void:
-	var mat := _neon(color, 0.6)
-	var mesh := BoxMesh.new()
 	match kind:
 		TV:
-			mesh.size = Vector3(0.42, 0.26, 0.05)
+			_build_tv(root, color)
 		PAINTING:
-			mesh.size = Vector3(0.36, 0.28, 0.03)
+			_build_painting(root, color)
 		COMPUTER:
-			mesh.size = Vector3(0.28, 0.2, 0.16)
+			_build_computer(root, color)
 		CASH:
-			mesh.size = Vector3(0.12, 0.02, 0.06)
-		KEYCARD:
-			mesh.size = Vector3(0.086, 0.004, 0.054)
-		CUFFS:
-			mesh.size = Vector3(0.14, 0.03, 0.05)
-		TIES:
-			mesh.size = Vector3(0.1, 0.02, 0.04)
+			_build_cash(root, color)
 		JEWELS:
-			mesh.size = Vector3(0.06, 0.05, 0.06)
+			_build_jewels(root, color)
+		JEWELRY:
+			_build_jewelry(root)
 		_:
-			mesh.size = Vector3(0.05, 0.03, 0.05)
-	_part(root, mesh, mat, Vector3.ZERO)
+			var mesh := BoxMesh.new()
+			match kind:
+				KEYCARD:
+					mesh.size = Vector3(0.086, 0.004, 0.054)
+				CUFFS:
+					mesh.size = Vector3(0.14, 0.03, 0.05)
+				TIES:
+					mesh.size = Vector3(0.1, 0.02, 0.04)
+				_:
+					mesh.size = Vector3(0.05, 0.03, 0.05)
+			_part(root, mesh, _neon(color, 0.6), Vector3.ZERO)
+
+
+static func _box_part(root: Node3D, size: Vector3, material: Material, pos: Vector3, rot := Vector3.ZERO) -> MeshInstance3D:
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	var part := _part(root, mesh, material, pos)
+	part.rotation_degrees = rot
+	return part
+
+
+## Flachbildfernseher auf Standfuß. Schaut nach +Z.
+static func _build_tv(root: Node3D, color: Color) -> void:
+	var shell := _mat(&"tv_shell", Color(0.05, 0.05, 0.06), 0.4, 0.4)
+	_box_part(root, Vector3(0.42, 0.25, 0.035), shell, Vector3(0.0, 0.05, 0.0))
+	_box_part(root, Vector3(0.39, 0.22, 0.004), _neon(color.lightened(0.45), 0.9), Vector3(0.0, 0.05, 0.0185))
+	_box_part(root, Vector3(0.39, 0.012, 0.005), _neon(Color(1.0, 0.25, 0.7), 1.2), Vector3(0.0, 0.1, 0.0205))
+	_box_part(root, Vector3(0.05, 0.07, 0.03), shell, Vector3(0.0, -0.08, -0.01))
+	_box_part(root, Vector3(0.22, 0.012, 0.1), shell, Vector3(0.0, -0.11, 0.0))
+
+
+## Bild im Rahmen mit Neonsonne und drei Streifen. Schaut nach +Z.
+static func _build_painting(root: Node3D, color: Color) -> void:
+	var frame := _mat(&"art_frame", Color(0.55, 0.42, 0.18), 0.7, 0.35)
+	_box_part(root, Vector3(0.36, 0.28, 0.025), frame, Vector3.ZERO)
+	_box_part(root, Vector3(0.32, 0.24, 0.028), _mat(&"art_canvas", Color(0.07, 0.05, 0.16), 0.0, 0.9), Vector3.ZERO)
+	var sun := CylinderMesh.new()
+	sun.top_radius = 0.065
+	sun.bottom_radius = 0.065
+	sun.height = 0.004
+	sun.radial_segments = 10
+	var disc := _part(root, sun, _neon(color, 1.4), Vector3(0.0, 0.04, 0.0145))
+	disc.rotation_degrees = Vector3(90.0, 0.0, 0.0)
+	for i: int in 3:
+		_box_part(root, Vector3(0.28 - i * 0.05, 0.014, 0.004), _neon(Color(0.2, 0.9, 1.0), 1.0),
+				Vector3(0.0, -0.035 - i * 0.03, 0.0145))
+
+
+## Monitor mit Tastatur. Schaut nach +Z.
+static func _build_computer(root: Node3D, color: Color) -> void:
+	var shell := _mat(&"pc_shell", Color(0.14, 0.15, 0.17), 0.4, 0.45)
+	_box_part(root, Vector3(0.3, 0.19, 0.025), shell, Vector3(0.0, 0.06, -0.03))
+	_box_part(root, Vector3(0.27, 0.16, 0.004), _neon(color, 0.9), Vector3(0.0, 0.06, -0.016))
+	_box_part(root, Vector3(0.03, 0.08, 0.03), shell, Vector3(0.0, -0.03, -0.04))
+	_box_part(root, Vector3(0.14, 0.01, 0.1), shell, Vector3(0.0, -0.07, -0.03))
+	_box_part(root, Vector3(0.24, 0.012, 0.08), _mat(&"pc_keys", Color(0.2, 0.21, 0.24), 0.2, 0.6), Vector3(0.0, -0.07, 0.08))
+
+
+## Zwei Bündel mit Banderole und eins obendrauf.
+static func _build_cash(root: Node3D, color: Color) -> void:
+	var paper := _mat(&"cash_paper", color.darkened(0.15), 0.0, 0.9)
+	var band := _mat(&"cash_band", Color(0.9, 0.85, 0.7), 0.0, 0.9)
+	for i: int in 2:
+		var x := -0.035 + i * 0.07
+		_box_part(root, Vector3(0.065, 0.025, 0.05), paper, Vector3(x, -0.0125, 0.0))
+		_box_part(root, Vector3(0.012, 0.027, 0.052), band, Vector3(x, -0.0125, 0.0))
+	_box_part(root, Vector3(0.065, 0.025, 0.05), paper, Vector3(0.0, 0.0125, 0.0), Vector3(0.0, 12.0, 0.0))
+	_box_part(root, Vector3(0.012, 0.027, 0.052), band, Vector3(0.0, 0.0125, 0.0), Vector3(0.0, 12.0, 0.0))
+
+
+## Drei geschliffene Steine auf einem Samtkissen.
+static func _build_jewels(root: Node3D, color: Color) -> void:
+	_box_part(root, Vector3(0.09, 0.012, 0.07), _mat(&"jewel_pad", Color(0.35, 0.08, 0.2), 0.0, 0.95), Vector3(0.0, -0.02, 0.0))
+	var gem := _neon(color, 1.1)
+	_box_part(root, Vector3(0.032, 0.032, 0.032), gem, Vector3(-0.025, 0.002, 0.005), Vector3(45.0, 20.0, 45.0))
+	_box_part(root, Vector3(0.026, 0.026, 0.026), gem, Vector3(0.025, -0.003, -0.01), Vector3(45.0, 60.0, 45.0))
+	_box_part(root, Vector3(0.022, 0.022, 0.022), gem, Vector3(0.005, -0.006, 0.02), Vector3(45.0, 40.0, 45.0))
+
+
+## Goldring mit Stein und eine Kette.
+static func _build_jewelry(root: Node3D) -> void:
+	var gold := _mat(&"gold", Color(1.0, 0.82, 0.35), 0.9, 0.25)
+	var ring := TorusMesh.new()
+	ring.inner_radius = 0.022
+	ring.outer_radius = 0.032
+	ring.rings = 10
+	ring.ring_segments = 6
+	_part(root, ring, gold, Vector3(-0.03, 0.0, 0.0)).rotation_degrees = Vector3(70.0, 0.0, 0.0)
+	_box_part(root, Vector3(0.018, 0.018, 0.018), _neon(Color(0.9, 0.2, 0.5), 1.2), Vector3(-0.03, 0.03, -0.008), Vector3(45.0, 0.0, 45.0))
+	var chain := TorusMesh.new()
+	chain.inner_radius = 0.034
+	chain.outer_radius = 0.04
+	chain.rings = 12
+	chain.ring_segments = 4
+	_part(root, chain, gold, Vector3(0.04, -0.012, 0.0)).rotation_degrees = Vector3(80.0, 0.0, 0.0)
 
 
 static func _part(parent: Node3D, mesh: Mesh, material: Material, pos: Vector3) -> MeshInstance3D:
