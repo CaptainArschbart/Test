@@ -49,7 +49,7 @@ func _ready() -> void:
 	_stair_back = -RUN * STEPS * 0.5
 	_stair_front = -_stair_back
 	unit_depth = building_width * 0.5 - WALL - corridor_half - 0.04
-	unit_width = building_depth - WALL * 2.0 - 0.04
+	unit_width = building_depth - WALL * 2.0
 	_wall = SlumMats.surface("plaster", Color(0.5, 0.52, 0.5))
 	_floor = SlumMats.surface("tiles_dark", Color(0.8, 0.8, 0.8))
 	_metal = SlumMats.color(Color(0.16, 0.17, 0.18), 0.0, 0.55, 0.6)
@@ -133,7 +133,7 @@ func _unit(entry: Dictionary) -> void:
 	unit.front_tint = Color(0.5, 0.52, 0.5)
 	unit.front_trim = Color(0.14, 0.12, 0.12)
 	unit.door_texture = _door_texture(entry)
-	var x := side * (corridor_half + 0.02 + unit_depth * 0.5)
+	var x := side * (corridor_half + unit_depth * 0.5)
 	unit.position = Vector3(x, floor_index * floor_height - ApartmentBlock.FLOOR_TOP, 0.0)
 	unit.rotation.y = PI * 0.5 if side < 0 else -PI * 0.5
 	add_child(unit)
@@ -226,8 +226,8 @@ func _lobby(b: SlumBuilder) -> void:
 	var fh := floor_height
 	for side: float in [-1.0, 1.0]:
 		var x := side * (c + 0.1)
-		# Bis in die Bodenplatte der Wohnungen darüber, sonst bleibt ein Spalt.
-		var top := fh
+		# Genau bis zur Unterkante der Wohnungen darüber: kein Spalt, keine Überlappung in derselben Ebene.
+		var top := fh - ApartmentBlock.FLOOR_TOP
 		b.box(Vector3(x, (FLOOR_Y + top) * 0.5, 0.0), Vector3(0.2, top - FLOOR_Y, _inner_z * 2.0), _wall)
 	var boxes := SlumMats.color(Color(0.28, 0.32, 0.3), 0.0, 0.5, 0.5)
 	var slot := SlumMats.color(Color(0.05, 0.05, 0.06))
