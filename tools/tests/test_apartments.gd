@@ -114,43 +114,35 @@ func _house() -> void:
 	root.add_child(house)
 	await process_frame
 	var doors := house.find_children("Door", "", true, false)
-	_check(doors.size() == 4, "Haus hat 4 Türen, ist %d" % doors.size())
+	_check(doors.size() == 2, "Haus hat 2 Türen, ist %d" % doors.size())
 	var keys: Array[String] = []
 	for door in doors:
 		keys.append(str(door.get("key_id")))
 		_check(bool(door.get("locked")), "Tür %s zu" % door.get("key_id"))
 	_check(keys.has("apt_c") and keys.has("apt_1"), "Schlüssel apt_1 und apt_c")
-	_check(house.find_children("Safe", "", true, false).size() == 4, "Jede Wohnung hat einen Tresor")
+	_check(house.find_children("Safe", "", true, false).size() == 2, "Jede Wohnung hat einen Tresor")
 	house.queue_free()
 
 
-## Hohes Haus: Wohnungen bis unters Dach, nicht alle begehbar. Wohnungen ohne Zugang haben keine Tür.
+## Hohes Haus: Wohnungen bis unters Dach, aber nur zwei begehbar. Die anderen haben keine Tür.
 func _tall_house() -> void:
-	for chance: float in [0.0, 1.0]:
-		var house := load("res://scenes/crime/apartment_house.gd").new() as Node3D
-		house.set("building_width", 12.0)
-		house.set("building_depth", 10.0)
-		house.set("floor_height", 3.0)
-		house.set("floors", 7)
-		house.set("walkable_chance", chance)
-		root.add_child(house)
-		await process_frame
-		var doors := house.find_children("Door", "", true, false)
-		var expected := 12 if chance > 0.5 else 4
-		_check(doors.size() == expected, "Hohes Haus (Chance %.0f): %d Türen, ist %d" % [chance, expected, doors.size()])
-		var units := house.find_children("Unit_*", "ApartmentBlock", false, false)
-		_check(units.size() == expected, "Hohes Haus (Chance %.0f): %d begehbare Wohnungen, ist %d" % [chance, expected, units.size()])
-		var keys := {}
-		for door in doors:
-			keys[str(door.get("key_id"))] = true
-		_check(keys.size() == doors.size(), "Hohes Haus: Jede Tür hat einen eigenen Schlüssel")
-		var top_y := 6.0 * 3.0
-		var highest := 0.0
-		for door in doors:
-			highest = maxf(highest, (door as Node3D).global_position.y)
-		_check(chance < 0.5 or highest > top_y - 0.5, "Hohes Haus: Türen bis in den 6. Stock (höchste %.1f)" % highest)
-		house.queue_free()
-		await process_frame
+	var house := load("res://scenes/crime/apartment_house.gd").new() as Node3D
+	house.set("building_width", 12.0)
+	house.set("building_depth", 10.0)
+	house.set("floor_height", 3.0)
+	house.set("floors", 7)
+	root.add_child(house)
+	await process_frame
+	var doors := house.find_children("Door", "", true, false)
+	_check(doors.size() == 2, "Hohes Haus: 2 Türen, ist %d" % doors.size())
+	var units := house.find_children("Unit_*", "ApartmentBlock", false, false)
+	_check(units.size() == 2, "Hohes Haus: 2 begehbare Wohnungen, ist %d" % units.size())
+	var keys := {}
+	for door in doors:
+		keys[str(door.get("key_id"))] = true
+	_check(keys.size() == doors.size() and keys.has("apt_1") and keys.has("apt_c"), "Hohes Haus: apt_1 und apt_c")
+	house.queue_free()
+	await process_frame
 
 func _sell() -> void:
 	var pad: Script = load("res://scenes/crime/loot_sell_pad.gd")

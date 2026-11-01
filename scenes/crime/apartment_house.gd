@@ -8,9 +8,9 @@ extends Node3D
 ## die Trennwand. Die Wohnungen liegen links und rechts, ihre Türen gehen vom jeweiligen Absatz ab:
 ## in ungeraden Stockwerken hinten, in geraden vorn.
 ##
-## Nicht jede Wohnung ist begehbar. Die vier im 1. und 2. Stock immer (Schlüsselkette, Tankstellenkarte).
-## Darüber würfelt jede Wohnung mit `walkable_chance`. Die übrigen haben nur eine feste Tür in einer
-## geschlossenen Wand, dahinter wird nichts gebaut.
+## Nur wenige Wohnungen sind begehbar: je Haus `WALKABLE_UNITS` (2), zufällig über alle Stockwerke verteilt.
+## Die erste hat `apt_1`, die zweite `apt_c` (Tankstellenkarte), dessen Schlüssel in `apt_1` versteckt ist.
+## Die übrigen haben nur eine feste Tür in einer geschlossenen Wand, dahinter wird nichts gebaut.
 
 const UNIT_SCRIPT := preload("res://scenes/crime/apartment_block.gd")
 const WALL := 0.24
@@ -20,8 +20,8 @@ const RUN := 0.27
 const FLOOR_Y := 0.12
 ## Ab diesem Kameraabstand wird das Innere (Treppenhaus, Wohnungen, Lichter) nicht gezeichnet.
 const INTERIOR_FAR := 45.0
-## Stockwerke bis hierher (einschließlich) sind immer begehbar.
-const ALWAYS_WALKABLE := 2
+## Begehbare Wohnungen je Haus (höchstens).
+const WALKABLE_UNITS := 2
 
 @export var building_width := 12.0
 @export var building_depth := 10.0
@@ -29,8 +29,6 @@ const ALWAYS_WALKABLE := 2
 ## Stockwerke des Gebäudes mit Erdgeschoss. Wohnungen liegen im 1. bis zum obersten Stock.
 @export var floors := 3
 @export var corridor_half := 1.3
-## Anteil begehbarer Wohnungen ab dem 3. Stock.
-@export_range(0.0, 1.0) var walkable_chance := 0.5
 ## Vor die Schlüssel-ids gesetzt, damit jedes Haus eigene Schlüssel hat. Res2 hat keinen:
 ## Die Karte an der Tankstelle öffnet dort `apt_c`.
 @export var key_prefix := ""
@@ -75,31 +73,33 @@ func _plan() -> Array[Dictionary]:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(key_prefix + "walkable") ^ hash(str(global_position))
 	var back_door := (-_inner_z + _stair_back) * 0.5
-	var chain := "apt_c"
 	var plan: Array[Dictionary] = []
 	for floor_index in range(1, floors):
 		for side: int in [-1, 1]:
-			var key := ""
-			var hide := ""
-			var walkable := true
-			if floor_index <= ALWAYS_WALKABLE:
-				key = ["apt_1", "apt_2", "apt_3", "apt_c"][(floor_index - 1) * 2 + (0 if side < 0 else 1)]
-				hide = {"apt_1": "", "apt_2": "apt_1", "apt_3": "apt_2", "apt_c": "apt_3"}[key]
-			else:
-				walkable = rng.randf() < walkable_chance
-				key = "f%d%s" % [floor_index, "l" if side < 0 else "r"]
-				if walkable:
-					hide = chain
-					chain = key
 			plan.append({
 				"floor": floor_index,
 				"side": side,
-				"key": key,
-				"hide": hide,
+				"key": "f%d%s" % [floor_index, "l" if side < 0 else "r"],
+				"hide": "",
 				"plate": "%d %s" % [floor_index, "L" if side < 0 else "R"],
 				"door_z": back_door if floor_index % 2 == 1 else -back_door,
-				"walkable": walkable,
+				"walkable": false,
 			})
+	# Zufällig WALKABLE_UNITS Wohnungen freischalten: erst apt_1, dann apt_c mit dem Schlüssel darin.
+	var order: Array[int] = []
+	for i in plan.size():
+		order.append(i)
+	for i in range(order.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var swap := order[i]
+		order[i] = order[j]
+		order[j] = swap
+	var keys := ["apt_1", "apt_c"]
+	for n in mini(WALKABLE_UNITS, mini(keys.size(), order.size())):
+		var entry := plan[order[n]]
+		entry["walkable"] = true
+		entry["key"] = keys[n]
+		entry["hide"] = "" if n == 0 else keys[n - 1]
 	return plan
 
 

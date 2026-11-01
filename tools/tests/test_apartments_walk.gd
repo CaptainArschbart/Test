@@ -89,8 +89,8 @@ func _map_checks(houses: Array) -> void:
 		# Fahrende Autos zählen nicht, sie stehen nur gerade dort.
 		var free: bool = hit.is_empty() or hit.collider is CharacterBody3D
 		_check(free, "%s: Eingang frei (%s)" % [label, hit.get("collider", "nichts")])
-	# Im 1. und 2. Stock sind die vier Wohnungen immer begehbar, darüber würfelt das Haus.
-	_check(doors >= HOUSES * 4, "mindestens %d Wohnungstüren, ist %d" % [HOUSES * 4, doors])
+	# Je Haus sind genau zwei Wohnungen begehbar, verteilt über die Stockwerke.
+	_check(doors == HOUSES * 2, "%d Wohnungstüren, ist %d" % [HOUSES * 2, doors])
 	_check(keys.size() == doors, "Jede Tür hat einen eigenen Schlüssel")
 
 
@@ -180,8 +180,9 @@ func _break_in(house: Node3D) -> void:
 			inventory.call("select", i)
 	var wanted: Node = root.get_node(^"WantedManager")
 	wanted.call("set_stars", 0)
-	_check(await _stairs_up(house, true), "Treppe bis in den 2. Stock von Res2")
 	var unit: Node3D = house.find_child("Unit_apt_c", true, false)
+	var unit_floor := roundi((unit.global_position.y - house.global_position.y) / float(house.get("floor_height")))
+	_check(await _stairs_to(house, unit_floor), "Treppe bis in den Stock %d von Res2" % unit_floor)
 	var door: Node3D = unit.get_node(^"Door")
 	var near: Vector3 = door.to_global(Vector3(0.0, 0.0, 0.85))
 	_check(await _go(near), "Zur Tür der Wohnung 2 R gelaufen")
@@ -228,7 +229,7 @@ func _break_in(house: Node3D) -> void:
 	_check(bool(safe.get("taken")) and safe.visible, "Tresor steht leer da")
 	_level_view()
 	# Zweite Wohnung: Schlüssel statt Brechstange, ohne Fahndung.
-	var other: Node3D = house.find_child("Unit_apt_3", true, false)
+	var other: Node3D = house.find_child("Unit_apt_1", true, false)
 	var other_door: Node3D = other.get_node(^"Door")
 	var key: Resource = load("res://scenes/crime/apartment_block.gd").call("key_item", str(other_door.get("key_id")))
 	inventory.call("add_item", key, 1)
@@ -256,25 +257,19 @@ func _count(inventory: Node, id: String) -> int:
 
 func _climb(house: Node3D) -> void:
 	var label := str(house.get_parent().name)
-	for second: bool in [false, true]:
-		var fine: bool = await _stairs_up(house, second)
-		_check(fine, "%s: Treppe bis Stock %d" % [label, 2 if second else 1])
+	var user: Node = _player.get("item_user")
+	for door in house.find_children("Door", "", true, false):
+		var door_floor := roundi((door.get_parent().global_position.y - house.global_position.y) / float(house.get("floor_height")))
+		var fine: bool = await _stairs_to(house, door_floor)
+		_check(fine, "%s: Treppe bis Stock %d" % [label, door_floor])
 		if not fine:
 			print("    Stand: ", house.to_local(_player.global_position))
-			return
-		var user: Node = _player.get("item_user")
-		var seen := 0
-		for door in house.find_children("Door", "", true, false):
-			var door_floor := roundi((door.get_parent().global_position.y - house.global_position.y) / float(house.get("floor_height")))
-			if door_floor != (2 if second else 1):
-				continue
-			# Vor der Tür stehen. Eine schon offene Tür lässt sich nicht mehr anvisieren.
-			var there: bool = await _go(door.to_global(Vector3(0.0, 0.0, 0.85)))
-			await _look_at_node(door)
-			if there and (user.call("find_target") == door or not bool(door.get("locked"))):
-				seen += 1
+			continue
+		# Vor der Tür stehen. Eine schon offene Tür lässt sich nicht mehr anvisieren.
+		var there: bool = await _go(door.to_global(Vector3(0.0, 0.0, 0.85)))
+		await _look_at_node(door)
+		_check(there and (user.call("find_target") == door or not bool(door.get("locked"))), "%s: Tür %s in Stock %d erreichbar" % [label, door.get("key_id"), door_floor])
 		_level_view()
-		_check(seen == 2, "%s: beide Türen in Stock %d erreichbar (%d)" % [label, 2 if second else 1, seen])
 	# Hohe Häuser: Die Treppe führt bis zur obersten Wohnungsetage.
 	var top := int(house.get("floors")) - 1
 	if top > 2:
