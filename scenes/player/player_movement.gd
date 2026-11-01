@@ -295,7 +295,8 @@ func _start_slide() -> void:
 		return
 	state = State.SLIDE
 	_set_crouching(true)
-	_slide_velocity = horiz.normalized() * maxf(horiz.length(), slide_start_speed)
+	# Skill Rutschpartie (slide_mult, slide_friction_mult).
+	_slide_velocity = horiz.normalized() * maxf(horiz.length(), slide_start_speed * _player.skill_mult(&"slide_mult"))
 	slide_started.emit()
 
 
@@ -324,7 +325,7 @@ func _slide_step(delta: float) -> bool:
 	var slope_push := 0.0
 	if downhill.length() > 0.01 and speed > 0.01:
 		slope_push = downhill.dot(_slide_velocity / speed) * player.gravity * slide_slope_gain
-	speed = maxf(speed - slide_friction * delta + slope_push * delta, 0.0)
+	speed = maxf(speed - slide_friction * _player.skill_mult(&"slide_friction_mult") * delta + slope_push * delta, 0.0)
 	var direction := _slide_velocity.normalized() if speed > 0.0 else Vector3.ZERO
 	var steer := Input.get_axis("move_right", "move_left")
 	if direction != Vector3.ZERO and not player.input_locked:
@@ -538,6 +539,10 @@ func _start_mantle(ledge: Dictionary) -> bool:
 	# die soll unter 5,5 m/s bleiben (langsamer als Sprinten).
 	var approach := Vector2(p_grab.x - start.x, p_grab.z - start.z).length()
 	_mantle_phase_times = [maxf(climb_grab_time, approach * 2.0 / 5.5), climb_pull_base_time + rise * climb_pull_time_per_meter, climb_vault_time]
+	# Skill Kletterer (climb_time_mult).
+	var climb_factor := _player.skill_mult(&"climb_time_mult")
+	for i in _mantle_phase_times.size():
+		_mantle_phase_times[i] *= climb_factor
 	_mantle_duration = 0.0
 	for d: float in _mantle_phase_times:
 		_mantle_duration += d

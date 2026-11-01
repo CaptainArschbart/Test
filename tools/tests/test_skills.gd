@@ -1,7 +1,7 @@
 extends SceneTree
 ## Skill-System (PlayerSkills): Punkte aus Stufenaufstiegen, Voraussetzungen, Wirkung an Waffe,
-## Nahkampf, Granate, Gesundheit, Schaden, Schleichen, Taschendiebstahl, Schloss, Laden und Heilung,
-## Speichern/Laden des Profils und der Reiter „Skills“ im Inventar.
+## Nahkampf, Granate, Schaden, Sprint, Ausdauer, Rutschen, Klettern, Sprung, Fallschaden, Schleichen,
+## Taschendiebstahl, Schloss und Ladenkamera, Speichern/Laden des Profils und der Reiter „Skills“ im Inventar.
 ##
 ## Aufruf (Projektordner):
 ##   godot --headless --path . -s res://tools/tests/test_skills.gd
@@ -14,9 +14,7 @@ const LOCKED_DOOR := "res://scenes/crime/locked_door.gd"
 const SHOP := "res://scenes/interact/shop_interior.gd"
 const GRENADE := "res://scenes/items/grenade.gd"
 const PISTOL := "res://scenes/items/data/pistol.tres"
-const MEDKIT := "res://scenes/items/data/medkit.tres"
 const FRAG := "res://scenes/items/data/contact_grenade.tres"
-const JEWELRY := "res://scenes/items/data/jewelry.tres"
 const PROFILE := "user://test_skills_profile.cfg"
 
 var _checks := 0
@@ -74,9 +72,8 @@ func _run() -> void:
 	_check(not bool(_skills.get("autosave")), "headless: kein automatisches Speichern ins echte Profil")
 	_points_and_requirements()
 	await _combat_effects()
-	await _survival_effects()
-	await _rogue_effects()
-	_shop_prices()
+	await _movement_effects()
+	await _stealth_effects()
 	_save_and_load()
 	await _skill_tab()
 	_finish()
@@ -162,35 +159,111 @@ func _combat_effects() -> void:
 	stats.call("heal", 100.0)
 
 
-func _survival_effects() -> void:
+func _movement_effects() -> void:
 	var stats: Node = _player.get("stats")
-	_check(bool(_skills.call("learn", &"tough")), "Zäh gelernt")
-	_check(is_equal_approx(float(stats.get("max_hp")), 125.0) and is_equal_approx(float(stats.get("hp")), 125.0),
-		"Zäh: 125 max HP, gleich aufgefüllt (%.0f / %.0f)" % [float(stats.get("hp")), float(stats.get("max_hp"))])
+	var movement: Node = _player.get("movement")
+	Input.action_release("crouch")
+	_player.global_position = Vector3(-60, 0, 0)
+	_player.rotation.y = 0.0
+	await _frames(6)
+	# Sprinten: Geschwindigkeit nach einer Sekunde Vollgas ohne und mit Sprinter.
+	var plain_speed := await _sprint_speed()
+	_check(bool(_skills.call("learn", &"sprinter")), "Sprinter gelernt")
+	var skill_speed := await _sprint_speed()
+	_check(plain_speed > 6.0 and absf(skill_speed / plain_speed - 1.12) < 0.03,
+		"Sprinter: 12 %% schneller (%.2f → %.2f m/s)" % [plain_speed, skill_speed])
 	_check(bool(_skills.call("learn", &"endurance")), "Ausdauernd gelernt")
 	_check(is_equal_approx(float(stats.get("max_stamina")), 130.0), "Ausdauernd: 130 max Ausdauer")
 	_check(is_equal_approx(float(stats.get("stamina_regen_per_second")), 15.0 * 1.25), "Ausdauer lädt 25 % schneller")
-	# Heilung durch Items: Medkit ohne und mit Sanitäter.
-	var item_user: Node = _player.get("item_user")
-	var inventory: Node = _player.get("inventory")
-	var medkit: Resource = load(MEDKIT)
-	stats.call("damage", 100.0, &"test")
-	inventory.call("add_item", medkit, 2)
-	var hp0 := float(stats.get("hp"))
-	item_user.call("apply_consumable", medkit, _slot_of(medkit))
-	var healed_plain := float(stats.get("hp")) - hp0
-	_check(bool(_skills.call("learn", &"medic")), "Sanitäter gelernt")
-	stats.call("damage", 120.0, &"test")
-	var hp1 := float(stats.get("hp"))
-	item_user.call("apply_consumable", medkit, _slot_of(medkit))
-	var healed_skill := float(stats.get("hp")) - hp1
-	_check(healed_plain > 0.0 and is_equal_approx(healed_skill, minf(healed_plain * 1.5, 125.0 - hp1)),
-		"Medkit heilt 50 %% mehr (%.0f → %.0f)" % [healed_plain, healed_skill])
+	# Rutschen: Startgeschwindigkeit aus dem Sprint.
+	var slide_plain := _slide_start(movement)
+	_check(bool(_skills.call("learn", &"slider")), "Rutschpartie gelernt")
+	var slide_skill := _slide_start(movement)
+	_check(is_equal_approx(slide_skill, slide_plain * 1.2), "Rutschen startet 20 %% schneller (%.1f → %.1f m/s)" % [slide_plain, slide_skill])
+	# Klettern an einer 1,2 m hohen Kante.
+	_player.global_position = Vector3(-60, 0, 20)
+	_player.rotation.y = 0.0
+	_box(Vector3(3.0, 1.2, 1.0), Vector3(-60, 0.6, 18.6))
+	await _frames(8)
+	var climb_plain := _climb_time(movement)
+	_check(bool(_skills.call("learn", &"climber")), "Kletterer gelernt")
+	var climb_skill := _climb_time(movement)
+	_check(climb_plain > 0.0 and is_equal_approx(climb_skill, climb_plain * 0.65),
+		"Klettern 35 %% schneller (%.2f s → %.2f s)" % [climb_plain, climb_skill])
+	# Fallschaden und Sprung.
+	var fall_plain := _fall_damage()
+	var jump_plain := await _jump_speed()
+	_check(bool(_skills.call("learn", &"free_runner")), "Freiläufer gelernt (beide Voraussetzungen da)")
+	var fall_skill := _fall_damage()
+	var jump_skill := await _jump_speed()
+	_check(fall_plain > 0.0 and is_equal_approx(fall_skill, fall_plain * 0.5), "Fallschaden halbiert (%.0f → %.0f HP)" % [fall_plain, fall_skill])
+	_check(jump_plain > 0.0 and absf(jump_skill / jump_plain - 1.15) < 0.03, "Sprung 15 %% höher (%.2f → %.2f m/s)" % [jump_plain, jump_skill])
 	stats.call("heal", 200.0)
-	await _frames(2)
 
 
-func _rogue_effects() -> void:
+func _sprint_speed() -> float:
+	_player.get("stats").call("add_stamina", 500.0)
+	_player.global_position = Vector3(-60, 0, 0)
+	_player.rotation.y = 0.0
+	_player.velocity = Vector3.ZERO
+	Input.action_press("move_forward")
+	Input.action_press("sprint")
+	await _frames(int(Engine.physics_ticks_per_second))
+	var speed := Vector2(_player.velocity.x, _player.velocity.z).length()
+	Input.action_release("sprint")
+	Input.action_release("move_forward")
+	_player.velocity = Vector3.ZERO
+	await _frames(4)
+	return speed
+
+
+func _slide_start(movement: Node) -> float:
+	_player.velocity = Vector3(0, 0, -7.0)
+	movement.call("_start_slide")
+	var speed := (movement.get("_slide_velocity") as Vector3).length()
+	movement.call("cancel")
+	_player.velocity = Vector3.ZERO
+	return speed
+
+
+func _climb_time(movement: Node) -> float:
+	var ledge: Dictionary = movement.call("find_ledge", Vector3(0, 0, -1), true)
+	if ledge.is_empty() or not bool(movement.call("_start_mantle", ledge)):
+		return -1.0
+	var total := 0.0
+	for t: float in movement.get("_mantle_phase_times"):
+		total += t
+	movement.call("cancel")
+	_player.global_position = Vector3(-60, 0, 20)
+	_player.velocity = Vector3.ZERO
+	return total
+
+
+func _fall_damage() -> float:
+	var stats: Node = _player.get("stats")
+	stats.call("heal", 200.0)
+	var hp := float(stats.get("hp"))
+	_player.set("_fall_speed", -16.0)
+	_player.call("_apply_fall_damage")
+	_player.set("_fall_speed", 0.0)
+	return hp - float(stats.get("hp"))
+
+
+func _jump_speed() -> float:
+	_player.global_position = Vector3(-60, 0, 0)
+	_player.velocity = Vector3.ZERO
+	await _frames(10)
+	Input.action_press("jump")
+	var up := 0.0
+	for i in 6:
+		await physics_frame
+		up = maxf(up, _player.velocity.y)
+	Input.action_release("jump")
+	await _frames(int(Engine.physics_ticks_per_second * 1.5))
+	return up
+
+
+func _stealth_effects() -> void:
 	var stealth: Node = _player.get("stealth")
 	var vis_plain := float(stealth.call("_compute_visibility"))
 	_check(bool(_skills.call("learn", &"soft_soles")), "Leise Sohlen gelernt")
@@ -217,8 +290,7 @@ func _rogue_effects() -> void:
 	door.call("interact", _player)
 	_check(not bool(door.get("locked")) and not bool(door.get("forced_open")), "Dietrich: Tür leise offen")
 	door.queue_free()
-	# Taschendiebstahl mit Flinke Finger und Großer Fang. Seed 0: 2 ¢ und Schmuck.
-	_check(bool(_skills.call("learn", &"big_score")), "Großer Fang gelernt")
+	# Taschendiebstahl mit Flinke Finger. Seed 0: 2 ¢ und Schmuck.
 	var civ := (load(CIVILIAN) as GDScript).new() as CharacterBody3D
 	civ.set("stay_put", true)
 	civ.set("net_seed", 0)
@@ -235,36 +307,26 @@ func _rogue_effects() -> void:
 	var inventory: Node = _player.get("inventory")
 	var money := int(inventory.get("money"))
 	civ.call("interact", _player)
-	await _frames(20)
+	await _frames(10)
 	var progress := float(crime.get("pick_progress"))
 	var dt := 1.0 / float(Engine.physics_ticks_per_second)
-	var plain_progress := 20.0 * dt / 1.2
-	_check(progress > plain_progress * 1.3, "Griff 35 %% schneller (%.2f statt %.2f nach 20 Frames)" % [progress, plain_progress])
-	await _frames(60)
+	var plain_progress := 10.0 * dt / 1.2
+	_check(progress > plain_progress * 1.3, "Griff 35 %% schneller (%.2f statt %.2f nach 10 Frames)" % [progress, plain_progress])
+	await _frames(int(Engine.physics_ticks_per_second * 1.5))
 	_check(float(crime.get("pick_progress")) < 0.0, "Griff fertig")
-	_check(int(inventory.get("money")) == money + 3, "Großer Fang: 3 ¢ statt 2 ¢ (%d → %d)" % [money, int(inventory.get("money"))])
+	_check(int(inventory.get("money")) == money + 2, "2 ¢ geklaut (%d → %d)" % [money, int(inventory.get("money"))])
 	Input.action_release("crouch")
 	civ.queue_free()
 	await _frames(4)
-
-
-func _shop_prices() -> void:
+	# Kamera-Hack: eine laufende Ladenkamera sieht den Spieler nicht.
 	var shop: Node = (load(SHOP) as GDScript).new()
-	shop.set("shop_sign", "sign_shop")
-	var medkit: Resource = load(MEDKIT)
-	var jewelry: Resource = load(JEWELRY)
-	var price := int(shop.call("price_of", medkit))
-	var fence := int(shop.call("fence_price", jewelry))
-	_check(int(shop.call("price_of", medkit, _player)) == price, "ohne Feilscher: gleicher Preis mit Spieler")
-	_check(bool(_skills.call("learn", &"haggler")), "Feilscher gelernt")
-	var price_skill := int(shop.call("price_of", medkit, _player))
-	var fence_skill := int(shop.call("fence_price", jewelry, _player))
-	_check(price_skill == maxi(roundi(price * 0.85), 1) or absi(price_skill - roundi(float(price) * 0.85)) <= 1,
-		"Feilscher: Laden 15 %% billiger (%d → %d ¢)" % [price, price_skill])
-	_check(fence > 0 and fence_skill > fence, "Feilscher: Hehler zahlt mehr (%d → %d ¢)" % [fence, fence_skill])
-	_check(bool(_skills.call("learn", &"camera_hack")), "Kamera-Hack gelernt")
+	var camera := StaticBody3D.new()
+	shop.set("camera_alive", true)
+	shop.set("_camera", camera)
+	_check(bool(_skills.call("learn", &"camera_hack")), "Kamera-Hack gelernt (beide Voraussetzungen da)")
 	_check(not bool(shop.call("camera_sees", _player)), "Kamera-Hack: Kamera sieht den Spieler nicht")
 	_check(int(_skills.call("points_spent")) == 15 and int(_skills.call("points_free")) == 0, "alle 15 Skills gelernt, alle Punkte verteilt")
+	camera.free()
 	shop.free()
 
 
@@ -278,17 +340,17 @@ func _save_and_load() -> void:
 	_xp.set("level", 1)
 	_xp.set("xp", 0)
 	_skills.call("set_level", 1)
-	_check(int(_skills.call("points_spent")) == 0 and is_equal_approx(float(_player.get("stats").get("max_hp")), 100.0),
-		"Zurückgesetzt: keine Skills, 100 max HP")
+	_check(int(_skills.call("points_spent")) == 0 and is_equal_approx(float(_player.get("stats").get("max_stamina")), 100.0),
+		"Zurückgesetzt: keine Skills, 100 max Ausdauer")
 	_check(bool(_skills.call("load_profile", PROFILE)), "Profil geladen")
 	_check(int(_xp.get("level")) == level_before and int(_xp.get("xp")) == xp_before,
 		"Stufe und XP wieder da (%d, %d XP)" % [int(_xp.get("level")), int(_xp.get("xp"))])
 	_check((_skills.get("learned") as Dictionary).size() == learned_before.size(), "alle %d Skills wieder da" % learned_before.size())
-	_check(is_equal_approx(float(_player.get("stats").get("max_hp")), 125.0), "Wirkung nach dem Laden (125 max HP)")
+	_check(is_equal_approx(float(_player.get("stats").get("max_stamina")), 130.0), "Wirkung nach dem Laden (130 max Ausdauer)")
 	# Kaputtes Profil: Skill ohne Voraussetzung und mehr Skills als Punkte.
 	var config := ConfigFile.new()
 	config.set_value("xp", "level", 3)
-	config.set_value("skills", "learned", PackedStringArray(["armored_skin", "tough", "endurance", "medic", "steady_hand"]))
+	config.set_value("skills", "learned", PackedStringArray(["armored_skin", "sprinter", "endurance", "slider", "steady_hand"]))
 	config.save(PROFILE)
 	_skills.call("load_profile", PROFILE)
 	var learned: Dictionary = _skills.get("learned")
@@ -311,24 +373,17 @@ func _skill_tab() -> void:
 	_check(str((tabs[1] as Button).text).contains("2"), "Reiter zeigt freie Punkte (%s)" % (tabs[1] as Button).text)
 	_check(view.call("rect_of", &"fast_reload").position.y > view.call("rect_of", &"steady_hand").position.y,
 		"Stufe 2 liegt unter Stufe 1")
-	var at: Vector2 = (view.call("rect_of", &"tough") as Rect2).get_center()
-	_check(view.call("skill_at", at) == &"tough", "Klickfläche trifft den Knoten")
-	_check(bool(view.call("press", &"tough")), "Klick auf Zäh lernt den Skill")
+	var at: Vector2 = (view.call("rect_of", &"sprinter") as Rect2).get_center()
+	_check(view.call("skill_at", at) == &"sprinter", "Klickfläche trifft den Knoten")
+	_check(bool(view.call("press", &"sprinter")), "Klick auf Sprinter lernt den Skill")
 	_check(not bool(view.call("press", &"camera_hack")), "Klick auf gesperrten Skill lernt nichts")
-	ui.call("_on_skill_hovered", &"medic")
-	_check(str(ui.get("info_description").text).contains("Zäh"), "Info zeigt Wirkung und Voraussetzung")
+	ui.call("_on_skill_hovered", &"climber")
+	_check(str(ui.get("info_description").text).contains("Ausdauernd"), "Info zeigt Wirkung und Voraussetzung")
+	var trees: Array = ui.get("skill_view").call("skills_trees")
+	_check(trees == [&"combat", &"movement", &"stealth"], "drei Bäume: Kampf, Bewegung, Stealth")
 	ui.call("set_tab", 0)
 	_check(not view.visible and (ui.get("backpack_grid") as Control).visible, "zurück zum Inventar")
 	ui.call("_set_open", false)
-
-
-func _slot_of(item: Resource) -> int:
-	var inventory: Node = _player.get("inventory")
-	for i in int(inventory.call("get_size")):
-		var other: Resource = inventory.call("get_item", i)
-		if other != null and other.call("is_same", item):
-			return i
-	return -1
 
 
 ## Ziel mit melee_hit, das den letzten Schaden merkt.

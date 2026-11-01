@@ -140,7 +140,7 @@ func buy(slot: int) -> bool:
 	if item == null:
 		_set_status("Nicht mehr da.", WARN_COLOR)
 		return false
-	var price := int(shop.call("price_of", item, player))
+	var price := int(shop.call("price_of", item))
 	if player.inventory.money < price:
 		_set_status("Zu wenig Bargeld (%d ¢ fehlen)." % (price - player.inventory.money), WARN_COLOR)
 		return false
@@ -156,7 +156,7 @@ func buy(slot: int) -> bool:
 func sell(item: ItemData) -> bool:
 	if not bool(shop.call("is_fence")):
 		return false
-	var price := int(shop.call("fence_price", item, player))
+	var price := int(shop.call("fence_price", item))
 	if price <= 0:
 		return false
 	for i in player.inventory.get_size():
@@ -178,7 +178,7 @@ func _fill_counter() -> void:
 		return
 	for slot: int in list:
 		var item: ItemData = shop.call("item_at", slot)
-		counter_rows.add_child(_row(item, "%d ¢" % int(shop.call("price_of", item, player)), "Kaufen", buy.bind(slot)))
+		counter_rows.add_child(_row(item, "%d ¢" % int(shop.call("price_of", item)), "Kaufen", buy.bind(slot)))
 
 
 func _fill_fence() -> void:
@@ -194,7 +194,7 @@ func _fill_fence() -> void:
 		var item := player.inventory.get_item(i)
 		if item == null or seen.has(item.id):
 			continue
-		var price := int(shop.call("fence_price", item, player))
+		var price := int(shop.call("fence_price", item))
 		if price <= 0:
 			continue
 		seen[item.id] = true

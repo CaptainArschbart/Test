@@ -222,7 +222,7 @@ func _add_slot(parent: Control, index: int, show_number: bool, interactive: bool
 func _refresh_info(index: int) -> void:
 	if tab == TAB_SKILLS:
 		info_name.text = "> SKILLS"
-		info_description.text = "Drei Bäume: Kampf, Gauner, Tech & Überleben. Ein Skill braucht die verbundenen darüber."
+		info_description.text = "Drei Bäume: Kampf, Bewegung, Stealth. Ein Skill braucht die verbundenen darüber."
 		return
 	var item := inventory.get_item(index) if index >= 0 else null
 	if item == null:
