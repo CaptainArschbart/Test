@@ -49,6 +49,14 @@ func _wait_frames(n: int) -> void:
 		await physics_frame
 
 
+## Die Frame-Zahlen hier gelten für 60 Hz. Die Option „Physik 30 Hz“ aus user://settings.cfg
+## wirkt auch headless, darum für den Test fest auf 60 Hz stellen (ohne zu speichern).
+func _pin_physics_60() -> void:
+	root.get_node("Settings").set("physics_rate", 60)
+	Engine.physics_ticks_per_second = 60
+	physics_interpolation = false
+
+
 ## Wartet, bis der Hitstop vorbei ist (läuft in Echtzeit).
 func _wait_hitstop() -> void:
 	for i in 2000:
@@ -103,6 +111,7 @@ func _wait_state(wanted: int, limit := 120) -> void:
 
 
 func _run() -> void:
+	_pin_physics_60()
 	_root = Node3D.new()
 	_root.name = "MeleeArena"
 	root.add_child(_root)

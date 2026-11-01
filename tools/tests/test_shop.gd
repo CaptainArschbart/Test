@@ -37,7 +37,17 @@ func _frames(n: int) -> void:
 		await process_frame
 
 
+## Die Wartezeiten hier gelten für 60 Hz. Die Option „Physik 30 Hz“ aus user://settings.cfg
+## wirkt auch headless, darum für den Test fest auf 60 Hz stellen (ohne zu speichern).
+## Bei 30 Hz mit Interpolation hängt die Kamera nach dem Versetzen der Figur hinterher.
+func _pin_physics_60() -> void:
+	root.get_node("Settings").set("physics_rate", 60)
+	Engine.physics_ticks_per_second = 60
+	physics_interpolation = false
+
+
 func _run() -> void:
+	_pin_physics_60()
 	_check_items()
 	change_scene_to_file(SLUM)
 	await _frames(30)
