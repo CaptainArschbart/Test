@@ -29,3 +29,10 @@ Arbeitslog von Arschis Seite (Claude für Arschi). Neuer Eintrag ganz unten. `en
 - Getestet (Godot 4.7.2 stable, headless): `test_npc_robbery.gd` CHECKS 34 FAILS 0. Die gehende Person bewegt sich während des Griffs 0,03 m (Abbremsen), danach geht sie weiter. Verdacht bei unbemerktem Griff im Dunkeln 0,14 (vorher 0,45). `test_apartments.gd` CHECKS 44 FAILS 0.
 - Nicht getestet: Gefühl im Fenster mit Maus, Werte bei echten Lichtern in Sektor 7.
 - Git: Branch `claude/taschendieb-leichter` aus `origin/main` (7d5689d), PR mit Basis `main`.
+
+### 2026-11-01 · Editor-Spam „placeholder instance“ in civilian_crime.gd behoben · Claude (für Arschi) · Branch `claude/editor-bewohner`
+- Fehler: Im Editor (nicht im Spiel) kam ständig `civilian_crime.gd:141 - Invalid call function 'is_client' in base 'Node (world_sync.gd)': Attempt to call a method on a placeholder instance`.
+- Ursache: `slum_building.gd` ist `@tool` und baut bei `walk_in_apartments` das Wohnhaus per `ApartmentHouseScript.new()`. Mit `.new()` entstehen echte Instanzen statt Platzhaltern, also lief die Kette `ApartmentHouse` → `ApartmentBlock` → `Civilian.new()` → `CivilianCrime` im Editor wirklich. `_physics_process` rief dort `WorldSync.is_client()` auf, und Autoloads sind im Editor nur Platzhalter.
+- `scenes/crime/apartment_block.gd`: `_spawn_residents()` macht im Editor nichts (`Engine.is_editor_hint()`), wie schon `ShopInterior` in `slum_building.gd`. Im Spiel ändert sich nichts. Im Editor stehen in den Wohnungen keine Bewohner mehr.
+- Getestet (Godot 4.7.2 stable, headless): `slum.tscn` im Editor geöffnet, 400 Frames. Vorher 8059 dieser Fehler, nachher 0. `test_apartments.gd` CHECKS 55 FAILS 0.
+- Git: Branch `claude/editor-bewohner` aus `origin/main` (c6c47b4), Draft-PR mit Basis `main`.

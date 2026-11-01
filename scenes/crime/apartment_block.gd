@@ -461,6 +461,10 @@ func _place_loot(rng: RandomNumberGenerator) -> void:
 
 
 func _spawn_residents(count: int) -> void:
+	# Bewohner sind Spiel-Logik. Im Editor baut slum_building.gd (@tool) den Block per .new(), dann
+	# liefe CivilianCrime echt und riefe das Platzhalter-Autoload WorldSync auf.
+	if Engine.is_editor_hint():
+		return
 	var spots: Array[Vector3] = [
 		_at((_bed_wall + _bath_wall) * 0.5 + 0.6, FLOOR_TOP + 0.02, _back + WALL + 1.3),
 		_at(_bed_wall - 1.7, FLOOR_TOP + 0.02, _back + WALL + 1.9),
