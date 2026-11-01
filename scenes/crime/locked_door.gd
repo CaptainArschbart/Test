@@ -28,10 +28,7 @@ func _ready() -> void:
 	mesh.size = Vector3(1.05, 2.15, 0.08)
 	_panel.mesh = mesh
 	_panel.position = Vector3(0.0, 1.1, 0.0)
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.22, 0.16, 0.12)
-	mat.roughness = 0.8
-	_panel.material_override = mat
+	_panel.material_override = SlumMats.uv("door_wood", Color(0.85, 0.78, 0.72))
 	add_child(_panel)
 
 

@@ -1,10 +1,13 @@
 class_name ApartmentBlock
 extends Node3D
-## Begehbare Wohnung mit Flur, Bad, Wohnküche und Schlafzimmer. Tür zu, Beute im Inventar,
-## Tresor im Schlafzimmer, Bewohner nur manchmal.
+## Begehbare Wohnung: Schlafzimmer, offene Wohnküche mit Flur und ein eigenes Bad. Tür zu, Beute im
+## Inventar, Tresor im Schlafzimmer, Bewohner nur manchmal.
 ##
 ## Lokaler Raum: Mitte der Bodenplatte, Tür in der Wand bei +Z. Die Wohnung ist auf die Tür
 ## ausgerichtet: In Grundrisskoordinaten liegt die Tür immer am rechten Ende (+X), _flip spiegelt.
+##
+## Grundriss von links nach rechts: Schlafzimmer, Wohnküche, rechts Flur (vorn) und Bad (hinten).
+## Flur und Wohnküche sind ein Raum, nur Schlafzimmer und Bad haben Wände mit breiten Durchgängen.
 ##
 ## 35 % der Wohnungen haben beim Laden 1 oder 2 Bewohner (gleich oft).
 ## Die übrigen sind leer. `resident_count` >= 0 erzwingt die Zahl (Tests).
@@ -22,10 +25,16 @@ const KEY := preload("res://scenes/items/data/keycard.tres")
 
 const RESIDENT_CHANCE := 0.35
 const WALL := 0.16
-const PARTITION := 0.1
+const PARTITION := 0.12
 const FLOOR_TOP := 0.1
 const ROOM_TOP := 2.7
 const DOOR_GAP := 1.16
+## Durchgang ins Schlafzimmer und ins Bad. Breit genug, dass man nirgends hängen bleibt.
+const BED_GAP := 1.15
+const BATH_GAP := 1.0
+const DOOR_TOP := 2.15
+## Höhe der dunklen Wandverkleidung.
+const PANEL := 0.9
 ## Innenleben wird erst aus der Nähe gezeichnet, von außen sieht man es ohnehin nicht.
 const VIEW_RANGE := 44.0
 
@@ -50,9 +59,14 @@ var _right := 4.0
 var _back := -3.5
 var _front := 3.5
 var _bed_wall := 0.0  # Wand zwischen Schlafzimmer und Wohnküche
-var _bath_wall := 0.0  # Linke Wand von Bad und Flur
+var _bed_door_z := 0.0  # Mitte des Durchgangs im Schlafzimmer
+var _bath_wall := 0.0  # Linke Wand des Bads, links davon Wohnküche, davor der Flur
 var _bath_front := 0.0  # Wand zwischen Bad und Flur
+var _bath_door_x := 0.0  # Mitte des Durchgangs ins Bad
 var _door_x := 0.0
+## Innenleben: Wände, Möbel, Lichter. Bleibt unsichtbar, solange die Tür zu ist.
+var _interior: Node3D
+var _sealed_nodes: Array[Node3D] = []
 
 
 func _ready() -> void:
@@ -60,13 +74,21 @@ func _ready() -> void:
 	rng.seed = hash(key_id) ^ hash(str(global_position))
 	theme = rng.randi_range(0, 2)
 	_measure()
-	var b := SlumBuilder.new(self)
+	_interior = Node3D.new()
+	_interior.name = "Interior"
+	add_child(_interior)
+	var b := SlumBuilder.new(_interior)
 	b.solid_range = VIEW_RANGE
 	b.detail_range = VIEW_RANGE
+	# Die Frontwand mit Türrahmen sieht man vom Treppenhaus aus immer.
+	var front := SlumBuilder.new(self)
+	front.solid_range = VIEW_RANGE
+	front.detail_range = VIEW_RANGE
 	var colors := _palette()
-	_build_shell(b, colors)
+	_build_shell(b, front, colors)
 	_furnish(b, colors)
 	b.finish()
+	front.finish()
 	var door := LockedDoor.new()
 	door.name = "Door"
 	door.unique_name_in_owner = true
@@ -76,17 +98,20 @@ func _ready() -> void:
 	door.position = Vector3(_door_x * _flip, FLOOR_TOP, _front - WALL * 0.5)
 	add_child(door)
 	door.owner = self
+	door.opened.connect(_reveal.unbind(1))
 	_place_loot(rng)
 	if not hidden_key.is_empty():
 		var stash := LootProp.new()
 		stash.name = "SpareKey"
 		stash.item = key_item(hidden_key)
 		stash.prompt_name = "Schlüssel"
-		stash.position = _at(_bath_wall + 0.85, 0.9, _back + WALL + 0.22)
+		# Auf dem Schuhregal im Flur, gleich hinter der Tür.
+		stash.position = _at(_right - WALL - 0.15, 0.42, _bath_front + 0.8)
 		add_child(stash)
 	spawned_residents = resolve_resident_count(rng, resident_count)
 	_spawn_residents(spawned_residents)
 	_lights(colors)
+	_seal()
 	var sign_plate := Label3D.new()
 	sign_plate.name = "Sign"
 	sign_plate.text = plate
@@ -96,6 +121,26 @@ func _ready() -> void:
 	sign_plate.modulate = colors["neon"]
 	add_child(sign_plate)
 	_limit_view()
+
+
+## Hinter verschlossener Tür wird nichts gezeichnet. Auch Beute und Bewohner bleiben unsichtbar.
+func _seal() -> void:
+	_interior.visible = false
+	for child in get_children():
+		if child is LootProp or child is Civilian:
+			_sealed_nodes.append(child as Node3D)
+			(child as Node3D).visible = false
+	# Innen wirft nichts Schatten: Die Sonne erreicht die Räume ohnehin nicht.
+	for node: Node in _interior.find_children("*", "MeshInstance3D", true, false):
+		(node as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+func _reveal() -> void:
+	_interior.visible = true
+	for node in _sealed_nodes:
+		if is_instance_valid(node):
+			node.visible = true
+	_sealed_nodes.clear()
 
 
 ## 0, oder bei Treffer (35 %) eine 1 oder eine 2, je zur Hälfte.
@@ -122,39 +167,41 @@ func _measure() -> void:
 	_front = unit_depth * 0.5
 	_back = -_front
 	_door_x = absf(door_offset) if not is_zero_approx(door_offset) else _right - 1.2
-	_bath_wall = _right - 2.2
-	_bed_wall = _left + maxf(3.4, unit_width * 0.36)
-	_bath_front = _back + 2.1
+	_bath_wall = _right - 2.7
+	_bed_wall = _left + maxf(3.7, unit_width * 0.39)
+	_bath_front = _back + 2.3
+	_bed_door_z = _front - WALL - 0.1 - BED_GAP * 0.5
+	_bath_door_x = _bath_wall + 0.35 + BATH_GAP * 0.5
 
 
 func _palette() -> Dictionary:
 	match theme:
 		1:
 			return {
-				"wall": Color(0.62, 0.48, 0.38),
+				"wall": Color(0.86, 0.74, 0.62),
 				"trim": Color(0.28, 0.18, 0.13),
 				"floor": Color(0.78, 0.62, 0.5),
-				"cloth": Color(0.5, 0.2, 0.2),
+				"cloth": Color(0.55, 0.22, 0.2),
 				"neon": Color(1.0, 0.62, 0.28),
-				"light": Color(1.0, 0.76, 0.48),
+				"light": Color(1.0, 0.8, 0.55),
 			}
 		2:
 			return {
-				"wall": Color(0.42, 0.5, 0.6),
+				"wall": Color(0.66, 0.74, 0.84),
 				"trim": Color(0.12, 0.15, 0.2),
 				"floor": Color(0.55, 0.6, 0.68),
-				"cloth": Color(0.2, 0.3, 0.45),
+				"cloth": Color(0.2, 0.32, 0.5),
 				"neon": Color(0.45, 0.75, 1.0),
-				"light": Color(0.68, 0.82, 1.0),
+				"light": Color(0.75, 0.86, 1.0),
 			}
 		_:
 			return {
-				"wall": Color(0.5, 0.38, 0.52),
+				"wall": Color(0.78, 0.64, 0.8),
 				"trim": Color(0.16, 0.09, 0.16),
 				"floor": Color(0.5, 0.42, 0.55),
 				"cloth": Color(0.55, 0.14, 0.42),
 				"neon": Color(0.3, 0.95, 1.0),
-				"light": Color(0.62, 0.9, 1.0),
+				"light": Color(0.75, 0.92, 1.0),
 			}
 
 
@@ -163,10 +210,19 @@ func _at(x: float, y: float, z: float) -> Vector3:
 	return Vector3(x * _flip, y, z)
 
 
+func _dir(x: float, z: float) -> Vector3:
+	return Vector3(x * _flip, 0.0, z)
+
+
 ## Box von Ecke zu Ecke in Grundrisskoordinaten.
 func _bx(b: SlumBuilder, x0: float, x1: float, y0: float, y1: float, z0: float, z1: float, mat: Material,
 		collide := true, shadow := true) -> void:
 	b.box_mm(_at(x0, y0, z0), _at(x1, y1, z1), mat, collide, shadow)
+
+
+## Dekor ohne Kollision und Schatten.
+func _dx(b: SlumBuilder, x0: float, x1: float, y0: float, y1: float, z0: float, z1: float, mat: Material) -> void:
+	b.box_mm(_at(x0, y0, z0), _at(x1, y1, z1), mat, false, false)
 
 
 ## Quad an einer Wand. normal in Grundrisskoordinaten.
@@ -174,11 +230,17 @@ func _wall_decal(b: SlumBuilder, at: Vector3, normal: Vector3, w: float, h: floa
 	b.quad(at, Vector3(normal.x * _flip, normal.y, normal.z), w, h, mat)
 
 
-func _build_shell(b: SlumBuilder, colors: Dictionary) -> void:
+func _steel() -> Material:
+	return SlumMats.color(Color(0.42, 0.44, 0.46), 0.0, 0.4, 0.6)
+
+
+func _build_shell(b: SlumBuilder, front: SlumBuilder, colors: Dictionary) -> void:
 	var wall := SlumMats.surface("plaster", colors["wall"])
-	var ceiling := SlumMats.surface("concrete", Color(0.8, 0.8, 0.8))
+	var ceiling := SlumMats.surface("plaster", Color(0.86, 0.85, 0.82))
 	var tile := SlumMats.surface("tiles_white")
 	var inner := _front - WALL
+	var back_in := _back + WALL
+	var half := PARTITION * 0.5
 	# Böden: Holz in den Zimmern, Fliesen in Flur und Bad.
 	_bx(b, _left, _bed_wall, 0.0, FLOOR_TOP, _back, _front, SlumMats.surface("wood_dark", colors["floor"]))
 	_bx(b, _bed_wall, _bath_wall, 0.0, FLOOR_TOP, _back, _front, SlumMats.surface("wood", colors["floor"]))
@@ -186,63 +248,102 @@ func _build_shell(b: SlumBuilder, colors: Dictionary) -> void:
 	_bx(b, _bath_wall, _right, 0.0, FLOOR_TOP, _back, _bath_front, tile)
 	_bx(b, _left, _right, ROOM_TOP, ceiling_top, _back, _front, ceiling)
 	# Außenwände. Die Front hat die Türöffnung mit Sturz.
-	_bx(b, _left, _right, FLOOR_TOP, ROOM_TOP, _back, _back + WALL, wall)
-	_bx(b, _left, _left + WALL, FLOOR_TOP, ROOM_TOP, _back + WALL, inner, wall)
-	_bx(b, _right - WALL, _right, FLOOR_TOP, ROOM_TOP, _back + WALL, inner, wall)
+	_bx(b, _left, _right, FLOOR_TOP, ROOM_TOP, _back, back_in, wall)
+	_bx(b, _left, _left + WALL, FLOOR_TOP, ROOM_TOP, back_in, inner, wall)
+	_bx(b, _right - WALL, _right, FLOOR_TOP, ROOM_TOP, back_in, inner, wall)
 	var gap0 := _door_x - DOOR_GAP * 0.5
 	var gap1 := _door_x + DOOR_GAP * 0.5
-	_bx(b, _left, gap0, FLOOR_TOP, ceiling_top, inner, _front, wall)
-	_bx(b, gap1, _right, FLOOR_TOP, ceiling_top, inner, _front, wall)
-	_bx(b, gap0, gap1, 2.26, ceiling_top, inner, _front, wall)
-	# Rahmen außen um die Tür.
+	_bx(front, _left, gap0, FLOOR_TOP, ceiling_top, inner, _front, wall)
+	_bx(front, gap1, _right, FLOOR_TOP, ceiling_top, inner, _front, wall)
+	_bx(front, gap0, gap1, 2.26, ceiling_top, inner, _front, wall)
+	# Rahmen um die Tür, innen und außen.
 	var trim := SlumMats.color(colors["trim"])
-	_bx(b, gap0 - 0.07, gap0, FLOOR_TOP, 2.3, _front, _front + 0.03, trim, false)
-	_bx(b, gap1, gap1 + 0.07, FLOOR_TOP, 2.3, _front, _front + 0.03, trim, false)
-	_bx(b, gap0 - 0.07, gap1 + 0.07, 2.26, 2.33, _front, _front + 0.03, trim, false)
-	# Innenwände mit Durchgängen.
-	var half := PARTITION * 0.5
-	var bed_gap0 := _front - WALL - 1.25
-	var bed_gap1 := bed_gap0 + 1.05
-	_bx(b, _bed_wall - half, _bed_wall + half, FLOOR_TOP, ROOM_TOP, _back + WALL, bed_gap0, wall)
+	for z: float in [_front, inner - 0.03]:
+		var target := front if z == _front else b
+		_bx(target, gap0 - 0.07, gap0, FLOOR_TOP, 2.3, z, z + 0.03, trim, false)
+		_bx(target, gap1, gap1 + 0.07, FLOOR_TOP, 2.3, z, z + 0.03, trim, false)
+		_bx(target, gap0 - 0.07, gap1 + 0.07, 2.26, 2.33, z, z + 0.03, trim, false)
+	# Wand zwischen Schlafzimmer und Wohnküche, mit breitem Durchgang nah an der Frontwand.
+	var bed_gap0 := inner - 0.1 - BED_GAP
+	var bed_gap1 := inner - 0.1
+	_bx(b, _bed_wall - half, _bed_wall + half, FLOOR_TOP, ROOM_TOP, back_in, bed_gap0, wall)
 	_bx(b, _bed_wall - half, _bed_wall + half, FLOOR_TOP, ROOM_TOP, bed_gap1, inner, wall)
-	_bx(b, _bed_wall - half, _bed_wall + half, 2.2, ROOM_TOP, bed_gap0, bed_gap1, wall)
-	_bx(b, _bath_wall - half, _bath_wall + half, FLOOR_TOP, ROOM_TOP, _back + WALL, _bath_front + half, wall)
-	var bath_gap0 := _bath_wall + 0.3
-	var bath_gap1 := bath_gap0 + 0.95
+	_bx(b, _bed_wall - half, _bed_wall + half, DOOR_TOP, ROOM_TOP, bed_gap0, bed_gap1, wall)
+	_opening_z(b, _bed_wall, bed_gap0, bed_gap1, trim)
+	# Bad: Wand zur Wohnküche (ohne Tür) und Wand zum Flur mit Durchgang.
+	var bath_gap0 := _bath_door_x - BATH_GAP * 0.5
+	var bath_gap1 := _bath_door_x + BATH_GAP * 0.5
+	_bx(b, _bath_wall - half, _bath_wall + half, FLOOR_TOP, ROOM_TOP, back_in, _bath_front + half, wall)
 	_bx(b, _bath_wall + half, bath_gap0, FLOOR_TOP, ROOM_TOP, _bath_front - half, _bath_front + half, wall)
 	_bx(b, bath_gap1, _right - WALL, FLOOR_TOP, ROOM_TOP, _bath_front - half, _bath_front + half, wall)
-	_bx(b, bath_gap0, bath_gap1, 2.2, ROOM_TOP, _bath_front - half, _bath_front + half, wall)
+	_bx(b, bath_gap0, bath_gap1, DOOR_TOP, ROOM_TOP, _bath_front - half, _bath_front + half, wall)
+	_opening_x(b, _bath_front, bath_gap0, bath_gap1, trim)
 	# Fliesenspiegel im Bad bis Kopfhöhe.
-	_bx(b, _bath_wall + half, _right - WALL, FLOOR_TOP, 1.9, _back + WALL, _back + WALL + 0.015, tile, false, false)
-	_bx(b, _right - WALL - 0.015, _right - WALL, FLOOR_TOP, 1.9, _back + WALL, _bath_front - half, tile, false, false)
-	_bx(b, _bath_wall + half, _bath_wall + half + 0.015, FLOOR_TOP, 1.9, _back + WALL, _bath_front - half, tile, false, false)
-	# Sockelleisten an den langen Wänden.
-	_bx(b, _left + WALL, _bath_wall - half, FLOOR_TOP, 0.18, _back + WALL, _back + WALL + 0.02, trim, false, false)
-	_bx(b, _left + WALL, _bed_wall - half, FLOOR_TOP, 0.18, inner - 0.02, inner, trim, false, false)
-	_bx(b, _bed_wall + half, gap0, FLOOR_TOP, 0.18, inner - 0.02, inner, trim, false, false)
+	_dx(b, _bath_wall + half, _right - WALL, FLOOR_TOP, 1.9, back_in, back_in + 0.015, tile)
+	_dx(b, _right - WALL - 0.015, _right - WALL, FLOOR_TOP, 1.9, back_in, _bath_front - half, tile)
+	_dx(b, _bath_wall + half, _bath_wall + half + 0.015, FLOOR_TOP, 1.9, back_in, _bath_front - half, tile)
+	# Dunkle Wandverkleidung und Sockelleiste. Kein Zentimeter Überlappung mit Möbeln: Sie liegt flach an.
+	var panel := SlumMats.surface("wood_dark", Color(0.6, 0.5, 0.46).lerp(colors["trim"], 0.4))
+	var rail := SlumMats.color(colors["trim"], 0.0, 0.6)
+	_panel_x(b, _left + WALL, _bath_wall - half, back_in, 1.0, panel, rail)
+	_panel_z(b, _left + WALL, back_in, inner, 1.0, panel, rail)
+	_panel_x(b, _left + WALL, gap0, inner, -1.0, panel, rail)
+	_panel_x(b, gap1, _right - WALL, inner, -1.0, panel, rail)
+	_panel_z(b, _right - WALL, _bath_front + half, inner, -1.0, panel, rail)
 	_window(b, _bed_wall - 1.75, colors)
 	_window(b, (_bed_wall + _bath_wall) * 0.5, colors)
 
 
-## Fenster in der Rückwand: Nachtblau, Rahmen, Kreuz, zwei Gardinen. Die Außenseite ist die Fassade.
+## Verkleidung an einer Wand entlang X. side = 1: Wand liegt hinten (Verkleidung ragt nach +Z),
+## -1: Wand liegt vorn (nach -Z).
+func _panel_x(b: SlumBuilder, x0: float, x1: float, z: float, side: float, panel: Material, rail: Material) -> void:
+	if x1 - x0 < 0.05:
+		return
+	_dx(b, x0, x1, FLOOR_TOP, PANEL, z, z + 0.015 * side, panel)
+	_dx(b, x0, x1, PANEL, PANEL + 0.04, z, z + 0.03 * side, rail)
+	_dx(b, x0, x1, FLOOR_TOP, 0.18, z + 0.015 * side, z + 0.03 * side, rail)
+
+
+## Verkleidung an einer Wand entlang Z. side = 1: Wand liegt links (ragt nach +X), -1: rechts.
+func _panel_z(b: SlumBuilder, x: float, z0: float, z1: float, side: float, panel: Material, rail: Material) -> void:
+	if z1 - z0 < 0.05:
+		return
+	_dx(b, x, x + 0.015 * side, FLOOR_TOP, PANEL, z0, z1, panel)
+	_dx(b, x, x + 0.03 * side, PANEL, PANEL + 0.04, z0, z1, rail)
+	_dx(b, x + 0.015 * side, x + 0.03 * side, FLOOR_TOP, 0.18, z0, z1, rail)
+
+
+## Zarge um einen Durchgang in einer Wand quer zur X-Achse (Wand bei x, Öffnung z0..z1).
+func _opening_z(b: SlumBuilder, x: float, z0: float, z1: float, mat: Material) -> void:
+	var t := PARTITION * 0.5 + 0.02
+	_dx(b, x - t, x + t, FLOOR_TOP, DOOR_TOP + 0.05, z0 - 0.05, z0, mat)
+	_dx(b, x - t, x + t, FLOOR_TOP, DOOR_TOP + 0.05, z1, z1 + 0.05, mat)
+	_dx(b, x - t, x + t, DOOR_TOP, DOOR_TOP + 0.05, z0, z1, mat)
+
+
+## Zarge um einen Durchgang in einer Wand quer zur Z-Achse (Wand bei z, Öffnung x0..x1).
+func _opening_x(b: SlumBuilder, z: float, x0: float, x1: float, mat: Material) -> void:
+	var t := PARTITION * 0.5 + 0.02
+	_dx(b, x0 - 0.05, x0, FLOOR_TOP, DOOR_TOP + 0.05, z - t, z + t, mat)
+	_dx(b, x1, x1 + 0.05, FLOOR_TOP, DOOR_TOP + 0.05, z - t, z + t, mat)
+	_dx(b, x0, x1, DOOR_TOP, DOOR_TOP + 0.05, z - t, z + t, mat)
+
+
+## Fenster in der Rückwand: Nachtblau, Rahmen, Kreuz, Sims, zwei Gardinen. Die Außenseite ist die Fassade.
 func _window(b: SlumBuilder, x: float, colors: Dictionary) -> void:
 	var z := _back + WALL
 	var frame := SlumMats.color(Color(0.1, 0.1, 0.11))
 	var cloth := SlumMats.color(colors["cloth"], 0.0, 0.95)
-	_bx(b, x - 0.62, x + 0.62, 1.05, 2.25, z, z + 0.015, SlumMats.color(Color(0.12, 0.2, 0.34), 1.0), false, false)
-	_bx(b, x - 0.68, x + 0.68, 1.0, 1.05, z, z + 0.08, frame, false)
-	_bx(b, x - 0.68, x + 0.68, 2.25, 2.3, z, z + 0.05, frame, false)
-	_bx(b, x - 0.68, x - 0.62, 1.05, 2.25, z, z + 0.05, frame, false)
-	_bx(b, x + 0.62, x + 0.68, 1.05, 2.25, z, z + 0.05, frame, false)
-	_bx(b, x - 0.02, x + 0.02, 1.05, 2.25, z, z + 0.04, frame, false)
-	_bx(b, x - 0.62, x + 0.62, 1.63, 1.67, z, z + 0.04, frame, false)
-	_bx(b, x - 0.78, x - 0.42, 0.95, 2.32, z + 0.06, z + 0.09, cloth, false, false)
-	_bx(b, x + 0.42, x + 0.78, 0.95, 2.32, z + 0.06, z + 0.09, cloth, false, false)
-	_bx(b, x - 0.85, x + 0.85, 2.34, 2.37, z + 0.05, z + 0.08, _steel(), false, false)
-
-
-func _steel() -> Material:
-	return SlumMats.color(Color(0.42, 0.44, 0.46), 0.0, 0.4, 0.6)
+	_dx(b, x - 0.62, x + 0.62, 1.05, 2.25, z, z + 0.015, SlumMats.color(Color(0.12, 0.2, 0.34), 1.0))
+	_dx(b, x - 0.72, x + 0.72, 1.0, 1.05, z, z + 0.1, SlumMats.color(colors["trim"], 0.0, 0.6))
+	_dx(b, x - 0.68, x + 0.68, 2.25, 2.3, z, z + 0.05, frame)
+	_dx(b, x - 0.68, x - 0.62, 1.05, 2.25, z, z + 0.05, frame)
+	_dx(b, x + 0.62, x + 0.68, 1.05, 2.25, z, z + 0.05, frame)
+	_dx(b, x - 0.02, x + 0.02, 1.05, 2.25, z, z + 0.04, frame)
+	_dx(b, x - 0.62, x + 0.62, 1.63, 1.67, z, z + 0.04, frame)
+	_dx(b, x - 0.78, x - 0.46, 0.98, 2.32, z + 0.06, z + 0.095, cloth)
+	_dx(b, x + 0.46, x + 0.78, 0.98, 2.32, z + 0.06, z + 0.095, cloth)
+	_dx(b, x - 0.84, x + 0.84, 2.34, 2.37, z + 0.05, z + 0.08, _steel())
 
 
 func _furnish(b: SlumBuilder, colors: Dictionary) -> void:
@@ -254,126 +355,192 @@ func _furnish(b: SlumBuilder, colors: Dictionary) -> void:
 
 
 func _kitchen(b: SlumBuilder, colors: Dictionary) -> void:
-	var x0 := _bed_wall + 0.1
-	var x1 := _bath_wall - 0.8
+	var half := PARTITION * 0.5
+	var x0 := _bed_wall + half
+	var x1 := _bath_wall - half - 0.8
 	var z0 := _back + WALL
 	var z1 := z0 + 0.6
 	var wood := SlumMats.surface("wood", colors["cloth"].lerp(Color(0.5, 0.45, 0.4), 0.6))
 	var top := SlumMats.color(Color(0.1, 0.1, 0.11), 0.0, 0.35)
 	var white := SlumMats.color(Color(0.72, 0.74, 0.75), 0.0, 0.5)
+	var pot := SlumMats.color(Color(0.2, 0.21, 0.23), 0.0, 0.4, 0.6)
 	_mark("Kitchen", _at((x0 + x1) * 0.5, 0.5, z0 + 0.3))
 	_bx(b, x0, x1, FLOOR_TOP, 0.92, z0, z1, wood)
-	_bx(b, x0 - 0.02, x1 + 0.02, 0.92, 0.97, z0, z1 + 0.03, top, false)
-	# Herd, Spüle, Griffe.
+	_dx(b, x0, x1, 0.92, 0.97, z0, z1 + 0.03, top)
+	# Herd mit Topf, Spüle mit Hahn und Abtropfgestell.
 	var stove := x0 + 0.45
-	_bx(b, stove - 0.3, stove + 0.3, 0.97, 0.98, z0 + 0.03, z1 - 0.03, SlumMats.color(Color(0.04, 0.04, 0.05)), false, false)
+	_dx(b, stove - 0.3, stove + 0.3, 0.97, 0.98, z0 + 0.03, z1 - 0.03, SlumMats.color(Color(0.04, 0.04, 0.05)))
 	for dx: float in [-0.14, 0.14]:
 		for dz: float in [-0.13, 0.13]:
 			b.cylinder_x(Transform3D(Basis.IDENTITY, _at(stove + dx, 0.985, z0 + 0.3 + dz)), 0.08, 0.01,
 					SlumMats.color(Color(0.5, 0.12, 0.08), 0.6), 8, false, false)
+	b.cylinder_x(Transform3D(Basis.IDENTITY, _at(stove - 0.14, 1.06, z0 + 0.17)), 0.1, 0.16, pot, 8, false, false)
+	_dx(b, stove - 0.28, stove - 0.2, 1.0, 1.03, z0 + 0.15, z0 + 0.19, pot)
 	var sink := x1 - 0.4
-	_bx(b, sink - 0.24, sink + 0.24, 0.97, 0.985, z0 + 0.1, z1 - 0.1, _steel(), false, false)
+	_dx(b, sink - 0.24, sink + 0.24, 0.97, 0.985, z0 + 0.1, z1 - 0.1, _steel())
 	b.tube(_at(sink, 0.97, z0 + 0.06), _at(sink, 1.2, z0 + 0.06), 0.012, _steel(), 4, false)
 	b.tube(_at(sink, 1.2, z0 + 0.06), _at(sink, 1.2, z0 + 0.22), 0.012, _steel(), 4, false)
-	var front := z1 + 0.005
+	# Türen und Griffe der Unterschränke.
 	var x := x0 + 0.05
 	while x + 0.5 <= x1:
-		_bx(b, x, x + 0.48, 0.14, 0.88, z1, front, wood, false, false)
-		_bx(b, x + 0.18, x + 0.3, 0.8, 0.82, front, front + 0.015, _steel(), false, false)
+		_dx(b, x, x + 0.48, 0.14, 0.88, z1, z1 + 0.005, wood)
+		_dx(b, x + 0.18, x + 0.3, 0.8, 0.82, z1 + 0.005, z1 + 0.02, _steel())
 		x += 0.52
-	# Wandbord mit Dosen neben dem Fenster.
-	_bx(b, x0, x0 + 0.5, 1.65, 1.68, z0, z0 + 0.22, wood, false)
-	_bx(b, x0 + 0.08, x0 + 0.18, 1.68, 1.82, z0 + 0.05, z0 + 0.15, SlumMats.color(Color(0.7, 0.2, 0.15)), false, false)
-	_bx(b, x0 + 0.26, x0 + 0.36, 1.68, 1.8, z0 + 0.05, z0 + 0.15, SlumMats.color(Color(0.2, 0.5, 0.3)), false, false)
+	# Abzugshaube mit Oberschrank über dem Herd, so schmal, dass das Fenster frei bleibt.
+	_dx(b, x0, x0 + 0.72, 1.55, 2.25, z0, z0 + 0.34, wood)
+	_dx(b, x0 + 0.04, x0 + 0.68, 1.5, 1.55, z0 + 0.02, z0 + 0.4, _steel())
+	_dx(b, x0 + 0.1, x0 + 0.62, 1.1, 1.5, z0 + 0.34, z0 + 0.35, wood)
+	_dx(b, x0 + 0.3, x0 + 0.42, 0.97, 1.03, z0 + 0.34, z0 + 0.35, SlumMats.color(Color(0.7, 0.2, 0.15)))
 	# Kühlschrank zwischen Küchenzeile und Badwand.
-	var fx0 := _bath_wall - 0.75
-	var fx1 := _bath_wall - 0.08
+	var fx0 := _bath_wall - half - 0.7
+	var fx1 := _bath_wall - half - 0.05
 	_mark("Fridge", _at((fx0 + fx1) * 0.5, 0.9, z0 + 0.33))
 	_bx(b, fx0, fx1, FLOOR_TOP, 1.9, z0, z0 + 0.66, white)
-	_bx(b, fx0 + 0.02, fx1 - 0.02, 1.24, 1.26, z0 + 0.66, z0 + 0.67, SlumMats.color(Color(0.2, 0.2, 0.22)), false, false)
-	_bx(b, fx0 + 0.08, fx0 + 0.11, 0.7, 1.15, z0 + 0.67, z0 + 0.69, _steel(), false, false)
-	_bx(b, fx0 + 0.08, fx0 + 0.11, 1.32, 1.65, z0 + 0.67, z0 + 0.69, _steel(), false, false)
+	_dx(b, fx0 + 0.02, fx1 - 0.02, 1.24, 1.26, z0 + 0.66, z0 + 0.67, SlumMats.color(Color(0.2, 0.2, 0.22)))
+	_dx(b, fx0 + 0.08, fx0 + 0.11, 0.7, 1.15, z0 + 0.67, z0 + 0.69, _steel())
+	_dx(b, fx0 + 0.08, fx0 + 0.11, 1.32, 1.65, z0 + 0.67, z0 + 0.69, _steel())
+	# Mikrowelle auf dem Kühlschrank.
+	var mw := (fx0 + fx1) * 0.5
+	_dx(b, mw - 0.25, mw + 0.25, 1.9, 2.12, z0 + 0.1, z0 + 0.5, SlumMats.color(Color(0.17, 0.18, 0.2), 0.0, 0.4, 0.4))
+	_dx(b, mw - 0.21, mw + 0.05, 1.93, 2.09, z0 + 0.5, z0 + 0.51, SlumMats.glass(Color(0.1, 0.12, 0.14, 0.9)))
 
 
 func _living(b: SlumBuilder, colors: Dictionary) -> void:
+	var half := PARTITION * 0.5
 	var cloth := SlumMats.color(colors["cloth"], 0.0, 0.95)
 	var dark := SlumMats.color(colors["trim"], 0.0, 0.6)
 	var wood := SlumMats.surface("wood_dark", Color(0.8, 0.72, 0.65))
-	var x0 := _bed_wall + PARTITION * 0.5
+	var x0 := _bed_wall + half
 	var z0 := _sofa_z()
-	var z1 := z0 + 1.9
+	var z1 := z0 + 1.75
+	# Sofa an der Schlafzimmerwand, Blick nach +X zum Fernseher.
 	_mark("Sofa", _at(x0 + 0.42, 0.35, (z0 + z1) * 0.5))
-	_bx(b, x0, x0 + 0.84, FLOOR_TOP, 0.42, z0, z1, cloth)
-	_bx(b, x0, x0 + 0.22, 0.42, 0.85, z0, z1, cloth)
-	_bx(b, x0, x0 + 0.84, 0.42, 0.62, z0, z0 + 0.16, cloth)
-	_bx(b, x0, x0 + 0.84, 0.42, 0.62, z1 - 0.16, z1, cloth)
+	_bx(b, x0, x0 + 0.88, FLOOR_TOP, 0.42, z0, z1, cloth)
+	_bx(b, x0, x0 + 0.22, 0.42, 0.9, z0, z1, cloth)
+	_bx(b, x0, x0 + 0.88, 0.42, 0.64, z0, z0 + 0.16, cloth)
+	_bx(b, x0, x0 + 0.88, 0.42, 0.64, z1 - 0.16, z1, cloth)
 	for cushion: int in 2:
-		var c0 := z0 + 0.2 + cushion * 0.76
-		_bx(b, x0 + 0.24, x0 + 0.34, 0.45, 0.76, c0, c0 + 0.68, dark, false)
-	# Couchtisch.
-	var cx := x0 + 1.4
+		var c0 := z0 + 0.2 + cushion * 0.7
+		_dx(b, x0 + 0.24, x0 + 0.38, 0.45, 0.8, c0, c0 + 0.64, dark)
+	_dx(b, x0 + 0.24, x0 + 0.86, 0.42, 0.47, z0 + 0.16, z1 - 0.16, cloth)
+	_dx(b, x0 + 0.5, x0 + 0.72, 0.47, 0.68, z0 + 0.2, z0 + 0.5, SlumMats.color(colors["neon"].darkened(0.5), 0.0, 0.9))
+	# Teppich und Couchtisch zwischen Sofa und Fernseher.
+	var cx := x0 + 1.5
 	var cz := (z0 + z1) * 0.5
+	_dx(b, cx - 0.85, cx + 0.85, FLOOR_TOP, FLOOR_TOP + 0.012, cz - 1.0, cz + 1.0,
+			SlumMats.color(colors["cloth"].darkened(0.4), 0.0, 1.0))
+	_dx(b, cx - 0.85, cx - 0.82, FLOOR_TOP, FLOOR_TOP + 0.014, cz - 1.0, cz + 1.0, SlumMats.color(colors["neon"].darkened(0.3), 0.0, 1.0))
+	_dx(b, cx + 0.82, cx + 0.85, FLOOR_TOP, FLOOR_TOP + 0.014, cz - 1.0, cz + 1.0, SlumMats.color(colors["neon"].darkened(0.3), 0.0, 1.0))
 	_mark("Table", _at(cx, 0.3, cz))
-	_bx(b, cx - 0.3, cx + 0.3, 0.4, 0.44, cz - 0.55, cz + 0.55, wood)
-	for sx: float in [-0.26, 0.26]:
-		for sz: float in [-0.5, 0.5]:
-			_bx(b, cx + sx - 0.03, cx + sx + 0.03, FLOOR_TOP, 0.4, cz + sz - 0.03, cz + sz + 0.03, dark, false)
-	# Fernsehbank an der Frontwand, Teppich davor.
-	var tx := _tv_x()
+	_bx(b, cx - 0.28, cx + 0.28, 0.4, 0.44, cz - 0.5, cz + 0.5, wood)
+	for sx: float in [-0.24, 0.24]:
+		for sz: float in [-0.44, 0.44]:
+			_dx(b, cx + sx - 0.03, cx + sx + 0.03, FLOOR_TOP, 0.4, cz + sz - 0.03, cz + sz + 0.03, dark)
+	_dx(b, cx - 0.12, cx + 0.12, 0.44, 0.47, cz - 0.38, cz - 0.14, SlumMats.color(Color(0.8, 0.8, 0.75), 0.0, 0.9))
+	# Fernsehbank an der Badwand, die Kühlschrankseite bleibt frei.
+	var tv := _tv_z()
+	var tx := _bath_wall - half
+	_bx(b, tx - 0.42, tx, FLOOR_TOP, 0.5, tv - 0.62, tv + 0.62, wood)
+	_dx(b, tx - 0.435, tx - 0.42, 0.16, 0.46, tv - 0.58, tv - 0.02, dark)
+	_dx(b, tx - 0.435, tx - 0.42, 0.16, 0.46, tv + 0.02, tv + 0.58, dark)
+	_dx(b, tx - 0.44, tx - 0.435, 0.46, 0.48, tv - 0.6, tv + 0.6, SlumMats.color(colors["neon"], 1.5))
+	# Bücherregal an der Frontwand.
 	var inner := _front - WALL
-	_bx(b, tx - 0.62, tx + 0.62, FLOOR_TOP, 0.5, inner - 0.42, inner, wood)
-	_bx(b, cx - 0.75, cx + 0.75, FLOOR_TOP, FLOOR_TOP + 0.012, z0, z1, SlumMats.color(colors["cloth"].darkened(0.4), 0.0, 1.0), false, false)
-	# Stehlampe in der Ecke.
-	var lamp := _at(x0 + 0.22, FLOOR_TOP, z1 + 0.12)
-	b.tube(lamp, lamp + Vector3.UP * 1.45, 0.015, _steel(), 4, false)
-	_bx(b, x0 + 0.12, x0 + 0.32, 1.5, 1.72, z1 + 0.02, z1 + 0.22, SlumMats.color(colors["light"], 2.0), false, false)
+	var shelf := SlumMats.surface("wood", Color(0.7, 0.6, 0.5))
+	var bx0 := _bed_wall + 0.55
+	var bx1 := bx0 + 0.95
+	_bx(b, bx0, bx1, FLOOR_TOP, 1.85, inner - 0.3, inner, shelf)
+	for level: int in 4:
+		var y := 0.45 + level * 0.36
+		_dx(b, bx0 + 0.03, bx1 - 0.03, y, y + 0.025, inner - 0.3, inner - 0.28, dark)
+		var x := bx0 + 0.06
+		var i := 0
+		while x + 0.07 < bx1 - 0.05 and level < 3:
+			var h := 0.2 + 0.05 * float((i * 7 + level * 3) % 4)
+			var c: Color = [colors["cloth"], Color(0.25, 0.4, 0.55), Color(0.7, 0.62, 0.3), Color(0.3, 0.5, 0.35)][(i + level) % 4]
+			_dx(b, x, x + 0.06, y + 0.025, y + 0.025 + h, inner - 0.26, inner - 0.04, SlumMats.color(c, 0.0, 0.9))
+			x += 0.075
+			i += 1
+	# Pflanze in der Ecke zwischen Bücherregal und Flur, Stehlampe neben dem Sofa.
+	_plant(b, _bath_wall - 0.5, inner - 0.35, 1.0)
+	var lamp := _at(x0 + 0.25, FLOOR_TOP, z1 + 0.25)
+	b.tube(lamp, lamp + Vector3.UP * 1.5, 0.015, _steel(), 4, false)
+	_dx(b, x0 + 0.13, x0 + 0.37, 1.5, 1.74, z1 + 0.13, z1 + 0.37, SlumMats.color(colors["light"], 2.0))
+
+
+## Topfpflanze mit Stamm und Blattkränzen.
+func _plant(b: SlumBuilder, x: float, z: float, height: float) -> void:
+	var pot := SlumMats.color(Color(0.45, 0.25, 0.18), 0.0, 0.9)
+	var leaf := SlumMats.color(Color(0.18, 0.45, 0.25), 0.0, 0.9)
+	b.cylinder_x(Transform3D(Basis.IDENTITY, _at(x, FLOOR_TOP + 0.17, z)), 0.2, 0.34, pot, 8, true, true)
+	b.cylinder_x(Transform3D(Basis.IDENTITY, _at(x, FLOOR_TOP + 0.345, z)), 0.17, 0.02, SlumMats.color(Color(0.12, 0.08, 0.06)), 8, false, false)
+	b.tube(_at(x, FLOOR_TOP + 0.3, z), _at(x, FLOOR_TOP + height * 0.8, z), 0.02, SlumMats.color(Color(0.3, 0.2, 0.12)), 4, false)
+	for tier: int in 3:
+		var y := FLOOR_TOP + height * (0.45 + tier * 0.17)
+		for i: int in 5:
+			var a := i * TAU / 5.0 + tier * 0.6
+			var d := _dir(cos(a), sin(a))
+			var basis := Basis(Vector3.UP, atan2(-d.z, d.x)) * Basis(Vector3.BACK, 0.5)
+			b.box_x(Transform3D(basis, _at(x, y, z) + d * 0.13), Vector3(0.3, 0.015, 0.08), leaf, false, false)
 
 
 func _sofa_z() -> float:
-	return _back + WALL + 0.8
+	return _back + WALL + 1.0
 
 
-func _tv_x() -> float:
-	return minf(_bed_wall + 1.75, _bath_wall - 0.68)
+func _tv_z() -> float:
+	return _sofa_z() + 0.875
 
 
 func _bedroom(b: SlumBuilder, colors: Dictionary) -> void:
 	var cloth := SlumMats.color(colors["cloth"], 0.0, 0.95)
 	var dark := SlumMats.color(colors["trim"], 0.0, 0.6)
 	var wood := SlumMats.surface("wood_dark", Color(0.85, 0.75, 0.68))
-	var sheet := SlumMats.color(Color(0.72, 0.7, 0.68), 0.0, 0.95)
+	var sheet := SlumMats.color(Color(0.8, 0.78, 0.75), 0.0, 0.95)
 	var x0 := _left + WALL
 	var z0 := _back + WALL
 	var inner := _front - WALL
+	# Bett mit Kopfteil an der linken Wand, Decke und zwei Kissen.
 	_mark("Bed", _at(x0 + 1.0, 0.3, z0 + 0.75))
-	_bx(b, x0, x0 + 1.95, FLOOR_TOP, 0.3, z0, z0 + 1.45, dark)
-	_bx(b, x0 + 0.03, x0 + 1.92, 0.3, 0.48, z0 + 0.03, z0 + 1.42, sheet)
-	_bx(b, x0 + 0.65, x0 + 1.94, 0.48, 0.53, z0 + 0.02, z0 + 1.43, cloth, false)
-	_bx(b, x0, x0 + 0.06, FLOOR_TOP, 1.0, z0, z0 + 1.45, dark)
-	_bx(b, x0 + 0.1, x0 + 0.55, 0.48, 0.58, z0 + 0.14, z0 + 0.66, sheet, false)
-	_bx(b, x0 + 0.1, x0 + 0.55, 0.48, 0.58, z0 + 0.78, z0 + 1.3, sheet, false)
-	# Nachttisch, Lampe.
+	_bx(b, x0, x0 + 1.95, FLOOR_TOP, 0.3, z0, z0 + 1.5, dark)
+	_dx(b, x0 + 0.03, x0 + 1.92, 0.3, 0.48, z0 + 0.03, z0 + 1.47, sheet)
+	_dx(b, x0 + 0.65, x0 + 1.94, 0.48, 0.53, z0 + 0.02, z0 + 1.48, cloth)
+	_dx(b, x0 + 1.5, x0 + 1.95, 0.48, 0.54, z0 + 0.02, z0 + 1.48, SlumMats.color(colors["neon"].darkened(0.5), 0.0, 0.9))
+	_bx(b, x0, x0 + 0.08, FLOOR_TOP, 1.05, z0, z0 + 1.5, dark)
+	_dx(b, x0 + 0.1, x0 + 0.55, 0.48, 0.6, z0 + 0.14, z0 + 0.66, sheet)
+	_dx(b, x0 + 0.1, x0 + 0.55, 0.48, 0.6, z0 + 0.84, z0 + 1.36, sheet)
+	# Nachttisch mit Lampe.
 	var n0 := x0 + 2.0
 	_mark("Nightstand", _at(n0 + 0.22, 0.3, z0 + 0.22))
 	_bx(b, n0, n0 + 0.44, FLOOR_TOP, 0.55, z0, z0 + 0.44, wood)
-	# Schreibtisch an der Wand, Stuhl davor.
-	var d0 := inner - 1.5
+	_dx(b, n0 + 0.04, n0 + 0.4, 0.3, 0.32, z0 + 0.44, z0 + 0.45, dark)
+	b.cylinder_x(Transform3D(Basis.IDENTITY, _at(n0 + 0.34, 0.62, z0 + 0.1)), 0.05, 0.14, _steel(), 6, false, false)
+	_dx(b, n0 + 0.27, n0 + 0.41, 0.69, 0.8, z0 + 0.03, z0 + 0.17, SlumMats.color(colors["light"], 1.5))
+	# Schreibtisch an der linken Wand, Stuhl davor.
+	var d0 := z0 + 1.75
 	_mark("Desk", _at(x0 + 0.35, 0.4, d0 + 0.65))
 	_bx(b, x0, x0 + 0.7, 0.72, 0.77, d0, d0 + 1.3, wood)
 	for dz: float in [0.03, 1.27]:
-		_bx(b, x0 + 0.05, x0 + 0.65, FLOOR_TOP, 0.72, d0 + dz - 0.02, d0 + dz + 0.02, dark)
+		_dx(b, x0 + 0.05, x0 + 0.65, FLOOR_TOP, 0.72, d0 + dz - 0.02, d0 + dz + 0.02, dark)
+	_dx(b, x0 + 0.05, x0 + 0.65, 0.35, 0.72, d0 + 1.25, d0 + 1.29, dark)
 	_bx(b, x0 + 0.85, x0 + 1.27, 0.48, 0.53, d0 + 0.45, d0 + 0.87, cloth)
-	_bx(b, x0 + 1.23, x0 + 1.28, 0.53, 0.98, d0 + 0.45, d0 + 0.87, cloth, false)
+	_dx(b, x0 + 1.23, x0 + 1.28, 0.53, 0.98, d0 + 0.45, d0 + 0.87, cloth)
 	b.tube(_at(x0 + 1.06, FLOOR_TOP, d0 + 0.66), _at(x0 + 1.06, 0.48, d0 + 0.66), 0.03, _steel(), 6, false)
-	# Kleiderschrank an der Frontwand.
-	var w1 := _bed_wall - 1.15
-	var w0 := w1 - 1.1
+	# Kleiderschrank mit zwei Türen an der Frontwand, Wäschekorb daneben.
+	var w0 := x0 + 1.15
+	var w1 := w0 + 1.2
 	_mark("Wardrobe", _at((w0 + w1) * 0.5, 1.0, inner - 0.3))
-	_bx(b, w0, w1, FLOOR_TOP, 2.05, inner - 0.6, inner, wood)
+	_bx(b, w0, w1, FLOOR_TOP, 2.1, inner - 0.6, inner, wood)
 	var mid := (w0 + w1) * 0.5
-	_bx(b, mid - 0.006, mid + 0.006, 0.14, 2.0, inner - 0.605, inner - 0.6, dark, false, false)
+	_dx(b, mid - 0.006, mid + 0.006, 0.14, 2.05, inner - 0.605, inner - 0.6, dark)
+	_dx(b, w0 + 0.03, w1 - 0.03, 2.05, 2.1, inner - 0.605, inner - 0.6, dark)
 	for side: float in [-0.09, 0.09]:
-		_bx(b, mid + side - 0.012, mid + side + 0.012, 1.0, 1.25, inner - 0.62, inner - 0.6, _steel(), false, false)
+		_dx(b, mid + side - 0.012, mid + side + 0.012, 1.0, 1.25, inner - 0.63, inner - 0.6, _steel())
+	b.cylinder_x(Transform3D(Basis.IDENTITY, _at(w0 - 0.35, FLOOR_TOP + 0.25, inner - 0.3)), 0.24, 0.5,
+			SlumMats.color(Color(0.6, 0.55, 0.45), 0.0, 0.95), 8, false, true)
+	# Teppich vor dem Bett, Spiegel an der Wand, Poster über dem Schreibtisch.
+	_dx(b, x0 + 2.1, x0 + 3.2, FLOOR_TOP, FLOOR_TOP + 0.012, z0 + 0.6, z0 + 1.9, SlumMats.color(colors["cloth"].darkened(0.5), 0.0, 1.0))
+	_wall_decal(b, _at(x0 + 0.01, 1.6, d0 - 0.4), Vector3.RIGHT, 0.5, 0.75, SlumMats.decal("poster_%d" % (1 + theme)))
 
 
 func _bath(b: SlumBuilder) -> void:
@@ -382,54 +549,77 @@ func _bath(b: SlumBuilder) -> void:
 	var z0 := _back + WALL
 	var x0 := _bath_wall + half
 	var x1 := _right - WALL
-	# WC an der Rückwand.
-	var tx := x0 + 0.4
+	# WC an der Rückwand, mit Spülkasten und Deckel.
+	var tx := x0 + 0.46
 	_mark("Toilet", _at(tx, 0.3, z0 + 0.4))
 	_bx(b, tx - 0.19, tx + 0.19, FLOOR_TOP, 0.44, z0 + 0.18, z0 + 0.66, porcelain)
-	_bx(b, tx - 0.21, tx + 0.21, 0.44, 0.47, z0 + 0.16, z0 + 0.68, porcelain, false)
+	_dx(b, tx - 0.21, tx + 0.21, 0.44, 0.47, z0 + 0.16, z0 + 0.68, porcelain)
 	_bx(b, tx - 0.22, tx + 0.22, 0.47, 0.82, z0 + 0.02, z0 + 0.18, porcelain, false)
-	# Waschtisch mit Spiegel.
-	var sx := x0 + 0.95
+	_dx(b, tx - 0.03, tx + 0.03, 0.82, 0.85, z0 + 0.06, z0 + 0.12, _steel())
+	# Waschtisch mit Spiegelschrank und Leuchte.
+	var sx := x0 + 1.14
 	_mark("Sink", _at(sx, 0.5, z0 + 0.25))
 	_bx(b, sx - 0.32, sx + 0.32, 0.72, 0.9, z0, z0 + 0.46, porcelain)
 	b.tube(_at(sx, FLOOR_TOP, z0 + 0.22), _at(sx, 0.72, z0 + 0.22), 0.04, porcelain, 6, false)
-	_bx(b, sx - 0.3, sx + 0.3, 1.2, 1.75, z0 + 0.016, z0 + 0.03, SlumMats.color(Color(0.5, 0.58, 0.62), 0.0, 0.08, 0.9), false, false)
-	_bx(b, sx - 0.3, sx + 0.3, 1.78, 1.82, z0 + 0.02, z0 + 0.09, SlumMats.color(Color(0.9, 0.95, 1.0), 2.5), false, false)
-	# Dusche in der Ecke: Wanne, Glas, Brause.
-	var s0 := maxf(x1 - 0.72, sx + 0.34)
-	var sz := z0 + 0.86
+	b.tube(_at(sx, 0.9, z0 + 0.08), _at(sx, 1.02, z0 + 0.08), 0.012, _steel(), 4, false)
+	_dx(b, sx - 0.3, sx + 0.3, 1.2, 1.75, z0 + 0.016, z0 + 0.03, SlumMats.color(Color(0.5, 0.58, 0.62), 0.0, 0.08, 0.9))
+	_dx(b, sx - 0.33, sx + 0.33, 1.17, 1.2, z0 + 0.016, z0 + 0.04, _steel())
+	_dx(b, sx - 0.33, sx + 0.33, 1.75, 1.78, z0 + 0.016, z0 + 0.04, _steel())
+	_dx(b, sx - 0.3, sx + 0.3, 1.8, 1.84, z0 + 0.02, z0 + 0.09, SlumMats.color(Color(0.9, 0.95, 1.0), 2.5))
+	# Dusche in der Ecke: Wanne, Glas, Brause an der Stange, Shampoo.
+	var s0 := x1 - 0.85
+	var sz := z0 + 0.95
 	_mark("Shower", _at((s0 + x1) * 0.5, 0.2, z0 + 0.43))
-	_bx(b, s0, x1, FLOOR_TOP, 0.16, z0, sz, porcelain, false)
-	_bx(b, s0, x1, 0.16, 2.0, sz - 0.015, sz, SlumMats.glass(Color(0.6, 0.85, 1.0, 0.2)), true, false)
-	_bx(b, s0 - 0.015, s0, 0.16, 2.0, z0, sz, SlumMats.glass(Color(0.6, 0.85, 1.0, 0.2)), true, false)
-	var head := _at(x1 - 0.1, 2.0, z0 + 0.4)
-	b.tube(head + _dir(0.1, 0.0), head + _dir(-0.16, 0.0), 0.012, _steel(), 4, false)
-	_bx(b, x1 - 0.32, x1 - 0.18, 1.96, 1.99, z0 + 0.33, z0 + 0.47, _steel(), false, false)
-	# Handtuch an der Tür zum Flur.
-	_bx(b, x0 + 0.02, x0 + 0.04, 0.9, 1.5, z0 + 1.1, z0 + 1.55, SlumMats.color(Color(0.3, 0.55, 0.55), 0.0, 0.95), false, false)
-
-
-func _dir(x: float, z: float) -> Vector3:
-	return Vector3(x * _flip, 0.0, z)
+	_dx(b, s0, x1, FLOOR_TOP, 0.16, z0, sz, porcelain)
+	var glass := SlumMats.glass(Color(0.6, 0.85, 1.0, 0.2))
+	_bx(b, s0, x1, 0.16, 2.0, sz - 0.015, sz, glass, true, false)
+	_bx(b, s0 - 0.015, s0, 0.16, 2.0, z0, sz, glass, true, false)
+	_dx(b, s0 - 0.02, x1, 1.98, 2.02, sz - 0.02, sz + 0.005, _steel())
+	_dx(b, s0 - 0.02, s0 + 0.005, 1.98, 2.02, z0, sz, _steel())
+	var rod := _at(x1 - 0.08, 0.7, z0 + 0.4)
+	b.tube(rod, _at(x1 - 0.08, 1.9, z0 + 0.4), 0.012, _steel(), 4, false)
+	_dx(b, x1 - 0.2, x1 - 0.04, 1.86, 1.9, z0 + 0.32, z0 + 0.48, _steel())
+	_dx(b, x1 - 0.2, x1 - 0.14, FLOOR_TOP + 0.06, 0.4, z0 + 0.1, z0 + 0.18, SlumMats.color(Color(0.8, 0.4, 0.15)))
+	_dx(b, x1 - 0.3, x1 - 0.24, FLOOR_TOP + 0.06, 0.34, z0 + 0.1, z0 + 0.18, SlumMats.color(Color(0.3, 0.6, 0.7)))
+	# Waschmaschine an der rechten Wand: Trommelfenster und Knöpfe zeigen nach links.
+	var wz := z0 + 1.5
+	var wm := SlumMats.color(Color(0.8, 0.82, 0.83), 0.0, 0.4)
+	_bx(b, x1 - 0.6, x1, FLOOR_TOP, 0.95, wz, wz + 0.6, wm)
+	_dx(b, x1 - 0.61, x1 - 0.6, 0.3, 0.7, wz + 0.1, wz + 0.5, SlumMats.color(Color(0.1, 0.13, 0.17), 0.0, 0.1, 0.5))
+	_dx(b, x1 - 0.62, x1 - 0.61, 0.38, 0.62, wz + 0.18, wz + 0.42, SlumMats.glass(Color(0.4, 0.55, 0.7, 0.6)))
+	_dx(b, x1 - 0.61, x1 - 0.6, 0.78, 0.9, wz + 0.1, wz + 0.5, SlumMats.color(Color(0.25, 0.27, 0.3)))
+	# Handtuchhaken und Handtuch an der Wand zum Flur, Bodenmatte.
+	_dx(b, x0 + 0.01, x0 + 0.03, 0.9, 1.5, z0 + 1.3, z0 + 1.7, SlumMats.color(Color(0.3, 0.55, 0.55), 0.0, 0.95))
+	_dx(b, x0 + 0.01, x0 + 0.04, 1.5, 1.54, z0 + 1.3, z0 + 1.7, _steel())
+	_dx(b, _bath_door_x - 0.35, _bath_door_x + 0.35, FLOOR_TOP, FLOOR_TOP + 0.012, _bath_front - 0.7, _bath_front - 0.15,
+			SlumMats.color(Color(0.55, 0.3, 0.4), 0.0, 1.0))
 
 
 func _hall(b: SlumBuilder, colors: Dictionary) -> void:
 	var inner := _front - WALL
 	var x1 := _right - WALL
 	var wood := SlumMats.surface("wood_dark", Color(0.85, 0.75, 0.68))
-	# Schuhregal, Garderobe, Fußmatte hinter der Tür.
-	var z0 := _bath_front + 0.3
-	_bx(b, x1 - 0.3, x1, FLOOR_TOP, 0.42, z0, z0 + 0.8, wood)
-	_bx(b, x1 - 0.03, x1, 1.65, 1.75, z0, z0 + 0.8, wood, false)
+	var jacket := SlumMats.color(colors["cloth"].darkened(0.3), 0.0, 0.95)
+	# Schuhregal mit Schuhen, Garderobe mit Jacken an der rechten Wand, Spiegel darüber.
+	var z0 := _bath_front + 0.35
+	_bx(b, x1 - 0.3, x1, FLOOR_TOP, 0.42, z0, z0 + 0.9, wood)
+	_dx(b, x1 - 0.3, x1, 0.26, 0.28, z0, z0 + 0.9, SlumMats.color(colors["trim"]))
 	for i: int in 3:
-		var hook := z0 + 0.15 + i * 0.25
-		_bx(b, x1 - 0.1, x1, 1.58, 1.62, hook - 0.01, hook + 0.01, _steel(), false, false)
-	_bx(b, x1 - 0.1, x1 - 0.02, 1.0, 1.58, z0 + 0.32, z0 + 0.5, SlumMats.color(colors["cloth"].darkened(0.3), 0.0, 0.95), false, false)
-	_bx(b, _door_x - 0.42, _door_x + 0.42, FLOOR_TOP, FLOOR_TOP + 0.012, inner - 0.75, inner - 0.1, SlumMats.color(Color(0.16, 0.12, 0.09), 0.0, 1.0), false, false)
-	# Poster im Schlafzimmer, Kalender in der Küche.
-	_wall_decal(b, _at(_bed_wall - PARTITION * 0.5 - 0.01, 1.5, _back + WALL + 1.45), Vector3.LEFT, 0.5, 0.75,
-			SlumMats.decal("poster_%d" % (1 + theme)))
-	_wall_decal(b, _at(_bed_wall + PARTITION * 0.5 + 0.01, 1.45, _sofa_z() + 0.95), Vector3.RIGHT, 0.45, 0.68,
+		_dx(b, x1 - 0.22, x1 - 0.06, 0.28, 0.36, z0 + 0.1 + i * 0.27, z0 + 0.3 + i * 0.27, SlumMats.color(Color(0.1, 0.1, 0.12), 0.0, 0.8))
+	_dx(b, x1 - 0.03, x1, 1.65, 1.75, z0, z0 + 0.9, wood)
+	for i: int in 4:
+		var hook := z0 + 0.12 + i * 0.22
+		_dx(b, x1 - 0.1, x1, 1.58, 1.62, hook - 0.01, hook + 0.01, _steel())
+	_dx(b, x1 - 0.12, x1 - 0.02, 0.95, 1.58, z0 + 0.1, z0 + 0.32, jacket)
+	_dx(b, x1 - 0.1, x1 - 0.02, 1.05, 1.58, z0 + 0.56, z0 + 0.76, SlumMats.color(Color(0.3, 0.32, 0.36), 0.0, 0.95))
+	_dx(b, x1 - 0.015, x1, 1.0, 1.55, z0 + 0.95, z0 + 1.35, SlumMats.color(Color(0.5, 0.58, 0.62), 0.0, 0.08, 0.9))
+	# Fußmatte hinter der Tür, Schirmständer daneben.
+	_dx(b, _door_x - 0.42, _door_x + 0.42, FLOOR_TOP, FLOOR_TOP + 0.012, inner - 0.75, inner - 0.1, SlumMats.color(Color(0.16, 0.12, 0.09), 0.0, 1.0))
+	b.cylinder_x(Transform3D(Basis.IDENTITY, _at(_door_x - 0.8, FLOOR_TOP + 0.25, inner - 0.2)), 0.1, 0.5,
+			SlumMats.color(Color(0.18, 0.2, 0.24), 0.0, 0.5, 0.4), 8, false, true)
+	# Pflanze neben der Badtür, Poster in Flur und Wohnküche.
+	_plant(b, x1 - 0.35, inner - 0.35, 1.25)
+	_wall_decal(b, _at(_bed_wall + PARTITION * 0.5 + 0.01, 1.5, _sofa_z() + 0.9), Vector3.RIGHT, 0.55, 0.8,
 			SlumMats.decal("poster_%d" % (2 + theme)))
 
 
@@ -437,17 +627,18 @@ func _place_loot(rng: RandomNumberGenerator) -> void:
 	var x0 := _left + WALL
 	var z0 := _back + WALL
 	var inner := _front - WALL
-	var couch := _bed_wall + 0.05 + 1.4
-	var couch_z := _sofa_z() + 0.95
-	var desk := inner - 0.85
+	var half := PARTITION * 0.5
+	var table_x := _bed_wall + half + 1.5
+	var desk := z0 + 1.75
 	_loot("Schmuck", JEWELRY, _at(x0 + 2.22, 0.55, z0 + 0.22), false, &"Jewelry")
-	_loot("Juwelen", JEWELS, _at(couch, 0.44, couch_z), true, &"Jewels")
-	_loot("Bargeld", CASH, _at(_bed_wall + 1.0, 0.97, z0 + 0.3), false, &"Cash")
-	_loot("Fernseher", TV, _at(_tv_x(), 0.5, inner - 0.21), false, &"Television")
-	_loot("Bild", ART, _at(x0 + 0.05, 1.35, -0.1 if unit_depth < 5.0 else z0 + 1.9), false, &"Artwork")
+	_loot("Juwelen", JEWELS, _at(table_x, 0.44, _sofa_z() + 0.875), true, &"Jewels")
+	_loot("Bargeld", CASH, _at(_bed_wall + 1.3, 0.97, z0 + 0.3), false, &"Cash")
+	_loot("Fernseher", TV, _at(_bath_wall - half - 0.21, 0.5, _tv_z()), false, &"Television")
+	(get_node(^"%Television") as Node3D).rotation.y = PI * 0.5 * -_flip
+	_loot("Bild", ART, _at(x0 + 0.05, 1.35, desk + 0.65), false, &"Artwork")
 	(get_node(^"%Artwork") as Node3D).rotation.y = PI * 0.5 * _flip
-	_loot("Computer", PC, _at(x0 + 0.35, 0.77, desk - 0.2), false, &"Computer")
-	_loot("Handy", PHONE, _at(x0 + 0.35, 0.77, desk + 0.4), false, &"Phone")
+	_loot("Computer", PC, _at(x0 + 0.35, 0.77, desk + 0.3), false, &"Computer")
+	_loot("Handy", PHONE, _at(x0 + 0.35, 0.77, desk + 0.95), false, &"Phone")
 	var safe := SAFE_PROP.new()
 	safe.name = "Safe"
 	safe.unique_name_in_owner = true
@@ -455,7 +646,7 @@ func _place_loot(rng: RandomNumberGenerator) -> void:
 	safe.item = CASH
 	safe.count = rng.randi_range(2, 4)
 	safe.sealed = true
-	safe.position = _at(_bed_wall - 0.42, FLOOR_TOP, z0 + 0.32)
+	safe.position = _at(_bed_wall - 0.5, FLOOR_TOP, z0 + 0.34)
 	add_child(safe)
 	safe.owner = self
 
@@ -466,8 +657,8 @@ func _spawn_residents(count: int) -> void:
 	if Engine.is_editor_hint():
 		return
 	var spots: Array[Vector3] = [
-		_at((_bed_wall + _bath_wall) * 0.5 + 0.6, FLOOR_TOP + 0.02, _back + WALL + 1.3),
-		_at(_bed_wall - 1.7, FLOOR_TOP + 0.02, _back + WALL + 1.9),
+		_at(_bed_wall + 1.5, FLOOR_TOP + 0.02, _bath_front + 1.0),
+		_at(_left + 2.4, FLOOR_TOP + 0.02, _back + WALL + 2.7),
 	]
 	for i in mini(count, spots.size()):
 		var person := Civilian.new()
@@ -485,14 +676,17 @@ func _lights(colors: Dictionary) -> void:
 	var bedroom := (_left + _bed_wall) * 0.5
 	var bath := (_bath_wall + _right) * 0.5
 	var y := ROOM_TOP - 0.24
-	_omni(_at(living, y, 0.0), colors["light"], 1.2)
-	_omni(_at(bedroom, y, 0.0), colors["light"], 0.9)
+	_omni(_at(living, y, 0.0), colors["light"], 1.3)
+	_omni(_at(bedroom, y, 0.0), colors["light"], 1.0)
 	_omni(_at(bath, y, (_back + _bath_front) * 0.5), Color(0.9, 0.95, 1.0), 0.9)
-	var b := SlumBuilder.new(self)
+	var b := SlumBuilder.new(_interior)
 	b.solid_range = VIEW_RANGE
 	var shade := SlumMats.color(colors["light"], 3.0)
 	for x: float in [living, bedroom]:
 		_bx(b, x - 0.22, x + 0.22, ROOM_TOP - 0.1, ROOM_TOP, -0.22, 0.22, shade, false, false)
+	_bx(b, bath - 0.2, bath + 0.2, ROOM_TOP - 0.08, ROOM_TOP, (_back + _bath_front) * 0.5 - 0.2,
+			(_back + _bath_front) * 0.5 + 0.2, SlumMats.color(Color(0.9, 0.95, 1.0), 3.0), false, false)
+	_bx(b, _door_x - 0.2, _door_x + 0.2, ROOM_TOP - 0.08, ROOM_TOP, _front - 1.0, _front - 0.6, shade, false, false)
 	b.finish()
 
 
@@ -501,12 +695,12 @@ func _omni(at: Vector3, color: Color, energy: float) -> void:
 	light.position = at
 	light.light_color = color
 	light.light_energy = energy
-	light.omni_range = 5.0
+	light.omni_range = 5.5
 	light.shadow_enabled = false
 	light.distance_fade_enabled = true
 	light.distance_fade_begin = 30.0
 	light.distance_fade_length = 8.0
-	add_child(light)
+	_interior.add_child(light)
 
 
 ## Fester Punkt für Möbel, die im gemeinsamen Mesh aufgehen.

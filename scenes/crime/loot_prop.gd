@@ -9,6 +9,7 @@ extends StaticBody3D
 var taken := false
 
 var _mesh: MeshInstance3D
+var _model: Node3D
 
 
 func _ready() -> void:
@@ -39,12 +40,36 @@ func _build_look() -> void:
 	_mesh.material_override = mat
 	add_child(_mesh)
 	if item != null and ConsumableModel.has_model(item.model):
-		var model := ConsumableModel.build(item.model, item.color, false)
-		model.position = Vector3(0.0, 0.55 if sealed else 0.14, 0.0)
-		model.scale = Vector3.ONE * ConsumableModel.pickup_scale(item.model)
-		add_child(model)
+		_model = ConsumableModel.build(item.model, item.color, false)
+		_model.position = Vector3(0.0, 0.14, 0.0)
+		_model.scale = Vector3.ONE * ConsumableModel.pickup_scale(item.model)
+		add_child(_model)
 		_mesh.visible = sealed
+		_model.visible = not sealed
+		if sealed:
+			_dress_casket()
 
+
+## Verschlossene Beute steht in einer Stahlkassette. Das Modell erscheint erst, wenn sie offen ist.
+func _dress_casket() -> void:
+	(_mesh.mesh as BoxMesh).size = Vector3(0.46, 0.26, 0.3)
+	_mesh.position = Vector3(0.0, 0.13, 0.0)
+	_mesh.material_override = SlumMats.color(Color(0.16, 0.18, 0.2), 0.0, 0.45, 0.7)
+	var trim := SlumMats.color(Color(0.5, 0.45, 0.3), 0.0, 0.35, 0.8)
+	var lid := MeshInstance3D.new()
+	var lid_mesh := BoxMesh.new()
+	lid_mesh.size = Vector3(0.48, 0.02, 0.32)
+	lid_mesh.material = trim
+	lid.mesh = lid_mesh
+	lid.position = Vector3(0.0, 0.13, 0.0)
+	_mesh.add_child(lid)
+	var clasp := MeshInstance3D.new()
+	var clasp_mesh := BoxMesh.new()
+	clasp_mesh.size = Vector3(0.06, 0.07, 0.02)
+	clasp_mesh.material = SlumMats.color(Color(1.0, 0.2, 0.15), 2.0)
+	clasp.mesh = clasp_mesh
+	clasp.position = Vector3(0.0, 0.04, 0.16)
+	_mesh.add_child(clasp)
 
 func get_interact_text(_player: Player) -> String:
 	if taken:
@@ -71,6 +96,7 @@ func break_open(player: Node) -> void:
 	sealed = false
 	if item != null and ConsumableModel.has_model(item.model) and _mesh != null:
 		_mesh.visible = false
+		_model.visible = true
 	var body := player as Node3D
 	var at := global_position if body == null else body.global_position
 	NoiseManager.emit_noise(at, 12.0, player, StealthNoise.BURGLARY)

@@ -78,6 +78,10 @@ func _one(script: Script, residents: int) -> void:
 		if str(child.name).begins_with("Resident"):
 			found += 1
 	_check(found == residents, "Bewohner %d, ist %d" % [residents, found])
+	_check(not (home.get_node(^"Interior") as Node3D).visible, "Verschlossen: Innenraum wird nicht gezeichnet")
+	_check(not (home.get_node(^"Safe") as Node3D).visible and not (home.get_node(^"Jewelry") as Node3D).visible, "Verschlossen: Beute unsichtbar")
+	door.call("_unlock", false)
+	_check((home.get_node(^"Interior") as Node3D).visible and (home.get_node(^"Safe") as Node3D).visible, "Tür offen: Innenraum und Beute sichtbar")
 	home.free()
 
 
