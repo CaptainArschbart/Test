@@ -232,9 +232,6 @@ func _hollow_shell(b: SlumBuilder, ground: Material) -> void:
 	var lintel_h := maxf(_h - 2.6, 0.2)
 	b.box(Vector3(0, 2.6 + lintel_h * 0.5, front_z), Vector3(gap + 0.08, lintel_h, t), ground)
 	b.box(Vector3(0, 0.06, 0), Vector3(_w - 0.6, 0.12, _d - 0.6), _trim_mat)
-	if floors > 3:
-		var y0 := 3.0 * floor_height
-		b.box_on(Vector3(0, y0 + (_h - y0) * 0.5, 0), Vector3(_w - 0.55, _h - y0, _d - 0.55), _wall_mat)
 
 
 func _fixed_entrance(b: SlumBuilder) -> void:
@@ -249,6 +246,7 @@ func _spawn_apartment_house() -> void:
 	house.set("building_width", _w)
 	house.set("building_depth", _d)
 	house.set("floor_height", floor_height)
+	house.set("floors", floors)
 	house.set("key_prefix", apartment_prefix)
 	add_gen(house)
 

@@ -89,7 +89,8 @@ func _map_checks(houses: Array) -> void:
 		# Fahrende Autos zählen nicht, sie stehen nur gerade dort.
 		var free: bool = hit.is_empty() or hit.collider is CharacterBody3D
 		_check(free, "%s: Eingang frei (%s)" % [label, hit.get("collider", "nichts")])
-	_check(doors == HOUSES * 4, "%d Wohnungstüren, ist %d" % [HOUSES * 4, doors])
+	# Im 1. und 2. Stock sind die vier Wohnungen immer begehbar, darüber würfelt das Haus.
+	_check(doors >= HOUSES * 4, "mindestens %d Wohnungstüren, ist %d" % [HOUSES * 4, doors])
 	_check(keys.size() == doors, "Jede Tür hat einen eigenen Schlüssel")
 
 
@@ -136,6 +137,11 @@ func _strike() -> bool:
 
 
 func _stairs_up(house: Node3D, to_second: bool) -> bool:
+	return await _stairs_to(house, 2 if to_second else 1)
+
+
+## Läuft vom Eingang Absatz für Absatz bis in das Stockwerk. Die Läufe wechseln Spur und Richtung.
+func _stairs_to(house: Node3D, target_floor: int) -> bool:
 	var depth: float = house.get("building_depth")
 	var half: float = house.get("corridor_half")
 	var run: float = 0.27 * 15.0 * 0.5
@@ -147,14 +153,16 @@ func _stairs_up(house: Node3D, to_second: bool) -> bool:
 	for point: Vector3 in [Vector3(0.0, 0.0, depth * 0.5 - 0.8), Vector3(-lane, 0.0, run + 0.7), Vector3(-lane, 0.0, -run - 0.55)]:
 		if not await _go(house.to_global(point)):
 			return false
-	if absf(_player.global_position.y - (house.global_position.y + fh)) > 0.3:
-		return false
-	if not to_second:
-		return true
-	for point: Vector3 in [Vector3(lane, 0.0, -run - 0.7), Vector3(lane, 0.0, run + 0.55)]:
-		if not await _go(house.to_global(point)):
-			return false
-	return absf(_player.global_position.y - (house.global_position.y + fh * 2.0)) < 0.3
+	for flight in range(1, target_floor):
+		var points: Array[Vector3] = []
+		if flight % 2 == 1:
+			points.assign([Vector3(lane, 0.0, -run - 0.7), Vector3(lane, 0.0, run + 0.55)])
+		else:
+			points.assign([Vector3(-lane, 0.0, run + 0.7), Vector3(-lane, 0.0, -run - 0.55)])
+		for point: Vector3 in points:
+			if not await _go(house.to_global(point)):
+				return false
+	return absf(_player.global_position.y - (house.global_position.y + fh * target_floor)) < 0.3
 
 
 func _plan(unit: Node3D, x: float, z: float) -> Vector3:
@@ -257,8 +265,8 @@ func _climb(house: Node3D) -> void:
 		var user: Node = _player.get("item_user")
 		var seen := 0
 		for door in house.find_children("Door", "", true, false):
-			var upper: bool = door.get_parent().global_position.y > house.global_position.y + 4.0
-			if upper != second:
+			var door_floor := roundi((door.get_parent().global_position.y - house.global_position.y) / float(house.get("floor_height")))
+			if door_floor != (2 if second else 1):
 				continue
 			# Vor der Tür stehen. Eine schon offene Tür lässt sich nicht mehr anvisieren.
 			var there: bool = await _go(door.to_global(Vector3(0.0, 0.0, 0.85)))
@@ -267,3 +275,10 @@ func _climb(house: Node3D) -> void:
 				seen += 1
 		_level_view()
 		_check(seen == 2, "%s: beide Türen in Stock %d erreichbar (%d)" % [label, 2 if second else 1, seen])
+	# Hohe Häuser: Die Treppe führt bis zur obersten Wohnungsetage.
+	var top := int(house.get("floors")) - 1
+	if top > 2:
+		var reached: bool = await _stairs_to(house, top)
+		_check(reached, "%s: Treppe bis in den obersten Stock %d" % [label, top])
+		if not reached:
+			print("    Stand: ", house.to_local(_player.global_position))

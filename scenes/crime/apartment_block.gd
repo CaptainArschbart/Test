@@ -33,6 +33,8 @@ const DOOR_GAP := 1.16
 const BED_GAP := 1.15
 const BATH_GAP := 1.0
 const DOOR_TOP := 2.15
+## Höhe des Türblatts ab Boden bis zum Sturz (Unterkante Sturz bei 2,26 m ab Bodenplatte).
+const DOOR_TOP_HEIGHT := 2.16
 ## Höhe der dunklen Wandverkleidung.
 const PANEL := 0.9
 ## Innenleben wird erst aus der Nähe gezeichnet, von außen sieht man es ohnehin nicht.
@@ -94,7 +96,10 @@ func _ready() -> void:
 	door.unique_name_in_owner = true
 	door.key_id = key_id
 	door.locked = true
-	door.open_offset = Vector3(0.5, 1.1, -0.5)
+	# Füllt die Wandöffnung bis unter den Sturz. Offen schwingt das Blatt um die Angel an der +X-Kante nach innen.
+	door.door_size = Vector2(DOOR_GAP, DOOR_TOP_HEIGHT)
+	door.panel_gap = Vector2.ZERO
+	door.open_offset = Vector3(DOOR_GAP * 0.5 * (1.0 - cos(deg_to_rad(80.0))), DOOR_TOP_HEIGHT * 0.5, -DOOR_GAP * 0.5 * sin(deg_to_rad(80.0)))
 	door.position = Vector3(_door_x * _flip, FLOOR_TOP, _front - WALL * 0.5)
 	add_child(door)
 	door.owner = self

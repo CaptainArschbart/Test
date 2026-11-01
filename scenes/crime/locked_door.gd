@@ -9,6 +9,10 @@ signal opened(forced: bool)
 @export var locked := true
 ## Wo das Türblatt offen steht (lokal). Wohnungstüren gehen nach innen auf.
 @export var open_offset := Vector3(0.45, 1.1, 0.35)
+## Größe von Kollision und Türblatt. Wohnungstüren füllen die Wandöffnung ohne Spalt.
+@export var door_size := Vector2(1.1, 2.2)
+## So viel kleiner als die Kollision ist das Türblatt, je Richtung.
+@export var panel_gap := Vector2(0.05, 0.05)
 var forced_open := false
 
 var _panel: MeshInstance3D
@@ -19,15 +23,15 @@ func _ready() -> void:
 	collision_mask = 1
 	var shape := CollisionShape3D.new()
 	var box := BoxShape3D.new()
-	box.size = Vector3(1.1, 2.2, 0.12)
+	box.size = Vector3(door_size.x, door_size.y, 0.12)
 	shape.shape = box
-	shape.position = Vector3(0.0, 1.1, 0.0)
+	shape.position = Vector3(0.0, door_size.y * 0.5, 0.0)
 	add_child(shape)
 	_panel = MeshInstance3D.new()
 	var mesh := BoxMesh.new()
-	mesh.size = Vector3(1.05, 2.15, 0.08)
+	mesh.size = Vector3(door_size.x - panel_gap.x, door_size.y - panel_gap.y, 0.08)
 	_panel.mesh = mesh
-	_panel.position = Vector3(0.0, 1.1, 0.0)
+	_panel.position = Vector3(0.0, door_size.y * 0.5, 0.0)
 	_panel.material_override = SlumMats.uv("door_wood", Color(0.85, 0.78, 0.72))
 	add_child(_panel)
 

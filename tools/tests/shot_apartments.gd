@@ -28,7 +28,7 @@ func _run() -> void:
 	var houses := current_scene.find_children("ApartmentHouse", "", true, false)
 	var house := houses[0] as Node3D
 	for h in houses:
-		if str(h.get_parent().name) == "Res2":
+		if str(h.get_parent().name) == "Res4":
 			house = h
 	var cam := Camera3D.new()
 	cam.fov = 80.0
@@ -48,18 +48,20 @@ func _run() -> void:
 	var w := float(unit.get("unit_width"))
 	var d := float(unit.get("unit_depth"))
 	print("Wohnung %.2f x %.2f" % [w, d])
+	var fh := 3.0
+	var zb := -3.39
 	# [Knoten, lokale Position, lokales Ziel]
 	var views := [
 		[unit, Vector3(-w * 0.2, 1.6, d * 0.35), Vector3(-w * 0.35, 1.0, -d * 0.3)],
-		[unit, Vector3(w * 0.3, 1.6, d * 0.4), Vector3(-w * 0.2, 1.0, -d * 0.3)],
-		[unit, Vector3(-w * 0.1, 1.6, d * 0.4), Vector3(w * 0.3, 1.0, -d * 0.4)],
-		[unit, Vector3(-w * 0.45, 1.6, d * 0.3), Vector3(w * 0.3, 1.0, -d * 0.2)],
-		[unit, Vector3(0, 8.0, 0.1), Vector3(0, 0, 0)],
 		[unit_r, Vector3(-w * 0.3, 1.6, d * 0.4), Vector3(-w * 0.1, 1.0, -d * 0.4)],
-		[unit3, Vector3(-w * 0.3, 1.6, d * 0.4), Vector3(-w * 0.1, 1.0, -d * 0.4)],
-		[house, Vector3(0, 1.7, 4.2), Vector3(0, 1.8, -4)],
-		[house, Vector3(0, 1.7, -3), Vector3(0, 1.5, 4)],
-		[house, Vector3(0, 40.0, 0.1), Vector3(0, 0, 0)],
+		[house, Vector3(0, 1.6, 3.2), Vector3(1.3, 2.9, 1.0)],
+		[house, Vector3(0, fh + 1.6, zb), Vector3(1.3, fh + 1.2, zb)],
+		[house, Vector3(0, fh + 1.6, zb), Vector3(-1.3, fh + 1.2, zb)],
+		[house, Vector3(0, fh * 3 + 1.6, zb), Vector3(1.3, fh * 3 + 1.2, zb)],
+		[house, Vector3(0, fh * 3 + 1.6, zb), Vector3(-1.3, fh * 3 + 1.2, zb)],
+		[house, Vector3(0, fh * 4 + 1.6, -zb), Vector3(-1.3, fh * 4 + 1.2, -zb)],
+		[house, Vector3(0, 1.7, 4.2), Vector3(0, 8.0, -3)],
+		[house, Vector3(0, 60.0, 0.1), Vector3(0, 0, 0)],
 	]
 	var i := 0
 	for v: Array in views:
