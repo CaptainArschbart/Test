@@ -70,3 +70,21 @@ Arbeitslog von Arschis Seite (Claude für Arschi). Neuer Eintrag ganz unten. `en
 - Tests: `tools/tests/test_apartments.gd` prüft das Verstecken, `test_apartments_walk.gd` hat neue Wegpunkte für den Grundriss. Neu: `tools/tests/shot_apartments.gd` macht Screenshots aus den Wohnungen (mit Fenster).
 - Getestet (Godot 4.7.2 stable): `test_apartments.gd` CHECKS 61 FAILS 0, `test_apartments_walk.gd` CHECKS 96 FAILS 0. Screenshots angesehen (Schlafzimmer, Wohnküche, Bad). Bewohner (NPCs) und Treppenhaus nicht neu angesehen.
 - Git: Branch `claude/wohnungen-ueberarbeitet` aus `origin/main` (cf8d662), Draft-PR mit Basis `main`.
+
+### 2026-11-02 · Taschendiebstahl schwer am Anfang, leichter mit Stufe · Claude (für Arschi) · Branch `claude/taschendieb-skill`
+- Auftrag: Der Verdacht stieg viel zu langsam. Am Anfang soll fast kein Diebstahl gelingen, erst mit höherer Stufe soll es besser werden.
+- `scenes/crime/civilian_crime.gd`:
+  - Neu `static func suspicion_rate(light, noise, level, skill_mult)`: `(1,0 + Sichtbarkeit × 0,9 + Lärm × 1,2) × Übung × Skill`. Vorher `0,08 + × 0,5 + × 0,9`, ohne Stufe.
+  - Übung = `1 − (Stufe − 1) × 0,025`, mindestens 0,5 (ab Stufe 21). Stufe aus `Player.skills.level`, die kennt der Host auch bei fremden Spielern.
+  - Wachsamkeit pro Griff 0,7–1,3 statt 0,6–1,1 (`ALERT_MIN`, `ALERT_MAX`).
+  - Flinke Finger: Der kürzere Griff füllt den Verdacht im selben Takt (Rate ÷ `pick_time_mult`). Vorher senkte die kürzere Zeit den Verdacht ein zweites Mal, und schon auf Stufe 2 gelangen im Licht 98 % der Griffe. Jetzt zählt nur `suspicion_mult` 0,75.
+- `scenes/player/player_skills.gd`: Text von Flinke Finger lautet jetzt „Taschendiebstahl 35 % schneller, pro Griff 25 % weniger Verdacht.“
+- Gelingende Griffe, gerechnet über die Wachsamkeit, Griff 1,2 s, ohne Lärm (dunkel = Sichtbarkeit 0,05, Licht = 0,4):
+  - Stufe 1 ohne Skill: dunkel 16 %, Licht 0 %.
+  - Stufe 11: dunkel 61 %.
+  - Stufe 21: dunkel 100 %.
+  - Stufe 2 mit Flinke Finger: Licht 23 %. Stufe 21 mit Flinke Finger: Licht 100 %.
+- `tools/tests/test_npc_robbery.gd`: Die Griffe, die gelingen sollen (Grundfall, gehende Person), setzen die Wachsamkeit auf 0,5. Neu sind die Quoten oben als Prüfungen und ein echter Griff mit Wachsamkeit 1: auf Stufe 1 erwischt, auf Stufe 21 gelungen.
+- Getestet (Godot 4.7.2 stable, headless): `test_npc_robbery.gd` CHECKS 47 FAILS 0, `test_skills.gd` CHECKS 72 FAILS 0. `test_mp_sync.gd` nicht gelaufen, er prüft nur den Abgleich von `pick_time_mult`, und der ist unverändert.
+- Nicht getestet: Gefühl im Fenster, echte Sichtbarkeit unter den Lichtern von Sektor 7.
+- Git: Branch `claude/taschendieb-skill` aus `origin/main` (a075b61), PR mit Basis `main`.

@@ -82,7 +82,7 @@ const SKILLS := {
 	},
 	&"quick_fingers": {
 		"tree": &"stealth", "tier": 0, "column": 1.0, "requires": [],
-		"name": "Flinke Finger", "description": "Taschendiebstahl 35 % schneller, Verdacht steigt 25 % langsamer.",
+		"name": "Flinke Finger", "description": "Taschendiebstahl 35 % schneller, pro Griff 25 % weniger Verdacht.",
 		"effects": {&"pick_time_mult": 0.65, &"suspicion_mult": 0.75},
 	},
 	&"shadow": {
