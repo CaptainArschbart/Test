@@ -668,3 +668,32 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Auftrag: Die Streife `R_Crossing` (Streifenpolizist `X_Cop`) lief im Kreis über alle vier Ecken der Hauptkreuzung, also viermal pro Runde über die Fahrbahn. Je nach Timing erfasste ihn ein Auto, er ging in den Kampf, die Fußgänger flohen, `test_sector7_city` wurde rot.
 - `scenes/slum/slum_enemies.tscn`: `R_Crossing` ist jetzt eine L-Strecke hin und zurück (`loop = false`) auf den Gehwegen der Südost-Ecke: (6, 20) mit Blick zur Kreuzung, Ecke (6, 6), (20, 6) mit Blick nach Westen. Start bleibt an der Ecke.
 - Geprüft: Navmesh-Weg zwischen den Punkten bleibt mindestens 1,5 m neben der Fahrbahn. `test_sector7_city` dreimal grün (CHECKS 44 FAILS 0, 20/20/17 Fußgänger an der Kreuzung), `test_sector7_enemies` 15/0.
+
+### 2026-11-04 · Neon City: Gegner, Hofwege, keine Boden-Items, keine Deko-ATMs · Claude (für EnScapeZ) · Branch `enscapez/neon-gegner`
+- Auftrag: Gegner und Gangs in der Neon City (keine Scharfschützen, Streifen nie über Fahrbahnen), richtige NPC-Wege, keine Waffen oder Items zufällig auf dem Boden (Beute nur von Gegnern), unbenutzbare Geldautomaten entfernen.
+- Was:
+  - Wegplaner im Generator: 0,5-m-Raster aus allen festen Flächen, Fahrbahnen und erhöhten Platten (mit Abstand), A* nur innerhalb des Hofs bzw. Platzes, geglättet zu geraden, freien Teilstrecken.
+  - Fußgänger laufen jetzt durch jeden Hof von Gasse zu Gasse (vorher Sackgasse am Hofeingang) und haben je Hof einen Platz zum Stehenbleiben.
+  - 32 Gegner, 14 Streifen:
+    - Gangs (Nahkampf, Pistole, MP-Wache) in Unterstadt- und Hafenhöfen
+    - Sicherheitsdienst in den Kernhöfen und auf den vier Plätzen am Skywalk
+    - Türsteher an beiden Gassen der Neonmeile: Wachposten ohne Streife, neben dem freien Weg, Blick zur Straße
+  - Alle Boden-Items (Credchips, Drinks, Sniper auf dem Skywalk …) sind entfernt, Beute gibt es nur noch von besiegten Gegnern. Die Deko-Geldautomaten auf Gehwegen und Plätzen sind entfernt; die benutzbaren Automaten in Läden und Tankstellen bleiben.
+  - Logikfehler behoben:
+    - In den Kernhöfen sperrten Pflanzinsel und Eck-Pflanzkübel jeden Weg. Jetzt kleinere Insel mit Bänken auf der Kante, rundherum ein 3 m breiter Weg.
+    - In den Megablock-Höfen versperrten der Park die Westgasse und geparkte Autos die Ostgasse.
+- Dateien: `tools/gen_neon_city.py`, `scenes/neon_city/neon_city.tscn`, `neon_city_enemies.tscn`, `neon_city_life.tscn` (generiert), `tools/tests/test_neon_city.gd`, `tools/tests/shot_neon_city.gd` (Blickwinkel `kernhof`, `ganghof`).
+- Entscheidungen:
+  - Streifen bleiben ganz in Höfen und auf Plätzen. Jede Teilstrecke ist eine freie Gerade, so führt auch der Navmesh-Pfad nicht über die Straße.
+  - Die versiegelte Waffenkiste im Hinterzimmer des Waffenladens bleibt: Sie ist ein Einbruchsziel (Schlüssel plus Brechstange), kein Fund auf dem Boden.
+  - Megablöcke bleiben ohne Gegner (Wohngebiet).
+- Getestet: `test_neon_city.gd` 23/23 grün. Neue Prüfungen:
+  - keine Items auf dem Boden, keine Deko-ATMs
+  - 32 Gegner, keine Scharfschützen
+  - Streifenpunkte auf freiem Gehweg-Niveau, Teilstrecken ohne Hindernis
+  - Navmesh-Pfad der Streifen nie auf Fahrbahnhöhe
+  - alle Gegner vom Start erreichbar, Wachposten nicht auf Fußwegen
+  - Screenshots Kernhof und Ganghof angesehen.
+- Nicht getestet: Kämpfe gegen die neuen Gruppen im echten Spiel; Sektor-7-Tests nicht neu gelaufen (kein gemeinsamer Code geändert); Multiplayer (soll ignoriert werden).
+- Git: Branch `enscapez/neon-gegner`, Draft-PR gegen `main`.
+- Offen / Wichtig für die Nächsten: Navmesh meldet weiter 4 Kantenfehler (Warnung, Pfade funktionieren). Nächste Ideen: begehbare Wohnungen in den Megablöcken, mehr Ebenen, Schilder und Kabel in der Neonmeile.
