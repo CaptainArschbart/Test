@@ -18,6 +18,8 @@ const SMG := preload("res://scenes/items/data/smg.tres")
 const BANK := preload("res://scenes/interact/bank_terminal.gd")
 const SELL_PAD := preload("res://scenes/crime/loot_sell_pad.gd")
 const GAS_STATION := preload("res://scenes/crime/gas_station.gd")
+const KENNEY := "res://assets/props/kenney_furniture/%s.glb"
+const QUATERNIUS := "res://assets/props/quaternius_furniture/%s.fbx"
 
 enum Kind { GUNS, GAS }
 
@@ -73,7 +75,7 @@ func _build_guns() -> void:
 	shelf.sealed = true
 	shelf.position = Vector3(-2.4, 0.55, -2.3)
 	add_child(shelf)
-	_table(Vector3(1.6, 0.4, -2.15))
+	_furnish_guns()
 	_neon(Vector3(0.0, 2.55, 3.65))
 	_ceiling_light(Vector3(0.0, 2.85, 1.3), Color(0.25, 0.85, 1.0), 1.4)
 	_ceiling_light(Vector3(0.0, 2.7, -1.9), Color(1.0, 0.25, 0.55), 0.7)
@@ -188,8 +190,40 @@ func _rack_weapon(item: WeaponData, at: Vector3, yaw_deg: float) -> void:
 	add_child(view)
 
 
-func _table(at: Vector3) -> void:
-	_solid(at, Vector3(1.4, 0.75, 0.7), Color(0.25, 0.25, 0.28))
+## Möbel aus den Packs (assets/props/kenney_furniture, quaternius_furniture). Alles steht an Wänden
+## oder in Ecken: Laufweg Eingang–Theke, Hintertür (x −2…−0,8) und Waffenkiste bleiben frei.
+func _furnish_guns() -> void:
+	# Kundenbereich: Teppich, Pflanze in der freien Ecke (rechts steht der Automat).
+	_decor(KENNEY % "rugRectangle", Vector3(0.0, 0.1, 2.5), 90.0, 2.6, 0.0, false)
+	_decor(KENNEY % "pottedPlant", Vector3(-3.35, 0.1, 3.0), 0.0, 0.0, 1.3, true)
+	_decor(QUATERNIUS % "Trashcan_Small1", Vector3(-3.4, 0.1, 1.9), 0.0, 0.0, 0.55, true)
+	# Hinter der Theke: Regale an der Trennwand, Blick zum Laden.
+	_decor(QUATERNIUS % "Shelf_Large", Vector3(1.9, 0.1, -0.42), 90.0, 1.6, 0.0, true)
+	_decor(KENNEY % "bookcaseClosedWide", Vector3(-2.9, 0.1, -0.45), 90.0, 1.5, 0.0, true)
+	_decor(KENNEY % "cardboardBoxClosed", Vector3(1.1, 0.1, -0.35), 0.0, 0.0, 0.45, true)
+	# Lampen unter der Decke über den Leuchtbalken.
+	for x: float in [-1.8, 1.8]:
+		_decor(QUATERNIUS % "Light_Ceiling2", Vector3(x, 2.55, 2.3), 0.0, 0.0, 0.55, false)
+	# Lager: Schreibtisch mit Stuhl, Monitor und Lampe, Kartons in der Ecke.
+	_decor(KENNEY % "desk", Vector3(1.6, 0.1, -2.6), 90.0, 1.5, 0.0, true)
+	_decor(KENNEY % "chairDesk", Vector3(1.6, 0.1, -1.7), 180.0, 0.0, 1.0, true)
+	_decor(KENNEY % "computerScreen", Vector3(1.4, 0.88, -2.75), 180.0, 0.0, 0.42, false)
+	_decor(QUATERNIUS % "Light_Desk", Vector3(2.1, 0.88, -2.75), 0.0, 0.0, 0.4, false)
+	for k in 3:
+		_decor(KENNEY % "cardboardBoxClosed", Vector3(-3.35, 0.1 + k * 0.42, -3.05), k * 25.0, 0.0, 0.42, k == 0)
+	_decor(KENNEY % "cardboardBoxOpen", Vector3(-3.3, 0.1, -2.35), 15.0, 0.0, 0.4, true)
+
+
+func _decor(path: String, at: Vector3, yaw_deg: float, fit_length: float, fit_height: float, collide: bool) -> void:
+	var prop := NeonProp.new()
+	prop.model = path
+	prop.fit_length = fit_length
+	prop.fit_height = fit_height if fit_height > 0.0 else 1.0
+	prop.collide = collide
+	prop.visible_range = 0.0
+	prop.position = at
+	prop.rotation.y = deg_to_rad(yaw_deg)
+	add_child(prop)
 
 
 func _neon(at: Vector3) -> void:
