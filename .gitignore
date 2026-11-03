@@ -12,3 +12,6 @@ Thumbs.db
 
 # Lokale Engine-Overrides (Render-Thread aus dem Grafikmenü)
 override.cfg
+
+# Rohdownloads, nur lokal (einsortierte Assets liegen unter assets/<kategorie>/)
+/assets/_incoming/
