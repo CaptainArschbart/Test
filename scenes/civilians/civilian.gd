@@ -98,7 +98,7 @@ func _ready() -> void:
 	scaler.name = "Scaler"
 	scaler.scale = Vector3.ONE * _rng.randf_range(0.9, 1.06)
 	add_child(scaler)
-	model = CivilianModel.new()
+	model = CharacterModel.new()
 	model.name = "Model"
 	scaler.add_child(model)
 	model.build_civilian(_rng.randi())

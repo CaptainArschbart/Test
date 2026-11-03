@@ -850,7 +850,8 @@ func _audio(at: Vector3, unit: float) -> AudioStreamPlayer3D:
 
 
 func _add_model() -> void:
-	_model = CivilianModel.new()
+	_model = CharacterModel.new()
+	_model.set("look", ["Business Man", "Worker", "Casual Character"][posmod(seed_value, 3)])
 	_model.name = "Model"
 	_keeper.add_child(_model)
 	_model.build_civilian(seed_value)
