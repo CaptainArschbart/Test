@@ -13,8 +13,12 @@ const PLACES: Array[Dictionary] = [
 ]
 
 
+## Plätze dieser Map. Standard = Sektor 7, andere Maps setzen ihre eigenen vor add_child.
+var places: Array[Dictionary] = PLACES
+
+
 func _ready() -> void:
-	for place: Dictionary in PLACES:
+	for place: Dictionary in places:
 		var at: Vector3 = place["at"]
 		var yaw := deg_to_rad(float(place["yaw"]))
 		var node: Node3D
