@@ -1,10 +1,11 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="WeaponData" load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scenes/items/weapon_data.gd" id="1_weapon"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/smg_view.tscn" id="2_view"]
 [ext_resource type="AudioStream" path="res://assets/audio/smg_shot.wav" id="3_shot"]
 [ext_resource type="AudioStream" path="res://assets/audio/smg_reload.wav" id="4_reload"]
 [ext_resource type="AudioStream" path="res://assets/audio/pistol_empty.wav" id="5_empty"]
+[ext_resource type="Texture2D" path="res://assets/icons/items/smg.png" id="icon_item"]
 
 [resource]
 script = ExtResource("1_weapon")
@@ -19,7 +20,7 @@ hip_offset = Vector3(0.01, -0.01, -0.06)
 automatic = true
 aim_fov = 56.0
 aim_time = 0.17
-sight_offset = Vector3(0, 0.083, 0)
+sight_offset = Vector3(0, 0.143, 0)
 aim_distance = 0.3
 aim_sensitivity = 0.9
 has_scope = false
@@ -46,3 +47,4 @@ description = "Kompakte SMG mit Holo-Visier. 30 Schuss, Linksklick halten für D
 glyph = "SMG"
 color = Color(0.1, 0.9, 1, 1)
 max_stack = 1
+icon = ExtResource("icon_item")

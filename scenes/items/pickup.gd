@@ -12,6 +12,8 @@ extends Area3D
 ## entstehen über WorldSync.spawn_pickup, Aufheben fragt den Host (take_pending bis zur Antwort).
 
 const GROUP := &"item_pickup"
+## Vergrößerung für Klingen und Granaten in der Welt (die Verbrauchsitems haben eigene Werte).
+const DISPLAY_PICKUP_SCALE := 1.8
 
 @export var item: ItemData
 @export_range(1, 999) var count := 1
@@ -157,12 +159,16 @@ func _show_weapon_model() -> void:
 	mesh.visible = false
 
 
+## Verbrauchsitems, Klingen und Granaten zeigen ihr Display-Modell (ItemDisplay).
 func _show_consumable_model() -> void:
-	if item is WeaponData or not ConsumableModel.has_model(item.model):
+	if item is WeaponData:
 		return
-	var model := ConsumableModel.build(item.model, item.color)
+	var model := ItemDisplay.build(item)
+	if model == null:
+		return
 	model.name = "ConsumableModel"
-	model.scale = Vector3.ONE * ConsumableModel.pickup_scale(item.model)
+	model.scale = Vector3.ONE * (ConsumableModel.pickup_scale(item.model)
+			if ConsumableModel.has_model(item.model) else DISPLAY_PICKUP_SCALE)
 	model.rotation_degrees = Vector3(0.0, 0.0, 14.0)
 	visual.add_child(model)
 	mesh.visible = false

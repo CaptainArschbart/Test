@@ -743,20 +743,161 @@ static func _draw_icon_extra(canvas: CanvasItem, kind: StringName, center: Vecto
 
 # --- Hilfen --------------------------------------------------------------------
 
+## Brechstange: Sechskantschaft, oben gebogene Klaue mit Schlitz, unten flache Meißelspitze,
+## Griffband in der Item-Farbe mit Neonring.
 static func _build_crowbar(root: Node3D, color: Color) -> void:
 	var metal := _mat(&"crow_metal", Color(0.35, 0.36, 0.38), 0.85, 0.35)
 	var grip := _mat(&"crow_grip", color, 0.1, 0.7)
-	var shaft := BoxMesh.new()
-	shaft.size = Vector3(0.025, 0.62, 0.025)
-	_part(root, shaft, metal, Vector3(0.0, 0.12, 0.0))
-	var hook := BoxMesh.new()
-	hook.size = Vector3(0.09, 0.02, 0.02)
-	_part(root, hook, metal, Vector3(0.04, 0.42, 0.0))
+	var shaft := CylinderMesh.new()
+	shaft.top_radius = 0.012
+	shaft.bottom_radius = 0.012
+	shaft.height = 0.56
+	shaft.radial_segments = 6
+	shaft.rings = 1
+	_part(root, shaft, metal, Vector3(0.0, 0.11, 0.0))
+	# Klaue: drei Stücke biegen nach +X und wieder nach unten, die Spitze ist geschlitzt.
+	_box_part(root, Vector3(0.024, 0.05, 0.022), metal, Vector3(0.008, 0.4, 0.0), Vector3(0.0, 0.0, -25.0))
+	_box_part(root, Vector3(0.024, 0.045, 0.022), metal, Vector3(0.036, 0.428, 0.0), Vector3(0.0, 0.0, -75.0))
+	_box_part(root, Vector3(0.022, 0.04, 0.024), metal, Vector3(0.068, 0.418, 0.0), Vector3(0.0, 0.0, -125.0))
+	_box_part(root, Vector3(0.014, 0.03, 0.006), _mat(&"crow_slot", Color(0.05, 0.05, 0.06), 0.3, 0.6),
+			Vector3(0.078, 0.408, 0.0), Vector3(0.0, 0.0, -125.0))
+	# Meißel unten, leicht abgewinkelt.
+	_box_part(root, Vector3(0.03, 0.05, 0.008), metal, Vector3(0.004, -0.19, 0.0), Vector3(0.0, 0.0, 10.0))
 	var handle := CylinderMesh.new()
-	handle.top_radius = 0.02
-	handle.bottom_radius = 0.02
-	handle.height = 0.16
-	_part(root, handle, grip, Vector3(0.0, -0.16, 0.0))
+	handle.top_radius = 0.016
+	handle.bottom_radius = 0.016
+	handle.height = 0.15
+	handle.radial_segments = 8
+	_part(root, handle, grip, Vector3(0.0, -0.08, 0.0))
+	var band := CylinderMesh.new()
+	band.top_radius = 0.0175
+	band.bottom_radius = 0.0175
+	band.height = 0.008
+	band.radial_segments = 8
+	_part(root, band, _neon(color, 1.6), Vector3(0.0, 0.0, 0.0))
+
+
+## Monoklinge (Display-Modell für Pickup und Icon): Griff mit Wicklung, Parierstange,
+## schmale Klinge mit leuchtender Schneide. +Y = Klinge.
+static func build_blade(color: Color) -> Node3D:
+	var root := Node3D.new()
+	root.name = "Blade"
+	var dark := _mat(&"blade_wrap", Color(0.07, 0.07, 0.09), 0.2, 0.7)
+	var steel := _mat(&"blade_steel", Color(0.55, 0.58, 0.64), 0.95, 0.18)
+	var handle := CylinderMesh.new()
+	handle.top_radius = 0.013
+	handle.bottom_radius = 0.014
+	handle.height = 0.13
+	handle.radial_segments = 8
+	_part(root, handle, dark, Vector3(0.0, -0.04, 0.0))
+	for i: int in 3:
+		_box_part(root, Vector3(0.03, 0.006, 0.03), _neon(color, 1.2), Vector3(0.0, -0.085 + i * 0.04, 0.0), Vector3(0.0, 45.0, 0.0))
+	_box_part(root, Vector3(0.022, 0.012, 0.06), steel, Vector3(0.0, 0.032, 0.0))
+	_box_part(root, Vector3(0.004, 0.4, 0.026), steel, Vector3(0.0, 0.238, 0.0))
+	_box_part(root, Vector3(0.005, 0.4, 0.004), _neon(color, 2.2), Vector3(0.0, 0.238, 0.014))
+	# Schräge Spitze.
+	_box_part(root, Vector3(0.004, 0.04, 0.022), steel, Vector3(0.0, 0.444, -0.004), Vector3(-30.0, 0.0, 0.0))
+	var pommel := SphereMesh.new()
+	pommel.radius = 0.012
+	pommel.height = 0.024
+	_part(root, pommel, _neon(color, 1.5), Vector3(0.0, -0.11, 0.0))
+	return root
+
+
+## Granate (Display-Modell für Pickup und Icon). Kontaktzünder: dunkler Körper mit Zünderkappe
+## und Leuchtring. Sonst (EMP): Zylinder mit leuchtenden Spulenringen und Antenne.
+static func build_grenade(color: Color, contact: bool) -> Node3D:
+	var root := Node3D.new()
+	root.name = "Grenade"
+	var body := _mat(&"gren_body", Color(0.12, 0.12, 0.14), 0.6, 0.4)
+	var metal := _mat(&"gren_metal", Color(0.55, 0.56, 0.6), 0.9, 0.3)
+	if contact:
+		var sphere := SphereMesh.new()
+		sphere.radius = 0.045
+		sphere.height = 0.09
+		sphere.radial_segments = 16
+		sphere.rings = 8
+		_part(root, sphere, body, Vector3.ZERO)
+		var ring := TorusMesh.new()
+		ring.inner_radius = 0.042
+		ring.outer_radius = 0.05
+		_part(root, ring, _neon(color, 2.0), Vector3.ZERO)
+		var cap := CylinderMesh.new()
+		cap.top_radius = 0.014
+		cap.bottom_radius = 0.018
+		cap.height = 0.03
+		_part(root, cap, _neon(Color(1.0, 0.85, 0.3), 1.6), Vector3(0.0, 0.05, 0.0))
+		return root
+	var can := CylinderMesh.new()
+	can.top_radius = 0.028
+	can.bottom_radius = 0.028
+	can.height = 0.1
+	can.radial_segments = 12
+	_part(root, can, body, Vector3.ZERO)
+	for i: int in 3:
+		var coil := CylinderMesh.new()
+		coil.top_radius = 0.0295
+		coil.bottom_radius = 0.0295
+		coil.height = 0.008
+		coil.radial_segments = 12
+		_part(root, coil, _neon(color, 2.0), Vector3(0.0, -0.03 + i * 0.03, 0.0))
+	var top := CylinderMesh.new()
+	top.top_radius = 0.018
+	top.bottom_radius = 0.026
+	top.height = 0.016
+	top.radial_segments = 12
+	_part(root, top, metal, Vector3(0.0, 0.058, 0.0))
+	_box_part(root, Vector3(0.012, 0.075, 0.01), metal, Vector3(0.032, 0.02, 0.0), Vector3(0.0, 0.0, 6.0))
+	var pin := TorusMesh.new()
+	pin.inner_radius = 0.008
+	pin.outer_radius = 0.011
+	_part(root, pin, metal, Vector3(-0.02, 0.07, 0.0)).rotation_degrees = Vector3(90.0, 0.0, 0.0)
+	return root
+
+
+## Handschellen: zwei Stahlringe mit Schlossgehäuse, dazwischen drei Kettenglieder.
+static func _build_cuffs(root: Node3D, color: Color) -> void:
+	var steel := _mat(&"cuff_steel", Color(0.6, 0.62, 0.66), 0.95, 0.2)
+	var dark := _mat(&"cuff_lock", Color(0.1, 0.1, 0.12), 0.6, 0.4)
+	for side: float in [-1.0, 1.0]:
+		var ring := TorusMesh.new()
+		ring.inner_radius = 0.026
+		ring.outer_radius = 0.034
+		ring.rings = 16
+		ring.ring_segments = 6
+		_part(root, ring, steel, Vector3(side * 0.052, 0.0, 0.0)).rotation_degrees = Vector3(80.0, 0.0, 0.0)
+		_box_part(root, Vector3(0.024, 0.014, 0.03), dark, Vector3(side * 0.024, 0.0, 0.0))
+		_box_part(root, Vector3(0.006, 0.015, 0.006), _neon(color, 1.6), Vector3(side * 0.024, 0.0, 0.016))
+	for i: int in 3:
+		var link := TorusMesh.new()
+		link.inner_radius = 0.004
+		link.outer_radius = 0.0065
+		link.rings = 8
+		link.ring_segments = 4
+		_part(root, link, steel, Vector3(-0.008 + i * 0.008, 0.0, 0.0)).rotation_degrees = \
+				Vector3(0.0, 0.0, 90.0) if i % 2 == 0 else Vector3(90.0, 0.0, 90.0)
+
+
+## Bündel Kabelbinder: fünf Bänder leicht aufgefächert, Köpfe in der Item-Farbe, Banderole.
+static func _build_ties(root: Node3D, color: Color) -> void:
+	var strap := _mat(&"tie_strap", Color(0.08, 0.08, 0.09), 0.0, 0.6)
+	for i: int in 5:
+		var angle := (i - 2) * 5.0
+		var x := (i - 2) * 0.008
+		_box_part(root, Vector3(0.007, 0.16, 0.0025), strap, Vector3(x, 0.0, (i % 2) * 0.003), Vector3(0.0, 0.0, angle))
+		var head_pos := Vector3(x, 0.0, 0.0) + Vector3(0.0, 0.08, 0.0).rotated(Vector3.BACK, deg_to_rad(angle))
+		_box_part(root, Vector3(0.012, 0.012, 0.008), _neon(color, 1.0), head_pos, Vector3(0.0, 0.0, angle))
+	_box_part(root, Vector3(0.052, 0.014, 0.012), _mat(&"tie_band", Color(0.85, 0.85, 0.8), 0.0, 0.8), Vector3(0.0, -0.02, 0.0))
+
+
+## Schlüsselkarte: dunkle Karte mit Neonstreifen, Goldchip und Lochung.
+static func _build_keycard(root: Node3D, color: Color) -> void:
+	_box_part(root, Vector3(0.086, 0.003, 0.054), _mat(&"card_base", Color(0.1, 0.1, 0.13), 0.3, 0.5), Vector3.ZERO)
+	_box_part(root, Vector3(0.086, 0.0036, 0.01), _neon(color, 1.4), Vector3(0.0, 0.0, 0.016))
+	_box_part(root, Vector3(0.013, 0.0038, 0.01), _mat(&"gold", Color(1.0, 0.82, 0.35), 0.9, 0.25), Vector3(-0.026, 0.0, -0.008))
+	_box_part(root, Vector3(0.03, 0.0036, 0.004), _mat(&"card_text", Color(0.75, 0.75, 0.8), 0.0, 0.6), Vector3(0.012, 0.0, -0.004))
+	_box_part(root, Vector3(0.02, 0.0036, 0.004), _mat(&"card_text", Color(0.75, 0.75, 0.8), 0.0, 0.6), Vector3(0.007, 0.0, -0.012))
+	_box_part(root, Vector3(0.012, 0.0038, 0.004), _mat(&"card_hole", Color(0.02, 0.02, 0.03), 0.0, 0.9), Vector3(0.033, 0.0, -0.019))
 
 
 static func _build_prop(root: Node3D, kind: StringName, color: Color) -> void:
@@ -773,17 +914,15 @@ static func _build_prop(root: Node3D, kind: StringName, color: Color) -> void:
 			_build_jewels(root, color)
 		JEWELRY:
 			_build_jewelry(root)
+		KEYCARD:
+			_build_keycard(root, color)
+		CUFFS:
+			_build_cuffs(root, color)
+		TIES:
+			_build_ties(root, color)
 		_:
 			var mesh := BoxMesh.new()
-			match kind:
-				KEYCARD:
-					mesh.size = Vector3(0.086, 0.004, 0.054)
-				CUFFS:
-					mesh.size = Vector3(0.14, 0.03, 0.05)
-				TIES:
-					mesh.size = Vector3(0.1, 0.02, 0.04)
-				_:
-					mesh.size = Vector3(0.05, 0.03, 0.05)
+			mesh.size = Vector3(0.05, 0.03, 0.05)
 			_part(root, mesh, _neon(color, 0.6), Vector3.ZERO)
 
 

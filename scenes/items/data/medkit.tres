@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="ConsumableData" format=3]
 
 [ext_resource type="Script" path="res://scenes/items/consumable_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://assets/icons/items/medkit.png" id="icon_item"]
 
 [resource]
 script = ExtResource("1_item")
@@ -16,3 +17,4 @@ heal = 100.0
 use_verb = "benutzt"
 use_animation = &"bandage"
 use_time = 4.5
+icon = ExtResource("icon_item")

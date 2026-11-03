@@ -1,10 +1,11 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="WeaponData" load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scenes/items/weapon_data.gd" id="1_weapon"]
-[ext_resource type="PackedScene" path="res://scenes/weapons/smg_view.tscn" id="2_view"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/ak47_view.tscn" id="2_view"]
 [ext_resource type="AudioStream" path="res://assets/audio/smg_shot.wav" id="3_shot"]
 [ext_resource type="AudioStream" path="res://assets/audio/smg_reload.wav" id="4_reload"]
 [ext_resource type="AudioStream" path="res://assets/audio/pistol_empty.wav" id="5_empty"]
+[ext_resource type="Texture2D" path="res://assets/icons/items/ak47.png" id="icon_item"]
 
 [resource]
 script = ExtResource("1_weapon")
@@ -19,7 +20,7 @@ hip_offset = Vector3(0.02, -0.02, -0.1)
 automatic = true
 aim_fov = 58.0
 aim_time = 0.2
-sight_offset = Vector3(0, 0.083, 0)
+sight_offset = Vector3(0, 0.062, 0)
 aim_distance = 0.34
 aim_sensitivity = 0.8
 has_scope = false
@@ -47,3 +48,4 @@ glyph = "AK"
 color = Color(0.72, 0.38, 0.16, 1)
 max_stack = 1
 value = 110
+icon = ExtResource("icon_item")
