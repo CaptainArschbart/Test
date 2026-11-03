@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="MeleeData" format=3]
 
 [ext_resource type="Script" path="res://scenes/items/melee_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://assets/icons/items/mono_blade.png" id="icon_item"]
 
 [resource]
 script = ExtResource("1_item")
@@ -12,3 +13,4 @@ color = Color(1, 0.1, 0.75, 1)
 max_stack = 1
 damage = 40.0
 reach = 2.2
+icon = ExtResource("icon_item")

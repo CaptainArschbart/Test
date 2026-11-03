@@ -1,14 +1,7 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene format=3]
 
-[sub_resource type="StandardMaterial3D" id="Mat_body"]
-albedo_color = Color(0.07, 0.075, 0.09, 1)
-metallic = 0.7
-roughness = 0.35
-
-[sub_resource type="StandardMaterial3D" id="Mat_stock"]
-albedo_color = Color(0.13, 0.12, 0.16, 1)
-metallic = 0.2
-roughness = 0.6
+[ext_resource type="Script" path="res://scenes/weapons/weapon_view.gd" id="1_view"]
+[ext_resource type="PackedScene" path="res://assets/items/weapons/quaternius_guns/SniperRifle_4.fbx" id="2_model"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_neon"]
 albedo_color = Color(0.3, 1, 0.45, 1)
@@ -16,43 +9,9 @@ emission_enabled = true
 emission = Color(0.3, 1, 0.45, 1)
 emission_energy_multiplier = 2.5
 
-[sub_resource type="BoxMesh" id="Mesh_receiver"]
-material = SubResource("Mat_body")
-size = Vector3(0.05, 0.07, 0.36)
-
-[sub_resource type="BoxMesh" id="Mesh_stock"]
-material = SubResource("Mat_stock")
-size = Vector3(0.042, 0.09, 0.25)
-
-[sub_resource type="BoxMesh" id="Mesh_grip"]
-material = SubResource("Mat_stock")
-size = Vector3(0.032, 0.09, 0.045)
-
-[sub_resource type="BoxMesh" id="Mesh_mag"]
-material = SubResource("Mat_body")
-size = Vector3(0.032, 0.07, 0.06)
-
-[sub_resource type="CylinderMesh" id="Mesh_barrel"]
-material = SubResource("Mat_body")
-top_radius = 0.012
-bottom_radius = 0.014
-height = 0.46
-
-[sub_resource type="CylinderMesh" id="Mesh_scope"]
-material = SubResource("Mat_body")
-top_radius = 0.022
-bottom_radius = 0.022
-height = 0.24
-
-[sub_resource type="CylinderMesh" id="Mesh_lens"]
-material = SubResource("Mat_neon")
-top_radius = 0.024
-bottom_radius = 0.024
-height = 0.012
-
 [sub_resource type="BoxMesh" id="Mesh_stripe"]
 material = SubResource("Mat_neon")
-size = Vector3(0.052, 0.006, 0.3)
+size = Vector3(0.042, 0.004, 0.37)
 
 [sub_resource type="StandardMaterial3D" id="Mat_flash"]
 transparency = 1
@@ -65,60 +24,23 @@ material = SubResource("Mat_flash")
 size = Vector2(0.18, 0.18)
 
 [node name="SniperView" type="Node3D"]
+script = ExtResource("1_view")
 
-[node name="Receiver" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, -0.12)
-cast_shadow = 0
-mesh = SubResource("Mesh_receiver")
+[node name="Model" parent="." instance=ExtResource("2_model")]
+position = Vector3(0, -0.037, 0.058)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(0.16, 0.16, 0.16)
 
-[node name="Stripe" type="MeshInstance3D" parent="Receiver"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.015, 0)
+[node name="Stripe" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.029, -0.158)
 cast_shadow = 0
 mesh = SubResource("Mesh_stripe")
 
-[node name="Stock" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0.18)
-cast_shadow = 0
-mesh = SubResource("Mesh_stock")
-
-[node name="Grip" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.966, 0.259, 0, -0.259, 0.966, 0, -0.045, 0.01)
-cast_shadow = 0
-mesh = SubResource("Mesh_grip")
-
-[node name="Magazine" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.04, -0.13)
-cast_shadow = 0
-mesh = SubResource("Mesh_mag")
-
-[node name="Barrel" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.035, -0.52)
-cast_shadow = 0
-mesh = SubResource("Mesh_barrel")
-
-[node name="Scope" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.1, -0.1)
-cast_shadow = 0
-mesh = SubResource("Mesh_scope")
-
-[node name="LensFront" type="MeshInstance3D" parent="Scope"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, 0)
-cast_shadow = 0
-mesh = SubResource("Mesh_lens")
-
-[node name="LensBack" type="MeshInstance3D" parent="Scope"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.12, 0)
-cast_shadow = 0
-material_override = SubResource("Mat_body")
-mesh = SubResource("Mesh_lens")
-
-[node name="Mount" type="MeshInstance3D" parent="."]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.12, 0, 0.07, -0.1)
-cast_shadow = 0
-mesh = SubResource("Mesh_mag")
+[node name="Magazine" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.985, 0.174, 0, -0.174, 0.985, 0, -0.061, -0.086)
 
 [node name="Muzzle" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.035, -0.76)
+position = Vector3(0, -0.0034, -0.7356)
 
 [node name="Flash" type="MeshInstance3D" parent="Muzzle"]
 visible = false
@@ -136,4 +58,4 @@ position = Vector3(0.032, -0.07, 0.075)
 rotation = Vector3(0.2618, 0.1396, -1.6057)
 
 [node name="HandGripLeft" type="Marker3D" parent="."]
-transform = Transform3D(-0.8399, -0.2100, -0.5005, 0.3050, -0.9454, -0.1152, -0.4490, -0.2494, 0.8580, -0.045, -0.03, -0.215)
+transform = Transform3D(-0.8399, -0.2100, -0.5005, 0.3050, -0.9454, -0.1152, -0.4490, -0.2494, 0.8580, -0.042, -0.0522, -0.342)

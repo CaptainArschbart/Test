@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="ConsumableData" format=3]
 
 [ext_resource type="Script" path="res://scenes/items/consumable_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://assets/icons/items/nano_bandage.png" id="icon_item"]
 
 [resource]
 script = ExtResource("1_item")
@@ -15,3 +16,4 @@ heal = 70.0
 use_verb = "angelegt"
 model = &"bandage"
 use_animation = &"bandage"
+icon = ExtResource("icon_item")

@@ -1,10 +1,11 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="WeaponData" load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scenes/items/weapon_data.gd" id="1_weapon"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/sniper_view.tscn" id="2_view"]
 [ext_resource type="AudioStream" path="res://assets/audio/sniper_shot.wav" id="3_shot"]
 [ext_resource type="AudioStream" path="res://assets/audio/sniper_reload.wav" id="4_reload"]
 [ext_resource type="AudioStream" path="res://assets/audio/pistol_empty.wav" id="5_empty"]
+[ext_resource type="Texture2D" path="res://assets/icons/items/sniper.png" id="icon_item"]
 
 [resource]
 script = ExtResource("1_weapon")
@@ -19,7 +20,7 @@ pickup_scale = 1.1
 hip_offset = Vector3(0.03, -0.03, -0.14)
 aim_fov = 16.0
 aim_time = 0.25
-sight_offset = Vector3(0, 0.1, 0)
+sight_offset = Vector3(0, 0.04, 0)
 aim_distance = 0.35
 aim_sensitivity = 0.8
 has_scope = true
@@ -35,3 +36,4 @@ description = "Repetierer mit 8-fach-Zielfernrohr. 5 Schuss, aus der Hüfte unge
 glyph = "S"
 color = Color(0.3, 1, 0.45, 1)
 max_stack = 1
+icon = ExtResource("icon_item")
