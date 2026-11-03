@@ -11,6 +11,7 @@ extends SceneTree
 
 const PLAYER_SCENE := "res://scenes/player/player.tscn"
 const CIVILIAN := "res://scenes/civilians/civilian.gd"
+const CRIME := "res://scenes/crime/civilian_crime.gd"
 const PISTOL := "res://scenes/items/data/pistol.tres"
 const ZIPTIES := "res://scenes/items/data/zipties.tres"
 
@@ -114,6 +115,8 @@ func _run() -> void:
 	await _pickpocket_caught()
 	await _pickpocket_abort()
 	await _pickpocket_walking()
+	_pickpocket_odds()
+	await _pickpocket_levels()
 	await _armed_robbery()
 	await _armed_then_tied()
 	_wanted.call("set_stars", 0)
@@ -132,6 +135,8 @@ func _pickpocket_ok() -> void:
 	_check(_prompt(civ) == "Taschendiebstahl", "hockend dahinter: Taschendiebstahl (%s)" % _prompt(civ))
 	var money := int(_inventory.get("money"))
 	civ.call("interact", _player)
+	# Ohne Übung gelingt nur ein Griff mit wenig Wachsamkeit.
+	crime.set("_alert", 0.5)
 	await _frames(20)
 	_check(_prompt(civ).begins_with("Klauen"), "Griff läuft, Anzeige: %s" % _prompt(civ))
 	var bar := _pick_bar()
@@ -185,6 +190,7 @@ func _pickpocket_walking() -> void:
 	_check(civ.global_position.distance_to(before) > 0.05, "Person geht vor dem Griff (%.2f m)" % civ.global_position.distance_to(before))
 	var money := int(_inventory.get("money"))
 	civ.call("interact", _player)
+	crime.set("_alert", 0.5)
 	var start: Vector3 = civ.global_position
 	await _frames(40)
 	var moved := Vector2(civ.global_position.x - start.x, civ.global_position.z - start.z).length()
@@ -279,3 +285,51 @@ func _slot_of(id: String) -> int:
 		if item != null and str(item.get("id")) == id:
 			return i
 	return -1
+
+
+## Anteil gelungener Griffe über die Wachsamkeit (gleichverteilt), aus CivilianCrime.suspicion_rate.
+func _odds(light: float, level: int, suspicion_mult := 1.0) -> float:
+	var crime_script := load(CRIME) as GDScript
+	var rate: float = crime_script.call("suspicion_rate", light, 0.0, level, suspicion_mult)
+	var total := rate * float(crime_script.get("PICK_TIME"))
+	var lo: float = crime_script.get("ALERT_MIN")
+	var hi: float = crime_script.get("ALERT_MAX")
+	return clampf((1.0 / total - lo) / (hi - lo), 0.0, 1.0)
+
+
+func _pickpocket_odds() -> void:
+	var dark := 0.05
+	var lit := 0.4
+	var start := _odds(dark, 1)
+	_check(start <= 0.25, "Stufe 1 ohne Skill, dunkel: %.0f %% gelingen" % (start * 100.0))
+	_check(_odds(lit, 1) == 0.0, "Stufe 1 ohne Skill, Licht: %.0f %%" % (_odds(lit, 1) * 100.0))
+	var mid := _odds(dark, 11)
+	_check(mid > start + 0.2 and mid < 0.9, "Stufe 11, dunkel: %.0f %%" % (mid * 100.0))
+	_check(_odds(dark, 21) == 1.0, "Stufe 21, dunkel: %.0f %%" % (_odds(dark, 21) * 100.0))
+	var fingers := _odds(lit, 2, 0.75)
+	_check(fingers > _odds(lit, 2) and fingers < 0.5, "Stufe 2 mit Flinke Finger, Licht: %.0f %%" % (fingers * 100.0))
+	_check(_odds(lit, 21, 0.75) == 1.0, "Stufe 21 mit Flinke Finger, Licht: %.0f %%" % (_odds(lit, 21, 0.75) * 100.0))
+
+
+## Gleiche Wachsamkeit 1: auf Stufe 1 erwischt, auf Stufe 21 gelingt der Griff.
+func _pickpocket_levels() -> void:
+	var skills: Node = _player.get("skills")
+	for level: int in [1, 21]:
+		skills.call("set_level", level)
+		var civ := _civilian(Vector3(-60 + level, 0, 80), 30 + level)
+		await _frames(4)
+		var crime := _crime(civ)
+		await _place(civ.global_position + Vector3(0, 0, 1.2), 0.0, true)
+		var money := int(_inventory.get("money"))
+		civ.call("interact", _player)
+		crime.set("_alert", 1.0)
+		await _frames(100)
+		var got := int(_inventory.get("money")) > money
+		if level == 1:
+			_check(not got and int(_wanted.call("star_count")) == 1, "Stufe 1, Wachsamkeit 1: erwischt (Verdacht %.2f)" % float(crime.get("suspicion")))
+		else:
+			_check(got and int(_wanted.call("star_count")) == 0, "Stufe 21, Wachsamkeit 1: gelingt (Verdacht %.2f)" % float(crime.get("suspicion")))
+		_wanted.call("set_stars", 0)
+		civ.queue_free()
+		await _frames(4)
+	skills.call("set_level", 1)

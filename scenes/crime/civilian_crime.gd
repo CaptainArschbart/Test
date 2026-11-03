@@ -4,8 +4,9 @@ extends Node
 ##
 ## Friedlich, solange niemand zielt, schlägt oder einbricht.
 ## Taschendiebstahl (leise): von hinten, im Hocken, langsam. E startet den Griff (PICK_TIME). Dabei
-## steigt der Verdacht, schneller bei Licht und Lärm. Die Person bleibt solange stehen (Civilian fragt
-## is_being_picked), läuft also nicht aus der Reichweite. Erreicht der Verdacht 100 %,
+## steigt der Verdacht, schneller bei Licht und Lärm, langsamer mit Spielerstufe und Flinke Finger
+## (suspicion_rate). Die Person bleibt solange stehen (Civilian fragt is_being_picked), läuft also
+## nicht aus der Reichweite. Erreicht der Verdacht 100 %,
 ## merkt sie es: „Dieb!“, Flucht, Fahndung. Bleibt er darunter, keine Fahndung. Hocke verlassen,
 ## zu schnell oder nicht mehr hinter ihr: abgebrochen, ohne Beute. Beides sieht der Dieb als
 ## Doppel-Slider (PickpocketBar im ItemUser-HUD); laufende Griffe stehen in PICKING_GROUP.
@@ -25,6 +26,12 @@ const PICK_TIME := 1.2
 const PICK_REACH := 2.6
 const ROB_TIME := 1.6
 const PICKING_GROUP := &"pickpocket_running"
+## Wachsamkeit pro Griff, gleichverteilt. Verdacht am Ende = Rate × Wachsamkeit × Griffdauer.
+const ALERT_MIN := 0.7
+const ALERT_MAX := 1.3
+## Übung: pro Spielerstufe über 1 steigt der Verdacht um PRACTICE_PER_LEVEL langsamer, bis PRACTICE_MIN.
+const PRACTICE_PER_LEVEL := 0.025
+const PRACTICE_MIN := 0.5
 
 var held_up := false
 var restrained := false
@@ -102,7 +109,7 @@ func interact(player: Player) -> void:
 	if _can_pickpocket(player):
 		pick_progress = 0.0
 		suspicion = 0.0
-		_alert = _rng.randf_range(0.6, 1.1)
+		_alert = _rng.randf_range(ALERT_MIN, ALERT_MAX)
 		_thief = player
 		add_to_group(PICKING_GROUP)
 
@@ -225,10 +232,12 @@ func _pick_tick(delta: float) -> void:
 		return
 	var light := player.stealth.visibility if player.stealth != null else 0.5
 	var noise := player.stealth.noise_level if player.stealth != null else 0.0
-	var rate := 0.08 + light * 0.5 + noise * 0.9
-	# Skills Flinke Finger (pick_time_mult, suspicion_mult). Der Host kennt sie auch bei fremden Dieben.
-	suspicion += rate * _alert * player.skill_mult(&"suspicion_mult") * delta
-	pick_progress = minf(pick_progress + delta / (PICK_TIME * player.skill_mult(&"pick_time_mult")), 1.0)
+	var level: int = player.skills.level if player.skills != null else 1
+	# Skills Flinke Finger (pick_time_mult, suspicion_mult) und die Stufe. Der Host kennt beides auch bei
+	# fremden Dieben. Ein schnellerer Griff füllt den Verdacht im selben Takt, sonst zählte der Skill doppelt.
+	var time_mult := player.skill_mult(&"pick_time_mult")
+	suspicion += suspicion_rate(light, noise, level, player.skill_mult(&"suspicion_mult")) * _alert * delta / time_mult
+	pick_progress = minf(pick_progress + delta / (PICK_TIME * time_mult), 1.0)
 	if suspicion >= 1.0:
 		_end_pick()
 		player.item_user.show_message("Erwischt!", Color(1.0, 0.35, 0.3))
@@ -395,3 +404,10 @@ func _take(player: Player, id: String) -> bool:
 			inventory.remove_at(i, 1)
 			return true
 	return false
+
+
+## Verdacht pro Sekunde bei Wachsamkeit 1. Ohne Übung und Skill fliegt man fast immer auf: im Dunkeln
+## gelingt etwa jeder sechste Griff, im Licht kaum einer. Mit Stufe und Flinke Finger wird es leichter.
+static func suspicion_rate(light: float, noise: float, level: int, skill_mult := 1.0) -> float:
+	var practice := clampf(1.0 - float(level - 1) * PRACTICE_PER_LEVEL, PRACTICE_MIN, 1.0)
+	return (1.0 + light * 0.9 + noise * 1.2) * practice * skill_mult
