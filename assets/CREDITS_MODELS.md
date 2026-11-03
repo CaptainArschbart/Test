@@ -7,6 +7,7 @@ anderen Formate (`.blend`, `.obj`, `.stl`, `.dae`) liegen weiter lokal in `_inco
 | Ordner | Inhalt | Herkunft | Lizenz |
 |---|---|---|---|
 | `characters/quaternius_modular_men/` | 11 Männer-Charaktere (`.glb`, mit Skelett) | Quaternius, Ultimate Modular Men Pack | CC0 1.0 |
+| `animations/quaternius_ual1/` | Universal Animation Library (Teil 1), Standard 1.0, 46 Animationen (Idle, Walk, Jog, Sprint, Jump, Crouch, Sitzen, Pistole …), Godot-`.glb`. Am 2026-11-03 aus dem Godot Asset Store geladen | Quaternius | CC0 1.0 (`License.txt`) |
 | `animations/quaternius_ual2/` | Universal Animation Library 2, ohne Root Motion (`.glb`) | Quaternius | CC0 1.0 (`License.txt`) |
 | `buildings/quaternius_downtown_city/` | Downtown City MegaKit, Gratis-Version, modulare Gebäudeteile (`.gltf` + Texturen) | Quaternius | CC0 1.0 (`License.txt`) |
 | `buildings/kenney_retro_urban/` | Retro Urban Kit 2.0 (`.glb` + `Textures/`) | Kenney | CC0 1.0 (`License.txt`) |
