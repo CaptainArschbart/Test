@@ -697,3 +697,20 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Nicht getestet: Kämpfe gegen die neuen Gruppen im echten Spiel; Sektor-7-Tests nicht neu gelaufen (kein gemeinsamer Code geändert); Multiplayer (soll ignoriert werden).
 - Git: Branch `enscapez/neon-gegner`, Draft-PR gegen `main`.
 - Offen / Wichtig für die Nächsten: Navmesh meldet weiter 4 Kantenfehler (Warnung, Pfade funktionieren). Nächste Ideen: begehbare Wohnungen in den Megablöcken, mehr Ebenen, Schilder und Kabel in der Neonmeile.
+
+### 2026-11-04 · Neon City deutlich detaillierter mit den Pack-Modellen (Zwischenstand) · Claude (für EnScapeZ) · Branch `enscapez/neon-details`
+- Auftrag: Die Stadt mit den gelieferten Assets viel detaillierter bauen. Auf Wunsch von EnScapeZ mitten in der Arbeit gepusht.
+- Neu `scenes/neon_city/kit/neon_dressing.gd` (`NeonDressing`): viele gleiche Modelle als MultiMesh, ein Knoten pro Modell und 60-m-Viertel (Sichtweite, Culling). Optional Box-Kollision (auch nur Mast), Neonfarbe für Leuchtflächen.
+- Neu `assets/props/cyberpunk_sign/vertical_cyberpunk_sign.fbx` (aus `_incoming`, Lizenz unbekannt, in `CREDITS_MODELS.md` als „prüfen“ vermerkt).
+- `tools/gen_neon_city.py`, neuer Abschnitt „Details aus den Packs“ (eigener Zufall, Lage von Häusern, Wegen, Gegnern bleibt gleich). Rund 5.600 Exemplare:
+  - Fassaden: Balkone (Downtown-Pflanzkasten als Platte mit Geländer), Klimageräte, Feuertreppen (City Pack), Leuchtschilder in fünf Neonfarben quer zur Straße, Plakate, Hintertüren mit Lampe und Vordach.
+  - Erdgeschosse: Schaufenster im Metallrahmen (Downtown), in der Unterstadt Backstein mit Fenstern; Wandlampen neben Eingängen.
+  - Dächer: Treppenhäuser, große Klimageräte, Antennen, Wäschespinnen, Werbetafeln.
+  - Straßen: Ampeln mit Ausleger an jeder Kreuzung, Pfeile auf den Spuren, Gullydeckel, Abläufe, Papierfetzen, Kabel über Gassen und Straßen (Neonmeile, Unterstadt), geparkte Motorräder und Fahrräder am Bordstein.
+  - Plätze und Höfe: Poller, Pflanzkübel, Werbetafel am Mast, Fahrräder, Kisten, Sperren, Schutt.
+- Logik: Alles mit Kollision meldet seine Fläche an (Generator bricht bei Überschneidung ab), Abstand zu Gassen; Wandteile nur, wo kein Nachbarhaus davorsteht; nichts an Laternen. Pflanzkübel nicht in den Kernhöfen (sonst fehlten zwei Streifen).
+- `tools/tests/shot_neon_city.gd`: Blickwinkel `ampel`, `fassade`, `unterstadt`, `dach`.
+- Getestet (Godot 4.7.2, headless, isoliertes APPDATA): `test_neon_city` CHECKS 23 FAILS 0. Screenshots bei Tag und Nacht angesehen.
+- Nicht getestet: Bildrate mit den neuen Details, Sektor-7-Tests (kein gemeinsamer Code geändert), Multiplayer.
+- Offen: Ausrichtung der Ampelsignale und Pfeile nur grob geprüft; Bildrate messen; Kern-Bezirk (Glastürme) hat noch wenig Fassadendetail; weitere `_incoming`-Modelle (Cyberpunk-Dioramen, Voxel-Stadt) sind ganze Szenen und noch nicht verwendet.
+
