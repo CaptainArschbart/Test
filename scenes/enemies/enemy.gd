@@ -221,7 +221,7 @@ func _build() -> void:
 	_shape.position.y = 1.225
 	add_child(_shape)
 
-	model = EnemyModel.new()
+	model = EnemyCharacterModel.new()
 	model.name = "Model"
 	add_child(model)
 	model.build(profile, _rng.randi())
