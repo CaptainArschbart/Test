@@ -106,7 +106,6 @@ def group(name: str, parent: str = ".") -> str:
 # Grundflächen: nichts Festes darf sich überschneiden
 # =====================================================================================
 claims: list[tuple[float, float, float, float, str, str]] = []  # x0, x1, z0, z1, Art, Name
-spawn_spots: list[tuple[str, tuple[float, float, float], str, int]] = []
 
 
 def claim(x0: float, x1: float, z0: float, z1: float, kind: str, what: str) -> None:
@@ -190,7 +189,6 @@ PROPS = {
     "dumpster": ("res://assets/props/city_pack/Dumpster.glb", 2.2, 0.0, True, (1.3, 2.3)),
     "cone": ("res://assets/props/city_pack/Cone.glb", 0.0, 0.7, False, (0.5, 0.5)),
     "bag": ("res://assets/props/city_pack/trah bag grey.glb", 0.0, 0.6, False, (0.45, 0.45)),
-    "atm": ("res://assets/props/city_pack/ATM.glb", 0.0, 1.9, True, (0.9, 0.9)),
     "busstop": ("res://assets/props/city_pack/Bus Stop.glb", 4.2, 0.0, True, (2.8, 4.3)),
     "tree": ("res://assets/buildings/kenney_retro_urban/tree-park-large.glb", 0.0, 6.0, True, (0.8, 0.8)),
     "pine": ("res://assets/buildings/kenney_retro_urban/tree-pine-large.glb", 0.0, 7.0, True, (0.8, 0.8)),
@@ -286,8 +284,6 @@ for i, lx in enumerate(LINES):
 
 SPAWN = (9.0, 44.0)  # Gehweg der Hauptstraße x = 0, südlich vom Kern
 claim(SPAWN[0] - 0.5, SPAWN[0] + 0.5, SPAWN[1] - 0.5, SPAWN[1] + 0.5, "solid", "Spieler-Start")
-claim(9.0, 10.0, 51.5, 52.5, "solid", "Item am Start")
-spawn_spots.append(("Spot_Start", (9.5, SIDEWALK_Y, 52.0), "i_credchip", 20))
 
 # Untergrund unter allem (fängt Spalten ab) und Ränder der Blöcke auf Gehweghöhe.
 node("Base", ".", "k_ground", 0.0, 0.0, 0.0, 0.0, size=(2 * EDGE + 60, 2 * EDGE + 60), height=-0.3, color=(0.07, 0.07, 0.08, 1))
@@ -419,16 +415,16 @@ ENTRY = 1.8   # so weit reicht er in den Hof (dort endet der Fußweg)
 
 def court_core(parent: str, x0: float, x1: float, z0: float, z1: float) -> None:
     cx, cz = (x0 + x1) / 2, (z0 + z1) / 2
-    # Pflanzinsel in der Mitte, in schmalen Höfen kleiner (der Rand bleibt begehbar).
-    half = min(6.0, (x1 - x0) / 2 - ENTRY - 1.5, (z1 - z0) / 2 - 2.0)
-    if half >= 1.5:
-        ground(parent, cx - half, cx + half, cz - half, cz + half, (0.14, 0.18, 0.16, 1), height=0.45)
+    # Pflanzinsel in der Mitte; rundherum bleibt ein 3 m breiter Weg (Gasse zu Gasse, Streife).
+    half_x = min(6.0, (x1 - x0) / 2 - ENTRY - 2.2)
+    half_z = min(6.0, (z1 - z0) / 2 - 3.0)
+    if min(half_x, half_z) >= 1.2:
+        ground(parent, cx - half_x, cx + half_x, cz - half_z, cz + half_z, (0.14, 0.18, 0.16, 1), height=0.45)
         prop(parent, "tree", cx, cz, 0.0, y=0.45)
-    for k in range(6):
-        a = k * math.pi / 3
-        prop(parent, "bench", cx + math.cos(a) * 8.5, cz + math.sin(a) * 8.5, math.degrees(-a) + 90)
-    for (x, z) in ((x0 + 3, z0 + 3), (x1 - 3, z1 - 3)):
-        prop(parent, "planter", x, z, 0.0)
+        # Sitzbänke auf der Kante der Insel, Blick nach außen.
+        for (bx, bz, yaw) in ((cx, cz - half_z + 0.4, 180.0), (cx, cz + half_z - 0.4, 0.0)):
+            if half_x >= 1.6:
+                prop(parent, "bench", bx + half_x * 0.5, bz, yaw, y=0.45)
 
 
 def court_harbor(parent: str, x0: float, x1: float, z0: float, z1: float) -> None:
@@ -452,13 +448,20 @@ def court_harbor(parent: str, x0: float, x1: float, z0: float, z1: float) -> Non
 def court_blocks(parent: str, x0: float, x1: float, z0: float, z1: float) -> None:
     cx = (x0 + x1) / 2
     # Westhälfte Park, Osthälfte Parkplatz.
-    ground(parent, x0 + 2, cx - 1, z0 + 2, z1 - 2, (0.15, 0.24, 0.16, 1), height=0.2)
+    # Rund um den Park bleibt ein Weg frei (von der Westgasse zum Parkplatz).
+    px0 = x0 + ENTRY + 2.0
+    ground(parent, px0, cx - 1, z0 + 3, z1 - 3, (0.15, 0.24, 0.16, 1), height=0.2)
     for _ in range(7):
-        prop(parent, rnd.choice(["tree", "pine"]), rnd.uniform(x0 + 4, cx - 3), rnd.uniform(z0 + 4, z1 - 4), 0.0, y=0.2)
+        prop(parent, rnd.choice(["tree", "pine"]), rnd.uniform(px0 + 2, cx - 3), rnd.uniform(z0 + 5, z1 - 5), 0.0, y=0.2)
     for _ in range(4):
-        prop(parent, "bench", rnd.uniform(x0 + 4, cx - 3), rnd.uniform(z0 + 4, z1 - 4), rnd.choice([0.0, 90.0]), y=0.2)
+        prop(parent, "bench", rnd.uniform(px0 + 2, cx - 3), rnd.uniform(z0 + 5, z1 - 5), rnd.choice([0.0, 90.0]), y=0.2)
     z = z0 + 4.0
+    mz = (z0 + z1) / 2
     while z < z1 - 4.0:
+        if abs(z - mz) < 3.5:
+            # Vor der Ostgasse wird nicht geparkt: dort führt der Weg in den Hof.
+            z += 3.2
+            continue
         if rnd.random() < 0.7:
             prop(parent, rnd.choice(["car", "suv", "sports", "pickup", "van", "taxi"]), cx + 6.0, z, 90.0)
         if rnd.random() < 0.7:
@@ -517,29 +520,11 @@ def plaza(parent: str, x0: float, x1: float, z0: float, z1: float, bi: int, bj: 
          height=SKY_Y, base=SIDEWALK_Y, width=2.4, landing=2.0, accent=1)
     for _ in range(4):
         prop(parent, "bench", rnd.uniform(x0 + 3, x1 - 3), rnd.uniform(z0 + 3, z1 - 3), rnd.choice([0.0, 90.0]))
-    prop(parent, "atm", sx * (SKY_R + 4.0), sz * (SKY_R + 4.0), 0.0)
-    spawn_spots.append((f"Spot_Plaza_{bi}{bj}", (sx * (SKY_R + 6.0), SIDEWALK_Y, sz * (SKY_R + 8.0)), "i_drink", 2))
 
 
 for bi in range(4):
     for bj in range(4):
         block(bi, bj)
-
-def free_point(x0: float, x1: float, z0: float, z1: float, r: float = 0.8):
-    for _ in range(200):
-        x, z = rnd.uniform(x0 + r, x1 - r), rnd.uniform(z0 + r, z1 - r)
-        if free(x - r, x + r, z - r, z + r, strict=True):
-            claim(x - 0.3, x + 0.3, z - 0.3, z + 0.3, "solid", "Item")
-            return round(x, 2), round(z, 2)
-    raise SystemExit(f"Kein freier Platz in {x0:.0f}..{x1:.0f}, {z0:.0f}..{z1:.0f}")
-
-
-COURT_ITEMS = {"core": ("i_credchip", 15), "harbor": ("i_stim", 1), "blocks": ("i_noodles", 2),
-               "neon": ("i_drink", 2), "under": ("i_credchip", 8)}
-for k, (district, x0, x1, z0, z1) in enumerate(courts):
-    item, count = COURT_ITEMS[district]
-    x, z = free_point(x0, x1, z0, z1)
-    spawn_spots.append((f"Spot_Court{k}", (x, SIDEWALK_Y, z), item, count))
 
 # Skywalk-Ring über der Hauptkreuzung: vier Bahnen, vier Eckpodeste.
 P_SKY = group("Skywalk")
@@ -556,7 +541,6 @@ for sx in (-1.0, 1.0):
         claim(sx * SKY_R - 0.6, sx * SKY_R + 0.6, sz * SKY_R - 0.6, sz * SKY_R + 0.6, "solid", "Podeststütze")
         node(uname("Pillar"), P_SKY, "k_ground", sx * SKY_R, 0.0, sz * SKY_R, 0.0, size=(1.2, 1.2), height=SKY_Y - 0.35,
              color=(0.2, 0.21, 0.24, 1))
-spawn_spots.append(("Spot_Skywalk", (SKY_R, SKY_Y, 0.0), "i_sniper", 1))
 
 
 # =====================================================================================
@@ -564,7 +548,7 @@ spawn_spots.append(("Spot_Skywalk", (SKY_R, SKY_Y, 0.0), "i_sniper", 1))
 # =====================================================================================
 P_FURN = group("StreetProps")
 # Nur schmale Dinge an den Bordstein: der Fußweg in der Gehwegmitte bleibt frei.
-STREET_KINDS = ["bench", "trash", "trash", "hydrant", "mailbox", "planter", "atm", "powerbox"]
+STREET_KINDS = ["bench", "trash", "trash", "hydrant", "mailbox", "planter", "powerbox"]
 for lx in LINES:
     for j in range(4):
         za, zb = LINES[j] + ext(LINES[j]), LINES[j + 1] - ext(LINES[j + 1])
@@ -697,6 +681,134 @@ for bi in range(4):
             ped.link(start, mouth)
             ped.link(mouth, ped.add(inside, mz, SIDEWALK_Y, 5.0))
 
+
+# =====================================================================================
+# Wegplaner: Raster über alle festen Flächen, A* durch Höfe und Plätze
+# =====================================================================================
+CELL = 0.5
+GRID_N = int(2 * EDGE / CELL)
+
+
+def build_grid(clear: float) -> list[bytearray]:
+    """1 = begehbar mit `clear` m Abstand zu Häusern, Props, Fahrbahn und erhöhten Platten."""
+    g = [bytearray(b"\x01" * GRID_N) for _ in range(GRID_N)]
+    for (a0, a1, b0, b1, k, _) in claims:
+        if k not in ("solid", "road", "raised"):
+            continue
+        i0, i1 = max(0, int((a0 - clear + EDGE) / CELL)), min(GRID_N - 1, int((a1 + clear + EDGE) / CELL))
+        j0, j1 = max(0, int((b0 - clear + EDGE) / CELL)), min(GRID_N - 1, int((b1 + clear + EDGE) / CELL))
+        for i in range(i0, i1 + 1):
+            row = g[i]
+            for j in range(j0, j1 + 1):
+                row[j] = 0
+    return g
+
+
+GRIDS = {c: build_grid(c) for c in (0.6, 1.0)}
+
+
+def cell(x: float, z: float) -> tuple[int, int]:
+    return int((x + EDGE) / CELL), int((z + EDGE) / CELL)
+
+
+def walkable(x: float, z: float, clear: float = 0.6) -> bool:
+    i, j = cell(x, z)
+    return 0 <= i < GRID_N and 0 <= j < GRID_N and GRIDS[clear][i][j] == 1
+
+
+def sight(a: tuple[float, float], b: tuple[float, float], clear: float) -> bool:
+    n = max(1, int(math.hypot(b[0] - a[0], b[1] - a[1]) / (CELL * 0.4)))
+    return all(walkable(a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n, clear) for k in range(n + 1))
+
+
+def plan(a: tuple[float, float], b: tuple[float, float], box: tuple[float, float, float, float],
+         clear: float = 0.6) -> list[tuple[float, float]] | None:
+    """Weg von a nach b, nur innerhalb von box (x0, x1, z0, z1), geglättet zu Eckpunkten."""
+    import heapq
+    g = GRIDS[clear]
+    i0, j0 = cell(box[0], box[2])
+    i1, j1 = cell(box[1], box[3])
+    sa, sb = cell(*a), cell(*b)
+    if not (walkable(*a, clear) and walkable(*b, clear)):
+        return None
+    openq = [(0.0, sa)]
+    cost = {sa: 0.0}
+    came: dict = {}
+    while openq:
+        _, cur = heapq.heappop(openq)
+        if cur == sb:
+            break
+        ci, cj = cur
+        for di, dj, w in ((1, 0, 1.0), (-1, 0, 1.0), (0, 1, 1.0), (0, -1, 1.0),
+                          (1, 1, 1.414), (1, -1, 1.414), (-1, 1, 1.414), (-1, -1, 1.414)):
+            ni, nj = ci + di, cj + dj
+            if not (i0 <= ni <= i1 and j0 <= nj <= j1) or g[ni][nj] == 0:
+                continue
+            if di and dj and (g[ci + di][cj] == 0 or g[ci][cj + dj] == 0):
+                continue
+            nc = cost[cur] + w
+            if nc < cost.get((ni, nj), 1e18):
+                cost[(ni, nj)] = nc
+                came[(ni, nj)] = cur
+                heapq.heappush(openq, (nc + math.hypot(sb[0] - ni, sb[1] - nj), (ni, nj)))
+    if sb not in cost:
+        return None
+    cells = [sb]
+    while cells[-1] != sa:
+        cells.append(came[cells[-1]])
+    pts = [a] + [((ci + 0.5) * CELL - EDGE, (cj + 0.5) * CELL - EDGE) for (ci, cj) in reversed(cells[1:-1])] + [b]
+    # Glätten: von jedem Eckpunkt so weit wie möglich geradeaus.
+    out = [pts[0]]
+    k = 0
+    while k < len(pts) - 1:
+        m = len(pts) - 1
+        while m > k + 1 and not sight(pts[k], pts[m], clear):
+            m -= 1
+        out.append(pts[m])
+        k = m
+    return [(round(x, 2), round(z, 2)) for (x, z) in out]
+
+
+def free_spot(box: tuple[float, float, float, float], clear: float = 1.0, avoid=(), gap: float = 4.0):
+    for _ in range(400):
+        x, z = rnd.uniform(box[0] + 1, box[1] - 1), rnd.uniform(box[2] + 1, box[3] - 1)
+        if walkable(x, z, clear) and all(math.hypot(x - ax, z - az) > gap for (ax, az) in avoid):
+            return round(x, 2), round(z, 2)
+    return None
+
+
+def entry(x: float, z: float, dx: float) -> tuple[float, float]:
+    """Erster begehbarer Punkt vom Gassenende aus in den Hof hinein (Richtung dx)."""
+    for k in range(13):
+        if walkable(x + dx * k * 0.25, z):
+            return round(x + dx * k * 0.25, 2), z
+    raise SystemExit(f"Gassenende bei {x:.1f},{z:.1f} zugestellt")
+
+
+# Fußgänger: durch jeden Hof von Gasse zu Gasse, dazu ein Platz zum Stehenbleiben.
+court_walks = 0
+for bi in range(4):
+    for bj in range(4):
+        district, x0, x1, z0, z1 = courts[bi * 4 + bj]
+        mz = (z0 + z1) / 2
+        box = (x0, x1, z0, z1)
+        west, east = entry(x0 + 1.0, mz, 1.0), entry(x1 - 1.0, mz, -1.0)
+        ped.link(ped.add(x0 + 1.0, mz), ped.add(*west))
+        ped.link(ped.add(x1 - 1.0, mz), ped.add(*east))
+        route = plan(west, east, box)
+        if route:
+            ids = [ped.add(x, z) for (x, z) in route]
+            for a_, b_ in zip(ids, ids[1:]):
+                ped.link(a_, b_)
+            court_walks += 1
+        spot = free_spot(box, 0.6, avoid=[west, east])
+        if spot:
+            leg = plan(west, spot, box)
+            if leg:
+                ids = [ped.add(x, z) for (x, z) in leg[:-1]] + [ped.add(*leg[-1], SIDEWALK_Y, 6.0)]
+                for a_, b_ in zip(ids, ids[1:]):
+                    ped.link(a_, b_)
+
 JUNCTIONS = [(lx, lz) for lz in LINES for lx in LINES]
 ROADS = []
 for j in range(5):
@@ -744,9 +856,105 @@ count = 70
 """
 
 
-ENEMIES = f"""[gd_scene format=3]
+# =====================================================================================
+# Gegner: Gangs in Unterstadt und Hafen, Türsteher in der Neonmeile, Sicherheitsdienst im Kern.
+# Keine Scharfschützen. Streifen bleiben in Höfen und auf Plätzen, nie auf einer Fahrbahn: jede
+# Teilstrecke ist eine gerade, freie Linie aus dem Wegplaner.
+# =====================================================================================
+routes: list[tuple[str, list[tuple[float, float, float]]]] = []  # Name, Punkte (x, z, Wartezeit)
+enemies: list[dict] = []
+
+
+def patrol(name: str, box: tuple[float, float, float, float], stops: int) -> str | None:
+    pts: list[tuple[float, float]] = []
+    for _ in range(stops):
+        spot = free_spot(box, 1.0, avoid=pts, gap=6.0)
+        if spot:
+            pts.append(spot)
+    if len(pts) < 2:
+        return None
+    marks: list[tuple[float, float, float]] = []
+    for a, b in zip(pts, pts[1:] + pts[:1]):
+        leg = plan(a, b, box, 1.0)
+        if leg is None:
+            return None
+        marks.append((a[0], a[1], 3.0))
+        marks += [(x, z, 0.0) for (x, z) in leg[1:-1]]
+    routes.append((name, marks))
+    return name
+
+
+def enemy(name: str, profile: str, x: float, z: float, yaw: float = 0.0, route: str | None = None, start: int = 0) -> None:
+    enemies.append(dict(name=name, profile=profile, x=x, z=z, yaw=yaw, route=route, start=start,
+                        seed=rnd.randint(1, 99999)))
+
+
+def route_start(route: str, k: int) -> tuple[float, float, int]:
+    marks = dict(routes)[route]
+    stops = [i for i, m in enumerate(marks) if m[2] > 0.0]
+    i = stops[k % len(stops)]
+    return marks[i][0], marks[i][1], i
+
+
+def plaza_box(bi: int, bj: int) -> tuple[float, float, float, float]:
+    x0, x1 = LINES[bi] + ext(LINES[bi]), LINES[bi + 1] - ext(LINES[bi + 1])
+    z0, z1 = LINES[bj] + ext(LINES[bj]), LINES[bj + 1] - ext(LINES[bj + 1])
+    cx = x1 if bi == 1 else x0
+    cz = z1 if bj == 1 else z0
+    return (min(cx, cx - 26 if bi == 1 else cx + 26), max(cx, cx - 26 if bi == 1 else cx + 26),
+            min(cz, cz - 26 if bj == 1 else cz + 26), max(cz, cz - 26 if bj == 1 else cz + 26))
+
+
+GANG = {"under": ["p_gm", "p_gp"], "harbor": ["p_gp", "p_gm"]}
+for bi in range(4):
+    for bj in range(4):
+        district, x0, x1, z0, z1 = courts[bi * 4 + bj]
+        box = (x0, x1, z0, z1)
+        tag = f"{bi}{bj}"
+        if district in ("under", "harbor"):
+            r = patrol(f"R_Gang{tag}", box, 4)
+            if r:
+                for k, prof in enumerate(GANG[district]):
+                    x, z, i = route_start(r, k * 2)
+                    enemy(f"Gang{tag}_{k}", prof, x, z, route=r, start=i)
+            if district == "under" or bi % 2 == 0:
+                spot = free_spot(box, 1.0)
+                if spot:
+                    enemy(f"Gang{tag}_Wache", "p_smg", *spot, yaw=round(rnd.uniform(0, 360)))
+        elif district == "core":
+            r = patrol(f"R_Kern{tag}", box, 4)
+            if r:
+                for k in range(2):
+                    x, z, i = route_start(r, k * 2)
+                    enemy(f"Kern{tag}_{k}", "p_sec", x, z, route=r, start=i)
+        elif district == "neon":
+            # Türsteher an beiden Gassen neben dem freien Weg, Blick zur Straße.
+            mz = (z0 + z1) / 2
+            bx0, bx1 = LINES[bi] + ext(LINES[bi]), LINES[bi + 1] - ext(LINES[bi + 1])
+            for side, x, yaw in (("W", bx0 + 1.5, 90.0), ("E", bx1 - 1.5, -90.0)):
+                z = mz + 2.0
+                if not free(x - 0.35, x + 0.35, z - 0.35, z + 0.35):
+                    raise SystemExit(f"Türsteher {tag}{side} steht im Weg")
+                claim(x - 0.35, x + 0.35, z - 0.35, z + 0.35, "solid", f"Türsteher {tag}{side}")
+                enemy(f"Tuer{tag}_{side}", "p_sec", round(x, 2), round(z, 2), yaw=yaw)
+# Plätze an der Hauptkreuzung: je ein Sicherheitsmann.
+for (bi, bj) in ((1, 1), (2, 1), (1, 2), (2, 2)):
+    r = patrol(f"R_Platz{bi}{bj}", plaza_box(bi, bj), 3)
+    if r:
+        x, z, i = route_start(r, 0)
+        enemy(f"Platz{bi}{bj}", "p_sec", x, z, route=r, start=i)
+
+
+def enemies_scene() -> str:
+    out = [f"""[gd_scene format=3]
 
 [ext_resource type="Script" path="res://scenes/enemies/enemy_director.gd" id="1_director"]
+[ext_resource type="Script" path="res://scenes/enemies/patrol_route.gd" id="2_route"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/enemy.tscn" id="3_enemy"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/gangster_melee.tres" id="p_gm"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/gangster_pistol.tres" id="p_gp"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/gangster_smg.tres" id="p_smg"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/security.tres" id="p_sec"]
 
 [node name="NeonCityEnemies" type="Node3D"]
 
@@ -754,7 +962,25 @@ ENEMIES = f"""[gd_scene format=3]
 script = ExtResource("1_director")
 source_root = NodePath("../..")
 bake_area = AABB({-EDGE - 2}, -3, {-EDGE - 2}, {2 * EDGE + 4}, 45, {2 * EDGE + 4})
-"""
+
+[node name="Routes" type="Node3D" parent="."]"""]
+    for name, marks in routes:
+        out.append(f'[node name="{name}" type="Node3D" parent="Routes"]\nscript = ExtResource("2_route")\n'
+                   f'loop = true\nwait_time = 3.0')
+        for k, (x, z, wait) in enumerate(marks):
+            line = f'[node name="P{k + 1}" type="Marker3D" parent="Routes/{name}"]\ntransform = {xform(x, SIDEWALK_Y, z)}'
+            if wait == 0.0:
+                line += "\nmetadata/wait = 0.0"
+            out.append(line)
+    out.append('[node name="Enemies" type="Node3D" parent="."]')
+    for e in enemies:
+        line = (f'[node name="{e["name"]}" parent="Enemies" instance=ExtResource("3_enemy")]\n'
+                f'transform = {xform(e["x"], SIDEWALK_Y, e["z"], e["yaw"])}\nprofile = ExtResource("{e["profile"]}")\n'
+                f'variant_seed = {e["seed"]}')
+        if e["route"]:
+            line += f'\nroute = NodePath("../../Routes/{e["route"]}")\nstart_point = {e["start"]}'
+        out.append(line)
+    return "\n\n".join(out) + "\n"
 
 
 # =====================================================================================
@@ -772,12 +998,6 @@ HEAD = """[gd_scene format=3]
 [ext_resource type="Script" path="res://scenes/neon_city/kit/neon_skywalk.gd" id="k_skywalk"]
 [ext_resource type="Script" path="res://scenes/neon_city/kit/neon_stairs.gd" id="k_stairs"]
 [ext_resource type="Script" path="res://scenes/neon_city/kit/neon_stall.gd" id="k_stall"]
-[ext_resource type="PackedScene" path="res://scenes/items/pickup.tscn" id="i_pickup"]
-[ext_resource type="Resource" path="res://scenes/items/data/credchip.tres" id="i_credchip"]
-[ext_resource type="Resource" path="res://scenes/items/data/energy_drink.tres" id="i_drink"]
-[ext_resource type="Resource" path="res://scenes/items/data/noodles.tres" id="i_noodles"]
-[ext_resource type="Resource" path="res://scenes/items/data/stim_pack.tres" id="i_stim"]
-[ext_resource type="Resource" path="res://scenes/items/data/sniper.tres" id="i_sniper"]
 [ext_resource type="PackedScene" path="res://scenes/neon_city/neon_city_enemies.tscn" id="e_enemies"]
 [ext_resource type="PackedScene" path="res://scenes/neon_city/neon_city_life.tscn" id="l_life"]
 
@@ -870,14 +1090,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, SPAWN_X, 0.4, SPAWN_Z)
 
 
 def items() -> str:
-    out = ['[node name="Pickups" type="Node3D" parent="."]', '[node name="SpawnPoints" type="Node3D" parent="Pickups"]']
-    for name, (x, y, z), item, count in spawn_spots:
-        out.append(f'[node name="{name}" type="Marker3D" parent="Pickups/SpawnPoints" groups=["item_spawn"]]\n'
-                   f"transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, {x}, {y}, {z})")
-        out.append(f'[node name="Pickup" parent="Pickups/SpawnPoints/{name}" instance=ExtResource("i_pickup")]\n'
-                   f"transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)\nitem = ExtResource(\"{item}\")\ncount = {count}")
-    out.append('[node name="NeonCityEnemies" parent="." instance=ExtResource("e_enemies")]')
-    out.append('[node name="NeonCityLife" parent="." instance=ExtResource("l_life")]')
+    # Keine Items auf dem Boden: Beute gibt es nur von besiegten Gegnern.
+    out = ['[node name="NeonCityEnemies" parent="." instance=ExtResource("e_enemies")]',
+           '[node name="NeonCityLife" parent="." instance=ExtResource("l_life")]']
     return "\n\n".join(out)
 
 
@@ -898,10 +1113,11 @@ def main() -> None:
     with open(LIFE_OUT, "w", encoding="utf-8", newline="\n") as f:
         f.write(life_scene())
     with open(ENEMIES_OUT, "w", encoding="utf-8", newline="\n") as f:
-        f.write(ENEMIES)
+        f.write(enemies_scene())
     towers = sum(1 for n in nodes if 'ExtResource("k_tower")' in n)
     props = sum(1 for n in nodes if 'ExtResource("k_prop")' in n)
     print(f"geschrieben: {OUT}: {len(nodes)} Knoten, {towers} Häuser, {props} Props, {len(shop_places)} Läden")
+    print(f"geschrieben: {ENEMIES_OUT}: {len(enemies)} Gegner, {len(routes)} Streifen; {court_walks} Hofwege")
     print(f"geschrieben: {LIFE_OUT}: {len(ped.nodes)} Fußgänger-Knoten, {len(ped.edges)} Wege, {len(ROADS)} Straßen")
 
 
