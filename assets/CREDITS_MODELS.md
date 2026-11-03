@@ -18,6 +18,7 @@ anderen Formate (`.blend`, `.obj`, `.stl`, `.dae`) liegen weiter lokal in `_inco
 | `items/food/quaternius_food/` | Essen und Getränke (`.fbx`) | Quaternius (keine Lizenzdatei dabei) | CC0 1.0, wie alle Quaternius-Packs |
 | `items/weapons/quaternius_guns/` | 41 Schusswaffen (`.fbx`) | Quaternius | CC0 1.0 (`License.txt`) |
 | `items/misc/radio.fbx` | Radio | Quaternius über Poly Pizza | CC0 1.0 |
+| `props/cyberpunk_sign/` | Senkrechtes Cyberpunk-Leuchtschild (`.fbx`, aus `_incoming/…/Vertical+Cyberpunk+Sign`), von EnScapeZ geliefert | Herkunft unbekannt (Blender-Export) | **prüfen** |
 | `items/glasses/` | Brillen (`.glb`) | Poly Pizza, „Glasses Pack“ | **je Modell prüfen** (Poly Pizza: CC0 oder CC-BY) |
 | `sky/kenney_skyboxes/` | 5 Skybox-Bilder | Kenney, Skyboxes 1.0 | CC0 1.0 (`License.txt`) |
 
