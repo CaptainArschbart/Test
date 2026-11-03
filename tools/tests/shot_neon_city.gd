@@ -11,7 +11,7 @@ const VIEWS := {
 	"start": [Vector3(9.0, 1.7, 44.0), Vector3(0.0, 6.0, 0.0)],
 	"skywalk": [Vector3(19.0, 8.7, 6.0), Vector3(-10.0, 9.0, -19.0)],
 	"overview": [Vector3(40.0, 190.0, 150.0), Vector3(0.0, 0.0, -10.0)],
-	"neonmeile": [Vector3(80.5, 1.7, -14.0), Vector3(80.5, 4.0, -60.0)],
+	"neonmeile": [Vector3(78.6, 1.7, -14.0), Vector3(80.0, 4.0, -60.0)],
 	"harbor": [Vector3(-36.0, 1.7, -72.0), Vector3(-36.0, 3.0, -120.0)],
 	"under": [Vector3(-80.0, 1.7, 36.0), Vector3(-110.0, 3.0, 36.0)],
 	"blocks": [Vector3(40.0, 1.7, 65.5), Vector3(110.0, 14.0, 80.0)],
