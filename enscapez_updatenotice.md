@@ -598,3 +598,18 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
   - Nach dem Merge von PR 60 in den Branch und `--import`: `test_apartments` 55/0, `test_npc_robbery` 39/0. Ohne `--import` findet Godot die neue Klasse `PickpocketBar` nicht.
 - Git: Branch `enscapez/wohnungen-sektor7` gepusht, PR offen. Der Merge auf `main` steht noch aus und braucht die Freigabe von EnScapeZ.
 - Offen: PR mergen, Schlüssel als Taschendiebstahl-Beute.
+
+### 2026-11-03 · Heruntergeladene 3D-Assets einsortiert · Claude (für EnScapeZ) · Branch `enscapez/assets-import`
+- Auftrag: Die Downloads aus `assets/_incoming/` (Modelle, Animationen, Himmel) ins Godot-Projekt aufnehmen.
+- Neu (nur Godot-taugliche Formate `.glb`/`.gltf`/`.fbx`/`.png`, Herkunft und Lizenz in `assets/CREDITS_MODELS.md`):
+  - `assets/characters/quaternius_modular_men/` (11 Figuren mit Skelett), `assets/animations/quaternius_ual2/UAL2_Standard.glb` (43 Animationen, ohne Root Motion)
+  - `assets/buildings/quaternius_downtown_city/` (modulare Gebäudeteile, nur die 29 benutzten Texturen), `assets/buildings/kenney_retro_urban/`
+  - `assets/props/kenney_furniture/`, `props/quaternius_furniture/`, `props/quaternius_vehicles/`, `props/city_pack/`
+  - `assets/items/food/quaternius_food/`, `items/weapons/quaternius_guns/` (41 Waffen), `items/glasses/`, `items/misc/radio.fbx`
+  - `assets/sky/kenney_skyboxes/` (5 Bilder)
+  - `tools/tests/test_assets_import.gd`: lädt alle 706 Modelle, prüft Meshes, Skelette, Animationen und Skyboxen.
+- Geändert: `.gitignore` schließt `/assets/_incoming/` aus, dort liegt zusätzlich eine `.gdignore`. Die Rohdownloads bleiben nur lokal.
+- Entscheidungen: Doppelte Formate (`.blend`, `.obj`, `.stl`, `.dae`), die UAL2-Variante mit Root Motion, die Unreal-Normalmaps und HDRs des City-Kits sind nicht übernommen. Liegen gelassen, weil Herkunft und Lizenz unklar sind: `cyber.*` (ein Modell in fünf Formaten), `Voxel Sity.obj`, `Vertical Cyberpunk Sign.fbx`, `abc.rar`. Dateinamen in den Packs nicht umbenannt, weil `.gltf`-Dateien ihre `.bin` und Texturen über den Namen finden.
+- Getestet (Godot 4.7.2 stable, headless): `--import` ohne Fehler, `test_assets_import` CHECKS 15 FAILS 0, `test_player_move` CHECKS 7 FAILS 0.
+- Nicht getestet: Aussehen und Maßstab im Spiel, noch nichts davon ist in einer Szene verbaut.
+- Offen / Wichtig für die Nächsten: UAL2 (Gratis-Version) hat **keine** Grundbewegungen (Idle, Gehen, Rennen, Springen). Für den Spieler braucht es zusätzlich Quaternius UAL1 oder Mixamo-Animationen. Die Poly-Pizza-Packs `city_pack` und `glasses` vor einer Veröffentlichung je Modell auf CC-BY prüfen.
