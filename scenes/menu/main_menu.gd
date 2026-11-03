@@ -18,6 +18,7 @@ const OptionsMenu := preload("res://scenes/options/options_menu.gd")
 ## Map-Auswahl nach "Start": Anzeigename -> Szene.
 @export var maps: Dictionary[String, String] = {
 	"SEKTOR 7 // SLUM": "res://scenes/slum/slum.tscn",
+	"NEON CITY // KERN": "res://scenes/neon_city/neon_city.tscn",
 	"NEON DISTRICT // TESTMAP": "res://scenes/testmap/testmap.tscn",
 }
 

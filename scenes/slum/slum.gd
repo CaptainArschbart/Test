@@ -11,6 +11,9 @@ extends Node3D
 @export var rain_amount := 2600
 ## Sichtbarer Regen-Würfel um die Kamera in Metern.
 @export var rain_extent := Vector3(26, 14, 26)
+## Waffenläden und Tankstellen dieser Map (CityContent.places). Leer = die Plätze von Sektor 7.
+## Die Neon City nutzt dieses Skript mit eigenen Plätzen.
+@export var shop_places: Array[Dictionary] = []
 
 var _rain: GPUParticles3D
 
@@ -21,6 +24,8 @@ func _ready() -> void:
 	add_child(atmosphere)
 	var content := CityContent.new()
 	content.name = "CityContent"
+	if not shop_places.is_empty():
+		content.places = shop_places
 	add_child(content)
 	if rain:
 		_rain = _create_rain()
