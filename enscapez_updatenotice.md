@@ -955,3 +955,23 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Tests, die nachladen, geben dem Spieler jetzt Munition (`test_weapons_m3`, `test_weapons_smg_grenade`, `test_skills`).
 - Getestet (headless): `test_ammo` 22/0, `test_weapons_m3` 89/0, `test_skills` 72/0, `test_weapons_smg_grenade` 47/0, `test_gun_shops` 37/0, `test_neon_city` 30/0, `test_content_update` 47/0, `test_shop` 43/0, `test_enemy_xp` 29/0.
 - Offen: Inventar-Icons der vier Munitionsarten fehlen (brauchen einen Fensterlauf mit `gen_item_icons.gd`), bis dahin meldet `test_item_icons` einen Fehler.
+
+### 2026-11-04 · Schedule 1, M3 „Systeme“, Teil 9: Spielerfigur in der Außenansicht (P5-7) · Claude (für EnScapeZ) · Branch `enscapez/m3-rest`
+- Neu: `scenes/player/player_figure.gd` (`PlayerFigure`). Fremde Spieler im Multiplayer sind jetzt eine Modular-Men-Figur (Aussehen nach Peer-Nummer: Punk, Hoodie, Swat, Casual, Business, Worker) statt der Grundformen-Figur.
+  - `PlayerBody.use_figure()` legt sie an, `PlayerAvatarSync` ruft das für fremde Figuren auf.
+  - Die Grundformen laufen unsichtbar weiter, damit die Schritte gleich bleiben. Die eigene Ego-Figur bleibt, wie sie war.
+- Beine aus UAL1: Idle, Walk (bis 2,2 m/s), Jog_Fwd (Gehtempo des Spielers, 5 m/s), Sprint (ab 6,5 m/s), Crouch_Idle/Crouch_Fwd, Jump und Jump_Land. Die Abspielgeschwindigkeit folgt dem Tempo.
+  - Ohne Zielen dreht sich die Figur in die Laufrichtung.
+  - Beim Zielen schaut sie nach vorn und läuft seitlich bzw. rückwärts mit MM Run_Left/Run_Right/Run_Back.
+- Oberkörper über `AnimOverlay`: Zielen mit Pistol_Aim_* nach Blickhöhe, Pistol_Shoot je Schuss, Pistol_Reload beim Nachladen. Die Waffe liegt in der rechten Hand wie bei den Gegnern, mit Mündungsfeuer.
+- Klinge und Granate: Sword_Slash bzw. Punch_Right. Tod: Ragdoll (nah) bzw. Death01; Wiederbeleben stellt die Figur sofort hin.
+- Modell und Animationen laden im Hintergrund (`ResourceLoader.load_threaded_request`), bis dahin bleibt die alte Figur sichtbar.
+  - Synchrones Laden beim Beitritt hat den Host so lange aufgehalten, dass `test_mp_sync` (Testmap) zeitabhängig rot wurde: „Stapel Spot_Plaza3 liegt noch da“. Mit Hintergrundladen dreimal hintereinander grün.
+- Neuer Test `tools/tests/test_player_figure.gd`, 18 Prüfungen: Figur statt Grundformen; Stehen, Gehen, Joggen, Sprinten, Ducken, Sprung, Landung; Drehung in Laufrichtung; Waffe in der Hand; Zielen, seitlich und rückwärts zielend laufen; Schuss, Nachladen; Tod und Wiederbeleben.
+- Getestet (headless), alle grün:
+  - `test_player_figure` 18, `test_ragdoll` 61, `test_civilian_life` 21, `test_ammo` 22, `test_weapons_m3` 89, `test_weapons_smg_grenade` 47, `test_player_melee` 42, `test_player_move` 7, `test_skills` 72.
+  - `test_enemy_xp` 29, `test_sector7_enemies` 15, `test_sector7_city` 44, `test_npc_robbery` 47, `test_neon_city` 30, `test_gun_shops` 37, `test_shop` 43, `test_apartments` 61.
+  - `test_consumables` 45, `test_money` 25, `test_gas_stations` 59, `test_content_update` 47, `test_assets_import` 15, `test_audio` 18.
+- Multiplayer: `test_mp_sync` slum 9/0 und 10/0, testmap 17/0 und 19/0 (dreimal); `test_bank_net` 8/0 und 8/0; `test_mp_world` Host 12/1 („Gegner ist tot“, wie auf `main`).
+- `test_shop_net` ist auch auf `main` rot (in eigener Arbeitskopie geprüft): Host 8/3, Client bricht mit „previously freed instance“ ab. Nicht von hier.
+- Nicht im Bild angesehen (kein Fenster): Spielerfigur, Fußgänger beim Sitzen, Telefonieren und Tragen, Gegner beim Zielen. Inventar-Icons der Munition fehlen noch.

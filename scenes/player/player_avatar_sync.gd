@@ -158,6 +158,8 @@ func _setup_puppet() -> void:
 	if _body != null:
 		_body.first_person = false
 		_body.external_drive = true
+		# Außenansicht als Modular-Men-Figur (Schedule 1, P5-7), Aussehen nach Spieler.
+		_body.use_figure(_player.get_multiplayer_authority())
 		_body.stepped.connect(_on_step)
 		_apply_held()
 	_shot_audio = AudioStreamPlayer3D.new()

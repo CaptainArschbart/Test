@@ -23,6 +23,9 @@ extends Node3D
 ## In der Luft werden die Knie angezogen, beim Landen federn sie kurz ein.
 ## Ohne Player darüber bleibt die Grundhaltung.
 ##
+## Außenansicht (Schedule 1, P5-7): Fremde Figuren zeigt eine Modular-Men-Figur mit UAL-Animationen
+## (PlayerFigure, use_figure); die Grundformen hier laufen unsichtbar weiter (Schritte).
+##
 ## Fremde Figur (external_drive): PlayerAvatarSync setzt die Zustände (Blick, Hocken, Rutschen,
 ## Klettern, Waffe, Zielen, Nachladen, Tod) und ruft animate_remote() auf. Das legt Hocken, Rutschen,
 ## Klettern und Waffenhaltung über den Laufzyklus, das Becken dreht in die Laufrichtung, Kopf und
@@ -102,6 +105,8 @@ var dead := false:
 		if value == dead:
 			return
 		dead = value
+		if _figure != null:
+			_figure.set_dead(dead)
 		if dead:
 			_play_death()
 		else:
@@ -145,6 +150,11 @@ var _flash_light: Light3D
 var _flash_left := 0.0
 var _death_tween: Tween
 var _rest_transform := Transform3D()
+## Außenansicht mit Modular-Men-Figur (nur fremde Figuren) und das zuletzt gehaltene Item.
+var _figure: PlayerFigure
+var _held_item: ItemData
+## Peer, für den die Figur im Hintergrund lädt (-1 = keine).
+var _figure_peer := -1
 
 
 func _ready() -> void:
@@ -236,7 +246,47 @@ func animate(delta: float, speed: float, on_floor: bool, sprinting := false) -> 
 
 ## Fremde Figur. `velocity` in Weltkoordinaten (m/s): das Becken dreht in die Laufrichtung
 ## (seitwärts bis 50°), rückwärts läuft der Zyklus rückwärts. Meldet Schritte über `stepped`.
+## Fremde Figur als Modular-Men-Figur zeigen (Außenansicht, P5-7). `peer` wählt das Aussehen.
+## Modell und Animationen laden im Hintergrund; bis dahin bleibt die Grundformen-Figur sichtbar.
+func use_figure(peer: int) -> void:
+	if _figure != null:
+		return
+	_figure_peer = peer
+	PlayerFigure.request_resources(peer)
+	_try_figure()
+
+
+func _try_figure() -> void:
+	if _figure != null or _figure_peer < 0 or not PlayerFigure.resources_ready(_figure_peer):
+		return
+	var peer := _figure_peer
+	_figure_peer = -1
+	_figure = PlayerFigure.new()
+	_figure.name = "Figure"
+	add_child(_figure)
+	_figure.build_player(peer)
+	if _hips != null:
+		_hips.visible = false
+	set_held_item(_held_item)
+
+
+func get_figure() -> PlayerFigure:
+	return _figure
+
+
 func animate_remote(delta: float, velocity: Vector3, on_floor: bool) -> void:
+	if _figure == null and _figure_peer >= 0:
+		_try_figure()
+	if _figure != null:
+		_figure.velocity = velocity
+		_figure.on_floor = on_floor
+		_figure.crouch = crouch
+		_figure.sliding = sliding
+		_figure.climb = climb
+		_figure.look_pitch = look_pitch
+		_figure.aim = aim
+		_figure.reload = reload
+		_figure.drive(delta)
 	_recoil = move_toward(_recoil, 0.0, delta * 7.0)
 	_action = move_toward(_action, 0.0, delta * 2.2)
 	if _flash_left > 0.0:
@@ -293,6 +343,14 @@ func get_gait() -> float:
 ## Zeigt ein Item in der rechten Hand (Schusswaffe, Klinge, Granate) und wählt die Haltung.
 ## null oder andere Items = leere Hände.
 func set_held_item(item: ItemData) -> void:
+	_held_item = item
+	if _figure != null:
+		var mesh: Node3D = null
+		if item is MeleeData:
+			mesh = _held_mesh(item.color, true)
+		elif item is GrenadeData:
+			mesh = _held_mesh(item.color, false)
+		_figure.set_held(item, mesh)
 	if _weapon_view != null:
 		_weapon_view.queue_free()
 		_weapon_view = null
@@ -334,6 +392,8 @@ func set_held_item(item: ItemData) -> void:
 
 ## Schuss: Rückstoß und kurzes Mündungsfeuer.
 func trigger_fire() -> void:
+	if _figure != null:
+		_figure.trigger_fire()
 	_recoil = 1.0
 	_flash_left = 0.06
 	_set_flash(true)
@@ -341,6 +401,8 @@ func trigger_fire() -> void:
 
 ## Schlag mit der Klinge oder Granatwurf.
 func trigger_action() -> void:
+	if _figure != null:
+		_figure.trigger_action()
 	_action = 1.0
 
 
