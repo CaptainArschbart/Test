@@ -227,10 +227,18 @@ func _refresh_info(index: int) -> void:
 	var item := inventory.get_item(index) if index >= 0 else null
 	if item == null:
 		info_name.text = "> INVENTAR"
-		info_description.text = "Ziehen = verschieben  //  Rechtsklick = Hotbar ↔ Rucksack  //  aus dem Fenster ziehen = fallen lassen"
+		info_description.text = "Ziehen = verschieben  //  Rechtsklick = Hotbar ↔ Rucksack  //  aus dem Fenster ziehen = fallen lassen" \
+			+ "  //  Waffen-Traglast %d/%d" % [inventory.weapon_load(), Inventory.WEAPON_CAPACITY]
 		return
 	info_name.text = "> " + item.display_name.to_upper()
 	info_description.text = item.description
+	# Schusswaffen (P4-4): Munitionsart, Vorrat und Platzbedarf.
+	var weapon := item as WeaponData
+	if weapon != null:
+		var extra := "Platzbedarf %d  //  Traglast %d/%d" % [weapon.carry_size(), inventory.weapon_load(), Inventory.WEAPON_CAPACITY]
+		if weapon.ammo != null:
+			extra = "Munition: %s (%d)  //  " % [weapon.ammo.display_name, inventory.count_item(weapon.ammo)] + extra
+		info_description.text += "\n" + extra
 
 
 func _flash_item_name() -> void:

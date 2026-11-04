@@ -108,6 +108,7 @@ func _points_and_requirements() -> void:
 func _combat_effects() -> void:
 	var inventory: Node = _player.get("inventory")
 	inventory.call("add_item", load(PISTOL), 1)
+	inventory.call("add_item", load(PISTOL).get("ammo"), 50)
 	inventory.call("select", 0)
 	await _frames(4)
 	var holder: Node = _player.get("weapon_holder")

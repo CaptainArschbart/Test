@@ -229,6 +229,9 @@ func _give(id: String) -> Resource:
 	for i in 9:
 		inventory.call("_clear", i)
 	inventory.call("add_item", item, 1)
+	# Munition für das Nachladen (P4-4).
+	if item.get("ammo") != null:
+		inventory.call("add_item", item.get("ammo"), 200)
 	inventory.call("select", 1)
 	inventory.call("select", 0)
 	return item

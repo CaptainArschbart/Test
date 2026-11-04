@@ -933,3 +933,25 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - `test_weapons_m3` erweitert (89 Prüfungen): Gegner zielt im Laufen, Ebene dreht den Arm, Nachladen und Schuss spielen ihre Animation, beim Tod aus.
 - Getestet (headless): `test_civilian_life` 21/0, `test_weapons_m3` 89/0, `test_ragdoll` 61/0, `test_npc_robbery` 47/0, `test_sector7_city` 44/0, `test_neon_city` 30/0, `test_apartments` 61/0, `test_shop` 43/0, `test_enemy_xp` 29/0, `test_sector7_enemies` 15/0; `test_mp_sync` slum 9/0 und 10/0, testmap 17/0 und 19/0.
 - Ohne Fenster nachgeprüft: Zielen, Laufen und Nachladen der Gegner als CPU-gerechnete Haut mit Waffe.
+
+### 2026-11-04 · Schedule 1, M3 „Systeme“, Teil 8: Munitionsarten und Traglast (P4-4) · Claude (für EnScapeZ) · Branch `enscapez/m3-rest`
+- Vier Munitionsarten als stapelbare Items (`scenes/items/data/ammo_*.tres`, Modell „ammo“: Schachtel mit Neonstreifen und Patronen):
+  - Pistolenmunition (Pistole, Revolver, schwere Pistole, SMG, Kompakt-MP)
+  - Gewehrmunition (M4, AK, Bullpup)
+  - Schrotpatronen (Pumpgun, abgesägte)
+  - Präzisionsmunition (Scharfschützen-, Präzisionsgewehr)
+- `WeaponData.ammo` verweist auf die Sorte. Nachladen nimmt nur, was im Inventar ist; Einzelnachladen hört bei 0 auf.
+  - Ohne Munition klickt es und die Anzeige sagt „KEINE MUNITION“. Sonst zeigt sie Magazin und Vorrat, z. B. „12 / 12 · 23“.
+  - Waffen ohne `ammo` bleiben unbegrenzt.
+- Traglast (Platzbedarf je Waffenklasse): Pistole 1, MP 2, Schrot 3, Gewehr 3, Präzision 4, zusammen höchstens 10 (`Inventory.WEAPON_CAPACITY`).
+  - Was nicht passt, nimmt das Inventar nicht an; Meldung „Zu viele Waffen (Traglast x/10)“ beim Aufheben und Kaufen.
+  - Im Inventar zeigt die Infozeile Munition, Vorrat, Platzbedarf und Traglast.
+- Waffenladen:
+  - Zur gekauften Waffe gibt es ein Ersatzmagazin.
+  - Vorn auf der Theke liegen vier Munitionspackungen (24 / 30 / 12 / 10 Stück).
+  - Am Handelspunkt lässt sich die gewählte Munition nachkaufen. Der alte Punkt „Magazin füllen“ war nie erreichbar: Mit gewählter Waffe kam immer zuerst das Ankaufangebot.
+- Gegner lassen zu 75 % Munition ihrer Waffe fallen (halbes bis volles Magazin), auch Gegner ohne eigene Waffe im Profil (nach style).
+- Neuer Test `tools/tests/test_ammo.gd`, 22 Prüfungen: Sorte je Waffe, Nachladen mit und ohne Vorrat, Teilmagazin, Einzelnachladen, Traglast und Meldung, Ersatzmagazin, Packung, Nachkauf, Beute.
+- Tests, die nachladen, geben dem Spieler jetzt Munition (`test_weapons_m3`, `test_weapons_smg_grenade`, `test_skills`).
+- Getestet (headless): `test_ammo` 22/0, `test_weapons_m3` 89/0, `test_skills` 72/0, `test_weapons_smg_grenade` 47/0, `test_gun_shops` 37/0, `test_neon_city` 30/0, `test_content_update` 47/0, `test_shop` 43/0, `test_enemy_xp` 29/0.
+- Offen: Inventar-Icons der vier Munitionsarten fehlen (brauchen einen Fensterlauf mit `gen_item_icons.gd`), bis dahin meldet `test_item_icons` einen Fehler.

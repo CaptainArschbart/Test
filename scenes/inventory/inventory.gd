@@ -19,6 +19,9 @@ signal bank_changed(balance: int, delta: int)
 signal transfer_received(amount: int, from_name: String)
 
 const HOTBAR_SIZE := 9
+## Traglast für Schusswaffen (Schedule 1, P4-4): Pistole 1, MP 2, Schrot und Gewehr 3, Präzision 4
+## (WeaponData.carry_size). Was nicht mehr passt, nimmt das Inventar nicht an.
+const WEAPON_CAPACITY := 10
 ## Obergrenze für das Geld.
 const MAX_MONEY := 999999
 
@@ -87,13 +90,65 @@ func add_item(item: ItemData, amount := 1, notify := true) -> int:
 			item_added.emit(item, added)
 		return amount - added
 	var all := range(get_size())
+	# Waffen nur, solange die Traglast reicht; der Rest bleibt übrig.
+	var refused := 0
+	if item is WeaponData:
+		var fits := maxi((WEAPON_CAPACITY - weapon_load()) / maxi((item as WeaponData).carry_size(), 1), 0)
+		refused = maxi(amount - fits, 0)
+		amount -= refused
 	var left := _merge_into(item, amount, all)
 	left = _fill_empty(item, left, all)
 	if left != amount:
 		changed.emit()
 		if notify:
 			item_added.emit(item, amount - left)
-	return left
+	return left + refused
+
+
+## Belegte Traglast aller Schusswaffen im Inventar.
+func weapon_load() -> int:
+	var total := 0
+	for i: int in _items.size():
+		if _items[i] is WeaponData:
+			total += (_items[i] as WeaponData).carry_size() * _counts[i]
+	return total
+
+
+## Wie viele Stück von `item` im ganzen Inventar liegen (z. B. Munition).
+func count_item(item: ItemData) -> int:
+	if item == null:
+		return 0
+	var total := 0
+	for i: int in _items.size():
+		if item.is_same(_items[i]):
+			total += _counts[i]
+	return total
+
+
+## Nimmt bis zu `amount` Stück von `item` aus beliebigen Slots (Rucksack zuerst). Gibt zurück, wie viele.
+func remove_item(item: ItemData, amount: int) -> int:
+	if item == null or amount <= 0:
+		return 0
+	var taken := 0
+	for i: int in range(_items.size() - 1, -1, -1):
+		if taken >= amount:
+			break
+		if item.is_same(_items[i]):
+			var n := mini(amount - taken, _counts[i])
+			_counts[i] -= n
+			taken += n
+			if _counts[i] <= 0:
+				_clear(i)
+	if taken > 0:
+		changed.emit()
+	return taken
+
+
+## Meldung, wenn `item` nicht mehr passt: Traglast für Waffen oder volles Inventar.
+func full_message(item: ItemData) -> String:
+	if item is WeaponData and weapon_load() + (item as WeaponData).carry_size() > WEAPON_CAPACITY:
+		return "Zu viele Waffen (Traglast %d/%d)" % [weapon_load(), WEAPON_CAPACITY]
+	return "Inventar voll"
 
 
 ## Bucht Geld gut (bis MAX_MONEY). Gibt zurück, wie viel tatsächlich dazukam.
@@ -280,6 +335,8 @@ func space_for(item: ItemData) -> int:
 		return 0
 	if item.is_currency:
 		return MAX_MONEY - money
+	if item is WeaponData and weapon_load() + (item as WeaponData).carry_size() > WEAPON_CAPACITY:
+		return 0
 	var space := 0
 	for i: int in _items.size():
 		if _items[i] == null:

@@ -99,7 +99,7 @@ func interact(player: Player) -> void:
 		count = left
 		_update_label()
 	else:
-		player.item_user.show_message("Inventar voll")
+		player.item_user.show_message(player.inventory.full_message(item))
 
 
 ## Neue Menge (vom Host im Multiplayer).
@@ -115,7 +115,7 @@ func _request_take(player: Player) -> void:
 		return
 	var amount := mini(player.inventory.space_for(item), count)
 	if amount <= 0:
-		player.item_user.show_message("Inventar voll")
+		player.item_user.show_message(player.inventory.full_message(item))
 		return
 	take_pending = true
 	_pending_since = Time.get_ticks_msec()
