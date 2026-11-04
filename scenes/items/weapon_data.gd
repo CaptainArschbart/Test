@@ -7,8 +7,10 @@ extends ItemData
 ## "aim" (rechte Maustaste, halten) zoomt und hebt die Waffe vor das Auge; mit
 ## `has_scope` erscheint stattdessen das Zielfernrohr.
 ##
-## Alle Werte einer Waffe stehen in ihrer .tres unter scenes/items/data/ (pistol, sniper, smg),
-## dort zum Justieren ändern. Mit `automatic` feuert die Waffe, solange "fire" gedrückt bleibt.
+## Alle Werte einer Waffe stehen in ihrer .tres unter scenes/items/data/ (pistol, sniper, smg,
+## revolver, pump_shotgun …), dort zum Justieren ändern. Mit `automatic` feuert die Waffe, solange
+## "fire" gedrückt bleibt, mit `burst_count` schießt ein Klick einen Feuerstoß. Schrotflinten
+## schießen `pellets` Kugeln pro Schuss, deren Schaden mit der Entfernung fällt (damage_at).
 
 ## Schaden pro Treffer. Ziele mit take_hit() bekommen ihn übergeben.
 @export var damage := 25.0
@@ -29,6 +31,31 @@ extends ItemData
 @export var hip_offset := Vector3.ZERO
 ## Dauerfeuer: schießt, solange "fire" gehalten wird (alle fire_interval Sekunden).
 @export var automatic := false
+## Waffenklasse (Ladensortiment, Gegner-Ausrüstung, später Munitionsart).
+@export_enum("pistol", "smg", "rifle", "shotgun", "sniper") var weapon_class := "pistol"
+
+@export_group("Schrot")
+## Kugeln pro Schuss (1 = normale Waffe). Jede Kugel trifft für sich und macht `damage`.
+@export_range(1, 24) var pellets := 1
+## Kegel, in dem sich die Kugeln verteilen (Grad), kommt zur normalen Streuung dazu.
+@export var pellet_spread_degrees := 0.0
+
+@export_group("Schadensabfall")
+## Bis hierhin voller Schaden (Meter). 0 = kein Abfall.
+@export var falloff_start := 0.0
+## Ab hier nur noch `min_damage_factor` × Schaden, dazwischen linear.
+@export var falloff_end := 0.0
+@export_range(0.0, 1.0) var min_damage_factor := 1.0
+
+@export_group("Feuerstoß")
+## Schüsse pro Abzug (Bullpup: 3). 1 = Einzelfeuer bzw. Dauerfeuer mit `automatic`.
+@export_range(1, 6) var burst_count := 1
+## Abstand der Schüsse im Feuerstoß (Sekunden); danach gilt fire_interval.
+@export var burst_interval := 0.07
+
+@export_group("Nachladen")
+## Patrone für Patrone (Revolver, Pumpgun): reload_time gilt pro Patrone, Schießen bricht ab.
+@export var reload_single := false
 
 @export_group("Zielen")
 ## Sichtfeld der Kamera beim Zielen (Grad). Normal sind 80.
@@ -81,3 +108,16 @@ extends ItemData
 @export var fire_sound: AudioStream
 @export var reload_sound: AudioStream
 @export var empty_sound: AudioStream
+
+
+## Schaden einer Kugel auf `distance` Meter (Schadensabfall der Schrotflinten).
+func damage_at(distance: float) -> float:
+	return damage * falloff_factor(distance)
+
+
+## 1 bis falloff_start, dann linear bis min_damage_factor bei falloff_end.
+func falloff_factor(distance: float) -> float:
+	if falloff_end <= falloff_start or falloff_end <= 0.0:
+		return 1.0
+	var t := clampf((distance - falloff_start) / (falloff_end - falloff_start), 0.0, 1.0)
+	return lerpf(1.0, min_damage_factor, t)

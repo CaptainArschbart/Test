@@ -15,6 +15,14 @@ const CRED := preload("res://scenes/items/data/credchip.tres")
 const CASH := preload("res://scenes/items/data/cash_wad.tres")
 const SNIPER := preload("res://scenes/items/data/sniper.tres")
 const SMG := preload("res://scenes/items/data/smg.tres")
+# Neue Waffen an den Lochwänden (Schedule 1, P4-2). Abgesägte und Bullpup gibt es nur als Beute.
+const REVOLVER := preload("res://scenes/items/data/revolver.tres")
+const HEAVY_PISTOL := preload("res://scenes/items/data/heavy_pistol.tres")
+const PUMP := preload("res://scenes/items/data/pump_shotgun.tres")
+const COMPACT_SMG := preload("res://scenes/items/data/compact_smg.tres")
+const DMR := preload("res://scenes/items/data/dmr.tres")
+## Das Präzisionsgewehr verkauft der Laden erst ab dieser Spielerstufe.
+const DMR_LEVEL := 5
 const BANK := preload("res://scenes/interact/bank_terminal.gd")
 const SELL_PAD := preload("res://scenes/crime/loot_sell_pad.gd")
 const GAS_STATION := preload("res://scenes/crime/gas_station.gd")
@@ -56,10 +64,12 @@ func _build_guns() -> void:
 	_ammo_stack(Vector3(0.2, 0.95, 1.3))
 	_pegboard(Vector3(-3.55, 1.6, 0.4))
 	_pegboard(Vector3(3.55, 1.6, 0.4))
-	_rack_weapon(M4, Vector3(-3.55, 1.7, 0.9), 90.0)
-	_rack_weapon(AK, Vector3(-3.55, 1.35, -0.1), 90.0)
-	_rack_weapon(SMG, Vector3(3.55, 1.7, 0.9), -90.0)
-	_rack_weapon(SNIPER, Vector3(3.55, 1.35, -0.1), -90.0)
+	# Lochwände: links Pumpgun und Pistolen, rechts Präzisionsgewehr und Kompakt-MP (kaufbar).
+	_wall_sale(PUMP, 140, Vector3(-3.55, 1.95, 0.4), -1)
+	_wall_sale(REVOLVER, 90, Vector3(-3.55, 1.5, 0.0), -1)
+	_wall_sale(HEAVY_PISTOL, 65, Vector3(-3.55, 1.5, 0.8), -1)
+	_wall_sale(DMR, 260, Vector3(3.55, 1.95, 0.4), 1, DMR_LEVEL)
+	_wall_sale(COMPACT_SMG, 85, Vector3(3.55, 1.45, 0.4), 1)
 	var door := LockedDoor.new()
 	door.name = "BackDoor"
 	door.unique_name_in_owner = true
@@ -216,14 +226,19 @@ func _pegboard(at: Vector3) -> void:
 	add_child(mesh)
 
 
-func _rack_weapon(item: WeaponData, at: Vector3, yaw_deg: float) -> void:
-	if item.view_scene == null:
-		return
-	var view := item.view_scene.instantiate()
-	view.position = at
-	view.rotation.y = deg_to_rad(yaw_deg)
-	view.scale = Vector3.ONE * 0.55
-	add_child(view)
+## Kaufbare Waffe an der Lochwand. `at` = Mitte der Wand dort (x der Wand), `wall` −1 = linke Wand
+## (Raum bei +X), +1 = rechte. Die Waffe liegt flach an der Wand, Lauf entlang Z, Seite zum Raum.
+func _wall_sale(item: WeaponData, price: int, at: Vector3, wall: int, min_level := 0) -> void:
+	var sale := WallSale.new()
+	sale.item = item
+	sale.price = price
+	sale.currency = CRED
+	sale.min_level = min_level
+	sale.name = "Wall_" + item.id
+	# Vor der Plattenfläche (Platte 6 cm dick) mit 3 cm Abstand.
+	sale.position = Vector3(at.x - wall * (0.03 + WallSale.DEPTH * 0.5), at.y, at.z)
+	sale.rotation.y = 0.0 if wall < 0 else PI
+	add_child(sale)
 
 
 ## Möbel aus den Packs (assets/props/kenney_furniture, quaternius_furniture). Alles steht an Wänden
@@ -415,6 +430,48 @@ class SaleCounter extends StaticBody3D:
 			return
 		player.inventory.spend_money(price)
 		player.item_user.show_message("%s gekauft" % item.display_name, Color(0.4, 1.0, 0.7))
+
+
+## Waffe zum Kaufen an der Wand (gleiche Kaufregeln wie SaleCounter, optional ab Spielerstufe).
+## Das Modell liegt in Originalgröße flach an, die Kollisionsbox deckt es ab.
+class WallSale extends SaleCounter:
+	const DEPTH := 0.08
+	const SCALE := 0.85
+	var min_level := 0
+
+	func _ready() -> void:
+		collision_layer = 1
+		var weapon := item as WeaponData
+		var length := 0.3
+		if weapon != null and weapon.view_scene != null:
+			var view: Node3D = weapon.view_scene.instantiate()
+			view.scale = Vector3.ONE * SCALE
+			var muzzle := view.get_node_or_null("Muzzle") as Node3D
+			var front := muzzle.position.z * SCALE if muzzle != null else -0.25
+			length = absf(front) + 0.12
+			# Mitte der Waffe auf die Mitte des Platzes.
+			view.position = Vector3(0.0, 0.0, -front * 0.5 + 0.03)
+			add_child(view)
+		var shape := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = Vector3(DEPTH, 0.22, length)
+		shape.shape = box
+		add_child(shape)
+
+	func get_interact_text(player: Player) -> String:
+		var text := super.get_interact_text(player)
+		if min_level > 0 and _level(player) < min_level:
+			text += " – ab Stufe %d" % min_level
+		return text
+
+	func interact(player: Player) -> void:
+		if min_level > 0 and _level(player) < min_level:
+			player.item_user.show_message("Erst ab Stufe %d" % min_level, Color(1.0, 0.75, 0.3))
+			return
+		super.interact(player)
+
+	func _level(player: Player) -> int:
+		return player.xp.level if player.xp != null else 1
 
 
 class GunClerk extends StaticBody3D:

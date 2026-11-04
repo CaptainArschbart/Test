@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="EnemyProfile" format=3]
+
+[ext_resource type="Script" path="res://scenes/enemies/enemy_profile.gd" id="1_profile"]
+[ext_resource type="Resource" path="res://scenes/items/data/revolver.tres" id="2_revolver"]
+[ext_resource type="Resource" path="res://scenes/items/data/data_shard.tres" id="3_data_shard"]
+[ext_resource type="Resource" path="res://scenes/items/data/stim_pack.tres" id="4_stim_pack"]
+
+[resource]
+script = ExtResource("1_profile")
+display_name = "Gang-Anführer (Revolver)"
+faction = &"gang"
+look = 0
+style = 1
+accent = Color(1, 0.78, 0.25, 1)
+max_health = 120.0
+view_distance = 20.0
+view_angle = 55.0
+sight_gain = 1.5
+shout_radius = 28.0
+walk_speed = 1.5
+run_speed = 4.5
+weapon = ExtResource("2_revolver")
+damage = 16.0
+death_cause = &"gang_shot"
+attack_range = 26.0
+preferred_distance = 10.0
+attack_interval = 0.9
+burst = 1
+burst_pause = 1.1
+magazine = 6
+reload_time = 2.6
+accuracy = 0.5
+aim_time = 0.6
+loot_items = Array[Resource]([ExtResource("2_revolver"), ExtResource("3_data_shard"), ExtResource("4_stim_pack")])
+loot_chances = PackedFloat32Array(0.5, 0.3, 0.3)
+credits_min = 20
+credits_max = 45
+xp_reward = 60
+voice_pitch = 0.85

@@ -6,7 +6,8 @@ extends SceneTree
 ## SHOT_ONLY = nur eine Waffe (id). Pro Waffe entsteht <id>.png mit den vier Bildern nebeneinander.
 
 var OUT := OS.get_environment("SHOT_OUT")
-const WEAPONS := ["pistol", "smg", "ak47", "m4", "sniper"]
+const WEAPONS := ["pistol", "smg", "ak47", "m4", "sniper", "revolver", "heavy_pistol", "pump_shotgun",
+	"sawed_off", "bullpup", "compact_smg", "dmr"]
 
 
 func _initialize() -> void:

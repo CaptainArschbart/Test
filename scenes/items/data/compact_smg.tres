@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scenes/items/weapon_data.gd" id="1_weapon"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/compact_smg_view.tscn" id="2_view"]
+[ext_resource type="AudioStream" path="res://assets/audio/compact_smg_shot.wav" id="3_shot"]
+[ext_resource type="AudioStream" path="res://assets/audio/smg_reload.wav" id="4_reload"]
+[ext_resource type="AudioStream" path="res://assets/audio/pistol_empty.wav" id="5_empty"]
+[ext_resource type="Texture2D" path="res://assets/icons/items/compact_smg.png" id="icon_item"]
+
+[resource]
+script = ExtResource("1_weapon")
+damage = 11.0
+magazine_size = 25
+fire_interval = 0.055
+reload_time = 1.5
+max_range = 50.0
+view_scene = ExtResource("2_view")
+pickup_scale = 1.7
+hip_offset = Vector3(0.01, -0.01, -0.04)
+automatic = true
+weapon_class = "smg"
+aim_fov = 58.0
+aim_time = 0.15
+sight_offset = Vector3(0, 0.13, 0)
+aim_distance = 0.28
+aim_sensitivity = 0.9
+hip_spread_degrees = 2.6
+aim_spread_degrees = 0.5
+bloom_per_shot = 0.6
+max_bloom_degrees = 6.0
+bloom_recovery = 10.0
+aim_bloom_factor = 0.5
+recoil_kick = 0.018
+view_kick_degrees = 0.32
+recoil_climb = 1.4
+view_kick_horizontal_degrees = 0.35
+reload_tilt = 0.25
+reload_roll = 0.45
+eject_shells = true
+noise_radius = 30.0
+fire_sound = ExtResource("3_shot")
+reload_sound = ExtResource("4_reload")
+empty_sound = ExtResource("5_empty")
+id = "compact_smg"
+display_name = "Kompakt-MP"
+description = "Kleine Maschinenpistole mit sehr hoher Kadenz. 25 Schuss, springt beim Dauerfeuer stark nach oben und zur Seite."
+glyph = "MP"
+color = Color(0.6, 1, 0.2, 1)
+max_stack = 1
+value = 85
+icon = ExtResource("icon_item")

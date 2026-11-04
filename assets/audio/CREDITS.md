@@ -6,6 +6,7 @@ werden mit `tools/gen_sounds.py` erzeugt. Neu erzeugen: siehe Kopf der Datei.
 | Dateien | Herkunft | Lizenz |
 |---|---|---|
 | `pistol_*`, `sniper_*`, `footstep_*`, `land_*`, `melee_*`, `emp_zap`, `heartbeat`, `breath_loop`, `flatline_loop` | Eigene Synthese in `tools/gen_sounds.py` (keine fremden Samples) | CC0 1.0, frei verwendbar |
+| `smg_*`, `grenade_*`, `revolver_*`, `heavy_pistol_shot`, `shotgun_*`, `sawed_off_*`, `bullpup_shot`, `compact_smg_shot`, `dmr_shot` | Eigene Synthese in `tools/gen_weapon_sounds.py` (die Waffen aus Schedule 1, Phase 4 mit `--m3`) | CC0 1.0, frei verwendbar |
 | `voices/*.wav` (Gegnerrufe) | Sprachausgabe mit [Piper](https://github.com/rhasspy/piper) (MIT), Stimme `de-thorsten-low` (Release v0.0.2), trainiert auf dem [Thorsten-Voice](https://github.com/thorstenMueller/Thorsten-Voice)-Datensatz (CC0). Danach tonhöhenverschoben, gefiltert und komprimiert. | CC0 1.0. Nennung freiwillig: „Stimme: Thorsten-Voice (Thorsten Müller), erzeugt mit Piper“ |
 
 Freesound, OpenGameArt und Kenney waren beim Erstellen aus der Arbeitsumgebung nicht

@@ -198,6 +198,8 @@ func take_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 		amount *= 2.0
 	health -= amount
 	model.flinch = clampf(amount / 25.0, 0.4, 1.0)
+	model.hit_point = point
+	model.hit_force = amount
 	_hurt_by_player = true
 	if health <= 0.0:
 		_die(-normal)
@@ -217,6 +219,9 @@ func emp_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 func hit_by_car(push: Vector3, speed: float) -> void:
 	if state == State.DEAD or state == State.DOWN:
 		return
+	# Ragdoll: Stoß in Hüfthöhe, stärker je schneller das Auto.
+	model.hit_point = global_position + Vector3.UP * 0.9
+	model.hit_force = speed * 10.0
 	if speed > 7.5:
 		_die(push)
 		return

@@ -1,0 +1,68 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/weapons/weapon_view.gd" id="1_view"]
+[ext_resource type="PackedScene" path="res://assets/items/weapons/quaternius_guns/SniperRifle_2.fbx" id="2_model"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_neon"]
+albedo_color = Color(0.7, 0.4, 1, 1)
+emission_enabled = true
+emission = Color(0.7, 0.4, 1, 1)
+emission_energy_multiplier = 2.5
+
+[sub_resource type="BoxMesh" id="Mesh_stripe"]
+material = SubResource("Mat_neon")
+size = Vector3(0.0377, 0.004, 0.084)
+
+[sub_resource type="StandardMaterial3D" id="Mat_flash"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.85, 0.45, 0.9)
+billboard_mode = 1
+
+[sub_resource type="QuadMesh" id="Mesh_flash"]
+material = SubResource("Mat_flash")
+size = Vector2(0.16, 0.16)
+
+[node name="DmrView" type="Node3D"]
+script = ExtResource("1_view")
+
+[node name="Model" parent="." instance=ExtResource("2_model")]
+position = Vector3(0, -0.035, 0.044)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(0.14, 0.14, 0.14)
+
+[node name="Stripe" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.035, 0.156)
+cast_shadow = 0
+mesh = SubResource("Mesh_stripe")
+
+[node name="Magazine" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.985, 0.174, 0, -0.174, 0.985, 0, -0.042, -0.183)
+
+[node name="HandReloadLeft" type="Marker3D" parent="Magazine"]
+position = Vector3(-0.012, -0.075, 0.04)
+rotation = Vector3(0.4363, -0.1745, 3.0543)
+
+[node name="Eject" type="Marker3D" parent="."]
+position = Vector3(0.012, -0.007, -0.096)
+
+[node name="Muzzle" type="Marker3D" parent="."]
+position = Vector3(0, 0.0056, -0.731)
+
+[node name="Flash" type="MeshInstance3D" parent="Muzzle"]
+visible = false
+cast_shadow = 0
+mesh = SubResource("Mesh_flash")
+
+[node name="FlashLight" type="OmniLight3D" parent="Muzzle"]
+visible = false
+light_color = Color(1, 0.8, 0.45, 1)
+light_energy = 3.5
+omni_range = 5
+
+[node name="HandGripRight" type="Marker3D" parent="."]
+position = Vector3(0.032, -0.07, 0.075)
+rotation = Vector3(0.2618, 0.1396, -1.6057)
+
+[node name="HandGripLeft" type="Marker3D" parent="."]
+transform = Transform3D(-0.8399, -0.2100, -0.5005, 0.3050, -0.9454, -0.1152, -0.4490, -0.2494, 0.8580, -0.042, -0.036, -0.292)

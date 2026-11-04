@@ -769,3 +769,85 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Mit Fenster (einmal, mit OK von EnScapeZ): Bildrate ohne VSync auf Straßenhöhe 154–169 FPS, Skywalk 177, Gassen 238–265, Galerie 277 (Gate M2: mindestens 120 FPS, erfüllt). Screenshots Gassen (Neonmeile, Unterstadt), Galerie, Kern, Skywalk angesehen; neue Blickwinkel `gasse_neon`, `gasse_unter`.
 - Nicht getestet: Multiplayer.
 - Offen: P1-6 (Dioramen aus `_incoming` zerlegen, Lizenz unbekannt) und P1-7 (Voxel-Skyline, Bäume) nicht begonnen.
+
+### 2026-11-04 · Schedule 1, Meilenstein M3 „Systeme“, Teil 1: Waffen (P4-1 bis P4-3) · Claude (für EnScapeZ) · Branch `enscapez/m3-waffen`
+- Auftrag: M3 aus „Schedule 1“ fortsetzen, zuerst Phase 4 (Waffen). EnScapeZ war nicht am Rechner und wollte vollautomatisch weiterarbeiten lassen; Spielfenster werden weiter nur nach Rückfrage geöffnet, deshalb alles headless.
+- P4-1 Schrot und neue Feuerarten (`WeaponData`, `WeaponHolder`):
+  - `pellets`, `pellet_spread_degrees`: mehrere Kugeln pro Schuss im Kegel, jede trifft für sich (Splitter-Partikel nur für die ersten 3 Wandtreffer).
+  - Schadensabfall `falloff_start`, `falloff_end`, `min_damage_factor`, abgefragt mit `damage_at(Entfernung)`. Alte Waffen haben keinen Abfall.
+  - Feuerstoß `burst_count`, `burst_interval` (ein Klick, mehrere Schuss).
+  - `reload_single`: Patrone für Patrone nachladen, Schießen bricht ab, sobald eine drin ist; Anzeige „NACHLADEN 3 / 6“.
+  - `weapon_class` (pistol, smg, rifle, shotgun, sniper) für Sortiment und Gegner, bei den alten Waffen eingetragen.
+- P4-2 Sieben neue Waffen aus dem Quaternius-Gun-Pack, je mit Ego-Ansicht (`scenes/weapons/<id>_view.tscn`), Daten (`scenes/items/data/<id>.tres`) und eigenem Sound (`tools/gen_weapon_sounds.py --m3`):
+  - Revolver (Revolver_2): 6 Schuss, 45 Schaden, lädt einzeln.
+  - Schwere Pistole (Pistol_2): 8 Schuss, 34 Schaden.
+  - Pump-Schrotflinte (Shotgun_1): 8 Kugeln je 13, Abfall 6–22 m, 6 Patronen, lädt einzeln, repetiert hörbar.
+  - Abgesägte Schrotflinte (Shotgun_SawedOff): 10 Kugeln je 12, Abfall 3–12 m, 2 Schuss.
+  - Bullpup-Gewehr (Bullpup_1): Dreierfeuerstoß, 30 Schuss.
+  - Kompakt-MP (SubmachineGun_1): Dauerfeuer mit ca. 1.090 Schuss pro Minute, starker Rückstoß.
+  - Präzisionsgewehr (SniperRifle_2): halbautomatisch mit Zielfernrohr, 10 Schuss, 70 Schaden.
+  - Mündung, Visier, Magazin- und Hand-Marker aus Seitenansichten der Modelle bestimmt (Dreiecke headless ausgelesen und als Bild gezeichnet, kein Spielfenster).
+- Waffenladen (`street_shop.gd`): die bisher nur ausgestellten Waffen an den Lochwänden sind durch kaufbare neue ersetzt (`WallSale`). Links Pumpgun 140 ¢, Revolver 90 ¢, schwere Pistole 65 ¢; rechts Präzisionsgewehr 260 ¢ (erst ab Spielerstufe 5) und Kompakt-MP 85 ¢. Abgesägte und Bullpup gibt es nur als Beute.
+- P4-3 Gegner-Ausrüstung:
+  - `EnemyProfile.weapon`: das Modell dieser Waffe sitzt am Handknochen, ihr Schuss ist zu hören, bei Schrot fällt der Schaden mit der Entfernung, und es gibt mehrere Leuchtspuren.
+  - Neue Profile: `gang_leader` (Revolver), `gang_shotgun` (Pumpgun), `gang_sawed_off` (Abgesägte), `gang_compact_smg` (Kompakt-MP), `security_bullpup` (Bullpup), `security_heavy_pistol` (schwere Pistole). Jedes lässt seine Waffe als Beute fallen.
+  - `gangster_smg` hält jetzt die echte SMG statt der Pistole.
+- Neon City (`gen_neon_city.py`, ohne Zufall, nur `neon_city_enemies.tscn` ändert sich):
+  - Unterstadt: Abgesägte in den Streifen, Kompakt-MP- bzw. SMG-Wachen.
+  - Hafen: Revolver-Anführer in jedem zweiten Hof, Pumpgun-Wachen.
+  - Kern: Bullpup und schwere Pistole.
+  - Türsteher West der Neonmeile: schwere Pistole.
+  - Zwei Plätze: Bullpup.
+- Neuer Test `tools/tests/test_weapons_m3.gd` (headless): Daten und Modelle, Mündung an der Laufspitze, 8 von 8 Kugeln auf 3 m mit 104 Schaden, weniger Schaden auf 18 m, Feuerstoß genau 3 Schuss, Einzelnachladen und Abbruch durch Schießen, Kadenz der Kompakt-MP, Gegner halten ihre Waffe, Wandverkauf mit Mindeststufe.
+- Getestet (Godot 4.7.2, headless, isoliertes APPDATA): `test_weapons_m3` CHECKS 83 FAILS 0, `test_weapons_smg_grenade` 47/0, `test_gun_shops` 37/0, `test_content_update` 47/0, `test_enemy_xp` 29/0, `test_player_melee` 42/0, `test_skills` 72/0, `test_shop` 43/0, `test_neon_city` 30/0, `test_sector7_enemies` 15/0.
+- Offen:
+  - Inventar-Icons der 7 neuen Waffen fehlen, weil `gen_item_icons.gd` ein Fenster braucht. `test_item_icons` meldet deshalb 1 Fehler.
+  - Ego-Ansicht und Hände nicht im Bild angesehen (`shot_weapons.gd` braucht ein Fenster). Beides kommt mit dem nächsten erlaubten Fensterlauf.
+  - P4-4 (Munitionsarten), P4-5 (Varianten), P4-6 (Gegner-Animationen) nicht begonnen.
+
+### 2026-11-04 · Schedule 1, M3 „Systeme“, Teil 2: Ragdolls (P5-1, P5-4, P5-5, Teile von P5-2) · Claude (für EnScapeZ) · Branch `enscapez/m3-waffen`
+- Neu: `scenes/common/ragdoll.gd` (`Ragdoll`, ein `SkeletonModifier3D`) für alle Modular-Men-Figuren (Gegner, Fußgänger, Verkäufer).
+  - Kein `PhysicalBoneSimulator3D`: Das Skelett hängt an einem 100-fach skalierten Armature-Knoten, und die Füße sind IK-Knochen am Root. Beides verträgt Godots Physik-Knochen nicht.
+  - Stattdessen 11 RigidBody3D in Metern (Becken, Brust, Kopf, Ober- und Unterarme, Ober- und Unterschenkel), verbunden mit Kegelgelenken und mit Scharnieren für Knie und Ellbogen (beugen nur in natürlicher Richtung). Der Modifier stellt die Knochen nach den Körpern; Bauch, Schultern, Hände und Füße folgen starr.
+  - Physik-Schicht 4 heißt jetzt „ragdoll“ (`project.godot`). Die Teile stoßen nur an die Welt, nicht an Spieler, NPCs, Schüsse oder sich selbst. Leichen blockieren das Navmesh nicht. Alle Teile haben CCD.
+  - Budget: höchstens 8 Ragdolls rechnen, beim neunten friert der älteste ein. Nach 30 s friert jeder ein. Mehr als 40 m von der Kamera gibt es wie bisher nur die Todesanimation.
+  - Der Modifier entsteht erst beim Umfallen, lebende Figuren kosten nichts extra.
+- Übergänge (P5-2, Teil):
+  - Tod durch Schuss, Klinge oder Granate: Ragdoll mit Stoß aus dem letzten Treffer (Stärke nach Schaden, höchstens 70 N·s). Die halbe Kraft geht als Tempo auf den ganzen Körper, die andere Hälfte auf das getroffene Teil. Das Lauftempo der Figur wird übernommen.
+  - Fußgänger, die ein Auto umwirft: Ragdoll. Beim Aufstehen blendet die Figur in 0,4 s zurück zur Animation (bis die Aufsteh-Animation aus UAL2 retargetet ist).
+- Gefundene Fallstricke:
+  - Ein Impuls direkt nach dem Anlegen eines Körpers rechnet Godot noch mit 1 kg; der Stoß wird deshalb als Tempo gesetzt.
+  - Ein Hebel am Trefferpunkt hat das Brustteil so schnell gedreht, dass die Gelenke nachgaben.
+  - Teile, die sich gegenseitig stoßen, sprengen den Körper auseinander (Hände liegen am Start im Becken).
+  - Die Ragdoll-Pose ist nur während des Skelett-Updates sichtbar (Godot stellt die Knochen danach zurück); der Test liest sie deshalb in `modification_processed`.
+- Neuer Test `tools/tests/test_ragdoll.gd` (headless), CHECKS 22 FAILS 0:
+  - Gerüst, Schichten, CCD, 10 Gelenke.
+  - Leiche liegt nach 3,5 s am Boden (0,17 m, 0,05 m/s), kein Teil im Boden, fällt in Schussrichtung, Kopfknochen folgt dem Kopfteil (8 cm), Knie knicken nicht durch.
+  - Schüsse gehen durch Leichen; mit 25 m/s gegen eine Wand kommt kein Teil dahinter.
+  - Budget 8 + 2 eingefroren, Schlaf nach 30 s, 55 m entfernt nur Animation.
+  - Fußgänger: umgeworfen und wieder auf.
+- Getestet (headless): `test_ragdoll` 22/0, `test_weapons_m3` 83/0, `test_weapons_smg_grenade` 47/0, `test_enemy_xp` 29/0, `test_player_melee` 42/0, `test_npc_robbery` 47/0, `test_sector7_enemies` 15/0, `test_sector7_city` 44/0, `test_skills` 72/0, `test_neon_city` 30/0, `test_content_update` 47/0, `test_gas_stations` 59/0.
+- Multiplayer (zwei Prozesse, headless):
+  - `test_mp_sync` slum: Host 9/0, Client 10/0; testmap: 17/0 und 19/0.
+  - `test_mp_world`: Client 14/0, Host 12/1 („Gegner ist tot“). Der Fehler tritt auf `main` genauso auf (eigene Arbeitskopie geprüft) und stammt nicht von hier.
+- Nicht im Bild angesehen (kein Fenster): wie die Leichen aussehen, ob Kleidung oder Waffe sichtbar abstehen.
+- Offen:
+  - P5-2 Rest: schwere Treffer bei Lebenden, Stürze ab 1,5 m, Betäubung.
+  - P5-3 (UAL1 und UAL2 auf das MM-Skelett retargeten, danach echtes Aufstehen mit LayToIdle).
+  - P5-6 bis P5-9.
+
+### 2026-11-04 · Schedule 1, M3 „Systeme“, Teil 3: Icons und Bildkontrolle · Claude (für EnScapeZ) · Branch `enscapez/m3-waffen`
+- Ein einziger Fensterlauf (mit Erlaubnis, 33 s) für Icons, Waffen-Screenshots und Ragdoll-Screenshots.
+- Inventar-Icons der 7 neuen Waffen: `assets/icons/items/{revolver,heavy_pistol,pump_shotgun,sawed_off,bullpup,compact_smg,dmr}.png`, per `ICONS_APPLY=1` in die `.tres` eingetragen. Die vorhandenen Icons sind unverändert.
+- Bildkontrolle der Ego-Ansicht: Revolver, schwere Pistole, Pump- und abgesägte Schrotflinte, Kompakt-MP und Präzisionsgewehr sitzen wie die vorhandenen Waffen (M4, SMG) in der Hand.
+- Bullpup korrigiert (`scenes/items/data/bullpup.tres`):
+  - Das Gehäuse liegt hinter dem Griff und ragte im Anschlag durch die Nahebene der Kamera (großes dunkles Dreieck in der Bildmitte).
+  - Jetzt: `aim_distance` 0,30 → 0,42 und `sight_offset.y` 0,075 → 0,086. Das Korn sitzt im Fadenkreuz, das Gehäuse liegt unter der Bildmitte.
+  - `hip_offset.z` −0,06 → −0,14, damit es aus der Hüfte nicht das rechte untere Viertel füllt.
+  - Nachgeprüft ohne Fenster: Die Ansichtsgeometrie wird headless ausgelesen und nachgezeichnet, kein Dreieck liegt mehr vor der Nahebene.
+- Ragdolls im Bild:
+  - Gegner fallen in Schussrichtung und liegen natürlich.
+  - Der gegen die Wand gestoßene Gegner bleibt davor liegen.
+  - Der umgeworfene Fußgänger steht sauber wieder auf.
+- Getestet (headless): `test_item_icons` 63/0 (vorher 1 Fehler), `test_weapons_m3` 83/0, `test_gun_shops` 37/0, `test_weapons_smg_grenade` 47/0, `test_content_update` 47/0.
+- Nicht gesehen: die Nachlade-Pose. `shot_weapons.gd` lädt mit vollem Magazin nach, deshalb startet das Nachladen nicht.

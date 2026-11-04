@@ -9,7 +9,8 @@ extends SceneTree
 
 const DATA_DIR := "res://scenes/items/data"
 const ICON_DIR := "res://assets/icons/items"
-const WEAPONS := ["pistol", "smg", "ak47", "m4", "sniper"]
+const WEAPONS := ["pistol", "smg", "ak47", "m4", "sniper", "revolver", "heavy_pistol", "pump_shotgun",
+	"sawed_off", "bullpup", "compact_smg", "dmr"]
 ## Erst zur Laufzeit laden: ItemDisplay zieht pickup-nahe Skripte nach, die Autoloads brauchen.
 const DISPLAY_PATH := "res://scenes/items/item_display.gd"
 

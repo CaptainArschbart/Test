@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scenes/items/weapon_data.gd" id="1_weapon"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/sawed_off_view.tscn" id="2_view"]
+[ext_resource type="AudioStream" path="res://assets/audio/sawed_off_shot.wav" id="3_shot"]
+[ext_resource type="AudioStream" path="res://assets/audio/sawed_off_reload.wav" id="4_reload"]
+[ext_resource type="AudioStream" path="res://assets/audio/pistol_empty.wav" id="5_empty"]
+[ext_resource type="Texture2D" path="res://assets/icons/items/sawed_off.png" id="icon_item"]
+
+[resource]
+script = ExtResource("1_weapon")
+damage = 12.0
+magazine_size = 2
+fire_interval = 0.3
+reload_time = 1.9
+max_range = 30.0
+view_scene = ExtResource("2_view")
+pickup_scale = 1.8
+hip_offset = Vector3(0.02, -0.02, -0.04)
+weapon_class = "shotgun"
+pellets = 10
+pellet_spread_degrees = 9.0
+falloff_start = 3.0
+falloff_end = 12.0
+min_damage_factor = 0.15
+aim_fov = 66.0
+aim_time = 0.16
+sight_offset = Vector3(0, 0.057, 0)
+aim_distance = 0.3
+hip_spread_degrees = 1.5
+aim_spread_degrees = 1.0
+recoil_kick = 0.1
+view_kick_degrees = 3.8
+view_kick_horizontal_degrees = 0.6
+reload_tilt = 0.9
+reload_roll = 0.2
+noise_radius = 50.0
+fire_sound = ExtResource("3_shot")
+reload_sound = ExtResource("4_reload")
+empty_sound = ExtResource("5_empty")
+id = "sawed_off"
+display_name = "Abgesägte Schrotflinte"
+description = "Doppelläufige Schrotflinte mit abgesägtem Lauf, beliebt in der Unterstadt. 2 Schuss mit breiter Streuung, nur auf kurze Distanz gefährlich."
+glyph = "SO"
+color = Color(1, 0.5, 0.1, 1)
+max_stack = 1
+value = 70
+icon = ExtResource("icon_item")

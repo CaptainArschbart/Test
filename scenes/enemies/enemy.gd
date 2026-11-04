@@ -364,6 +364,8 @@ func take_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 	if sneak:
 		amount *= profile.sneak_multiplier
 	health -= amount
+	model.hit_point = point
+	model.hit_force = amount
 	model.flinch = clampf(amount / 30.0, 0.4, 1.0)
 	_flash()
 	WorldSync.npc_event(self, &"hit", [model.flinch])
@@ -1044,7 +1046,9 @@ func _fire() -> void:
 	chance = clampf(chance, 0.03, 0.95)
 	var end := chest
 	if _line_to_player(eye, chest) and _rng.randf() < chance:
-		_player.apply_damage(profile.damage, profile.death_cause)
+		# Schrotflinte: Schaden fällt mit der Entfernung wie beim Spieler.
+		var falloff := profile.weapon.falloff_factor(dist) if profile.weapon != null else 1.0
+		_player.apply_damage(profile.damage * falloff, profile.death_cause)
 	else:
 		# Daneben: knapp vorbei, bis zur nächsten Wand.
 		var miss := Vector3(_rng.randf_range(-1, 1), _rng.randf_range(-0.6, 0.8), _rng.randf_range(-1, 1)).normalized()
@@ -1061,10 +1065,18 @@ func _fire() -> void:
 ## Leuchtspur, Mündungsfeuer und Schuss-Ton (auch auf Clients über net_event).
 func _show_shot(from: Vector3, end: Vector3) -> void:
 	_spawn_tracer(from, end)
+	# Schrot: ein paar Spuren mehr, leicht gestreut.
+	if profile.weapon != null and profile.weapon.pellets > 1:
+		var spread := from.distance_to(end) * tan(deg_to_rad(profile.weapon.pellet_spread_degrees))
+		for i in 3:
+			var off := Vector3(_rng.randf_range(-1, 1), _rng.randf_range(-1, 1), _rng.randf_range(-1, 1))
+			_spawn_tracer(from, end + off * spread)
 	_flash_left = 0.06
 	_muzzle_light.visible = true
 	_muzzle_light.light_energy = 4.0
 	_sfx.stream = SoundGen.RIFLE_SHOT if profile.style == EnemyProfile.Style.RIFLE else SoundGen.PISTOL_SHOT
+	if profile.weapon != null and profile.weapon.fire_sound != null:
+		_sfx.stream = profile.weapon.fire_sound
 	_sfx.pitch_scale = _rng.randf_range(0.85, 0.97)
 	_sfx.play()
 

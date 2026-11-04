@@ -1784,7 +1784,10 @@ def plaza_box(bi: int, bj: int) -> tuple[float, float, float, float]:
             min(cz, cz - 26 if bj == 1 else cz + 26), max(cz, cz - 26 if bj == 1 else cz + 26))
 
 
-GANG = {"under": ["p_gm", "p_gp"], "harbor": ["p_gp", "p_gm"]}
+# Gegner-Ausrüstung je Gruppe (Schedule 1, P4-3), ohne Zufall gewählt (Stadt-Seed bleibt gleich):
+# Unterstadt Abgesägte und Kompakt-MP, Hafen Revolver-Anführer und Pumpgun-Wachen, Kern Bullpup und
+# schwere Pistole, Türsteher der Neonmeile schwere Pistole, Plätze teils Bullpup.
+GANG = {"under": ["p_gm", "p_so"], "harbor": ["p_gp", "p_gm"]}
 for bi in range(4):
     for bj in range(4):
         district, x0, x1, z0, z1 = courts[bi * 4 + bj]
@@ -1794,18 +1797,21 @@ for bi in range(4):
             r = patrol(f"R_Gang{tag}", box, 4)
             if r:
                 for k, prof in enumerate(GANG[district]):
+                    if district == "harbor" and k == 0 and (bi + bj) % 2 == 0:
+                        prof = "p_lead"
                     x, z, i = route_start(r, k * 2)
                     enemy(f"Gang{tag}_{k}", prof, x, z, route=r, start=i)
             if district == "under" or bi % 2 == 0:
                 spot = free_spot(box, 1.0)
                 if spot:
-                    enemy(f"Gang{tag}_Wache", "p_smg", *spot, yaw=round(rnd.uniform(0, 360)))
+                    guard = "p_gsh" if district == "harbor" else ("p_cmp" if (bi + bj) % 2 == 0 else "p_smg")
+                    enemy(f"Gang{tag}_Wache", guard, *spot, yaw=round(rnd.uniform(0, 360)))
         elif district == "core":
             r = patrol(f"R_Kern{tag}", box, 4)
             if r:
-                for k in range(2):
+                for k, prof in enumerate(("p_bp", "p_hp")):
                     x, z, i = route_start(r, k * 2)
-                    enemy(f"Kern{tag}_{k}", "p_sec", x, z, route=r, start=i)
+                    enemy(f"Kern{tag}_{k}", prof, x, z, route=r, start=i)
         elif district == "neon":
             # Türsteher an beiden Gassen neben dem freien Weg, Blick zur Straße.
             mz = (z0 + z1) / 2
@@ -1815,13 +1821,13 @@ for bi in range(4):
                 if not free(x - 0.35, x + 0.35, z - 0.35, z + 0.35):
                     raise SystemExit(f"Türsteher {tag}{side} steht im Weg")
                 claim(x - 0.35, x + 0.35, z - 0.35, z + 0.35, "solid", f"Türsteher {tag}{side}")
-                enemy(f"Tuer{tag}_{side}", "p_sec", round(x, 2), round(z, 2), yaw=yaw)
+                enemy(f"Tuer{tag}_{side}", "p_hp" if side == "W" else "p_sec", round(x, 2), round(z, 2), yaw=yaw)
 # Plätze an der Hauptkreuzung: je ein Sicherheitsmann.
 for (bi, bj) in ((1, 1), (2, 1), (1, 2), (2, 2)):
     r = patrol(f"R_Platz{bi}{bj}", plaza_box(bi, bj), 3)
     if r:
         x, z, i = route_start(r, 0)
-        enemy(f"Platz{bi}{bj}", "p_sec", x, z, route=r, start=i)
+        enemy(f"Platz{bi}{bj}", "p_bp" if bi == bj else "p_sec", x, z, route=r, start=i)
 
 
 def enemies_scene() -> str:
@@ -1834,6 +1840,12 @@ def enemies_scene() -> str:
 [ext_resource type="Resource" path="res://scenes/enemies/profiles/gangster_pistol.tres" id="p_gp"]
 [ext_resource type="Resource" path="res://scenes/enemies/profiles/gangster_smg.tres" id="p_smg"]
 [ext_resource type="Resource" path="res://scenes/enemies/profiles/security.tres" id="p_sec"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/gang_leader.tres" id="p_lead"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/gang_shotgun.tres" id="p_gsh"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/gang_sawed_off.tres" id="p_so"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/gang_compact_smg.tres" id="p_cmp"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/security_bullpup.tres" id="p_bp"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/security_heavy_pistol.tres" id="p_hp"]
 
 [node name="NeonCityEnemies" type="Node3D"]
 

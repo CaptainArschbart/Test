@@ -42,6 +42,10 @@ enum Look { GANGSTER, SECURITY, SNIPER, COP }
 @export var hold_position := false
 
 @export_group("Kampf")
+## Waffe in der Hand (Schedule 1, P4-3): ihr Modell sitzt am Handknochen, ihr Schuss-Ton ist zu hören
+## und bei Schrotflinten fällt der Schaden mit der Entfernung (WeaponData.falloff_factor).
+## Leer = Pistole bzw. Gewehr nach `style` wie bisher.
+@export var weapon: WeaponData
 @export var damage := 12.0
 ## Todesursache auf dem Death-Screen (DeathScreen.CAUSES).
 @export var death_cause: StringName = &"gang"
