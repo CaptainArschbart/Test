@@ -3,8 +3,9 @@ extends SceneTree
 ## auf das Skelett der Modular-Men-Figuren (assets/characters/quaternius_modular_men/) und speichert
 ## sie als AnimationLibrary. Läuft headless:
 ##   godot --headless --path . -s res://tools/retarget_ual.gd
-## Schreibt assets/animations/retargeted/ual_mm.res. Figuren hängen sie als Bibliothek "ual" an ihren
-## AnimationPlayer (UalLibrary.attach) und spielen z. B. "ual/LayToIdle".
+## Schreibt assets/animations/retargeted/ual_mm.res (Männer, Modular Men) und ual_mw.res (Frauen aus dem
+## City Pack, gleiches Skelett, andere Proportionen). Figuren hängen die passende als Bibliothek "ual"
+## an ihren AnimationPlayer (UalLibrary.attach) und spielen z. B. "ual/LayToIdle".
 ##
 ## Verfahren: Beide Skelette stehen in ihrer Referenz in T-Pose (UAL: Ruhelage, MM: Bindungspose der
 ## Haut; die MM-Ruhelage ist eine schiefe Zwischenpose und taugt nicht). Je Knochenpaar gilt
@@ -13,14 +14,17 @@ extends SceneTree
 ## Verhältnis der Beinlängen. Die Füße hängen bei MM als IK-Knochen am Root; sie werden ans Ende des
 ## Unterschenkels gesetzt. Knochen ohne Partner (Mittelhand, Pol-Ziele, Root) behalten die Bindungslage.
 
-## Bindungspose und Haut dieser Figur; die Bindungspose ist bei allen MM-Figuren gleich. Casual Character
-## hat keine abstehenden Haare, die beim Liegen den Bodenausgleich verfälschen würden.
-const TARGET := "res://assets/characters/quaternius_modular_men/Casual Character.glb"
+## Je Ausgabe die Figur, deren Bindungspose und Haut zählen. Die Bindungspose ist bei allen MM-Männern
+## gleich, ebenso bei den beiden Frauen. Casual Character hat keine abstehenden Haare, die beim Liegen
+## den Bodenausgleich verfälschen würden.
+const TARGETS := {
+	"res://assets/animations/retargeted/ual_mm.res": "res://assets/characters/quaternius_modular_men/Casual Character.glb",
+	"res://assets/animations/retargeted/ual_mw.res": "res://assets/props/city_pack/Animated Woman-nIItLV9nxS.glb",
+}
 const SOURCES := {
 	"ual1": "res://assets/animations/quaternius_ual1/UAL1_Standard.glb",
 	"ual2": "res://assets/animations/quaternius_ual2/UAL2_Standard.glb",
 }
-const OUT := "res://assets/animations/retargeted/ual_mm.res"
 const TRACK_PREFIX := "RootNode/CharacterArmature/Skeleton3D:"
 const FPS := 30.0
 
@@ -72,24 +76,26 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var map := _full_map()
-	var target := _target_info()
-	var library := AnimationLibrary.new()
 	var sources := {}
 	for key: String in SOURCES:
 		sources[key] = _source_info(load(SOURCES[key]) as PackedScene)
-	for entry: Array in ANIMS:
-		var src: Dictionary = sources[entry[0]]
-		var col := 0 if entry[0] == "ual1" else 1
-		var anim := _retarget(src, target, map, col, entry[1], entry[2])
-		if anim == null:
-			push_error("Animation fehlt: %s/%s" % [entry[0], entry[1]])
-			continue
-		library.add_animation(entry[1], anim)
-		print("  %-20s %.2f s" % [entry[1], anim.length])
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT.get_base_dir()))
-	var err := ResourceSaver.save(library, OUT, ResourceSaver.FLAG_COMPRESS)
-	print("RETARGET %d -> %s (%s)" % [library.get_animation_list().size(), OUT, error_string(err)])
-	quit(0 if err == OK else 1)
+	var failed := false
+	for out: String in TARGETS:
+		var target := _target_info(TARGETS[out])
+		var library := AnimationLibrary.new()
+		for entry: Array in ANIMS:
+			var src: Dictionary = sources[entry[0]]
+			var col := 0 if entry[0] == "ual1" else 1
+			var anim := _retarget(src, target, map, col, entry[1], entry[2])
+			if anim == null:
+				push_error("Animation fehlt: %s/%s" % [entry[0], entry[1]])
+				continue
+			library.add_animation(entry[1], anim)
+		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(out.get_base_dir()))
+		var err := ResourceSaver.save(library, out, ResourceSaver.FLAG_COMPRESS)
+		failed = failed or err != OK
+		print("RETARGET %d -> %s (%s)" % [library.get_animation_list().size(), out, error_string(err)])
+	quit(1 if failed else 0)
 
 
 ## MAP plus Finger: MM Index2..4 <- index.01..03, Thumb1..3 <- thumb.01..03; Index1 (Mittelhand) bleibt.
@@ -107,8 +113,8 @@ func _full_map() -> Dictionary:
 
 
 ## Zielskelett: Bindungspose (Skelettraum), Eltern, Lage des Skeletts in der Szene.
-func _target_info() -> Dictionary:
-	var body: Node3D = (load(TARGET) as PackedScene).instantiate()
+func _target_info(path: String) -> Dictionary:
+	var body: Node3D = (load(path) as PackedScene).instantiate()
 	var sk := body.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
 	var skin: Skin = null
 	for mi: MeshInstance3D in body.find_children("*", "MeshInstance3D", true, false):

@@ -298,6 +298,16 @@ func _ragdoll_rise(player: AnimationPlayer, force := false) -> float:
 	return player.get_animation(UalLibrary.GET_UP).length
 
 
+## Schuss bzw. Nachladen (Schedule 1, P4-6). Die Quaternius-Figur spielt dazu UAL1 Pistol_Shoot bzw.
+## Pistol_Reload auf dem Oberkörper, die Klötzchenfigur nichts.
+func trigger_shot() -> void:
+	pass
+
+
+func trigger_reload(_seconds: float) -> void:
+	pass
+
+
 ## Steht gerade auf oder wartet darauf.
 func is_rising() -> bool:
 	return _rise_left > 0.0 or _rise_wait > 0.0 or _rise_hold
@@ -375,6 +385,18 @@ func _hit_reaction(player: AnimationPlayer) -> String:
 		if head >= 0 and hit_point.y > (sk.global_transform * sk.get_bone_global_pose(head)).origin.y - HEAD_ZONE:
 			return HIT_HEAD
 	return HIT_CHEST
+
+
+## Halter am Knochen in Metern (das Skelett der MM-Figuren ist 100-fach skaliert): Kinder sitzen in
+## Knochenrichtung, folgen der fertigen Pose (auch Ragdoll und AnimOverlay).
+func _bone_holder(skeleton: Skeleton3D, bone: String) -> Node3D:
+	var attach := BoneAttachment3D.new()
+	attach.bone_name = bone
+	skeleton.add_child(attach)
+	var holder := Node3D.new()
+	holder.scale = Vector3.ONE / attach.global_basis.get_scale().x
+	attach.add_child(holder)
+	return holder
 
 
 func _host_body() -> CharacterBody3D:

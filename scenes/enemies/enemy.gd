@@ -950,6 +950,7 @@ func _play_sfx(kind: StringName, share := true) -> void:
 		&"reload":
 			_sfx.stream = SoundGen.RELOAD
 			_sfx.pitch_scale = 0.9
+			model.trigger_reload(profile.reload_time)
 		_:
 			return
 	_sfx.play()
@@ -1085,6 +1086,7 @@ func _fire() -> void:
 ## Leuchtspur, Mündungsfeuer und Schuss-Ton (auch auf Clients über net_event).
 func _show_shot(from: Vector3, end: Vector3) -> void:
 	_spawn_tracer(from, end)
+	model.trigger_shot()
 	# Schrot: ein paar Spuren mehr, leicht gestreut.
 	if profile.weapon != null and profile.weapon.pellets > 1:
 		var spread := from.distance_to(end) * tan(deg_to_rad(profile.weapon.pellet_spread_degrees))

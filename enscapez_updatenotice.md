@@ -907,3 +907,29 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
   - Neue Prüfung in `test_ragdoll`: Haut der Leiche liegt flach (höchster Punkt unter 0,75 m). Mit dem alten Ragdoll 0,87 m (rot), mit dem Fix 0,30 m.
 - Getestet (headless): `test_ragdoll` 61/0, dreimal hintereinander; `test_npc_robbery` 47/0, `test_sector7_enemies` 15/0, `test_enemy_xp` 29/0.
 - Nach dem Fix nicht noch einmal im Bild angesehen; dafür bräuchte es einen zweiten Fensterlauf.
+
+### 2026-11-04 · Schedule 1, M3 „Systeme“, Teil 7: Gegner zielen und laden nach, Alltag der Fußgänger, Fußgängerinnen (P4-6, P5-8, P5-9) · Claude (für EnScapeZ) · Branch `enscapez/m3-rest`
+- Auf Wunsch von EnScapeZ entfällt P4-5 (Waffenvarianten mit Seltenheit): Waffen gibt es nur im Laden und als Beute.
+- Neu: `scenes/common/anim_overlay.gd` (`AnimOverlay`), eine Oberkörper-Ebene als Skelett-Modifier. Bauch, Brust, Kopf, Arme und Finger kommen aus UAL-Animationen, die Beine bleiben bei der laufenden Animation.
+  - Zielen: UAL1 Pistol_Aim_Neutral, nach Blickhöhe zu _Up bzw. _Down gemischt.
+  - Aktionen (einmal): Pistol_Shoot, Pistol_Reload.
+  - Haltung (Schleife): z. B. Telefonieren oder Tragen.
+- P4-6: Bewaffnete Gegner zielen jetzt mit UAL1 Pistol_Aim_* (auch im Laufen) statt Idle_Gun_Pointing/Run_Shoot. Jeder Schuss spielt Pistol_Shoot, das Nachladen Pistol_Reload über seine Dauer, auch im Laufen in Deckung und auf Clients (am Ton „reload“ gekoppelt).
+- P5-8 Alltag der Fußgänger (`civilian.gd`, `character_model.gd`, `crowd_director.gd`):
+  - Gewohnheit aus dem Seed: 12 % telefonieren (UAL2 Idle_TalkingPhone, Handy am Ohr, auch im Gehen), 8 % tragen eine Kiste (Walk_Carry, Kiste zwischen den Händen). Auf der Flucht, geduckt und im Sitzen ruht die Gewohnheit.
+  - Sitzen: Der CrowdDirector kennt je Bank zwei Plätze. An einem Wegknoten setzt sich ein Fußgänger mit 30 % Wahrscheinlichkeit auf einen freien Platz im Umkreis von 12 m (Sitting_Enter, Sitting_Idle oder Sitting_Talking), bleibt 10–25 s und steht mit Sitting_Exit wieder auf. Neuer Zustand `SIT`, Clients folgen ihm.
+  - Reden: Zwei stehende Fußgänger bis 2,2 m Abstand wenden sich zu und spielen UAL1 Idle_Talking.
+  - Bänke der Neon City auf 1,1 m Länge verkleinert (`tools/gen_neon_city.py`), Sitzfläche jetzt 0,40 m statt 0,73 m. Diese Höhe braucht die UAL-Sitzhaltung, damit die Füße am Boden sind (an der Haut gemessen). Der Diff der Stadt ändert nur die 70 `fit_length`-Werte.
+  - Bars aus „sitzen an Bars“ kommen mit M4 (P2-5, P2-6), Haltestellen gibt es in der Neon City keine.
+- P5-9 Fußgängerinnen: zwei Figuren aus dem City Pack (`Animated Woman-nIItLV9nxS.glb`, `-qJ2gsTUBHL.glb`).
+  - Lizenz auf Poly Pizza geprüft: Quaternius, CC0, eingetragen in `assets/CREDITS_MODELS.md`. Das dritte „Animated Woman.glb“ hat ein anderes Skelett und keine Herkunft; nicht verwendet.
+  - Gleiches Skelett wie Modular Men, andere Proportionen (Hüfte 7 cm höher). Deshalb rechnet `tools/retarget_ual.gd` eine zweite Bibliothek `ual_mw.res`; `UalLibrary.attach(player, woman)` wählt sie. Ragdoll, Aufstehen und Trefferzonen gelten für sie genauso.
+  - Etwa ein Drittel der Fußgänger sind Frauen (1,68 m).
+- Neuer Test `tools/tests/test_civilian_life.gd` (Neon City), 21 Prüfungen:
+  - 140 Sitzplätze; geht zur Bank, sitzt mit dem Becken über der Sitzfläche, Füße am Boden (7 cm), steht auf, Platz wird frei.
+  - Zwei reden und schauen sich an.
+  - Handy am Kopf, Kiste vor der Brust, beides im Gehen.
+  - Frauen dabei, mit eigener Bibliothek.
+- `test_weapons_m3` erweitert (89 Prüfungen): Gegner zielt im Laufen, Ebene dreht den Arm, Nachladen und Schuss spielen ihre Animation, beim Tod aus.
+- Getestet (headless): `test_civilian_life` 21/0, `test_weapons_m3` 89/0, `test_ragdoll` 61/0, `test_npc_robbery` 47/0, `test_sector7_city` 44/0, `test_neon_city` 30/0, `test_apartments` 61/0, `test_shop` 43/0, `test_enemy_xp` 29/0, `test_sector7_enemies` 15/0; `test_mp_sync` slum 9/0 und 10/0, testmap 17/0 und 19/0.
+- Ohne Fenster nachgeprüft: Zielen, Laufen und Nachladen der Gegner als CPU-gerechnete Haut mit Waffe.

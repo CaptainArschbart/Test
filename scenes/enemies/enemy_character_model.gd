@@ -7,9 +7,10 @@ extends EnemyModel
 ## Figur nach EnemyProfile.look: Gangster Punk/Hoodie/Casual, Sicherheitsdienst Business Man,
 ## Scharfschütze Adventurer, Polizei Swat. Die Waffe (EnemyProfile.weapon bzw. Pistole, Gewehr oder
 ## Brechstange nach style) hängt am Handknochen Wrist.R, die Mündung am Lauf. Statusleuchte als Implantat am Kopf, Taschenlampe an der
-## Brust. Animationen aus der Figur: Idle/Idle_Gun, Walk, Run, Idle_Gun_Pointing und Run_Shoot beim
-## Zielen, Gun_Shoot, Punch/Sword_Slash beim Nahkampf, Trefferreaktion nach Zone (UAL1 Hit_Head,
-## Hit_Chest aus UalLibrary, sonst HitRecieve), Death. Der AnimationPlayer läuft
+## Brust. Animationen aus der Figur: Idle/Idle_Gun, Walk, Run für die Beine, Punch/Sword_Slash beim
+## Nahkampf, Trefferreaktion nach Zone (UAL1 Hit_Head, Hit_Chest aus UalLibrary, sonst HitRecieve), Death.
+## Zielen, Schießen und Nachladen (P4-6) liegen als Oberkörper-Ebene (AnimOverlay, UAL1 Pistol_Aim_*,
+## Pistol_Shoot, Pistol_Reload) über den Beinen: er zielt auch im Laufen und lädt im Laufen nach. Der AnimationPlayer läuft
 ## nur in animate(), die LOD-Stufen des EnemyDirector bleiben wirksam.
 
 const DIR := "res://assets/characters/quaternius_modular_men/"
@@ -24,6 +25,8 @@ const ANIM_PREFIX := "CharacterArmature|"
 const GRIP_BASIS := Basis(Vector3(0, 0, 1), Vector3(-1, 0, 0), Vector3(0, -1, 0))
 ## Griff liegt so weit vor dem Handgelenk (Meter, entlang des Knochens).
 const GRIP_OFFSET := 0.07
+## So lange (s) dauert der Rückstoß aus Pistol_Shoot bei einem Schuss.
+const SHOT_TIME := 0.3
 
 var look_name := ""
 
@@ -31,6 +34,7 @@ var _anim: AnimationPlayer
 var _current := ""
 var _hit_left := 0.0
 var _armed := false
+var _overlay: AnimOverlay
 
 static var _scenes := {}
 static var _heights := {}
@@ -72,6 +76,8 @@ func build(profile: EnemyProfile, variant_seed: int) -> void:
 				a.loop_mode = Animation.LOOP_LINEAR
 		_play(_idle_name(), 0.0)
 		_anim.advance(_rng.randf() * 2.0)
+		if _armed:
+			_overlay = AnimOverlay.attach(skeleton, _anim)
 
 
 func animate(delta: float) -> void:
@@ -79,6 +85,8 @@ func animate(delta: float) -> void:
 		super.animate(delta)
 		return
 	if _dead:
+		if _overlay != null:
+			_overlay.stop()
 		_rise_step(delta, _anim)
 		# Als Ragdoll stellt die Physik die Knochen, die Animation muss nicht laufen (außer beim Aufstehen).
 		if is_rising() or ragdoll == null or not ragdoll.running:
@@ -94,7 +102,22 @@ func animate(delta: float) -> void:
 		_play(reaction, 0.05)
 	elif _hit_left <= 0.0:
 		_choose(delta)
+	if _overlay != null:
+		# Oberkörper zielt (auch im Laufen); bei Trefferreaktion, Betäubung und Nahkampf nicht.
+		var target := aim if not stunned and _hit_left <= 0.0 and attack <= 0.0 else 0.0
+		_overlay.aim_weight = move_toward(_overlay.aim_weight, target, delta * 6.0)
+		_overlay.aim_pitch = aim_pitch
 	_anim.advance(delta)
+
+
+func trigger_shot() -> void:
+	if _overlay != null and not _dead:
+		_overlay.play_action(AnimOverlay.SHOOT, SHOT_TIME)
+
+
+func trigger_reload(seconds: float) -> void:
+	if _overlay != null and not _dead:
+		_overlay.play_action(AnimOverlay.RELOAD, seconds)
 
 
 func _choose(_delta: float) -> void:
@@ -105,7 +128,7 @@ func _choose(_delta: float) -> void:
 	elif _style == EnemyProfile.Style.MELEE and attack > 0.0:
 		_play("Punch_Right", 0.08)
 		_anim.speed_scale = 1.4
-	elif aim > 0.5 and _armed:
+	elif aim > 0.5 and _armed and _overlay == null:
 		if speed > 0.6:
 			_play("Run_Shoot")
 			_anim.speed_scale = clampf(speed / RUN_SPEED, 0.6, 1.4)
@@ -127,6 +150,8 @@ func fall(direction: Vector3) -> void:
 		return
 	_dead = true
 	_reset_rise()
+	if _overlay != null:
+		_overlay.stop()
 	if laser != null:
 		laser.visible = false
 	if flashlight != null:
@@ -150,6 +175,8 @@ func knock_down(direction: Vector3) -> bool:
 		return false
 	_reset_rise()
 	_dead = true
+	if _overlay != null:
+		_overlay.stop()
 	if laser != null:
 		laser.visible = false
 	if _ragdoll_fall(direction):
@@ -222,16 +249,6 @@ func _look_for(profile: EnemyProfile) -> String:
 
 
 ## Knoten am Knochen, dessen Kinder in Metern und ohne die Skalierung der Figur liegen.
-func _bone_holder(skeleton: Skeleton3D, bone: String) -> Node3D:
-	var attach := BoneAttachment3D.new()
-	attach.bone_name = bone
-	skeleton.add_child(attach)
-	var holder := Node3D.new()
-	holder.scale = Vector3.ONE / attach.global_basis.get_scale().x
-	attach.add_child(holder)
-	return holder
-
-
 func _attach_weapon(profile: EnemyProfile, skeleton: Skeleton3D) -> void:
 	var hand := _bone_holder(skeleton, "Wrist.R")
 	_weapon = Node3D.new()

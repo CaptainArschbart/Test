@@ -3502,7 +3502,7 @@ collider_footprint = Vector2(0.8, 0.8)
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -112.157, 0.2, 108.778)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -3510,7 +3510,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -113.599, 0.2, 105.767)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -3722,7 +3722,7 @@ collider_footprint = Vector2(0.8, 0.8)
 transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, -35.393, 0.45, -40.129)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -3730,7 +3730,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -35.393, 0.45, -35.548)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -3747,7 +3747,7 @@ accent = 1
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -28.129, 0.15, -15.293)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -3755,7 +3755,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -30.612, 0.15, -23.042)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -3847,7 +3847,7 @@ collider_footprint = Vector2(0.8, 0.8)
 transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, -35.383, 0.45, 36.39)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -3855,7 +3855,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -35.383, 0.45, 39.41)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -3872,7 +3872,7 @@ accent = 1
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -21.744, 0.15, 18.906)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -3880,7 +3880,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -15.358, 0.15, 17.369)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -4215,7 +4215,7 @@ collider_footprint = Vector2(0.8, 0.8)
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -40.918, 0.2, 103.981)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -4223,7 +4223,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -40.861, 0.2, 105.967)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -4449,7 +4449,7 @@ collider_footprint = Vector2(0.8, 0.8)
 transform = Transform3D(-1.0, 0, 0.0, 0, 1, 0, 0.0, 0, -1.0, 38.461, 0.45, -40.889)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -4457,7 +4457,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 38.461, 0.45, -33.863)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -4474,7 +4474,7 @@ accent = 1
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 14.243, 0.15, -18.28)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -4482,7 +4482,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 29.922, 0.15, -23.108)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -4490,7 +4490,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 25.982, 0.15, -33.541)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -4574,7 +4574,7 @@ accent = 1
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 22.817, 0.15, 28.491)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -4582,7 +4582,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 16.195, 0.15, 25.653)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -4590,7 +4590,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 27.33, 0.15, 15.895)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -6425,7 +6425,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -149.9, 0.15, -85.418)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -6433,7 +6433,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -138.1, 0.15, -129.899)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -6449,7 +6449,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -138.1, 0.15, -108.759)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -6465,7 +6465,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -149.9, 0.15, -54.926)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -6489,7 +6489,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -149.9, 0.15, -22.36)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -6753,7 +6753,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -77.9, 0.15, -33.07)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -6785,7 +6785,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -66.1, 0.15, -29.722)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -6793,7 +6793,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -77.9, 0.15, 18.944)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -6857,7 +6857,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -66.1, 0.15, 56.39)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -6873,7 +6873,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -77.9, 0.15, 100.494)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -6937,7 +6937,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -7.9, 0.15, -116.741)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -6945,7 +6945,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -7.9, 0.15, -104.522)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7017,7 +7017,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -7.9, 0.15, -36.587)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7169,7 +7169,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 7.9, 0.15, 84.555)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7185,7 +7185,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 7.9, 0.15, 106.504)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7321,7 +7321,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 77.9, 0.15, -48.13)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7361,7 +7361,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 66.1, 0.15, 44.787)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7401,7 +7401,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 77.9, 0.15, 57.664)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7409,7 +7409,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 66.1, 0.15, 86.576)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7497,7 +7497,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 138.1, 0.15, -90.132)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7529,7 +7529,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 149.9, 0.15, -93.016)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7649,7 +7649,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 149.9, 0.15, 47.059)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7689,7 +7689,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 138.1, 0.15, 122.871)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7721,7 +7721,7 @@ collide = true
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 149.9, 0.15, 121.976)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7753,7 +7753,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -89.177, 0.15, -149.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7793,7 +7793,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -56.215, 0.15, -149.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7809,7 +7809,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -34.339, 0.15, -149.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7881,7 +7881,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 59.05, 0.15, -149.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7969,7 +7969,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 99.835, 0.15, -138.1)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -7993,7 +7993,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -128.306, 0.15, -77.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8017,7 +8017,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -88.364, 0.15, -77.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8089,7 +8089,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -56.409, 0.15, -66.1)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8217,7 +8217,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 88.792, 0.15, -66.1)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8265,7 +8265,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -104.66, 0.15, -7.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8273,7 +8273,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -94.26, 0.15, -7.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8289,7 +8289,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -118.768, 0.15, 7.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8313,7 +8313,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -59.392, 0.15, -7.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8329,7 +8329,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -34.965, 0.15, -7.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8337,7 +8337,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -19.291, 0.15, -7.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8401,7 +8401,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 15.92, 0.15, 7.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8457,7 +8457,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 121.718, 0.15, -7.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8505,7 +8505,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 123.648, 0.15, 7.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8513,7 +8513,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -127.838, 0.15, 66.1)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8625,7 +8625,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -40.481, 0.15, 77.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8657,7 +8657,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 33.987, 0.15, 66.1)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8673,7 +8673,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 18.217, 0.15, 77.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8809,7 +8809,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -129.531, 0.15, 149.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8849,7 +8849,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -42.45, 0.15, 138.1)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8857,7 +8857,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, -30.689, 0.15, 138.1)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 
@@ -8993,7 +8993,7 @@ collide = true
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 88.638, 0.15, 149.9)
 script = ExtResource("k_prop")
 model = "res://assets/props/city_pack/Bench.glb"
-fit_length = 2.0
+fit_length = 1.1
 fit_height = 1.0
 collide = true
 

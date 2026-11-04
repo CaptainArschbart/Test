@@ -15,6 +15,7 @@ anderen Formate (`.blend`, `.obj`, `.stl`, `.dae`) liegen weiter lokal in `_inco
 | `props/quaternius_furniture/` | Möbel, Küche, Bad, Lampen, Türen, Fenster (`.fbx`) | Quaternius | CC0 1.0 (`License.txt`) |
 | `props/quaternius_vehicles/` | Fahrzeuge, Ampel, Schilder, Pylon (`.fbx`) | Quaternius (keine Lizenzdatei dabei) | CC0 1.0, wie alle Quaternius-Packs |
 | `props/city_pack/` | Stadt-Props, Autos, Gebäude, ein paar Figuren (`.glb`) | Poly Pizza, „City Pack“ | **je Modell prüfen** (Poly Pizza: CC0 oder CC-BY) |
+| `props/city_pack/Animated Woman-nIItLV9nxS.glb`, `props/city_pack/Animated Woman-qJ2gsTUBHL.glb` | Zwei Frauenfiguren (Skelett wie Modular Men), als Fußgängerinnen im Spiel | Quaternius über Poly Pizza (poly.pizza/m/nIItLV9nxS, poly.pizza/m/qJ2gsTUBHL, am 2026-11-04 geprüft) | CC0 1.0 |
 | `items/food/quaternius_food/` | Essen und Getränke (`.fbx`) | Quaternius (keine Lizenzdatei dabei) | CC0 1.0, wie alle Quaternius-Packs |
 | `items/weapons/quaternius_guns/` | 41 Schusswaffen (`.fbx`) | Quaternius | CC0 1.0 (`License.txt`) |
 | `items/misc/radio.fbx` | Radio | Quaternius über Poly Pizza | CC0 1.0 |

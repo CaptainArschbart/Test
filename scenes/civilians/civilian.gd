@@ -11,8 +11,11 @@ extends CharacterBody3D
 ## Schüsse, Explosionen, Treffer und Tote in der Nähe: Panik, entweder sofort weglaufen oder erst
 ## ducken (Hände über dem Kopf) und dann weglaufen. Danach beruhigt er sich und geht weiter.
 ## Treffer: take_hit / emp_hit wie bei Gegnern, hit_by_car vom Auto (umfallen, wieder aufstehen).
+## Alltag (Schedule 1, P5-8): Gewohnheit aus dem Seed (telefonieren oder Kiste tragen, beides auch im
+## Gehen), an einem Wegknoten manchmal auf eine Bank in der Nähe setzen (CrowdDirector.claim_seat),
+## im Stehen mit einem anderen stehenden Fußgänger reden. Beim Client folgt das dem Zustand vom Host.
 
-enum State { WALK, IDLE, WAIT_CROSS, FLEE, COWER, DOWN, DEAD }
+enum State { WALK, IDLE, WAIT_CROSS, FLEE, COWER, DOWN, DEAD, SIT }
 enum Lod { FULL, LOW, SLEEP }
 
 const GROUP := &"civilian"
@@ -21,6 +24,16 @@ const SCREAMS := ["Aaah!", "Hilfe!", "Nicht schießen!", "Weg hier!", "Runter!"]
 ## Eigene LOD-Stufen ohne CrowdDirector (Bewohner): voll bis hier, darüber selten, dahinter schlafend.
 const SELF_FULL_DISTANCE := 18.0
 const SELF_LOW_DISTANCE := 35.0
+## Alltag: so oft an einem Wegknoten auf eine Bank im Umkreis setzen, so lange sitzen (s).
+const SIT_CHANCE := 0.3
+const SEAT_RADIUS := 12.0
+const SIT_MIN := 10.0
+const SIT_MAX := 25.0
+## Im Stehen reden mit jemandem, der so nah auch steht (m).
+const TALK_RADIUS := 2.2
+## Gewohnheiten (wie CharacterModel.Habit): Anteil in Prozent.
+const PHONE_SHARE := 12
+const CARRY_SHARE := 8
 
 var crowd: CrowdDirector
 var state := State.WALK
@@ -63,6 +76,12 @@ var net_puppet := false
 var net_seed := 0
 ## Wohnung: bleibt stehen, läuft nicht ins Wegenetz.
 var stay_put := false
+## Gewohnheit aus dem Seed: 0 keine, 1 telefoniert, 2 trägt eine Kiste (CharacterModel.Habit).
+var habit := 0
+var _seat := -1
+var _seat_root := Transform3D()
+var _seat_going := false
+var _talk_check := 0.0
 var crime: CivilianCrime
 var _hurt_by_player := false
 var _net_pos := Vector3.INF
@@ -103,6 +122,11 @@ func _ready() -> void:
 	scaler.add_child(model)
 	model.build_civilian(_rng.randi())
 	model.run_speed = run_speed
+	if not stay_put:
+		var roll := posmod(net_seed * 7919 + 13, 100)
+		habit = 1 if roll < PHONE_SHARE else (2 if roll < PHONE_SHARE + CARRY_SHARE else 0)
+		if habit != 0 and model.has_method("set_habit"):
+			model.call("set_habit", habit)
 	_voice = _audio(-4.0, 35.0)
 	_steps = _audio(-16.0, 16.0)
 	_label = Label3D.new()
@@ -343,7 +367,8 @@ func _tick(delta: float) -> void:
 		State.FLEE: _flee(delta)
 		State.COWER: _cower(delta)
 		State.DOWN: _down(delta)
-	if state != State.DOWN:
+		State.SIT: _sit_state(delta)
+	if state != State.DOWN and state != State.SIT:
 		_move(delta)
 	_animate(delta)
 
@@ -368,6 +393,14 @@ func _walk() -> void:
 
 
 func _arrive() -> void:
+	if _seat_going:
+		# Bei der Bank: hinsetzen, wenn wirklich da (sonst steckte er fest).
+		if _flat(global_position, _seat_root.origin) < 1.0:
+			_sit_down()
+			return
+		_release_seat()
+	elif crowd != null and habit != 2 and _rng.randf() < SIT_CHANCE and _try_seat():
+		return
 	var wait := crowd.node_wait[_to] if crowd != null else 0.0
 	if wait > 0.0 and _rng.randf() < 0.75:
 		_set_state(State.IDLE)
@@ -381,8 +414,10 @@ func _arrive() -> void:
 
 func _idle(delta: float) -> void:
 	_wait_left -= delta
-	# Umschauen.
-	if fmod(_state_time, 2.5) < delta:
+	# Reden mit jemandem, der daneben steht, sonst umschauen.
+	if _update_talk(delta):
+		_face_yaw = lerp_angle(_face_yaw, _look_yaw, minf(delta * 3.0, 1.0))
+	elif fmod(_state_time, 2.5) < delta:
 		_look_yaw = _face_yaw + _rng.randf_range(-1.2, 1.2)
 	_face_yaw = lerp_angle(_face_yaw, _look_yaw, minf(delta * 2.0, 1.0))
 	if stay_put:
@@ -436,6 +471,86 @@ func _down(delta: float) -> void:
 	elif _wait_left <= 0.0 and not model.is_fallen():
 		_panic_from = global_position - (-global_basis.z) * 3.0
 		_start_flee()
+
+
+## Sitzplatz in der Nähe belegen und hingehen. Die Stelle der Figur ergibt sich aus der Sitzhaltung:
+## Becken über dem Sitzplatz, Blick in Blickrichtung der Bank, Füße davor.
+func _try_seat() -> bool:
+	if not model.has_method("sit_offset"):
+		return false
+	var index := crowd.claim_seat(global_position, SEAT_RADIUS, self)
+	if index < 0:
+		return false
+	var off: Vector3 = model.call("sit_offset")
+	if not off.is_finite():
+		crowd.release_seat(index)
+		return false
+	var face := crowd.seat_face(index)
+	var turn := Basis(Vector3.UP, atan2(-face.x, -face.z))
+	var seat := crowd.seat_point(index)
+	var spot := seat - turn * Vector3(off.x, 0.0, off.z)
+	spot.y = seat.y - off.y
+	_seat = index
+	_seat_root = Transform3D(turn, spot)
+	_seat_going = true
+	_set_state(State.WALK)
+	_plan_path(Vector3(spot.x, global_position.y, spot.z))
+	return true
+
+
+func _sit_down() -> void:
+	_seat_going = false
+	global_transform = _seat_root
+	reset_physics_interpolation()
+	_face_yaw = rotation.y
+	_look_yaw = _face_yaw
+	velocity = Vector3.ZERO
+	_hvel = Vector3.ZERO
+	_wish = Vector3.ZERO
+	model.set("sit_talk", _rng.randf() < 0.4)
+	model.call("sit", true)
+	_set_state(State.SIT)
+	_wait_left = _rng.randf_range(SIT_MIN, SIT_MAX)
+
+
+func _sit_state(delta: float) -> void:
+	_wait_left -= delta
+	if _wait_left > 0.0:
+		return
+	# Aufstehen (Sitting_Exit), kurz stehen, dann weiter auf dem Wegenetz.
+	model.call("sit", false)
+	_release_seat()
+	_set_state(State.IDLE)
+	_wait_left = 1.2
+
+
+func _release_seat() -> void:
+	if _seat >= 0 and crowd != null:
+		crowd.release_seat(_seat)
+	_seat = -1
+	_seat_going = false
+
+
+## Steht jemand Ruhiges daneben (ohne Handy und Kiste): ihm zuwenden und reden. true = redet.
+func _update_talk(delta: float) -> bool:
+	_talk_check -= delta
+	if _talk_check > 0.0:
+		return bool(model.get("talk"))
+	_talk_check = 1.0
+	var partner: Civilian = null
+	if habit == 0 and not stay_put:
+		for node: Node in get_tree().get_nodes_in_group(GROUP):
+			var other := node as Civilian
+			if other == null or other == self or other.state != State.IDLE:
+				continue
+			if global_position.distance_to(other.global_position) < TALK_RADIUS:
+				partner = other
+				break
+	model.set("talk", partner != null)
+	if partner != null:
+		var to := partner.global_position - global_position
+		_look_yaw = atan2(-to.x, -to.z)
+	return partner != null
 
 
 func _start_flee() -> void:
@@ -640,6 +755,12 @@ func _animate(delta: float) -> void:
 func _set_state(new_state: State) -> void:
 	if state == State.DEAD:
 		return
+	if state == State.SIT and new_state != State.SIT and model != null and model.has_method("sit"):
+		model.call("sit", false)
+	if new_state == State.FLEE or new_state == State.COWER or new_state == State.DOWN or new_state == State.DEAD:
+		_release_seat()
+	if new_state != State.IDLE and model != null:
+		model.set("talk", false)
 	state = new_state
 	_state_time = 0.0
 	_stuck_time = 0.0
@@ -714,6 +835,13 @@ func net_apply(pos: Vector3, yaw: float, new_state: int, speed: float) -> void:
 		State.FLEE, State.COWER:
 			if old != State.FLEE and old != State.COWER and not first:
 				_say_scream(false)
+		State.SIT:
+			if model.has_method("sit"):
+				model.call("sit", true)
+	if old == State.SIT and state != State.SIT and model.has_method("sit"):
+		model.call("sit", false)
+	if state != State.IDLE:
+		model.set("talk", false)
 	if old == State.DOWN and state != State.DEAD and model.is_fallen():
 		model.get_up()
 
@@ -730,4 +858,6 @@ func _puppet_tick(delta: float) -> void:
 	var cower := 1.0 if state == State.COWER else 0.0
 	model.cower = move_toward(model.cower, cower, delta * 5.0)
 	model.crouch = move_toward(model.crouch, cower, delta * 5.0)
+	if state == State.IDLE:
+		_update_talk(delta)
 	model.animate(delta)
