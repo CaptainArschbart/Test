@@ -7,6 +7,12 @@
 [ext_resource type="Resource" path="res://scenes/enemies/profiles/gangster_pistol.tres" id="p_gp"]
 [ext_resource type="Resource" path="res://scenes/enemies/profiles/gangster_smg.tres" id="p_smg"]
 [ext_resource type="Resource" path="res://scenes/enemies/profiles/security.tres" id="p_sec"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/gang_leader.tres" id="p_lead"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/gang_shotgun.tres" id="p_gsh"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/gang_sawed_off.tres" id="p_so"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/gang_compact_smg.tres" id="p_cmp"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/security_bullpup.tres" id="p_bp"]
+[ext_resource type="Resource" path="res://scenes/enemies/profiles/security_heavy_pistol.tres" id="p_hp"]
 
 [node name="NeonCityEnemies" type="Node3D"]
 
@@ -532,7 +538,7 @@ metadata/wait = 0.0
 
 [node name="Gang00_0" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -104.28, 0.15, -108.13)
-profile = ExtResource("p_gp")
+profile = ExtResource("p_lead")
 variant_seed = 89426
 route = NodePath("../../Routes/R_Gang00")
 start_point = 0
@@ -546,7 +552,7 @@ start_point = 5
 
 [node name="Gang00_Wache" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(-0.48481, 0, 0.87462, 0, 1, 0, -0.87462, 0, -0.48481, -104.9, 0.15, -107.52)
-profile = ExtResource("p_smg")
+profile = ExtResource("p_gsh")
 variant_seed = 60246
 
 [node name="Gang01_0" parent="Enemies" instance=ExtResource("3_enemy")]
@@ -558,7 +564,7 @@ start_point = 0
 
 [node name="Gang01_1" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -110.47, 0.15, -47.23)
-profile = ExtResource("p_gp")
+profile = ExtResource("p_so")
 variant_seed = 64344
 route = NodePath("../../Routes/R_Gang01")
 start_point = 2
@@ -577,14 +583,14 @@ start_point = 0
 
 [node name="Gang02_1" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -104.62, 0.15, 33.55)
-profile = ExtResource("p_gp")
+profile = ExtResource("p_so")
 variant_seed = 40906
 route = NodePath("../../Routes/R_Gang02")
 start_point = 5
 
 [node name="Gang02_Wache" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(0.99255, 0, 0.12187, 0, 1, 0, -0.12187, 0, 0.99255, -119.83, 0.15, 35.53)
-profile = ExtResource("p_smg")
+profile = ExtResource("p_cmp")
 variant_seed = 70827
 
 [node name="Gang10_0" parent="Enemies" instance=ExtResource("3_enemy")]
@@ -603,35 +609,35 @@ start_point = 5
 
 [node name="Kern11_0" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -40.77, 0.15, -34.02)
-profile = ExtResource("p_sec")
+profile = ExtResource("p_bp")
 variant_seed = 38172
 route = NodePath("../../Routes/R_Kern11")
 start_point = 0
 
 [node name="Kern11_1" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -32.11, 0.15, -34.12)
-profile = ExtResource("p_sec")
+profile = ExtResource("p_hp")
 variant_seed = 95720
 route = NodePath("../../Routes/R_Kern11")
 start_point = 6
 
 [node name="Kern12_0" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -32.1, 0.15, 34.3)
-profile = ExtResource("p_sec")
+profile = ExtResource("p_bp")
 variant_seed = 29141
 route = NodePath("../../Routes/R_Kern12")
 start_point = 0
 
 [node name="Kern12_1" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -39.62, 0.15, 41.14)
-profile = ExtResource("p_sec")
+profile = ExtResource("p_hp")
 variant_seed = 11708
 route = NodePath("../../Routes/R_Kern12")
 start_point = 5
 
 [node name="Gang20_0" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 39.11, 0.15, -114.98)
-profile = ExtResource("p_gp")
+profile = ExtResource("p_lead")
 variant_seed = 39153
 route = NodePath("../../Routes/R_Gang20")
 start_point = 0
@@ -645,33 +651,33 @@ start_point = 3
 
 [node name="Gang20_Wache" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(0.93358, 0, 0.35837, 0, 1, 0, -0.35837, 0, 0.93358, 32.74, 0.15, -109.24)
-profile = ExtResource("p_smg")
+profile = ExtResource("p_gsh")
 variant_seed = 60251
 
 [node name="Kern21_0" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 41.4, 0.15, -34.93)
-profile = ExtResource("p_sec")
+profile = ExtResource("p_bp")
 variant_seed = 71423
 route = NodePath("../../Routes/R_Kern21")
 start_point = 0
 
 [node name="Kern21_1" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 33.07, 0.15, -42.23)
-profile = ExtResource("p_sec")
+profile = ExtResource("p_hp")
 variant_seed = 12909
 route = NodePath("../../Routes/R_Kern21")
 start_point = 5
 
 [node name="Kern22_0" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 33.85, 0.15, 37.38)
-profile = ExtResource("p_sec")
+profile = ExtResource("p_bp")
 variant_seed = 46188
 route = NodePath("../../Routes/R_Kern22")
 start_point = 0
 
 [node name="Kern22_1" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 38.43, 0.15, 33.23)
-profile = ExtResource("p_sec")
+profile = ExtResource("p_hp")
 variant_seed = 86105
 route = NodePath("../../Routes/R_Kern22")
 start_point = 2
@@ -692,7 +698,7 @@ start_point = 6
 
 [node name="Tuer31_W" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 82.0, 0.15, -35.81)
-profile = ExtResource("p_sec")
+profile = ExtResource("p_hp")
 variant_seed = 24758
 
 [node name="Tuer31_E" parent="Enemies" instance=ExtResource("3_enemy")]
@@ -702,7 +708,7 @@ variant_seed = 54070
 
 [node name="Tuer32_W" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 82.0, 0.15, 38.93)
-profile = ExtResource("p_sec")
+profile = ExtResource("p_hp")
 variant_seed = 29539
 
 [node name="Tuer32_E" parent="Enemies" instance=ExtResource("3_enemy")]
@@ -712,7 +718,7 @@ variant_seed = 98944
 
 [node name="Platz11" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -30.35, 0.15, -14.58)
-profile = ExtResource("p_sec")
+profile = ExtResource("p_bp")
 variant_seed = 39964
 route = NodePath("../../Routes/R_Platz11")
 start_point = 0
@@ -733,7 +739,7 @@ start_point = 0
 
 [node name="Platz22" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 32.39, 0.15, 30.45)
-profile = ExtResource("p_sec")
+profile = ExtResource("p_bp")
 variant_seed = 33649
 route = NodePath("../../Routes/R_Platz22")
 start_point = 0

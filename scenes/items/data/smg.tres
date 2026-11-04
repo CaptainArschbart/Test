@@ -15,6 +15,7 @@ fire_interval = 0.07
 reload_time = 1.6
 max_range = 60.0
 view_scene = ExtResource("2_view")
+weapon_class = "smg"
 pickup_scale = 1.6
 hip_offset = Vector3(0.01, -0.01, -0.06)
 automatic = true

@@ -8,6 +8,10 @@ extends Node3D
 ## Schaden. "reload" (R, belegbar) füllt das Magazin; Reservemunition gibt es noch nicht.
 ## Waffen mit `automatic` (SMG) schießen, solange "fire" gehalten wird; jeder Schuss vergrößert
 ## die Streuung (bloom) und lässt den Rückstoß klettern, ohne Schießen geht beides zurück.
+## Mit `burst_count` > 1 (Bullpup) schießt ein Klick einen Feuerstoß im Abstand burst_interval.
+## Schrotflinten (`pellets` > 1) schießen mehrere Strahlen im Kegel pellet_spread_degrees, jeder
+## trifft für sich mit WeaponData.damage_at(Entfernung). Mit `reload_single` (Revolver, Pumpgun)
+## kommt pro reload_time eine Patrone dazu, "fire" bricht das Nachladen ab, sobald eine drin ist.
 ## Hat die Waffenszene einen Knoten "Magazine", fällt er beim Nachladen heraus und kommt
 ## wieder (die linke Hand folgt dem Marker "Magazine/HandReloadLeft"). Ein Marker3D "Eject"
 ## wirft mit `eject_shells` Hülsen aus.
@@ -48,6 +52,10 @@ var _recoil := 0.0
 var _bloom := 0.0
 ## "fire" wurde von dieser Waffe angenommen und ist noch gedrückt (Dauerfeuer).
 var _trigger := false
+## Schüsse, die vom laufenden Feuerstoß noch fehlen.
+var _burst_left := 0
+## Höchstens so viele Einschläge eines Schrotschusses zeigen Splitter (Partikel sparen).
+const PELLET_DEBRIS := 3
 var _magazine: Node3D
 var _magazine_base := Transform3D.IDENTITY
 var _shells: Array[Node3D] = []
@@ -95,7 +103,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("fire"):
 		get_viewport().set_input_as_handled()
 		_trigger = true
-		try_fire()
+		# Einzelnes Nachladen (Pumpgun, Revolver): Schießen bricht ab, sobald eine Patrone drin ist.
+		if _reload_left > 0.0 and _weapon.reload_single and get_ammo() > 0:
+			_reload_left = 0.0
+			_update_hud()
+		if _burst_left <= 0:
+			try_fire()
 	elif event.is_action_pressed("reload"):
 		get_viewport().set_input_as_handled()
 		start_reload()
@@ -105,6 +118,10 @@ func _process(delta: float) -> void:
 	_cooldown -= delta
 	if _trigger and (not Input.is_action_pressed("fire") or _weapon == null or not _can_use()):
 		_trigger = false
+	# Feuerstoß läuft auch nach dem Loslassen zu Ende.
+	while _burst_left > 0 and _cooldown <= 0.0:
+		if _weapon == null or not _can_use() or not try_fire():
+			_burst_left = 0
 	# Dauerfeuer: Restzeit wird mitgenommen, damit die Feuerrate nicht an der Bildrate hängt.
 	if _trigger and _weapon.automatic:
 		while _cooldown <= 0.0 and get_ammo() > 0 and try_fire():
@@ -153,8 +170,17 @@ func try_fire() -> bool:
 		_trigger = false
 		return false
 	_ammo[_weapon.id] = get_ammo() - 1
+	var interval := _weapon.fire_interval
+	if _weapon.burst_count > 1:
+		if _burst_left <= 0:
+			_burst_left = _weapon.burst_count
+		_burst_left -= 1
+		if _burst_left > 0 and get_ammo() > 0:
+			interval = _weapon.burst_interval
+		else:
+			_burst_left = 0
 	# Negativer Rest (Dauerfeuer zwischen zwei Bildern) wird angerechnet.
-	_cooldown = minf(_cooldown, 0.0) + _weapon.fire_interval
+	_cooldown = minf(_cooldown, 0.0) + interval
 	_recoil = _weapon.recoil_kick
 	_flash_left = flash_time
 	_set_flash(true)
@@ -182,7 +208,8 @@ func try_fire() -> bool:
 func start_reload() -> void:
 	if _weapon == null or _reload_left > 0.0 or get_ammo() >= _weapon.magazine_size:
 		return
-	# Skill Schnellladen (reload_mult) verkürzt die Zeit.
+	_burst_left = 0
+	# Skill Schnellladen (reload_mult) verkürzt die Zeit (bei reload_single pro Patrone).
 	_reload_total = _weapon.reload_time * _player.skill_mult(&"reload_mult")
 	_reload_left = _reload_total
 	_play(_weapon.reload_sound)
@@ -252,7 +279,13 @@ func get_reload_progress() -> float:
 
 func _finish_reload() -> void:
 	_reload_left = 0.0
-	if _weapon != null:
+	if _weapon != null and _weapon.reload_single:
+		_ammo[_weapon.id] = mini(get_ammo() + 1, _weapon.magazine_size)
+		# Nächste Patrone, bis das Magazin voll ist.
+		if get_ammo() < _weapon.magazine_size:
+			_reload_left = _reload_total
+			_play(_weapon.reload_sound, randf_range(0.97, 1.03))
+	elif _weapon != null:
 		_ammo[_weapon.id] = _weapon.magazine_size
 	_update_hud()
 
@@ -260,27 +293,42 @@ func _finish_reload() -> void:
 func _shoot_ray() -> void:
 	var camera := _player.camera
 	var from := camera.global_position
-	var direction := -camera.global_basis.z
+	var cam_basis := camera.global_basis
 	# Streuung: zufällig im Kegel, aus der Hüfte und beim Dauerfeuer größer.
-	var spread := deg_to_rad(get_spread_degrees())
-	if spread > 0.0:
-		var angle := randf() * TAU
-		var amount := sqrt(randf()) * spread
-		var axis := camera.global_basis.x * cos(angle) + camera.global_basis.y * sin(angle)
-		direction = direction.rotated(axis.normalized(), amount)
-	var to := from + direction * _weapon.max_range
-	# Layer world und player: andere Spieler sind im Multiplayer treffbar, die eigene Figur nicht.
-	var query := PhysicsRayQueryParameters3D.create(from, to, 1 | 2, [_player.get_rid()])
-	var hit := get_world_3d().direct_space_state.intersect_ray(query)
-	if hit.is_empty():
-		return
-	var collider: Object = hit.collider
-	if collider != null and collider.has_method("take_hit"):
-		collider.take_hit(_weapon.damage, hit.position, hit.normal)
-	var body := collider is CharacterBody3D
-	_show_impact(hit.position, hit.normal, body)
-	if WorldSync.is_online():
-		_remote_impact.rpc(hit.position, hit.normal, body)
+	var center := _in_cone(-cam_basis.z, deg_to_rad(get_spread_degrees()), cam_basis)
+	var pellet_cone := deg_to_rad(_weapon.pellet_spread_degrees)
+	var space := get_world_3d().direct_space_state
+	var debris_left := PELLET_DEBRIS
+	for i in _weapon.pellets:
+		var direction := center if _weapon.pellets == 1 else _in_cone(center, pellet_cone, cam_basis)
+		var to := from + direction * _weapon.max_range
+		# Layer world und player: andere Spieler sind im Multiplayer treffbar, die eigene Figur nicht.
+		var query := PhysicsRayQueryParameters3D.create(from, to, 1 | 2, [_player.get_rid()])
+		var hit := space.intersect_ray(query)
+		if hit.is_empty():
+			continue
+		var collider: Object = hit.collider
+		if collider != null and collider.has_method("take_hit"):
+			collider.take_hit(_weapon.damage_at(from.distance_to(hit.position)), hit.position, hit.normal)
+		var body := collider is CharacterBody3D
+		if body or debris_left > 0:
+			_show_impact(hit.position, hit.normal, body)
+			if WorldSync.is_online():
+				_remote_impact.rpc(hit.position, hit.normal, body)
+			if not body:
+				debris_left -= 1
+		else:
+			_spawn_impact(hit.position, hit.normal)
+
+
+## Zufällige Richtung im Kegel um `axis` (Halbwinkel `cone` in Radiant), gleichmäßig über die Fläche.
+func _in_cone(axis: Vector3, cone: float, frame: Basis) -> Vector3:
+	if cone <= 0.0:
+		return axis
+	var angle := randf() * TAU
+	var amount := sqrt(randf()) * cone
+	var tilt := frame.x * cos(angle) + frame.y * sin(angle)
+	return axis.rotated(tilt.normalized(), amount)
 
 
 ## Einschlag eines Schusses dieses Spielers auf den anderen Rechnern.
@@ -427,6 +475,7 @@ func _update_weapon() -> void:
 		return
 	_weapon = weapon
 	_reload_left = 0.0
+	_burst_left = 0
 	_recoil = 0.0
 	_bloom = 0.0
 	_trigger = false
@@ -563,7 +612,9 @@ func _update_hud() -> void:
 	_ammo_label.visible = _weapon != null
 	if _weapon == null:
 		return
-	if _reload_left > 0.0:
+	if _reload_left > 0.0 and _weapon.reload_single:
+		_ammo_label.text = "NACHLADEN %d / %d" % [get_ammo(), _weapon.magazine_size]
+	elif _reload_left > 0.0:
 		_ammo_label.text = "NACHLADEN …"
 	else:
 		_ammo_label.text = "%d / %d" % [get_ammo(), _weapon.magazine_size]

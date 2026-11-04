@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scenes/items/weapon_data.gd" id="1_weapon"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/revolver_view.tscn" id="2_view"]
+[ext_resource type="AudioStream" path="res://assets/audio/revolver_shot.wav" id="3_shot"]
+[ext_resource type="AudioStream" path="res://assets/audio/revolver_reload.wav" id="4_reload"]
+[ext_resource type="AudioStream" path="res://assets/audio/pistol_empty.wav" id="5_empty"]
+
+[resource]
+script = ExtResource("1_weapon")
+damage = 45.0
+magazine_size = 6
+fire_interval = 0.42
+reload_time = 0.45
+max_range = 70.0
+view_scene = ExtResource("2_view")
+reload_single = true
+aim_fov = 58.0
+aim_time = 0.17
+sight_offset = Vector3(0, 0.058, 0)
+aim_distance = 0.3
+hip_spread_degrees = 0.9
+recoil_kick = 0.05
+view_kick_degrees = 1.6
+view_kick_horizontal_degrees = 0.25
+reload_tilt = 0.55
+reload_roll = 0.7
+noise_radius = 45.0
+weapon_class = "pistol"
+fire_sound = ExtResource("3_shot")
+reload_sound = ExtResource("4_reload")
+empty_sound = ExtResource("5_empty")
+id = "revolver"
+display_name = "Revolver"
+description = "Schwerer Trommelrevolver. 6 Schuss mit viel Wumms, aber langsam. R lädt Patrone für Patrone, Schießen bricht das Nachladen ab."
+glyph = "RV"
+color = Color(1, 0.78, 0.25, 1)
+max_stack = 1
+value = 90

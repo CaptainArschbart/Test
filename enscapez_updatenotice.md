@@ -769,3 +769,38 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Mit Fenster (einmal, mit OK von EnScapeZ): Bildrate ohne VSync auf Straßenhöhe 154–169 FPS, Skywalk 177, Gassen 238–265, Galerie 277 (Gate M2: mindestens 120 FPS, erfüllt). Screenshots Gassen (Neonmeile, Unterstadt), Galerie, Kern, Skywalk angesehen; neue Blickwinkel `gasse_neon`, `gasse_unter`.
 - Nicht getestet: Multiplayer.
 - Offen: P1-6 (Dioramen aus `_incoming` zerlegen, Lizenz unbekannt) und P1-7 (Voxel-Skyline, Bäume) nicht begonnen.
+
+### 2026-11-04 · Schedule 1, Meilenstein M3 „Systeme“, Teil 1: Waffen (P4-1 bis P4-3) · Claude (für EnScapeZ) · Branch `enscapez/m3-waffen`
+- Auftrag: M3 aus „Schedule 1“ fortsetzen, zuerst Phase 4 (Waffen). EnScapeZ war nicht am Rechner und wollte vollautomatisch weiterarbeiten lassen; Spielfenster werden weiter nur nach Rückfrage geöffnet, deshalb alles headless.
+- P4-1 Schrot und neue Feuerarten (`WeaponData`, `WeaponHolder`):
+  - `pellets`, `pellet_spread_degrees`: mehrere Kugeln pro Schuss im Kegel, jede trifft für sich (Splitter-Partikel nur für die ersten 3 Wandtreffer).
+  - Schadensabfall `falloff_start`, `falloff_end`, `min_damage_factor`, abgefragt mit `damage_at(Entfernung)`. Alte Waffen haben keinen Abfall.
+  - Feuerstoß `burst_count`, `burst_interval` (ein Klick, mehrere Schuss).
+  - `reload_single`: Patrone für Patrone nachladen, Schießen bricht ab, sobald eine drin ist; Anzeige „NACHLADEN 3 / 6“.
+  - `weapon_class` (pistol, smg, rifle, shotgun, sniper) für Sortiment und Gegner, bei den alten Waffen eingetragen.
+- P4-2 Sieben neue Waffen aus dem Quaternius-Gun-Pack, je mit Ego-Ansicht (`scenes/weapons/<id>_view.tscn`), Daten (`scenes/items/data/<id>.tres`) und eigenem Sound (`tools/gen_weapon_sounds.py --m3`):
+  - Revolver (Revolver_2): 6 Schuss, 45 Schaden, lädt einzeln.
+  - Schwere Pistole (Pistol_2): 8 Schuss, 34 Schaden.
+  - Pump-Schrotflinte (Shotgun_1): 8 Kugeln je 13, Abfall 6–22 m, 6 Patronen, lädt einzeln, repetiert hörbar.
+  - Abgesägte Schrotflinte (Shotgun_SawedOff): 10 Kugeln je 12, Abfall 3–12 m, 2 Schuss.
+  - Bullpup-Gewehr (Bullpup_1): Dreierfeuerstoß, 30 Schuss.
+  - Kompakt-MP (SubmachineGun_1): Dauerfeuer mit ca. 1.090 Schuss pro Minute, starker Rückstoß.
+  - Präzisionsgewehr (SniperRifle_2): halbautomatisch mit Zielfernrohr, 10 Schuss, 70 Schaden.
+  - Mündung, Visier, Magazin- und Hand-Marker aus Seitenansichten der Modelle bestimmt (Dreiecke headless ausgelesen und als Bild gezeichnet, kein Spielfenster).
+- Waffenladen (`street_shop.gd`): die bisher nur ausgestellten Waffen an den Lochwänden sind durch kaufbare neue ersetzt (`WallSale`). Links Pumpgun 140 ¢, Revolver 90 ¢, schwere Pistole 65 ¢; rechts Präzisionsgewehr 260 ¢ (erst ab Spielerstufe 5) und Kompakt-MP 85 ¢. Abgesägte und Bullpup gibt es nur als Beute.
+- P4-3 Gegner-Ausrüstung:
+  - `EnemyProfile.weapon`: das Modell dieser Waffe sitzt am Handknochen, ihr Schuss ist zu hören, bei Schrot fällt der Schaden mit der Entfernung, und es gibt mehrere Leuchtspuren.
+  - Neue Profile: `gang_leader` (Revolver), `gang_shotgun` (Pumpgun), `gang_sawed_off` (Abgesägte), `gang_compact_smg` (Kompakt-MP), `security_bullpup` (Bullpup), `security_heavy_pistol` (schwere Pistole). Jedes lässt seine Waffe als Beute fallen.
+  - `gangster_smg` hält jetzt die echte SMG statt der Pistole.
+- Neon City (`gen_neon_city.py`, ohne Zufall, nur `neon_city_enemies.tscn` ändert sich):
+  - Unterstadt: Abgesägte in den Streifen, Kompakt-MP- bzw. SMG-Wachen.
+  - Hafen: Revolver-Anführer in jedem zweiten Hof, Pumpgun-Wachen.
+  - Kern: Bullpup und schwere Pistole.
+  - Türsteher West der Neonmeile: schwere Pistole.
+  - Zwei Plätze: Bullpup.
+- Neuer Test `tools/tests/test_weapons_m3.gd` (headless): Daten und Modelle, Mündung an der Laufspitze, 8 von 8 Kugeln auf 3 m mit 104 Schaden, weniger Schaden auf 18 m, Feuerstoß genau 3 Schuss, Einzelnachladen und Abbruch durch Schießen, Kadenz der Kompakt-MP, Gegner halten ihre Waffe, Wandverkauf mit Mindeststufe.
+- Getestet (Godot 4.7.2, headless, isoliertes APPDATA): `test_weapons_m3` CHECKS 83 FAILS 0, `test_weapons_smg_grenade` 47/0, `test_gun_shops` 37/0, `test_content_update` 47/0, `test_enemy_xp` 29/0, `test_player_melee` 42/0, `test_skills` 72/0, `test_shop` 43/0, `test_neon_city` 30/0, `test_sector7_enemies` 15/0.
+- Offen:
+  - Inventar-Icons der 7 neuen Waffen fehlen, weil `gen_item_icons.gd` ein Fenster braucht. `test_item_icons` meldet deshalb 1 Fehler.
+  - Ego-Ansicht und Hände nicht im Bild angesehen (`shot_weapons.gd` braucht ein Fenster). Beides kommt mit dem nächsten erlaubten Fensterlauf.
+  - P4-4 (Munitionsarten), P4-5 (Varianten), P4-6 (Gegner-Animationen) nicht begonnen.

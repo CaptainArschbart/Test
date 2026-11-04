@@ -1,0 +1,54 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/weapons/weapon_view.gd" id="1_view"]
+[ext_resource type="PackedScene" path="res://assets/items/weapons/quaternius_guns/Shotgun_SawedOff.fbx" id="2_model"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_neon"]
+albedo_color = Color(1, 0.5, 0.1, 1)
+emission_enabled = true
+emission = Color(1, 0.5, 0.1, 1)
+emission_energy_multiplier = 2.5
+
+[sub_resource type="BoxMesh" id="Mesh_stripe"]
+material = SubResource("Mat_neon")
+size = Vector3(0.0267, 0.004, 0.0575)
+
+[sub_resource type="StandardMaterial3D" id="Mat_flash"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.85, 0.45, 0.9)
+billboard_mode = 1
+
+[sub_resource type="QuadMesh" id="Mesh_flash"]
+material = SubResource("Mat_flash")
+size = Vector2(0.22, 0.22)
+
+[node name="SawedOffView" type="Node3D"]
+script = ExtResource("1_view")
+
+[node name="Model" parent="." instance=ExtResource("2_model")]
+position = Vector3(0, -0.0058, -0.0365)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(0.115, 0.115, 0.115)
+
+[node name="Stripe" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.0287, -0.1055)
+cast_shadow = 0
+mesh = SubResource("Mesh_stripe")
+
+[node name="Muzzle" type="Marker3D" parent="."]
+position = Vector3(0, 0.0437, -0.414)
+
+[node name="Flash" type="MeshInstance3D" parent="Muzzle"]
+visible = false
+cast_shadow = 0
+mesh = SubResource("Mesh_flash")
+
+[node name="FlashLight" type="OmniLight3D" parent="Muzzle"]
+visible = false
+light_color = Color(1, 0.8, 0.45, 1)
+light_energy = 4
+omni_range = 5.5
+
+[node name="HandGripLeft" type="Marker3D" parent="."]
+transform = Transform3D(-0.8399, -0.2100, -0.5005, 0.3050, -0.9454, -0.1152, -0.4490, -0.2494, 0.8580, -0.042, -0.01, -0.186)

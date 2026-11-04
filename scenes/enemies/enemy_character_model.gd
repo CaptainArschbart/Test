@@ -5,8 +5,8 @@ extends EnemyModel
 ## stunned, crouch, muzzle, flashlight, laser, set_status_color, fall), Enemy merkt keinen Unterschied.
 ##
 ## Figur nach EnemyProfile.look: Gangster Punk/Hoodie/Casual, Sicherheitsdienst Business Man,
-## Scharfschütze Adventurer, Polizei Swat. Die Waffe (Waffenszene bzw. Brechstange) hängt am
-## Handknochen Wrist.R, die Mündung am Lauf. Statusleuchte als Implantat am Kopf, Taschenlampe an der
+## Scharfschütze Adventurer, Polizei Swat. Die Waffe (EnemyProfile.weapon bzw. Pistole, Gewehr oder
+## Brechstange nach style) hängt am Handknochen Wrist.R, die Mündung am Lauf. Statusleuchte als Implantat am Kopf, Taschenlampe an der
 ## Brust. Animationen aus der Figur: Idle/Idle_Gun, Walk, Run, Idle_Gun_Pointing und Run_Shoot beim
 ## Zielen, Gun_Shoot, Punch/Sword_Slash beim Nahkampf, HitRecieve, Death. Der AnimationPlayer läuft
 ## nur in animate(), die LOD-Stufen des EnemyDirector bleiben wirksam.
@@ -177,7 +177,10 @@ func _attach_weapon(profile: EnemyProfile, skeleton: Skeleton3D) -> void:
 	muzzle.name = "Muzzle"
 	match profile.style:
 		EnemyProfile.Style.PISTOL, EnemyProfile.Style.RIFLE:
-			var view: Node3D = (RIFLE_VIEW if profile.style == EnemyProfile.Style.RIFLE else PISTOL_VIEW).instantiate()
+			var scene: PackedScene = RIFLE_VIEW if profile.style == EnemyProfile.Style.RIFLE else PISTOL_VIEW
+			if profile.weapon != null and profile.weapon.view_scene != null:
+				scene = profile.weapon.view_scene
+			var view: Node3D = scene.instantiate()
 			view.name = "Gun"
 			_weapon.add_child(view)
 			# Mündungsfeuer macht Enemy selbst (Licht an der Mündung).

@@ -16,6 +16,7 @@ fire_interval = 1.1
 reload_time = 2.4
 max_range = 300.0
 view_scene = ExtResource("2_view")
+weapon_class = "sniper"
 pickup_scale = 1.1
 hip_offset = Vector3(0.03, -0.03, -0.14)
 aim_fov = 16.0

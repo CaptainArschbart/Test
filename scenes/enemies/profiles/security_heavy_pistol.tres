@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="EnemyProfile" format=3]
+
+[ext_resource type="Script" path="res://scenes/enemies/enemy_profile.gd" id="1_profile"]
+[ext_resource type="Resource" path="res://scenes/items/data/heavy_pistol.tres" id="2_heavy_pistol"]
+[ext_resource type="Resource" path="res://scenes/items/data/data_shard.tres" id="3_data_shard"]
+[ext_resource type="Resource" path="res://scenes/items/data/stim_pack.tres" id="4_stim_pack"]
+[ext_resource type="Resource" path="res://scenes/items/data/emp_grenade.tres" id="5_emp_grenade"]
+
+[resource]
+script = ExtResource("1_profile")
+display_name = "Sicherheitsdienst (Schwere Pistole)"
+faction = &"security"
+look = 1
+style = 1
+accent = Color(1, 0.3, 0.2, 1)
+max_health = 110.0
+headshot_multiplier = 1.6
+stun_time = 5.0
+view_distance = 26.0
+view_angle = 60.0
+sight_gain = 1.7
+awareness_decay = 0.09
+hearing_scale = 1.15
+flashlight = true
+shout_radius = 26.0
+walk_speed = 1.6
+run_speed = 4.2
+weapon = ExtResource("2_heavy_pistol")
+damage = 12.0
+death_cause = &"security_shot"
+attack_range = 28.0
+preferred_distance = 12.0
+attack_interval = 0.4
+burst = 2
+burst_pause = 1.4
+magazine = 8
+reload_time = 1.8
+accuracy = 0.5
+aim_time = 0.8
+loot_items = Array[Resource]([ExtResource("2_heavy_pistol"), ExtResource("3_data_shard"), ExtResource("4_stim_pack"), ExtResource("5_emp_grenade")])
+loot_chances = PackedFloat32Array(0.2, 0.4, 0.35, 0.15)
+credits_min = 10
+credits_max = 25
+xp_reward = 35
+voice_pitch = 0.82
