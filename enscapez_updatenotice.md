@@ -752,7 +752,7 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Getestet (Godot 4.7.2, headless, isoliertes APPDATA): `test_neon_city` CHECKS 29 FAILS 0, `test_gun_shops` 37/0 (mit Gegenprobe des Planers), `test_sector7_city` 44/0, `test_shop` 43/0, `test_gas_stations` 59/0, `test_content_update` 47/0, `test_npc_robbery` 47/0, `test_sector7_enemies` 15/0. Navmesh-Kantenwarnungen: main 6, jetzt 0.
 - Nicht getestet: Debug-Ansicht im Editor selbst angesehen (nur Skript geprüft); Tankstellen-Innenräume haben noch keinen Planer.
 
-### 2026-11-04 · Schedule 1, Meilenstein M2 „Stadt“: Holo-Werbung, zweite Ebene, Dreck-Layer, Gassen-Neon · Claude (für EnScapeZ) · Branch `enscapez/m2-stadt`
+### 2026-11-04 · Schedule 1, Meilenstein M2 „Stadt“: Holo-Werbung, zweite Ebene, Dreck-Layer, Gassen-Neon · Claude (für EnScapeZ) · Branch `enscapez/m2-stadt-holo`
 - Auftrag: Meilenstein M2 aus „Schedule 1“ (Phase 1, P1-1 bis P1-5). EnScapeZ möchte, dass kein Spielfenster mehr ohne Nachfrage geöffnet wird (Screenshots, FPS-Messung): ab hier nur Headless-Tests.
 - Neu:
   - `scenes/neon_city/kit/neon_holo.gdshader`: Holo-Shader (durchscheinend, Scanlines, wandernder Streifen, Flackern pro Exemplar, Aussetzer, Randleuchten). Über `NeonDressing.holo_tint` auf vorhandene Modelle gelegt: helle Flächen leuchten, dunkle nur als Schimmer.
