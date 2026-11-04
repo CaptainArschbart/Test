@@ -104,6 +104,11 @@ func _run() -> void:
 		if absf(_floor(p) - 0.15) > 0.2 or _blocked(p, 0.4):
 			bad_fronts.append("%s bei %s" % [shop.name, p.round()])
 	_check(bad_fronts.is_empty(), "Vor jedem Laden ist Gehweg frei %s" % [bad_fronts])
+	var layouts := PackedStringArray()
+	for shop in shops:
+		for e: String in shop.get("layout_errors"):
+			layouts.append("%s: %s" % [shop.name, e])
+	_check(layouts.is_empty(), "R1/R2/R5 Ladeninnenräume ohne Placement-Fehler %s" % [layouts.slice(0, 6)])
 
 	# Fußwege.
 	var crowd := scene.find_child("Crowd", true, false)
@@ -169,7 +174,121 @@ func _run() -> void:
 		if _reachable(map, from, p):
 			leaks.append(str(p))
 	_check(leaks.is_empty(), "Hinter dem Stadtrand nicht erreichbar %s" % [leaks])
+	_check_placement(scene, nodes, edges)
 	_finish()
+
+
+## Placement-Regeln aus Schedule 1, Phase 0, für alle Details aus den Packs (NeonDressing):
+## R1 nichts schwebt (Boden-Teile stehen auf einer Fläche, Wandteile haben eine Wand im Rücken,
+## Kabel und Ausleger-Schilder hängen an Wänden), R3 flache Teile liegen sichtbar über dem Boden
+## (kein Z-Fighting), R6 über Fuß- und Streifenwegen ist bis 2,3 m Höhe nichts im Weg.
+func _check_placement(scene: Node, nodes: PackedVector3Array, edges: PackedInt32Array) -> void:
+	# Strahlen ignorieren die Details selbst (sonst trifft ein Boden-Strahl die eigene Kollision).
+	var saved := _exclude.duplicate()
+	var dressing: Array[NeonDressing] = []
+	for n in scene.find_children("*", "Node3D", true, false):
+		if n is NeonDressing:
+			dressing.append(n)
+		if (n is NeonDressing or n is NeonProp) and n.get_node_or_null("Body") != null:
+			_exclude.append((n.get_node("Body") as CollisionObject3D).get_rid())
+	var floating := PackedStringArray()
+	var loose := PackedStringArray()
+	var fighting := PackedStringArray()
+	var obstacles: Array = []  # [AABB, Name]
+	var count := 0
+	for d in dressing:
+		var box: AABB = NeonDressing._parts(d.model, d.emission_tint)["box"]
+		var base := Basis(Vector3.UP, deg_to_rad(d.yaw_fix)) * Basis.from_scale(Vector3.ONE * d.model_scale)
+		var items := d.items
+		for k in range(0, items.size(), NeonDressing.STRIDE):
+			count += 1
+			var rot := Basis(Vector3.UP, deg_to_rad(items[k + 3]))
+			var stretch := Vector3(items[k + 4], items[k + 5], items[k + 6])
+			var xf := d.global_transform * Transform3D(rot * Basis.from_scale(stretch) * base,
+					Vector3(items[k], items[k + 1], items[k + 2]))
+			var origin := xf.origin
+			var world := xf * box
+			var fwd := (d.global_basis * rot * Vector3.BACK).normalized()
+			var side := (d.global_basis * rot * Vector3.RIGHT).normalized()
+			var local := (Basis(Vector3.UP, deg_to_rad(d.yaw_fix)) * box.size).abs() * d.model_scale * stretch
+			var h := world.size.y
+			var tag := "%s %s" % [d.name.rstrip("0123456789_"), origin.snapped(Vector3.ONE * 0.1)]
+			match d.mount:
+				"ground", "flat":
+					# Mit eigener Kollisionsbox (Ampel: nur der Mast) zählt deren Fuß, nicht die Mitte der Hülle.
+					var foot := origin + d.global_basis * rot * d.collider_offset
+					var hit := _ray(foot + Vector3.UP * 0.6, foot + Vector3.DOWN * 0.6)
+					if hit.is_empty() or absf((hit["position"] as Vector3).y - foot.y) > 0.03:
+						floating.append(tag)
+					elif d.mount == "flat" and origin.y + h - (hit["position"] as Vector3).y < 0.004:
+						fighting.append(tag)
+				"wall":
+					var c := origin + Vector3.UP * h * 0.5
+					if _ray(c + fwd * 0.05, c - fwd * (local.z * 0.5 + 0.45)).is_empty():
+						loose.append(tag)
+				"hang":
+					var top := origin + Vector3.UP * h
+					for s: float in [-1.0, 1.0]:
+						var e := top + side * s * local.x * 0.5
+						if _ray(e - side * s * 0.3, e + side * s * 0.6).is_empty():
+							loose.append(tag)
+							break
+				"blade":
+					var c := origin + Vector3.UP * h * 0.5
+					var reach := local.x * 0.5 + 0.5
+					if _ray(c, c + side * reach).is_empty() and _ray(c, c - side * reach).is_empty():
+						loose.append(tag)
+			if d.mount == "flat" or h < 0.1:
+				continue
+			if d.collider_size != Vector3.ZERO:
+				var cc := origin + d.global_basis * rot * d.collider_offset
+				world = AABB(cc - Vector3(d.collider_size.x, 0, d.collider_size.z) * 0.5, d.collider_size).abs()
+			obstacles.append([world, tag])
+	_exclude = saved
+	_check(count > 3000, "%d Details aus den Packs geprüft" % count)
+	_check(floating.is_empty(), "R1 Kein Detail schwebt oder steckt im Boden %s" % [floating.slice(0, 8)])
+	_check(loose.is_empty(), "R1 Wandteile, Kabel und Schilder haben Halt an einer Wand %s" % [loose.slice(0, 8)])
+	_check(fighting.is_empty(), "R3 Flache Teile liegen mindestens 4 mm über dem Boden %s" % [fighting.slice(0, 8)])
+	# R6: Wegpunkte alle 0,5 m (Fußwege und Streifen), nach 4-m-Zellen einsortiert.
+	var cells := {}
+	var legs: Array = []
+	for k in range(0, edges.size(), 2):
+		legs.append([nodes[edges[k]], nodes[edges[k + 1]]])
+	var routes := scene.get_node_or_null("NeonCityEnemies/Routes")
+	for route in (routes.get_children() if routes != null else []):
+		var pts: Array[Vector3] = []
+		for m in route.get_children():
+			pts.append((m as Node3D).global_position)
+		for i in pts.size():
+			legs.append([pts[i], pts[(i + 1) % pts.size()]])
+	for leg: Array in legs:
+		var a: Vector3 = leg[0]
+		var b: Vector3 = leg[1]
+		var n := maxi(1, int(a.distance_to(b) / 0.5))
+		for i in n + 1:
+			var p := a.lerp(b, float(i) / n)
+			var key := Vector2i(floori(p.x / 4.0), floori(p.z / 4.0))
+			if not cells.has(key):
+				cells[key] = []
+			(cells[key] as Array).append(p)
+	var low := PackedStringArray()
+	for o: Array in obstacles:
+		var bb: AABB = o[0]
+		var hit := false
+		for cx in range(floori((bb.position.x - 0.25) / 4.0), floori((bb.end.x + 0.25) / 4.0) + 1):
+			for cz in range(floori((bb.position.z - 0.25) / 4.0), floori((bb.end.z + 0.25) / 4.0) + 1):
+				for p: Vector3 in cells.get(Vector2i(cx, cz), []):
+					if p.x > bb.position.x - 0.25 and p.x < bb.end.x + 0.25 and p.z > bb.position.z - 0.25 \
+							and p.z < bb.end.z + 0.25 and bb.position.y < p.y + 2.3 and bb.end.y > p.y + 0.05:
+						hit = true
+						break
+				if hit:
+					break
+			if hit:
+				break
+		if hit:
+			low.append(o[1])
+	_check(low.is_empty(), "R6 Über Fuß- und Streifenwegen bis 2,3 m nichts im Weg %s" % [low.slice(0, 8)])
 
 
 ## Gegner: keine Scharfschützen, Wegpunkte auf freiem Gehweg-Niveau, jede Teilstrecke gerade frei,

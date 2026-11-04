@@ -25,6 +25,9 @@ enum Kind { GUNS, GAS }
 
 @export var kind: Kind = Kind.GUNS
 @export var shop_key := ""
+## Verstöße gegen die Placement-Regeln im Innenraum (InteriorPlanner), leer = in Ordnung.
+var layout_errors := PackedStringArray()
+var _plan: InteriorPlanner
 
 
 func _ready() -> void:
@@ -35,18 +38,22 @@ func _ready() -> void:
 
 
 func _build_guns() -> void:
+	# Grundriss-Prüfung (Schedule 1, P0-2): Raum 8 × 7 m, Eingang vorn (+Z), Lager hinter der Trennwand.
+	_plan = InteriorPlanner.new(Rect2(-4.0, -3.5, 8.0, 7.0))
 	_room(Vector3(8.0, 3.2, 7.0))
 	_front_opening()
 	_partition()
-	_counter(Vector3(0.0, 0.45, 1.15), Vector3(3.4, 0.9, 0.7))
-	_glass_case(Vector3(0.0, 1.05, 1.15), Vector3(3.0, 0.35, 0.45))
+	# Theke 1 m tief: vorn Platz für Handelspunkt und Ankauf, hinten die Vitrine.
+	_counter(Vector3(0.0, 0.45, 1.3), Vector3(3.8, 0.9, 1.0))
+	_glass_case(Vector3(0.0, 1.075, 1.15), Vector3(2.8, 0.35, 0.45))
+	_plan.on_top(Vector2(0.0, 1.15), 0.9, "Vitrine")
 	_sale(PISTOL, 40, Vector3(-1.2, 1.05, 1.05))
 	_sale(SMG, 80, Vector3(-0.4, 1.05, 1.05))
 	_sale(M4, 120, Vector3(0.4, 1.05, 1.2))
 	_sale(AK, 110, Vector3(1.2, 1.05, 1.2))
 	_sale(SNIPER, 200, Vector3(-1.2, 1.05, 1.35))
 	_sale(CROWBAR, 15, Vector3(1.2, 1.05, 1.4))
-	_ammo_stack(Vector3(0.2, 1.02, 1.35))
+	_ammo_stack(Vector3(0.2, 0.95, 1.3))
 	_pegboard(Vector3(-3.55, 1.6, 0.4))
 	_pegboard(Vector3(3.55, 1.6, 0.4))
 	_rack_weapon(M4, Vector3(-3.55, 1.7, 0.9), 90.0)
@@ -60,14 +67,18 @@ func _build_guns() -> void:
 	door.position = Vector3(-1.4, 0.0, -0.7)
 	add_child(door)
 	door.owner = self
+	# Die Tür schwenkt in den Laden; beidseits bleibt Platz.
+	_plan.keep(Rect2(-1.95, -0.64, 1.1, 1.0), "Schwenkbereich Hintertür")
+	_plan.keep(Rect2(-1.95, -1.7, 1.1, 0.94), "Platz hinter der Hintertür")
 	var register := LootProp.new()
 	register.name = "Register"
 	register.prompt_name = "Kasse"
 	register.item = CASH
 	register.count = 4
 	register.sealed = true
-	register.position = Vector3(1.5, 0.95, 1.0)
+	register.position = Vector3(1.65, 0.9, 1.05)
 	add_child(register)
+	_plan.on_top(Vector2(1.65, 1.05), 0.9, "Kasse")
 	var shelf := LootProp.new()
 	shelf.name = "ArmoryCrate"
 	shelf.prompt_name = "Waffenkiste"
@@ -75,6 +86,7 @@ func _build_guns() -> void:
 	shelf.sealed = true
 	shelf.position = Vector3(-2.4, 0.55, -2.3)
 	add_child(shelf)
+	_plan.keep(Rect2(-2.8, -2.0, 0.8, 0.6), "Platz vor der Waffenkiste")
 	_furnish_guns()
 	_neon(Vector3(0.0, 2.55, 3.65))
 	_ceiling_light(Vector3(0.0, 2.85, 1.3), Color(0.25, 0.85, 1.0), 1.4)
@@ -86,6 +98,7 @@ func _build_guns() -> void:
 	atm.rotation.y = -PI * 0.5
 	add_child(atm)
 	atm.owner = self
+	_plan.solid(InteriorPlanner.footprint(Vector2(3.15, 1.7), Vector2(0.9, 0.6), -90.0), "Geldautomat", 2.1)
 	var keeper := Civilian.new()
 	keeper.name = "Shopkeeper"
 	keeper.unique_name_in_owner = true
@@ -98,15 +111,29 @@ func _build_guns() -> void:
 	var clerk := GunClerk.new()
 	clerk.name = "Clerk"
 	clerk.unique_name_in_owner = true
-	clerk.position = Vector3(0.9, 0.95, 1.55)
+	clerk.position = Vector3(0.9, 0.99, 1.58)
 	add_child(clerk)
 	clerk.owner = self
 	var sell := SELL_PAD.new() as Node3D
 	sell.name = "SellPad"
 	sell.unique_name_in_owner = true
-	sell.position = Vector3(-0.8, 0.95, 1.55)
+	sell.position = Vector3(-0.8, 0.9, 1.58)
 	add_child(sell)
 	sell.owner = self
+	_plan.on_top(Vector2(0.9, 1.58), 0.9, "Handelspunkt")
+	_plan.on_top(Vector2(-0.8, 1.58), 0.9, "Ankauf")
+	_plan.keep(Rect2(-1.9, 1.8, 3.8, 0.8), "Platz vor der Theke")
+	_plan.keep(Rect2(-1.0, 0.1, 2.0, 0.65), "Platz des Verkäufers")
+	_plan.check_reachable(Vector2(0.0, 3.3), {"Theke": Vector2(0.0, 2.3), "Geldautomat": Vector2(2.35, 1.7),
+			"Verkäufer": Vector2(0.15, 0.35), "Hintertür": Vector2(-1.4, -0.3), "Waffenkiste": Vector2(-2.4, -1.75)})
+	_report_layout()
+
+
+## Verstöße des Grundrisses melden (Test liest layout_errors, im Editor stehen sie im Fehlerlog).
+func _report_layout() -> void:
+	layout_errors = _plan.errors
+	for e in layout_errors:
+		push_error("%s %s: %s" % [name, Kind.keys()[kind], e])
 
 
 func _room(size: Vector3) -> void:
@@ -114,23 +141,32 @@ func _room(size: Vector3) -> void:
 	_solid(Vector3(0.0, size.y - 0.08, 0.0), Vector3(size.x, 0.1, size.z), Color(0.08, 0.08, 0.1))
 	var hx := size.x * 0.5 - 0.08
 	var hz := size.z * 0.5 - 0.08
-	_solid(Vector3(-hx, size.y * 0.5, 0.0), Vector3(0.16, size.y, size.z), Color(0.16, 0.12, 0.14))
-	_solid(Vector3(hx, size.y * 0.5, 0.0), Vector3(0.16, size.y, size.z), Color(0.16, 0.12, 0.14))
-	_solid(Vector3(0.0, size.y * 0.5, -hz), Vector3(size.x, size.y, 0.16), Color(0.16, 0.12, 0.14))
+	_wall(Vector3(-hx, size.y * 0.5, 0.0), Vector3(0.16, size.y, size.z), Color(0.16, 0.12, 0.14), "Wand links")
+	_wall(Vector3(hx, size.y * 0.5, 0.0), Vector3(0.16, size.y, size.z), Color(0.16, 0.12, 0.14), "Wand rechts")
+	_wall(Vector3(0.0, size.y * 0.5, -hz), Vector3(size.x, size.y, 0.16), Color(0.16, 0.12, 0.14), "Rückwand")
+
+
+## Wand: wie _solid, zusätzlich im Grundriss gemeldet.
+func _wall(at: Vector3, size: Vector3, color: Color, what: String) -> void:
+	_solid(at, size, color)
+	if _plan != null:
+		_plan.wall(InteriorPlanner.footprint(Vector2(at.x, at.z), Vector2(size.x, size.z)), what)
 
 
 func _front_opening() -> void:
-	_solid(Vector3(-2.7, 1.6, 3.42), Vector3(2.4, 3.2, 0.16), Color(0.22, 0.1, 0.12))
-	_solid(Vector3(2.7, 1.6, 3.42), Vector3(2.4, 3.2, 0.16), Color(0.22, 0.1, 0.12))
+	_wall(Vector3(-2.7, 1.6, 3.42), Vector3(2.4, 3.2, 0.16), Color(0.22, 0.1, 0.12), "Front links")
+	_wall(Vector3(2.7, 1.6, 3.42), Vector3(2.4, 3.2, 0.16), Color(0.22, 0.1, 0.12), "Front rechts")
 
 
 func _partition() -> void:
-	_solid(Vector3(-2.9, 1.6, -0.7), Vector3(1.8, 3.2, 0.12), Color(0.2, 0.14, 0.16))
-	_solid(Vector3(1.5, 1.6, -0.7), Vector3(4.6, 3.2, 0.12), Color(0.2, 0.14, 0.16))
+	_wall(Vector3(-2.9, 1.6, -0.7), Vector3(1.8, 3.2, 0.12), Color(0.2, 0.14, 0.16), "Trennwand links")
+	_wall(Vector3(1.5, 1.6, -0.7), Vector3(4.6, 3.2, 0.12), Color(0.2, 0.14, 0.16), "Trennwand rechts")
 
 
 func _counter(at: Vector3, size: Vector3) -> void:
 	_solid(at, size, Color(0.18, 0.14, 0.1))
+	if _plan != null:
+		_plan.solid(InteriorPlanner.footprint(Vector2(at.x, at.z), Vector2(size.x, size.z)), "Theke", at.y + size.y * 0.5)
 
 
 func _glass_case(at: Vector3, size: Vector3) -> void:
@@ -199,11 +235,11 @@ func _furnish_guns() -> void:
 	_decor(QUATERNIUS % "Trashcan_Small1", Vector3(-3.4, 0.1, 1.9), 0.0, 0.0, 0.55, true)
 	# Hinter der Theke: Regale an der Trennwand, Blick zum Laden.
 	_decor(QUATERNIUS % "Shelf_Large", Vector3(1.9, 0.1, -0.42), 90.0, 1.6, 0.0, true)
-	_decor(KENNEY % "bookcaseClosedWide", Vector3(-2.9, 0.1, -0.45), 90.0, 1.5, 0.0, true)
-	_decor(KENNEY % "cardboardBoxClosed", Vector3(1.1, 0.1, -0.35), 0.0, 0.0, 0.45, true)
+	_decor(KENNEY % "bookcaseClosedWide", Vector3(-2.9, 0.1, -0.41), 90.0, 1.5, 0.0, true)
+	_decor(KENNEY % "cardboardBoxClosed", Vector3(0.9, 0.1, -0.35), 0.0, 0.0, 0.45, true)
 	# Lampen unter der Decke über den Leuchtbalken.
 	for x: float in [-1.8, 1.8]:
-		_decor(QUATERNIUS % "Light_Ceiling2", Vector3(x, 2.55, 2.3), 0.0, 0.0, 0.55, false)
+		_decor(QUATERNIUS % "Light_Ceiling2", Vector3(x, 2.55, 2.3), 0.0, 0.0, 0.55, false, true)
 	# Lager: Schreibtisch mit Stuhl, Monitor und Lampe, Kartons in der Ecke.
 	_decor(KENNEY % "desk", Vector3(1.6, 0.1, -2.6), 90.0, 1.5, 0.0, true)
 	_decor(KENNEY % "chairDesk", Vector3(1.6, 0.1, -1.7), 180.0, 0.0, 1.0, true)
@@ -214,7 +250,8 @@ func _furnish_guns() -> void:
 	_decor(KENNEY % "cardboardBoxOpen", Vector3(-3.3, 0.1, -2.35), 15.0, 0.0, 0.4, true)
 
 
-func _decor(path: String, at: Vector3, yaw_deg: float, fit_length: float, fit_height: float, collide: bool) -> void:
+func _decor(path: String, at: Vector3, yaw_deg: float, fit_length: float, fit_height: float, collide: bool,
+		ceiling := false) -> void:
 	var prop := NeonProp.new()
 	prop.model = path
 	prop.fit_length = fit_length
@@ -224,6 +261,21 @@ func _decor(path: String, at: Vector3, yaw_deg: float, fit_length: float, fit_he
 	prop.position = at
 	prop.rotation.y = deg_to_rad(yaw_deg)
 	add_child(prop)
+	if _plan == null or ceiling:
+		return
+	# Grundfläche aus der Hülle des Modells, wie NeonProp sie beim Laden misst und skaliert.
+	var what := path.get_file().get_basename()
+	var holder := prop.get_node_or_null("Model") as Node3D
+	var size := Vector3.ZERO
+	if holder != null and holder.get_child_count() > 0:
+		var box := NeonProp._bounds(holder.get_child(0) as Node3D)
+		size = (Basis(Vector3.UP, holder.rotation.y) * (box.size * holder.scale.x)).abs()
+	var rect := InteriorPlanner.footprint(Vector2(at.x, at.z), Vector2(size.x, size.z), yaw_deg)
+	if collide:
+		_plan.solid(rect, what, at.y + size.y)
+	else:
+		_plan.on_top(Vector2(at.x, at.z), at.y, what)
+		_plan.support(rect, at.y + size.y, what)
 
 
 func _neon(at: Vector3) -> void:
