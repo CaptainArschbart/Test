@@ -56,6 +56,7 @@ func build(profile: EnemyProfile, variant_seed: int) -> void:
 	var skeleton := body.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
 	_armed = profile.style != EnemyProfile.Style.MELEE
 	_attach_weapon(profile, skeleton)
+	ragdoll_skeleton = skeleton
 	_attach_status(skeleton)
 	if profile.look == EnemyProfile.Look.SECURITY:
 		_attach_flashlight(skeleton)
@@ -76,7 +77,9 @@ func animate(delta: float) -> void:
 		super.animate(delta)
 		return
 	if _dead:
-		_anim.advance(delta)
+		# Als Ragdoll stellt die Physik die Knochen, die Animation muss nicht laufen.
+		if ragdoll == null or not ragdoll.running:
+			_anim.advance(delta)
 		return
 	flinch = maxf(flinch - delta * 3.5, 0.0)
 	_hit_left = maxf(_hit_left - delta, 0.0)
@@ -118,16 +121,19 @@ func fall(direction: Vector3) -> void:
 		super.fall(direction)
 		return
 	_dead = true
+	if laser != null:
+		laser.visible = false
+	if flashlight != null:
+		create_tween().tween_property(flashlight, "light_energy", 0.0, 0.6)
+	# Nah an der Kamera: Ragdoll (P5-2), weit weg: Todesanimation.
+	if _ragdoll_fall(direction):
+		return
 	var local := global_basis.inverse() * direction
 	local.y = 0.0
 	if local.length() > 0.01:
 		rotation.y += atan2(-local.x, -local.z)
 	_anim.speed_scale = 1.0
 	_play("Death", 0.05)
-	if laser != null:
-		laser.visible = false
-	if flashlight != null:
-		create_tween().tween_property(flashlight, "light_energy", 0.0, 0.6)
 
 
 func _idle_name() -> String:

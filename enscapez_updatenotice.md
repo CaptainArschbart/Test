@@ -804,3 +804,34 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
   - Inventar-Icons der 7 neuen Waffen fehlen, weil `gen_item_icons.gd` ein Fenster braucht. `test_item_icons` meldet deshalb 1 Fehler.
   - Ego-Ansicht und Hände nicht im Bild angesehen (`shot_weapons.gd` braucht ein Fenster). Beides kommt mit dem nächsten erlaubten Fensterlauf.
   - P4-4 (Munitionsarten), P4-5 (Varianten), P4-6 (Gegner-Animationen) nicht begonnen.
+
+### 2026-11-04 · Schedule 1, M3 „Systeme“, Teil 2: Ragdolls (P5-1, P5-4, P5-5, Teile von P5-2) · Claude (für EnScapeZ) · Branch `enscapez/m3-waffen`
+- Neu: `scenes/common/ragdoll.gd` (`Ragdoll`, ein `SkeletonModifier3D`) für alle Modular-Men-Figuren (Gegner, Fußgänger, Verkäufer).
+  - Kein `PhysicalBoneSimulator3D`: Das Skelett hängt an einem 100-fach skalierten Armature-Knoten, und die Füße sind IK-Knochen am Root. Beides verträgt Godots Physik-Knochen nicht.
+  - Stattdessen 11 RigidBody3D in Metern (Becken, Brust, Kopf, Ober- und Unterarme, Ober- und Unterschenkel), verbunden mit Kegelgelenken und mit Scharnieren für Knie und Ellbogen (beugen nur in natürlicher Richtung). Der Modifier stellt die Knochen nach den Körpern; Bauch, Schultern, Hände und Füße folgen starr.
+  - Physik-Schicht 4 heißt jetzt „ragdoll“ (`project.godot`). Die Teile stoßen nur an die Welt, nicht an Spieler, NPCs, Schüsse oder sich selbst. Leichen blockieren das Navmesh nicht. Alle Teile haben CCD.
+  - Budget: höchstens 8 Ragdolls rechnen, beim neunten friert der älteste ein. Nach 30 s friert jeder ein. Mehr als 40 m von der Kamera gibt es wie bisher nur die Todesanimation.
+  - Der Modifier entsteht erst beim Umfallen, lebende Figuren kosten nichts extra.
+- Übergänge (P5-2, Teil):
+  - Tod durch Schuss, Klinge oder Granate: Ragdoll mit Stoß aus dem letzten Treffer (Stärke nach Schaden, höchstens 70 N·s). Die halbe Kraft geht als Tempo auf den ganzen Körper, die andere Hälfte auf das getroffene Teil. Das Lauftempo der Figur wird übernommen.
+  - Fußgänger, die ein Auto umwirft: Ragdoll. Beim Aufstehen blendet die Figur in 0,4 s zurück zur Animation (bis die Aufsteh-Animation aus UAL2 retargetet ist).
+- Gefundene Fallstricke:
+  - Ein Impuls direkt nach dem Anlegen eines Körpers rechnet Godot noch mit 1 kg; der Stoß wird deshalb als Tempo gesetzt.
+  - Ein Hebel am Trefferpunkt hat das Brustteil so schnell gedreht, dass die Gelenke nachgaben.
+  - Teile, die sich gegenseitig stoßen, sprengen den Körper auseinander (Hände liegen am Start im Becken).
+  - Die Ragdoll-Pose ist nur während des Skelett-Updates sichtbar (Godot stellt die Knochen danach zurück); der Test liest sie deshalb in `modification_processed`.
+- Neuer Test `tools/tests/test_ragdoll.gd` (headless), CHECKS 22 FAILS 0:
+  - Gerüst, Schichten, CCD, 10 Gelenke.
+  - Leiche liegt nach 3,5 s am Boden (0,17 m, 0,05 m/s), kein Teil im Boden, fällt in Schussrichtung, Kopfknochen folgt dem Kopfteil (8 cm), Knie knicken nicht durch.
+  - Schüsse gehen durch Leichen; mit 25 m/s gegen eine Wand kommt kein Teil dahinter.
+  - Budget 8 + 2 eingefroren, Schlaf nach 30 s, 55 m entfernt nur Animation.
+  - Fußgänger: umgeworfen und wieder auf.
+- Getestet (headless): `test_ragdoll` 22/0, `test_weapons_m3` 83/0, `test_weapons_smg_grenade` 47/0, `test_enemy_xp` 29/0, `test_player_melee` 42/0, `test_npc_robbery` 47/0, `test_sector7_enemies` 15/0, `test_sector7_city` 44/0, `test_skills` 72/0, `test_neon_city` 30/0, `test_content_update` 47/0, `test_gas_stations` 59/0.
+- Multiplayer (zwei Prozesse, headless):
+  - `test_mp_sync` slum: Host 9/0, Client 10/0; testmap: 17/0 und 19/0.
+  - `test_mp_world`: Client 14/0, Host 12/1 („Gegner ist tot“). Der Fehler tritt auf `main` genauso auf (eigene Arbeitskopie geprüft) und stammt nicht von hier.
+- Nicht im Bild angesehen (kein Fenster): wie die Leichen aussehen, ob Kleidung oder Waffe sichtbar abstehen.
+- Offen:
+  - P5-2 Rest: schwere Treffer bei Lebenden, Stürze ab 1,5 m, Betäubung.
+  - P5-3 (UAL1 und UAL2 auf das MM-Skelett retargeten, danach echtes Aufstehen mit LayToIdle).
+  - P5-6 bis P5-9.

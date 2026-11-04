@@ -31,6 +31,14 @@ var crouch := 0.0
 var muzzle: Node3D
 var flashlight: SpotLight3D
 var laser: MeshInstance3D
+## Ragdoll der Quaternius-Figuren (Schedule 1, Phase 5). Entsteht erst beim Umfallen am Skelett
+## `ragdoll_skeleton` (ein Modifier am Skelett kostet sonst bei jeder Figur jedes Bild etwas).
+## Bei der Klötzchenfigur bleibt beides leer.
+var ragdoll: Ragdoll
+var ragdoll_skeleton: Skeleton3D
+## Letzter Treffer: wo und wie stark (Enemy/Civilian setzen ihn, fall() nimmt ihn für den Impuls).
+var hit_point := Vector3.INF
+var hit_force := 0.0
 
 var _status_mat: StandardMaterial3D
 var _time := randf() * 10.0
@@ -187,6 +195,23 @@ func fall(direction: Vector3) -> void:
 
 func is_fallen() -> bool:
 	return _dead
+
+
+## Auf Physik umschalten, falls es einen Ragdoll gibt und die Kamera nah genug ist. Der Ragdoll
+## übernimmt das Tempo des Körpers (CharacterBody3D darüber), der Impuls kommt vom letzten Treffer.
+func _ragdoll_fall(direction: Vector3) -> bool:
+	if ragdoll == null and ragdoll_skeleton != null:
+		ragdoll = Ragdoll.attach(ragdoll_skeleton)
+	if ragdoll == null:
+		return false
+	var host: Node = get_parent()
+	while host != null and not host is CharacterBody3D:
+		host = host.get_parent()
+	var velocity := (host as CharacterBody3D).velocity if host != null else Vector3.ZERO
+	var ok := ragdoll.knock_down(direction, hit_force, hit_point, velocity)
+	hit_point = Vector3.INF
+	hit_force = 0.0
+	return ok
 
 
 # --- Skelett ------------------------------------------------------------------------------

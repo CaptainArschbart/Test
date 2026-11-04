@@ -49,6 +49,9 @@ func build_civilian(variant_seed: int) -> void:
 	add_child(body)
 	for mi in body.find_children("*", "GeometryInstance3D", true, false):
 		(mi as GeometryInstance3D).visibility_range_end = 90.0
+	var skeletons := body.find_children("*", "Skeleton3D", true, false)
+	if not skeletons.is_empty():
+		ragdoll_skeleton = skeletons[0] as Skeleton3D
 	var players := body.find_children("*", "AnimationPlayer", true, false)
 	if not players.is_empty():
 		_anim = players[0] as AnimationPlayer
@@ -99,13 +102,16 @@ func _choose_loop() -> void:
 		_anim.speed_scale = clampf(speed / RUN_SPEED, 0.7, 1.6)
 
 
-## Tod bzw. vom Auto umgeworfen: die Todesanimation endet liegend.
+## Tod bzw. vom Auto umgeworfen: nah an der Kamera als Ragdoll, sonst endet die Todesanimation liegend.
 func fall(direction: Vector3) -> void:
 	if _anim == null:
 		super.fall(direction)
 		return
 	_dead = true
 	_rise_left = 0.0
+	# Nah an der Kamera: Ragdoll, weit weg: Todesanimation.
+	if _ragdoll_fall(direction):
+		return
 	# In Fallrichtung drehen (Welt, waagerecht), dann umfallen.
 	var local := global_basis.inverse() * direction
 	local.y = 0.0
@@ -119,6 +125,9 @@ func get_up(time := 0.9) -> void:
 	if _anim == null:
 		super.get_up(time)
 		return
+	# Aus dem Ragdoll zurück zur Animation blenden (bis es die Aufsteh-Animation aus UAL2 gibt).
+	if ragdoll != null and ragdoll.running:
+		ragdoll.blend_out(0.4)
 	rotation.y = 0.0
 	_play("Idle", 0.3)
 	_rise_left = time

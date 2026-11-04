@@ -364,6 +364,8 @@ func take_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 	if sneak:
 		amount *= profile.sneak_multiplier
 	health -= amount
+	model.hit_point = point
+	model.hit_force = amount
 	model.flinch = clampf(amount / 30.0, 0.4, 1.0)
 	_flash()
 	WorldSync.npc_event(self, &"hit", [model.flinch])
