@@ -158,7 +158,8 @@ def tower(parent: str, x: float, z: float, facing: str, w: float, d: float, floo
     TOWERS.append(dict(x=x, z=z, yaw=yaw, w=w, d=d, floors=floors, district=district, parent=parent,
                        fh=props.get("floor_height", 3.2), facade=props.get("facade", 0),
                        setbacks=props.get("setbacks", 0), shop=props.get("shop_front", False),
-                       billboard=props.get("roof_billboard", False), rect=rect_of(x, z, w, d, yaw)))
+                       billboard=props.get("roof_billboard", False), kit=props.get("kit", ""),
+                       rect=rect_of(x, z, w, d, yaw)))
     node(uname("Tower"), parent, "k_tower", x, 0.0, z, yaw, district=district, footprint=(w, d), floors=floors, **props)
 
 
@@ -201,6 +202,11 @@ PROPS = {
     "pine": ("res://assets/buildings/kenney_retro_urban/tree-pine-large.glb", 0.0, 7.0, True, (0.8, 0.8)),
     "pallet": ("res://assets/buildings/kenney_retro_urban/pallet.glb", 1.4, 0.0, False, (1.5, 1.5)),
     "scaffold": ("res://assets/buildings/kenney_retro_urban/scaffolding-structure.glb", 0.0, 3.0, True, (3.1, 3.1)),
+    "sign1": ("res://assets/props/quaternius_vehicles/TrafficSign1.fbx", 0.0, 2.4, True, (0.5, 0.5)),
+    "sign2": ("res://assets/props/quaternius_vehicles/TrafficSign2.fbx", 0.0, 2.4, True, (0.5, 0.5)),
+    "ambulance": ("res://assets/props/quaternius_vehicles/Ambulance.fbx", 5.6, 0.0, True, (2.9, 5.7)),
+    "bollard": ("res://assets/buildings/quaternius_downtown_city/Prop_Bollard.gltf", 0.0, 0.9, True, (0.3, 0.3)),
+    "cityplanter": ("res://assets/buildings/quaternius_downtown_city/Prop_Planter_Single.gltf", 1.6, 0.0, True, (1.7, 1.7)),
 }
 
 
@@ -306,12 +312,31 @@ for i, lx in enumerate(LINES):
             for dz in (-1, 1):
                 cx, cz = lx + dx * (wv / 2 + sv / 2), lz + dz * (wh / 2 + sh / 2)
                 node(uname("Corner"), P_ROADS, "k_ground", cx, 0.0, cz, 0.0, size=(sv, sh), height=SIDEWALK_Y, color=WALK)
-                # Ampelmast an der Ecke (Kreuzungen mit vier Armen).
+                # Schaltkasten an der Ecke (Kreuzungen mit vier Armen); die Ampeln mit Ausleger setzt der Detail-Abschnitt.
                 if all(arms.values()) and dx == dz:
                     prop(P_ROADS, "powerbox", cx - dx * (sv / 2 - 0.5), cz - dz * (sh / 2 - 0.5), 0.0)
 
 SPAWN = (9.0, 44.0)  # Gehweg der Hauptstraße x = 0, südlich vom Kern
 claim(SPAWN[0] - 0.5, SPAWN[0] + 0.5, SPAWN[1] - 0.5, SPAWN[1] + 0.5, "solid", "Spieler-Start")
+
+# Stützen des Skywalk-Rings vorab reservieren (gleiche Rechnung wie NeonSkywalk), damit kein Prop
+# auf den Plätzen hineingerät. Die Bahnen selbst werden weiter unten gebaut.
+SKY_R = 19.0
+SKY_W = 3.0
+SKY_PILLAR = 8.0
+for (bx, bz, along_x) in ((0.0, -SKY_R, True), (0.0, SKY_R, True), (-SKY_R, 0.0, False), (SKY_R, 0.0, False)):
+    length = 2 * (SKY_R - SKY_W / 2)
+    n = max(1, int(length / SKY_PILLAR))
+    for k in range(n + 1):
+        a_ = -length / 2 + 0.5 + (length - 1.0) * k / n
+        if -ext(0.0) - 0.5 < a_ < ext(0.0) + 0.5:
+            continue
+        px, pz = (bx + a_, bz) if along_x else (bx, bz + a_)
+        claim(px - 0.4, px + 0.4, pz - 0.4, pz + 0.4, "solid", "Skywalk-Stütze")
+# Stützen der vier Eckpodeste (Bau weiter unten beim Skywalk).
+for sx_ in (-1.0, 1.0):
+    for sz_ in (-1.0, 1.0):
+        claim(sx_ * SKY_R - 0.6, sx_ * SKY_R + 0.6, sz_ * SKY_R - 0.6, sz_ * SKY_R + 0.6, "solid", "Podeststütze")
 
 # Untergrund unter allem (fängt Spalten ab) und Ränder der Blöcke auf Gehweghöhe.
 node("Base", ".", "k_ground", 0.0, 0.0, 0.0, 0.0, size=(2 * EDGE + 60, 2 * EDGE + 60), height=-0.3, color=(0.07, 0.07, 0.08, 1))
@@ -324,11 +349,32 @@ node("Base", ".", "k_ground", 0.0, 0.0, 0.0, 0.0, size=(2 * EDGE + 60, 2 * EDGE 
 # Pro Bezirk: Tiefe der Randbebauung, Länge der Grundstücke, Stockwerke, Fassade.
 STYLE = {
     "core": dict(depth=(18, 22), lot=(16, 24), floors=(18, 42), facade="bands", shop=0.6, corner=0.5, billboard=0.35, lit=0.32, setbacks=(1, 2)),
-    "harbor": dict(depth=(18, 22), lot=(18, 28), floors=(1, 3), facade="industrial", shop=0.0, corner=0.1, billboard=0.1, lit=0.15, setbacks=(0, 0), fh=4.5),
+    "harbor": dict(depth=(18, 22), lot=(18, 28), floors=(2, 4), facade="industrial", shop=0.0, corner=0.1, billboard=0.1, lit=0.15, setbacks=(0, 0)),
     "blocks": dict(depth=(14, 17), lot=(14, 22), floors=(10, 22), facade="grid", shop=0.35, corner=0.15, billboard=0.2, lit=0.3, setbacks=(0, 1)),
     "neon": dict(depth=(12, 15), lot=(8, 13), floors=(4, 10), facade="grid", shop=0.95, corner=0.45, billboard=0.4, lit=0.38, setbacks=(0, 0)),
     "under": dict(depth=(10, 13), lot=(7, 11), floors=(2, 4), facade="grid", shop=0.7, corner=0.1, billboard=0.1, lit=0.3, setbacks=(0, 0)),
 }
+
+# Fassaden aus den Bauteil-Packs je Bezirk (NeonFacade.KITS): [Kit, Gewicht]. Häuser mit Kit haben 3 m
+# Geschosshöhe (Höhe der Stücke). Kenney (Pixeltexturen) nur in Hafen und Unterstadt, sonst Downtown.
+KITS = {
+    "core": [("dt_metal", 3), ("dt_trim", 1)],
+    "harbor": [("kn_metal", 3), ("kn_brick", 1)],
+    "blocks": [("dt_brick", 3), ("dt_trim", 2)],
+    "neon": [("dt_brick", 3), ("dt_metal", 1)],
+    "under": [("kn_brick", 3), ("kn_metal", 1)],
+}
+
+
+def pick_kit(district: str) -> str:
+    options = KITS[district]
+    r = rnd.uniform(0, sum(w for _, w in options))
+    for name, w in options:
+        r -= w
+        if r <= 0:
+            return name
+    return options[-1][0]
+
 
 # Läden und Tankstellen: (Bezirk-Block, Seite, Art) – der Generator nimmt das erste passende Grundstück.
 # Nur an den langen Nord-/Südseiten: Ost- und Westseiten sind zwischen den Eckhäusern zu kurz.
@@ -385,13 +431,19 @@ def frontage(parent: str, district: str, side: str, a0: float, a1: float, edge: 
                     claim(edge, edge + inward * (front + back), mid - sw / 2, mid + sw / 2, "solid", f"Laden {kind}")
                 shop_places.append({"kind": kind, "at": (round(sx, 2), SIDEWALK_Y, round(sz, 2)), "yaw": yaw})
                 continue
+        # Reststücke: unter 6 m bleibt eine Lücke (Durchgang), kurze Grundstücke werden keine Nadeltürme.
+        if l < 6.0 and not closed:
+            continue
         floors = max(1, int(rnd.randint(*st["floors"]) * floors_scale))
+        if l < st["lot"][0]:
+            floors = min(floors, 4)
         is_corner = abs(a - l - a0) < 0.01 or abs(a - a1) < 0.01
         if district == "core" and is_corner:
             floors = int(floors * 1.25)
-        w = l if closed else l - rnd.choice([0.0, 0.0, 0.6])
-        tower(parent, cx, cz, side, w, depth, floors, district, facade=FACADE[st["facade"]],
-              floor_height=st.get("fh", 3.2), setbacks=rnd.randint(*st["setbacks"]),
+        # Häuser stehen direkt aneinander: ein schmaler Spalt wäre eine Falle für Spieler und Gegner.
+        w = l
+        tower(parent, cx, cz, side, w, depth, floors, district, facade=FACADE[st["facade"]], kit=pick_kit(district),
+              floor_height=3.0, setbacks=rnd.randint(*st["setbacks"]),
               shop_front=rnd.random() < st["shop"], corner_neon=rnd.random() < st["corner"],
               roof_billboard=rnd.random() < st["billboard"], lit_ratio=st["lit"], street_light=rnd.random() < 0.3)
     if pending:
@@ -491,7 +543,7 @@ def court_blocks(parent: str, x0: float, x1: float, z0: float, z1: float) -> Non
             z += 3.2
             continue
         if rnd.random() < 0.7:
-            prop(parent, rnd.choice(["car", "suv", "sports", "pickup", "van", "taxi"]), cx + 6.0, z, 90.0)
+            prop(parent, rnd.choice(["car", "suv", "sports", "pickup", "van", "taxi", "police", "ambulance"]), cx + 6.0, z, 90.0)
         if rnd.random() < 0.7:
             prop(parent, rnd.choice(["car", "suv", "sports", "pickup"]), x1 - 5.0, z, 90.0)
         z += 3.2
@@ -533,8 +585,6 @@ COURT = {"core": court_core, "harbor": court_harbor, "blocks": court_blocks, "ne
 
 
 # --- Platz an der Hauptkreuzung mit Skywalk-Treppe ----------------------------------------
-SKY_R = 19.0  # Mitte der Skywalk-Bahnen von der Kreuzungsmitte
-SKY_W = 3.0
 
 
 def plaza(parent: str, x0: float, x1: float, z0: float, z1: float, bi: int, bj: int) -> None:
@@ -547,7 +597,11 @@ def plaza(parent: str, x0: float, x1: float, z0: float, z1: float, bi: int, bj: 
     node(uname("Stairs"), parent, "k_stairs", sx * SKY_R, 0.0, start_z, 0.0 if sz < 0 else 180.0,
          height=SKY_Y, base=SIDEWALK_Y, width=2.4, landing=2.0, accent=1)
     for _ in range(4):
-        prop(parent, "bench", rnd.uniform(x0 + 3, x1 - 3), rnd.uniform(z0 + 3, z1 - 3), rnd.choice([0.0, 90.0]))
+        bx, bz, yaw = rnd.uniform(x0 + 3, x1 - 3), rnd.uniform(z0 + 3, z1 - 3), rnd.choice([0.0, 90.0])
+        # Nicht in den Hof, der an die Platzecke grenzt: dort läuft die Streife um die Pflanzinsel.
+        _, cx0, cx1, cz0, cz1 = courts[-1]
+        if not (cx0 - 2.5 < bx < cx1 + 2.5 and cz0 - 2.5 < bz < cz1 + 2.5):
+            prop(parent, "bench", bx, bz, yaw)
 
 
 for bi in range(4):
@@ -560,13 +614,12 @@ inner = SKY_R - SKY_W / 2
 for (x, z, yaw) in ((0.0, -SKY_R, 90.0), (0.0, SKY_R, 90.0), (-SKY_R, 0.0, 0.0), (SKY_R, 0.0, 0.0)):
     main_w = road_dims(0.0)[0] / 2 + 0.5
     node(uname("Walk"), P_SKY, "k_skywalk", x, 0.0, z, yaw, length=2 * inner, width=SKY_W, height=SKY_Y,
-         pillar_spacing=8.0, pillar_gap=(-ext(0.0) - 0.5, ext(0.0) + 0.5), accent=1)
+         pillar_spacing=SKY_PILLAR, pillar_gap=(-ext(0.0) - 0.5, ext(0.0) + 0.5), accent=1)
 for sx in (-1.0, 1.0):
     for sz in (-1.0, 1.0):
         # Podest: Bahn in z-Richtung kommt von innen (−sz), Bahn in x-Richtung von innen (−sx), Treppe von außen (+sz).
         node(uname("Landing"), P_SKY, "k_skywalk", sx * SKY_R, 0.0, sz * SKY_R, 0.0, length=SKY_W, width=SKY_W,
              height=SKY_Y, pillar_spacing=0.0, rail_left=sx < 0, rail_right=sx > 0, accent=1)
-        claim(sx * SKY_R - 0.6, sx * SKY_R + 0.6, sz * SKY_R - 0.6, sz * SKY_R + 0.6, "solid", "Podeststütze")
         node(uname("Pillar"), P_SKY, "k_ground", sx * SKY_R, 0.0, sz * SKY_R, 0.0, size=(1.2, 1.2), height=SKY_Y - 0.35,
              color=(0.2, 0.21, 0.24, 1))
 
@@ -576,7 +629,7 @@ for sx in (-1.0, 1.0):
 # =====================================================================================
 P_FURN = group("StreetProps")
 # Nur schmale Dinge an den Bordstein: der Fußweg in der Gehwegmitte bleibt frei.
-STREET_KINDS = ["bench", "trash", "trash", "hydrant", "mailbox", "planter", "powerbox"]
+STREET_KINDS = ["bench", "trash", "trash", "hydrant", "mailbox", "planter", "powerbox", "sign1", "sign2"]
 for lx in LINES:
     for j in range(4):
         za, zb = LINES[j] + ext(LINES[j]), LINES[j + 1] - ext(LINES[j + 1])
@@ -716,15 +769,20 @@ def dress(kind: str, x: float, y: float, z: float, yaw: float, sx: float = 1.0, 
         [round(x, 3), round(y, 3), round(z, 3), round(yaw % 360.0, 2), round(sx, 3), round(sy, 3), round(sz, 3)])
 
 
+def on_street(r: tuple[float, float, float, float]) -> bool:
+    """Rechteck berührt eine Straße samt Gehweg."""
+    return any((r[0] < L + ext(L) and r[1] > L - ext(L)) or (r[2] < L + ext(L) and r[3] > L - ext(L)) for L in LINES)
+
+
 def dress_ground(kind: str, x: float, z: float, yaw: float, y: float = SIDEWALK_Y, margin: float = 0.0,
-                 keep_only: bool = False) -> bool:
+                 keep_only: bool = False, street: bool = False) -> bool:
     """Ding mit Kollision am Boden: nur auf freier Fläche, mit `margin` Abstand zu allem Festen
     (keep_only: nur zu freizuhaltenden Wegen, für Dinge direkt an einer Hauswand)."""
     w, _, d = dsize(kind)
     if len(DRESS[kind]) > 7:
         w, _, d = DRESS[kind][7]
     r = rect_of(x, z, w, d, yaw)
-    if not free(*r):
+    if not free(*r) or (not street and on_street(r)):
         return False
     if margin > 0:
         m = (r[0] - margin, r[1] + margin, r[2] - margin, r[3] + margin)
@@ -789,7 +847,16 @@ def wall(t: dict, side: tuple, along: float, y: float, out: float) -> tuple[floa
     return wx, y, wz
 
 
-def columns(length: float) -> list[float]:
+KIT_MODULE = {"dt_brick": 2.0, "dt_metal": 2.0, "dt_trim": 2.0, "kn_brick": 3.0, "kn_metal": 3.0}  # NeonFacade.KITS
+
+
+def columns(length: float, kit: str = "") -> list[float]:
+    """Fenstermitten entlang einer Wand: wie NeonTower._windows bzw. die Stücke von NeonFacade."""
+    if kit in KIT_MODULE:
+        m = KIT_MODULE[kit]
+        n = int(length / m + 0.001)
+        margin = (length - n * m) / 2
+        return [-length / 2 + margin + m * (k + 0.5) for k in range(n)]
     n = max(1, int((length - 1.0) / 2.7))
     return [-2.7 * (n - 1) / 2 + 2.7 * k for k in range(n)]
 
@@ -815,7 +882,9 @@ def facade_details(t: dict) -> None:
     p = FACADE_P[district]
     y0, height, _, _ = tiers(t)
     top_floor = min(int(round(y0 / fh)), 14)
-    grid = t["facade"] == FACADE["grid"]
+    kit = t["kit"]
+    # Mit Bauteil-Fassade sitzen die Fenster im Raster der Stücke (auch an Hallen).
+    grid = t["facade"] == FACADE["grid"] or (kit != "" and t["district"] != "core")
     fire_side = None
     if p["fire"] and grid and top_floor >= 3 and drnd.random() < p["fire"]:
         fire_side = drnd.choice(["back", "left", "right", "front", "front"])
@@ -825,7 +894,7 @@ def facade_details(t: dict) -> None:
             continue
         length = t["w"] if key == "w" else t["d"]
         yaw = t["yaw"] + face_yaw
-        cols = columns(length)
+        cols = columns(length, kit)
         used: set[tuple[int, int]] = set()  # (Spalte, Stockwerk) schon belegt
         start = 2 if (name == "front" and t["shop"]) else 1
         # Feuertreppe zwischen zwei Fensterspalten, ein Stück pro Stockwerk.
@@ -843,7 +912,8 @@ def facade_details(t: dict) -> None:
             continue
         # Balkone spaltenweise (alle Stockwerke einer Spalte), Klimageräte einzeln.
         for k, a in enumerate(cols):
-            balcony = drnd.random() < p["balcony"]
+            # Bei 2-m-Stücken nur jede zweite Spalte, sonst stoßen die Balkone aneinander.
+            balcony = drnd.random() < p["balcony"] and not (KIT_MODULE.get(kit, 9.0) < 2.5 and k % 2)
             for f in range(start, top_floor):
                 if (k, f) in used:
                     continue
@@ -854,7 +924,7 @@ def facade_details(t: dict) -> None:
                     x, y, z = wall(t, side, a, f * fh, dsize("balcony")[2] * 0.55 / 2 + 0.02)
                     dress("balcony", x, y, z, yaw, sz=0.55)
                 elif drnd.random() < p["ac"]:
-                    off = a + 1.35 if k < len(cols) - 1 or a + 1.9 < length / 2 else a - 1.35
+                    off = a if kit else (a + 1.35 if k < len(cols) - 1 or a + 1.9 < length / 2 else a - 1.35)
                     x, y, z = wall(t, side, off, f * fh + 0.3, dsize("ac")[2] / 2 + 0.02)
                     if not near_lamp(x, z, 1.2) and abs(off) < length / 2 - 0.5:
                         dress("ac", x, y, z, yaw)
@@ -873,7 +943,7 @@ def facade_details(t: dict) -> None:
     for side in SIDES:
         name, _, key, _ = side
         # Hinten sitzt die Hintertür, vorn mit Laden ist kein Platz.
-        if role == "edge" or name == "back" or drnd.random() >= p["poster"] or (name == "front" and t["shop"]):
+        if role == "edge" or name == "back" or t["kit"] or drnd.random() >= p["poster"] or (name == "front" and t["shop"]):
             continue
         length = t["w"] if key == "w" else t["d"]
         if length < 6.0:
@@ -887,8 +957,8 @@ def facade_details(t: dict) -> None:
 def ground_floor(t: dict) -> None:
     """Erdgeschoss zur Straße: Schaufenster im Metallrahmen, in der Unterstadt Backstein mit Fenstern.
     Vorn bleiben Eingang (Mitte) und Laden frei; Wandlampen neben dem Eingang."""
-    if ROLE[id(t)] == "hut" or t["facade"] == FACADE["industrial"] or t["fh"] < 3.2:
-        return
+    if ROLE[id(t)] == "hut" or t["facade"] == FACADE["industrial"] or t["kit"]:
+        return  # Bauteil-Fassaden bringen Schaufenster und Türen selbst mit
     under = t["district"] == "under"
     for side in SIDES:
         name, _, key, face_yaw = side
@@ -916,7 +986,7 @@ def ground_floor(t: dict) -> None:
 
 def back_door(t: dict) -> None:
     """Hintertür zum Hof mit Lampe darüber, in der Unterstadt und Neonmeile mit Vordach."""
-    if ROLE[id(t)] != "front" or t["w"] < 5.0:
+    if ROLE[id(t)] != "front" or t["w"] < 5.0 or t["kit"]:
         return
     side = SIDES[2]
     cols = columns(t["w"])
@@ -1149,7 +1219,7 @@ def curb_bikes(line: float, a0: float, a1: float, along_x: bool) -> None:
                 yaw = 90.0 if along_x else 0.0
             else:
                 yaw = 0.0 if along_x else 90.0
-            dress_ground(kind, x, z, yaw)
+            dress_ground(kind, x, z, yaw, street=True)
             a += drnd.uniform(6, 15)
 
 
@@ -1176,7 +1246,11 @@ for bi, bj in ((1, 1), (2, 1), (1, 2), (2, 2)):
     # Werbetafel auf dem Mast an der Platzecke zur Kreuzung, Blick zur Kreuzung.
     for _ in range(20):
         px, pz = sx * drnd.uniform(ext(0.0) + 3, ext(0.0) + 9), sz * drnd.uniform(ext(0.0) + 3, ext(0.0) + 9)
-        if dress_ground("plazaboard", px, pz, math.degrees(math.atan2(-px, -pz)), margin=1.5):
+        yaw = math.degrees(math.atan2(-px, -pz))
+        bw, _, bd = dsize("plazaboard")
+        if free(*rect_of(px, pz, bw + 1.0, bd + 1.0, yaw)) and dress_ground("plazaboard", px, pz, yaw, margin=1.5):
+            # Die Tafel hängt über dem Platz: ganze Fläche für Wege und Streifenpunkte sperren.
+            claim(*rect_of(px, pz, bw, bd, yaw), "raised", "Werbetafel")
             break
     for _ in range(6):
         px = sx * drnd.uniform(ext(0.0) + 4, ext(0.0) + 24)
