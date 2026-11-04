@@ -835,3 +835,19 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
   - P5-2 Rest: schwere Treffer bei Lebenden, Stürze ab 1,5 m, Betäubung.
   - P5-3 (UAL1 und UAL2 auf das MM-Skelett retargeten, danach echtes Aufstehen mit LayToIdle).
   - P5-6 bis P5-9.
+
+### 2026-11-04 · Schedule 1, M3 „Systeme“, Teil 3: Icons und Bildkontrolle · Claude (für EnScapeZ) · Branch `enscapez/m3-waffen`
+- Ein einziger Fensterlauf (mit Erlaubnis, 33 s) für Icons, Waffen-Screenshots und Ragdoll-Screenshots.
+- Inventar-Icons der 7 neuen Waffen: `assets/icons/items/{revolver,heavy_pistol,pump_shotgun,sawed_off,bullpup,compact_smg,dmr}.png`, per `ICONS_APPLY=1` in die `.tres` eingetragen. Die vorhandenen Icons sind unverändert.
+- Bildkontrolle der Ego-Ansicht: Revolver, schwere Pistole, Pump- und abgesägte Schrotflinte, Kompakt-MP und Präzisionsgewehr sitzen wie die vorhandenen Waffen (M4, SMG) in der Hand.
+- Bullpup korrigiert (`scenes/items/data/bullpup.tres`):
+  - Das Gehäuse liegt hinter dem Griff und ragte im Anschlag durch die Nahebene der Kamera (großes dunkles Dreieck in der Bildmitte).
+  - Jetzt: `aim_distance` 0,30 → 0,42 und `sight_offset.y` 0,075 → 0,086. Das Korn sitzt im Fadenkreuz, das Gehäuse liegt unter der Bildmitte.
+  - `hip_offset.z` −0,06 → −0,14, damit es aus der Hüfte nicht das rechte untere Viertel füllt.
+  - Nachgeprüft ohne Fenster: Die Ansichtsgeometrie wird headless ausgelesen und nachgezeichnet, kein Dreieck liegt mehr vor der Nahebene.
+- Ragdolls im Bild:
+  - Gegner fallen in Schussrichtung und liegen natürlich.
+  - Der gegen die Wand gestoßene Gegner bleibt davor liegen.
+  - Der umgeworfene Fußgänger steht sauber wieder auf.
+- Getestet (headless): `test_item_icons` 63/0 (vorher 1 Fehler), `test_weapons_m3` 83/0, `test_gun_shops` 37/0, `test_weapons_smg_grenade` 47/0, `test_content_update` 47/0.
+- Nicht gesehen: die Nachlade-Pose. `shot_weapons.gd` lädt mit vollem Magazin nach, deshalb startet das Nachladen nicht.

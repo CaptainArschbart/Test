@@ -1,10 +1,11 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="WeaponData" load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scenes/items/weapon_data.gd" id="1_weapon"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/bullpup_view.tscn" id="2_view"]
 [ext_resource type="AudioStream" path="res://assets/audio/bullpup_shot.wav" id="3_shot"]
 [ext_resource type="AudioStream" path="res://assets/audio/smg_reload.wav" id="4_reload"]
 [ext_resource type="AudioStream" path="res://assets/audio/pistol_empty.wav" id="5_empty"]
+[ext_resource type="Texture2D" path="res://assets/icons/items/bullpup.png" id="icon_item"]
 
 [resource]
 script = ExtResource("1_weapon")
@@ -15,14 +16,14 @@ reload_time = 2.2
 max_range = 95.0
 view_scene = ExtResource("2_view")
 pickup_scale = 1.5
-hip_offset = Vector3(0.02, -0.02, -0.06)
+hip_offset = Vector3(0.02, -0.02, -0.14)
 weapon_class = "rifle"
 burst_count = 3
 burst_interval = 0.065
 aim_fov = 52.0
 aim_time = 0.18
-sight_offset = Vector3(0, 0.075, 0)
-aim_distance = 0.3
+sight_offset = Vector3(0, 0.086, 0)
+aim_distance = 0.42
 aim_sensitivity = 0.85
 hip_spread_degrees = 1.2
 aim_spread_degrees = 0.15
@@ -48,3 +49,4 @@ glyph = "BP"
 color = Color(0.2, 0.6, 1, 1)
 max_stack = 1
 value = 150
+icon = ExtResource("icon_item")

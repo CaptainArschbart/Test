@@ -1,10 +1,11 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="WeaponData" load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scenes/items/weapon_data.gd" id="1_weapon"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/revolver_view.tscn" id="2_view"]
 [ext_resource type="AudioStream" path="res://assets/audio/revolver_shot.wav" id="3_shot"]
 [ext_resource type="AudioStream" path="res://assets/audio/revolver_reload.wav" id="4_reload"]
 [ext_resource type="AudioStream" path="res://assets/audio/pistol_empty.wav" id="5_empty"]
+[ext_resource type="Texture2D" path="res://assets/icons/items/revolver.png" id="icon_item"]
 
 [resource]
 script = ExtResource("1_weapon")
@@ -37,3 +38,4 @@ glyph = "RV"
 color = Color(1, 0.78, 0.25, 1)
 max_stack = 1
 value = 90
+icon = ExtResource("icon_item")
