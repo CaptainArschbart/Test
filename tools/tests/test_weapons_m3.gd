@@ -90,6 +90,7 @@ func _run() -> void:
 	await _test_burst()
 	await _test_compact_smg()
 	await _test_enemy_models()
+	await _test_enemy_anims()
 	await _test_shop()
 	_finish()
 
@@ -228,6 +229,9 @@ func _give(id: String) -> Resource:
 	for i in 9:
 		inventory.call("_clear", i)
 	inventory.call("add_item", item, 1)
+	# Munition für das Nachladen (P4-4).
+	if item.get("ammo") != null:
+		inventory.call("add_item", item.get("ammo"), 200)
 	inventory.call("select", 1)
 	inventory.call("select", 0)
 	return item
@@ -367,6 +371,51 @@ func _test_enemy_models() -> void:
 		_check(gun != null and gun.scene_file_path == want, "%s: Modell %s in der Hand" % [name, want.get_file()])
 		enemy.queue_free()
 		await _frames(1)
+
+
+## P4-6: Zielen, Schießen und Nachladen als Oberkörper-Ebene (UAL1 Pistol_*), auch im Laufen.
+func _test_enemy_anims() -> void:
+	print("Gegner zielen, schießen und laden nach (UAL1)")
+	var enemy: Node3D = load(ENEMY_SCENE).instantiate()
+	enemy.set("profile", load(PROFILE_DIR + "gang_leader.tres"))
+	current_scene.add_child(enemy)
+	enemy.global_position = ARENA + Vector3(6, 0.1, 6)
+	enemy.set_physics_process(false)
+	await _frames(2)
+	var model: Node = enemy.get("model")
+	var overlay: AnimOverlay = model.get("_overlay")
+	_check(overlay != null, "Bewaffneter Gegner hat die Oberkörper-Ebene")
+	if overlay == null:
+		enemy.queue_free()
+		return
+	model.set("aim", 1.0)
+	model.set("speed", 3.0)
+	for i in 30:
+		model.call("animate", 1.0 / 30.0)
+		await process_frame
+	var anim: AnimationPlayer = model.get("_anim")
+	_check(overlay.aim_weight > 0.9 and anim.current_animation.ends_with("Run"),
+		"Zielt im Laufen: Beine laufen (%s), Oberkörper zielt (%.2f)" % [anim.current_animation, overlay.aim_weight])
+	# Zielen dreht den Oberarm sichtbar gegenüber der Laufpose.
+	var sk: Skeleton3D = model.get("ragdoll_skeleton")
+	var arm := sk.find_bone("UpperArm.R")
+	var seen := [Quaternion(), Quaternion()]
+	sk.skeleton_updated.connect(func() -> void: seen[0] = sk.get_bone_pose_rotation(arm), CONNECT_ONE_SHOT)
+	await process_frame
+	await process_frame
+	seen[1] = sk.get_bone_pose_rotation(arm)
+	_check(seen[0].angle_to(seen[1]) > 0.2, "Ebene ändert den Arm (%.0f°)" % rad_to_deg(seen[0].angle_to(seen[1])))
+	enemy.call("_play_sfx", &"reload", false)
+	_check(overlay.is_busy() and str(overlay.get("_action")) == AnimOverlay.RELOAD, "Nachladen spielt Pistol_Reload")
+	await _frames(2)
+	model.call("trigger_shot")
+	_check(str(overlay.get("_action")) == AnimOverlay.SHOOT, "Schuss spielt Pistol_Shoot")
+	enemy.call("take_hit", 5.0, enemy.global_position + Vector3.UP * 1.2, Vector3.FORWARD)
+	enemy.call("take_hit", 500.0, enemy.global_position + Vector3.UP * 1.2, Vector3.FORWARD)
+	await _frames(2)
+	_check(overlay.aim_weight == 0.0 and not overlay.is_busy(), "Tot: Ebene aus")
+	enemy.queue_free()
+	await _frames(1)
 
 
 func _test_shop() -> void:

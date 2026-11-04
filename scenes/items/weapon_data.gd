@@ -24,6 +24,9 @@ extends ItemData
 @export var max_range := 80.0
 ## Modell in der Hand (Szene mit Marker3D "Muzzle" für das Mündungsfeuer).
 @export var view_scene: PackedScene
+## Munition (ItemData, Schedule 1, P4-4): Nachladen nimmt die Patronen aus dem Inventar.
+## Leer = unbegrenzt (wie früher).
+@export var ammo: ItemData
 ## Größe des Modells, wenn die Waffe als Pickup in der Welt liegt.
 @export var pickup_scale := 2.2
 
@@ -121,3 +124,12 @@ func falloff_factor(distance: float) -> float:
 		return 1.0
 	var t := clampf((distance - falloff_start) / (falloff_end - falloff_start), 0.0, 1.0)
 	return lerpf(1.0, min_damage_factor, t)
+
+
+## Platzbedarf im Inventar je Waffenklasse (Schedule 1, P4-4): Inventory.WEAPON_CAPACITY Punkte
+## Traglast für alle Waffen zusammen.
+const CARRY_SIZE := {"pistol": 1, "smg": 2, "shotgun": 3, "rifle": 3, "sniper": 4}
+
+
+func carry_size() -> int:
+	return CARRY_SIZE.get(weapon_class, 2)

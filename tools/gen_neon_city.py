@@ -188,7 +188,9 @@ PROPS = {
     "pickup": ("res://assets/props/city_pack/Pickup Truck.glb", 5.2, 0.0, True, (2.4, 5.3)),
     "van": ("res://assets/props/city_pack/Van.glb", 5.0, 0.0, True, (2.85, 5.1)),
     "taxi": ("res://assets/props/quaternius_vehicles/Taxi.fbx", 4.4, 0.0, True, (2.25, 4.5)),
-    "bench": ("res://assets/props/city_pack/Bench.glb", 2.0, 0.0, True, (1.1, 2.1)),
+    # 1,1 m lang: Sitzfläche 0,40 m hoch (bei 2 m wären es 0,73 m). So hoch sitzt das Gesäß in der
+    # UAL-Sitzhaltung über den Füßen; die Fußgänger sitzen mit den Füßen am Boden.
+    "bench": ("res://assets/props/city_pack/Bench.glb", 1.1, 0.0, True, (1.1, 2.1)),
     "trash": ("res://assets/props/city_pack/Trash Can.glb", 0.0, 1.0, True, (1.0, 1.0)),
     "hydrant": ("res://assets/props/city_pack/Fire hydrant.glb", 0.0, 0.8, True, (0.5, 0.5)),
     "mailbox": ("res://assets/props/city_pack/Mailbox.glb", 0.0, 1.2, True, (0.7, 0.7)),

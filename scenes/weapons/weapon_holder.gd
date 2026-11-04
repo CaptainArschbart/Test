@@ -154,9 +154,9 @@ func _process(delta: float) -> void:
 		else:
 			_view.rotation.z = 0.0
 		_update_magazine()
-	# Gedrückt halten schießt nicht automatisch, aber ein leeres Magazin lädt von selbst.
+	# Gedrückt halten schießt nicht automatisch, aber ein leeres Magazin lädt von selbst (wenn Munition da ist).
 	if _weapon != null and get_ammo() == 0 and _reload_left <= 0.0 and _cooldown <= 0.0 \
-			and not _player.input_locked:
+			and not _player.input_locked and get_reserve() != 0:
 		start_reload()
 
 
@@ -208,6 +208,11 @@ func try_fire() -> bool:
 func start_reload() -> void:
 	if _weapon == null or _reload_left > 0.0 or get_ammo() >= _weapon.magazine_size:
 		return
+	# Keine passende Munition im Inventar (P4-4): Klicken, Anzeige rot.
+	if get_reserve() == 0:
+		_play(_weapon.empty_sound)
+		_update_hud()
+		return
 	_burst_left = 0
 	# Skill Schnellladen (reload_mult) verkürzt die Zeit (bei reload_single pro Patrone).
 	_reload_total = _weapon.reload_time * _player.skill_mult(&"reload_mult")
@@ -233,20 +238,27 @@ func get_spread_degrees() -> float:
 	return spread * (_player.skill_mult(&"spread_mult") if _player != null else 1.0)
 
 
-func refill_magazine() -> int:
-	if _weapon == null:
-		return 0
-	var missing := _weapon.magazine_size - get_ammo()
-	if missing <= 0:
-		return 0
-	_ammo[_weapon.id] = _weapon.magazine_size
-	return missing
-
-
 func get_ammo() -> int:
 	if _weapon == null:
 		return 0
 	return _ammo.get(_weapon.id, _weapon.magazine_size)
+
+
+## Patronen im Inventar für die gewählte Waffe (Schedule 1, P4-4). -1 = unbegrenzt (Waffe ohne
+## Munitionsart).
+func get_reserve() -> int:
+	if _weapon == null or _weapon.ammo == null or _player == null or _player.inventory == null:
+		return -1
+	return _player.inventory.count_item(_weapon.ammo)
+
+
+## Nimmt bis zu `count` Patronen aus dem Inventar. Gibt zurück, wie viele es gab.
+func _take_rounds(count: int) -> int:
+	if count <= 0:
+		return 0
+	if get_reserve() < 0:
+		return count
+	return _player.inventory.remove_item(_weapon.ammo, count)
 
 
 ## 0 = Hüfte, 1 = voll im Anschlag.
@@ -280,13 +292,13 @@ func get_reload_progress() -> float:
 func _finish_reload() -> void:
 	_reload_left = 0.0
 	if _weapon != null and _weapon.reload_single:
-		_ammo[_weapon.id] = mini(get_ammo() + 1, _weapon.magazine_size)
-		# Nächste Patrone, bis das Magazin voll ist.
-		if get_ammo() < _weapon.magazine_size:
+		_ammo[_weapon.id] = mini(get_ammo() + _take_rounds(1), _weapon.magazine_size)
+		# Nächste Patrone, bis das Magazin voll ist oder keine mehr da ist.
+		if get_ammo() < _weapon.magazine_size and get_reserve() != 0:
 			_reload_left = _reload_total
 			_play(_weapon.reload_sound, randf_range(0.97, 1.03))
 	elif _weapon != null:
-		_ammo[_weapon.id] = _weapon.magazine_size
+		_ammo[_weapon.id] = get_ammo() + _take_rounds(_weapon.magazine_size - get_ammo())
 	_update_hud()
 
 
@@ -472,6 +484,8 @@ func _update_weapon() -> void:
 	var item := _player.inventory.get_selected_item()
 	var weapon := item as WeaponData
 	if weapon == _weapon:
+		# Inventar geändert (z. B. Munition aufgehoben): nur die Anzeige.
+		_update_hud()
 		return
 	_weapon = weapon
 	_reload_left = 0.0
@@ -618,6 +632,11 @@ func _update_hud() -> void:
 		_ammo_label.text = "NACHLADEN …"
 	else:
 		_ammo_label.text = "%d / %d" % [get_ammo(), _weapon.magazine_size]
+		var reserve := get_reserve()
+		if reserve > 0:
+			_ammo_label.text += "  ·  %d" % reserve
+		elif reserve == 0:
+			_ammo_label.text += "  ·  KEINE MUNITION" if get_ammo() == 0 else "  ·  0"
 		var empty := get_ammo() == 0
 		_ammo_label.add_theme_color_override("font_color", Color(1.0, 0.15, 0.3) if empty else Color(1.0, 0.6, 0.15))
 

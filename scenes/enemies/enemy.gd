@@ -44,6 +44,11 @@ const CORPSE_GROUP := &"enemy_corpse"
 const SoundGen := preload("res://scenes/enemies/enemy_sounds.gd")
 const PICKUP_SCENE := preload("res://scenes/items/pickup.tscn")
 const CREDCHIP := preload("res://scenes/items/data/credchip.tres")
+## Waffe ohne EnemyProfile.weapon (nach style), für die Munition in der Beute (P4-4).
+const DEFAULT_PISTOL := preload("res://scenes/items/data/pistol.tres")
+const DEFAULT_RIFLE := preload("res://scenes/items/data/sniper.tres")
+## So oft lässt ein bewaffneter Gegner Munition seiner Waffe fallen (halbes bis volles Magazin).
+const AMMO_DROP_CHANCE := 0.75
 
 const STATE_COLORS := {
 	State.PATROL: Color(0.0, 0.95, 1.0),
@@ -950,6 +955,7 @@ func _play_sfx(kind: StringName, share := true) -> void:
 		&"reload":
 			_sfx.stream = SoundGen.RELOAD
 			_sfx.pitch_scale = 0.9
+			model.trigger_reload(profile.reload_time)
 		_:
 			return
 	_sfx.play()
@@ -1085,6 +1091,7 @@ func _fire() -> void:
 ## Leuchtspur, Mündungsfeuer und Schuss-Ton (auch auf Clients über net_event).
 func _show_shot(from: Vector3, end: Vector3) -> void:
 	_spawn_tracer(from, end)
+	model.trigger_shot()
 	# Schrot: ein paar Spuren mehr, leicht gestreut.
 	if profile.weapon != null and profile.weapon.pellets > 1:
 		var spread := from.distance_to(end) * tan(deg_to_rad(profile.weapon.pellet_spread_degrees))
@@ -1289,6 +1296,10 @@ func _drop_loot() -> void:
 		var chance := profile.loot_chances[i] if i < profile.loot_chances.size() else 0.3
 		if profile.loot_items[i] != null and _rng.randf() < chance:
 			drops.append([profile.loot_items[i], 1])
+	# Munition der eigenen Waffe (Schedule 1, P4-4).
+	var gun := _gun()
+	if gun != null and gun.ammo != null and _rng.randf() < AMMO_DROP_CHANCE:
+		drops.append([gun.ammo, _rng.randi_range(maxi(gun.magazine_size / 2, 2), gun.magazine_size)])
 	for i: int in drops.size():
 		var item: ItemData = drops[i][0]
 		var count: int = drops[i][1]
@@ -1299,6 +1310,18 @@ func _drop_loot() -> void:
 		# WorldSync: im Multiplayer sehen alle die Beute, aufheben kann sie nur einer.
 		WorldSync.spawn_pickup(item, count, global_position + Vector3.UP * 0.9 + spread * 0.2,
 			spread * 1.6 + Vector3.UP * 2.2, 0.6)
+
+
+## Schusswaffe des Gegners (EnemyProfile.weapon, sonst nach style), null = Nahkämpfer.
+func _gun() -> WeaponData:
+	if profile.weapon != null:
+		return profile.weapon
+	match profile.style:
+		EnemyProfile.Style.MELEE:
+			return null
+		EnemyProfile.Style.RIFLE:
+			return DEFAULT_RIFLE
+	return DEFAULT_PISTOL
 
 
 func _corpse_tick(delta: float) -> void:

@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=7 format=3]
+[gd_resource type="Resource" script_class="WeaponData" load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scenes/items/weapon_data.gd" id="1_weapon"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/pump_shotgun_view.tscn" id="2_view"]
@@ -6,6 +6,7 @@
 [ext_resource type="AudioStream" path="res://assets/audio/shotgun_reload.wav" id="4_reload"]
 [ext_resource type="AudioStream" path="res://assets/audio/pistol_empty.wav" id="5_empty"]
 [ext_resource type="Texture2D" path="res://assets/icons/items/pump_shotgun.png" id="icon_item"]
+[ext_resource type="Resource" path="res://scenes/items/data/ammo_shells.tres" id="ammo_item"]
 
 [resource]
 script = ExtResource("1_weapon")
@@ -15,6 +16,7 @@ fire_interval = 0.85
 reload_time = 0.55
 max_range = 45.0
 view_scene = ExtResource("2_view")
+ammo = ExtResource("ammo_item")
 pickup_scale = 1.4
 hip_offset = Vector3(0.03, -0.03, -0.1)
 weapon_class = "shotgun"

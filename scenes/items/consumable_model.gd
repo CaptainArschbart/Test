@@ -35,12 +35,15 @@ const COMPUTER := &"computer"
 const CUFFS := &"cuffs"
 const TIES := &"ties"
 const KEYCARD := &"keycard"
+## Munitionsschachtel (Schedule 1, P4-4), Farbe = Munitionsart.
+const AMMO := &"ammo"
 
 ## Nadelspitze des Injektors im Raum des Modells (ohne Kappe).
 const INJECTOR_TIP := Vector3(0.0, -0.074, 0.0)
 
 ## Vergrößerung als Pickup in der Welt, damit die echten Größen (12 cm Dose) lesbar bleiben.
 const PICKUP_SCALE := {
+	&"ammo": 2.2,
 	&"injector": 2.6,
 	&"can": 2.0,
 	&"noodles": 1.9,
@@ -179,7 +182,7 @@ const GRIPS := {
 
 ## Kleine Dinge (Riegel, Handy, Chip, Uhr …) greift die Hand wie den Verband.
 const SMALL_GRIP_KINDS := [&"bar", &"onigiri", &"phone", &"chip", &"watch", &"cigarettes", &"shard",
-	&"jewelry", &"jewels", &"cash", &"cuffs", &"ties", &"keycard", &"tv", &"painting", &"computer"]
+	&"jewelry", &"jewels", &"cash", &"cuffs", &"ties", &"keycard", &"tv", &"painting", &"computer", &"ammo"]
 
 
 static var _materials := {}
@@ -223,6 +226,8 @@ static func build(kind: StringName, color: Color, viewmodel := false) -> Node3D:
 			_build_shard(root, color)
 		CROWBAR:
 			_build_crowbar(root, color)
+		AMMO:
+			_build_ammo(root, color)
 		JEWELRY, JEWELS, CASH, CUFFS, TIES, KEYCARD, TV, PAINTING, COMPUTER:
 			_build_prop(root, kind, color)
 		_:
@@ -625,6 +630,17 @@ static func _build_cigarettes(root: Node3D, color: Color) -> void:
 	root.add_child(label)
 
 
+## Munitionsschachtel: dunkle Pappe mit Neonstreifen in der Farbe der Munitionsart, oben ragen
+## drei Patronen heraus.
+static func _build_ammo(root: Node3D, color: Color) -> void:
+	_part(root, ProcMesh.rounded_box(Vector3(0.07, 0.075, 0.045), 0.12), _mat(&"ammo_box", Color(0.14, 0.13, 0.12), 0.0, 0.8), Vector3.ZERO)
+	_part(root, ProcMesh.rounded_box(Vector3(0.0705, 0.018, 0.0455), 0.1), _neon(color, 1.2), Vector3(0.0, 0.006, 0.0))
+	var brass := _mat(&"brass", Color(0.85, 0.65, 0.3), 0.85, 0.3)
+	for i in 3:
+		_part(root, ProcMesh.tube(0.0055, 0.0055, 0.022), brass, Vector3(-0.02 + i * 0.02, 0.046, 0.0))
+		_part(root, ProcMesh.tube(0.0055, 0.0015, 0.01), _mat(&"lead", Color(0.55, 0.5, 0.48), 0.6, 0.4), Vector3(-0.02 + i * 0.02, 0.062, 0.0))
+
+
 ## Data-Shard: leuchtender Kristallstab in Metallfassung.
 static func _build_shard(root: Node3D, color: Color) -> void:
 	_part(root, ProcMesh.rounded_box(Vector3(0.018, 0.03, 0.012), 0.2), _mat(&"metal", Color(0.62, 0.64, 0.68), 0.9, 0.25), Vector3(0.0, -0.025, 0.0))
@@ -673,6 +689,17 @@ static func _draw_icon_extra(canvas: CanvasItem, kind: StringName, center: Vecto
 			cup.append(cup[0])
 			canvas.draw_polyline(cup, color, line, true)
 			canvas.draw_rect(Rect2(center + Vector2(-top * 1.08, -h * 0.95), Vector2(top * 2.16, h * 0.25)), color)
+		AMMO:
+			# Schachtel mit Streifen, oben drei Patronen.
+			var rect := Rect2(center - Vector2(s * 0.24, s * 0.12), Vector2(s * 0.48, s * 0.36))
+			canvas.draw_rect(rect, fill)
+			canvas.draw_rect(rect, color, false, line)
+			canvas.draw_rect(Rect2(rect.position + Vector2(0.0, rect.size.y * 0.4), Vector2(rect.size.x, rect.size.y * 0.22)), color)
+			for i in 3:
+				var x := rect.position.x + rect.size.x * (0.22 + i * 0.28)
+				var tip := Rect2(Vector2(x - s * 0.035, rect.position.y - s * 0.16), Vector2(s * 0.07, s * 0.16))
+				canvas.draw_rect(tip, Color(1.0, 0.8, 0.35))
+				canvas.draw_circle(Vector2(x, tip.position.y), s * 0.035, Color(1.0, 0.8, 0.35))
 		BAR, CIGARETTES, PHONE, CHIP:
 			var size := Vector2(0.4, 0.46)
 			match kind:

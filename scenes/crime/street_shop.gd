@@ -23,6 +23,14 @@ const COMPACT_SMG := preload("res://scenes/items/data/compact_smg.tres")
 const DMR := preload("res://scenes/items/data/dmr.tres")
 ## Das Präzisionsgewehr verkauft der Laden erst ab dieser Spielerstufe.
 const DMR_LEVEL := 5
+## Munition (Schedule 1, P4-4): Packungen auf der Theke, Stück je Packung. Preis = Stück × Wert der
+## Patrone (mindestens GunClerk.ROUND_PRICE).
+const AMMO_PACKS := {
+	"res://scenes/items/data/ammo_pistol.tres": 24,
+	"res://scenes/items/data/ammo_rifle.tres": 30,
+	"res://scenes/items/data/ammo_shells.tres": 12,
+	"res://scenes/items/data/ammo_sniper.tres": 10,
+}
 const BANK := preload("res://scenes/interact/bank_terminal.gd")
 const SELL_PAD := preload("res://scenes/crime/loot_sell_pad.gd")
 const GAS_STATION := preload("res://scenes/crime/gas_station.gd")
@@ -61,6 +69,13 @@ func _build_guns() -> void:
 	_sale(AK, 110, Vector3(1.2, 1.05, 1.2))
 	_sale(SNIPER, 200, Vector3(-1.2, 1.05, 1.35))
 	_sale(CROWBAR, 15, Vector3(1.2, 1.05, 1.4))
+	# Munition vorn auf der Theke (Kundenseite), eine Packung je Sorte.
+	var x := -0.75
+	for path: String in AMMO_PACKS:
+		var ammo := load(path) as ItemData
+		var pack: int = AMMO_PACKS[path]
+		_sale(ammo, pack * maxi(ammo.value, GunClerk.ROUND_PRICE), Vector3(x, 0.9, 1.65), pack)
+		x += 0.5
 	_ammo_stack(Vector3(0.2, 0.95, 1.3))
 	_pegboard(Vector3(-3.55, 1.6, 0.4))
 	_pegboard(Vector3(3.55, 1.6, 0.4))
@@ -374,10 +389,11 @@ func _solid(at: Vector3, size: Vector3, color: Color) -> void:
 	add_child(body)
 
 
-func _sale(item: ItemData, price: int, at: Vector3) -> void:
+func _sale(item: ItemData, price: int, at: Vector3, count := 1) -> void:
 	var counter := SaleCounter.new()
 	counter.item = item
 	counter.price = price
+	counter.count = count
 	counter.currency = CRED
 	counter.position = at
 	add_child(counter)
@@ -387,6 +403,8 @@ class SaleCounter extends StaticBody3D:
 	var item: ItemData
 	var price := 1
 	var currency: ItemData
+	## Stück je Kauf (Munition kommt in Packungen).
+	var count := 1
 
 	func _ready() -> void:
 		collision_layer = 1
@@ -416,6 +434,8 @@ class SaleCounter extends StaticBody3D:
 	func get_interact_text(_player: Player) -> String:
 		if item == null:
 			return ""
+		if count > 1:
+			return "%d× %s kaufen (%d ¢)" % [count, item.display_name, price]
 		return "%s kaufen (%d ¢)" % [item.display_name, price]
 
 	func interact(player: Player) -> void:
@@ -424,11 +444,21 @@ class SaleCounter extends StaticBody3D:
 		if player.inventory.money < price:
 			player.item_user.show_message("Zu wenig Credchips", Color(1.0, 0.2, 0.35))
 			return
-		var left := player.inventory.add_item(item, 1)
-		if left > 0:
-			player.item_user.show_message("Inventar voll", Color(1.0, 0.2, 0.35))
+		if player.inventory.space_for(item) < count:
+			player.item_user.show_message(player.inventory.full_message(item), Color(1.0, 0.2, 0.35))
 			return
+		player.inventory.add_item(item, count)
 		player.inventory.spend_money(price)
+		if count > 1:
+			player.item_user.show_message("%d× %s gekauft" % [count, item.display_name], Color(0.4, 1.0, 0.7))
+			return
+		# Zur Waffe gibt es ein Ersatzmagazin der passenden Munition (P4-4).
+		var weapon := item as WeaponData
+		if weapon != null and weapon.ammo != null:
+			player.inventory.add_item(weapon.ammo, weapon.magazine_size, false)
+			player.item_user.show_message("%s gekauft, dazu %d× %s" % [item.display_name, weapon.magazine_size,
+				weapon.ammo.display_name], Color(0.4, 1.0, 0.7))
+			return
 		player.item_user.show_message("%s gekauft" % item.display_name, Color(0.4, 1.0, 0.7))
 
 
@@ -501,9 +531,9 @@ class GunClerk extends StaticBody3D:
 		if payout >= 0:
 			var item := player.inventory.get_selected_item()
 			return "Verkaufen: %s (%d ¢)" % [item.display_name, payout]
-		var cost := _refill_cost(player)
-		if cost > 0:
-			return "Magazin füllen (%d ¢)" % cost
+		var ammo := _selected_ammo(player)
+		if ammo != null:
+			return "Munition nachkaufen: %d× %s (%d ¢)" % [_pack(ammo), ammo.display_name, _ammo_cost(ammo)]
 		return "Handel"
 
 	func interact(player: Player) -> void:
@@ -513,18 +543,21 @@ class GunClerk extends StaticBody3D:
 			player.inventory.add_money(payout)
 			player.item_user.show_message("Verkauft für %d ¢" % payout, Color(0.4, 1.0, 0.7))
 			return
-		var cost := _refill_cost(player)
-		if cost <= 0:
-			player.item_user.show_message("Waffe wählen oder Magazin ist voll", Color(1.0, 0.75, 0.3))
+		# Munition (P4-4): gewählte Munitionsschachtel um eine Packung derselben Sorte ergänzen.
+		var ammo := _selected_ammo(player)
+		if ammo == null:
+			player.item_user.show_message("Waffe zum Verkauf oder Munition zum Nachkaufen wählen", Color(1.0, 0.75, 0.3))
 			return
+		var cost := _ammo_cost(ammo)
 		if player.inventory.money < cost:
 			player.item_user.show_message("Zu wenig Credchips", Color(1.0, 0.2, 0.35))
 			return
-		var rounds := player.weapon_holder.refill_magazine()
-		if rounds <= 0:
+		if player.inventory.space_for(ammo) < _pack(ammo):
+			player.item_user.show_message("Inventar voll", Color(1.0, 0.2, 0.35))
 			return
+		player.inventory.add_item(ammo, _pack(ammo))
 		player.inventory.spend_money(cost)
-		player.item_user.show_message("Magazin +%d" % rounds, Color(0.4, 1.0, 0.7))
+		player.item_user.show_message("%d× %s gekauft" % [_pack(ammo), ammo.display_name], Color(0.4, 1.0, 0.7))
 
 	func _sale_offer(player: Player) -> int:
 		var item := player.inventory.get_selected_item()
@@ -534,14 +567,13 @@ class GunClerk extends StaticBody3D:
 			return maxi(item.value / 2, 1)
 		return 8
 
-	func _refill_cost(player: Player) -> int:
-		var holder := player.weapon_holder
-		if holder == null:
-			return 0
-		var weapon := holder.get_weapon()
-		if weapon == null:
-			return 0
-		var missing := weapon.magazine_size - holder.get_ammo()
-		if missing <= 0:
-			return 0
-		return missing * ROUND_PRICE
+	func _selected_ammo(player: Player) -> ItemData:
+		var item := player.inventory.get_selected_item()
+		return item if item != null and AMMO_PACKS.has(item.resource_path) else null
+
+	func _pack(ammo: ItemData) -> int:
+		return AMMO_PACKS.get(ammo.resource_path, 10)
+
+	## Preis einer Packung: Stück × Wert der Patrone, mindestens ROUND_PRICE je Schuss.
+	func _ammo_cost(ammo: ItemData) -> int:
+		return _pack(ammo) * maxi(ammo.value, ROUND_PRICE)

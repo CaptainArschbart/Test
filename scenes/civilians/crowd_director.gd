@@ -16,6 +16,8 @@ extends Node3D
 ## nicht nur auf die eigene Kamera. Über WorldSync (Gruppe NPC_GROUP) gehen alle 0,1 s Position,
 ## Blick, Zustand und Tempo an die Clients, die dieselben Figuren als Kopie zeigen (Civilian.net_puppet).
 ## Treffer beim Client gehen an den Host.
+## Sitzplätze (Schedule 1, P5-8): je Bank aus dem City Pack (NeonProp mit Bench.glb) zwei Plätze;
+## Fußgänger fragen mit claim_seat nach einem freien in der Nähe.
 
 const GROUP := &"crowd_director"
 const CivilianScript := preload("res://scenes/civilians/civilian.gd")
@@ -54,10 +56,19 @@ var _next_id := 1
 ## Multiplayer: Werte je Fußgänger im Paket (Nummer + Civilian.net_floats). Die Zufallszahlen fürs
 ## Aussehen gehen reihum für jeden NET_SEED_EVERY-ten Fußgänger mit.
 const NET_STRIDE := 7
+## Bank (City Pack, NeonProp), gemessen bei fit_length 2: Sitzfläche 0,73 m hoch, Mitte der Sitztiefe
+## bei x -0,07, Lehne bei +x, man schaut nach -x. Becken bei x 0, zwei Plätze bei z ±0,45.
+## Alles skaliert mit fit_length / 2.
+const BENCH_MODEL := "Bench.glb"
+const BENCH_SEAT := Vector3(0.0, 0.73, 0.0)
+const BENCH_SLOTS := [-0.45, 0.45]
 const NET_SEED_EVERY := 8
 var _net_ticks := 0
 ## Client: Nummer → Zufallszahl des Hosts.
 var _net_seeds := {}
+## Sitzplätze: [Punkt auf der Sitzfläche unter dem Becken, Blickrichtung, Besitzer oder null].
+var _seats: Array = []
+var _seats_ready := false
 
 
 func _ready() -> void:
@@ -111,6 +122,67 @@ func panic_at(pos: Vector3, radius: float) -> void:
 func on_civilian_died(civ: Civilian) -> void:
 	_corpses[civ] = 0.0
 	panic_at(civ.global_position, 14.0)
+
+
+## Freien Sitzplatz im Umkreis belegen (nächster zuerst). -1 = keiner frei.
+func claim_seat(near: Vector3, radius: float, who: Node) -> int:
+	if not _seats_ready:
+		_build_seats()
+	var best := -1
+	var best_d := radius
+	for i: int in _seats.size():
+		var seat: Array = _seats[i]
+		if seat[2] != null and is_instance_valid(seat[2]):
+			continue
+		var p: Vector3 = seat[0]
+		if absf(p.y - near.y) > 1.5:
+			continue
+		var d := Vector2(p.x - near.x, p.z - near.z).length()
+		if d < best_d:
+			best_d = d
+			best = i
+	if best >= 0:
+		_seats[best][2] = who
+	return best
+
+
+func release_seat(index: int) -> void:
+	if index >= 0 and index < _seats.size():
+		_seats[index][2] = null
+
+
+func seat_point(index: int) -> Vector3:
+	return _seats[index][0] if index >= 0 and index < _seats.size() else Vector3.INF
+
+
+func seat_face(index: int) -> Vector3:
+	return _seats[index][1] if index >= 0 and index < _seats.size() else Vector3.FORWARD
+
+
+func seat_count() -> int:
+	if not _seats_ready:
+		_build_seats()
+	return _seats.size()
+
+
+func _build_seats() -> void:
+	_seats_ready = true
+	var top: Node = get_tree().current_scene if get_tree().current_scene != null else get_parent()
+	if top == null:
+		return
+	for node: Node in top.find_children("*", "Node3D", true, false):
+		var prop := node as NeonProp
+		if prop == null or not prop.model.ends_with(BENCH_MODEL):
+			continue
+		var k := prop.fit_length / 2.0
+		var face := -prop.global_basis.x
+		face.y = 0.0
+		if face.length() < 0.01:
+			continue
+		face = face.normalized()
+		for z: float in BENCH_SLOTS:
+			var point := prop.global_transform * Vector3(BENCH_SEAT.x * k, BENCH_SEAT.y * k, z * k)
+			_seats.append([point, face, null])
 
 
 func _key(a: int, b: int) -> int:
