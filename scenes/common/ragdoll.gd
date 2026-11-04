@@ -9,7 +9,9 @@ extends SkeletonModifier3D
 ## danach in jedem Skelett-Update die Knochen auf die Lage der Körper (set_bone_global_pose).
 ##
 ## Teile (PARTS): Becken, Brust, Kopf, je Seite Ober- und Unterarm, Ober- und Unterschenkel.
-## Mitläufer-Knochen (Bauch, Schultern, Hände, Füße) folgen ihrem Teil starr.
+## Mitläufer-Knochen (Bauch, Schultern, Hände, Füße) folgen ihrem Teil starr. Auch Body und Root folgen
+## dem Becken: An Body hängen bei jeder MM-Figur 600 bis 950 Hautpunkte (Hosenbund, Jackensaum), bei
+## Punk 134 an Root; blieben sie stehen, zöge sich die Haut vom Liegenden bis in Standhöhe.
 ## Gelenke: Kegel (Hals, Schultern, Hüften, Wirbelsäule), Scharniere für Knie und Ellbogen mit
 ## Grenzen in der natürlichen Richtung.
 ##
@@ -49,7 +51,7 @@ const MATCH_MAX_SPIN := 14.0
 ## Teil: Name, Startknochen, Endknochen ("" = Länge entlang des Knochens), Radius, Masse,
 ## Verlängerung über den Endknochen hinaus (Hand, Fuß, Schädel), Mitläufer-Knochen.
 const PARTS := [
-	["pelvis", "Hips", "Torso", 0.13, 12.0, 0.0, ["Abdomen"]],
+	["pelvis", "Hips", "Torso", 0.13, 12.0, 0.0, ["Abdomen", "Body", "Root"]],
 	["chest", "Torso", "Neck", 0.15, 14.0, 0.0, ["Chest", "Shoulder.L", "Shoulder.R"]],
 	["head", "Neck", "", 0.11, 5.0, 0.3, ["Head"]],
 	["upper_arm_l", "UpperArm.L", "LowerArm.L", 0.05, 2.5, 0.0, []],
@@ -101,6 +103,8 @@ var frozen := false
 
 ## [Knochen-Index, Körper, Versatz Körper → Knochen] in Reihenfolge der Knochen (Eltern zuerst).
 var _drive: Array = []
+## Startknochen je Körper (für rise_into_pose).
+var _start_bone := {}
 var _joints: Array[Joint3D] = []
 var _calm := 0.0
 var _rested_sent := false
@@ -287,8 +291,8 @@ func rise_into_pose(seconds: float, blend: float) -> void:
 	_match.clear()
 	for d: Array in _drive:
 		var body: RigidBody3D = d[1]
-		# _drive ist nach Knochen sortiert: der erste Eintrag je Körper ist sein Startknochen.
-		if not is_instance_valid(body) or _match.has(body):
+		# Ziel aus dem Startknochen des Körpers (Mitläufer wie Root bewegen sich in der Animation anders).
+		if not is_instance_valid(body) or _start_bone.get(body, -1) != d[0]:
 			continue
 		var bone_world := skeleton.global_transform * skeleton.get_bone_global_pose(d[0])
 		var target := bone_world * (d[2] as Transform3D).affine_inverse()
@@ -467,6 +471,7 @@ func _build(skeleton: Skeleton3D) -> bool:
 		var body := _make_body(p[0], a, b, float(p[3]), float(p[4]), char_right)
 		bodies[p[0]] = body
 		drives[bone] = body
+		_start_bone[body] = bone
 		for follower: String in p[6]:
 			var f := skeleton.find_bone(follower)
 			if f >= 0:
@@ -621,6 +626,7 @@ func _teardown() -> void:
 			b.queue_free()
 	bodies.clear()
 	_drive.clear()
+	_start_bone.clear()
 	_roll_t = -1.0
 	_roll_start.clear()
 	_match_t = -1.0

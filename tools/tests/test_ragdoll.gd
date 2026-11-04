@@ -157,9 +157,14 @@ func _test_death() -> void:
 	# Haut der liegenden Leiche (Hand- und Fußkapseln halten Finger und Schuhe über dem Boden).
 	var skel := ((rag as Node).get_parent()) as Skeleton3D
 	var skin_low := [INF]
-	skel.connect("skeleton_updated", func() -> void: skin_low[0] = _skin_lowest(skel), CONNECT_ONE_SHOT)
+	var skin_high := [-INF]
+	skel.connect("skeleton_updated", func() -> void:
+		skin_low[0] = _skin_lowest(skel)
+		skin_high[0] = -_skin_lowest(skel, true), CONNECT_ONE_SHOT)
 	await _frames(3)
 	_check(skin_low[0] > floor_y - 0.06, "Haut der Leiche kaum im Boden (tiefster Punkt %.3f m)" % (skin_low[0] - floor_y))
+	# Alle Hautpunkte folgen dem Körper (keine Fläche bleibt in Standhöhe hängen, z. B. am Knochen Body).
+	_check(skin_high[0] < floor_y + 0.75, "Haut der Leiche liegt flach, nichts hängt in Standhöhe (höchster Punkt %.2f m)" % (skin_high[0] - floor_y))
 	_check(p.z < start_pos.z + 0.1, "Fällt in Schussrichtung (Becken z %.2f, Start %.2f)" % [p.z, start_pos.z])
 	# Knochen folgen den Körpern: Kopfknochen sitzt im Kopfteil.
 	# Die Pose mit Ragdoll gibt es nur während des Skelett-Updates (danach stellt Godot die Knochen
@@ -410,8 +415,9 @@ func _test_knockdown() -> void:
 	await _frames(2)
 
 
-## Tiefster Punkt der Haut (CPU: Gewichte x Knochen x Bindungspose), jeder zweite Punkt.
-func _skin_lowest(sk: Skeleton3D) -> float:
+## Tiefster Punkt der Haut (CPU: Gewichte x Knochen x Bindungspose), jeder zweite Punkt; mit highest
+## der höchste, negativ.
+func _skin_lowest(sk: Skeleton3D, highest := false) -> float:
 	var low := INF
 	for mi: MeshInstance3D in sk.find_children("*", "MeshInstance3D", true, false) + sk.get_parent().find_children("*", "MeshInstance3D", true, false):
 		if mi.skin == null or mi.get_node_or_null(mi.skeleton) != sk:
@@ -433,7 +439,7 @@ func _skin_lowest(sk: Skeleton3D) -> float:
 					var w := weights[v * per + j]
 					if w > 0.0:
 						y += (mats[bones[v * per + j]] * verts[v]).y * w
-				low = minf(low, y)
+				low = minf(low, -y if highest else y)
 	return low
 
 

@@ -897,3 +897,13 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
   - Multiplayer: `test_mp_sync` grün; `test_mp_world` Host 12/1 („Gegner ist tot“, wie auf `main`), Client 14/0.
   - Vermutete Ursache für `test_mp_world`: Host und Client nehmen jeweils `enemies[0]` nach Node-Pfad sortiert und meinen dabei vermutlich verschiedene Gegner. Nicht geändert, der Test stammt nicht von mir.
 - Nicht im Bild angesehen (kein Fenster).
+
+### 2026-11-04 · Schedule 1, M3 „Systeme“, Teil 6: Bildkontrolle Aufstehen, Ragdoll-Fix (Hautflächen) · Claude (für EnScapeZ) · Branch `enscapez/m3-aufstehen`
+- Ein Fensterlauf mit Erlaubnis (12 s): Aufstehen aus Rücken- und Bauchlage (Fußgänger), Gegner nach leichtem und schwerem Treffer.
+  - Aufstehen sieht richtig aus: liegen, auf den Rücken drehen, aufsetzen, stehen; kein sichtbares Einsinken in den Boden.
+- Fehler gefunden: Beim liegenden Ragdoll stand bei manchen Figuren (Punk, Gegner im Kapuzenpullover) eine große gestreckte Fläche vom Körper bis in Standhöhe.
+  - Ursache: Jede MM-Figur hat 600 bis 950 Hautpunkte am Knochen Body (Hosenbund, Jackensaum), Punk dazu 134 an Root. Beide Knochen hat der Ragdoll nicht gestellt; sie blieben in der Pose beim Umfallen. Das betraf jeden Ragdoll seit M3 Teil 2.
+  - Fix (`scenes/common/ragdoll.gd`): Body und Root folgen dem Beckenteil. `rise_into_pose` nimmt das Ziel je Körper jetzt aus seinem Startknochen (gemerkt beim Bau), nicht aus dem ersten Knochen in der Liste.
+  - Neue Prüfung in `test_ragdoll`: Haut der Leiche liegt flach (höchster Punkt unter 0,75 m). Mit dem alten Ragdoll 0,87 m (rot), mit dem Fix 0,30 m.
+- Getestet (headless): `test_ragdoll` 61/0, dreimal hintereinander; `test_npc_robbery` 47/0, `test_sector7_enemies` 15/0, `test_enemy_xp` 29/0.
+- Nach dem Fix nicht noch einmal im Bild angesehen; dafür bräuchte es einen zweiten Fensterlauf.
