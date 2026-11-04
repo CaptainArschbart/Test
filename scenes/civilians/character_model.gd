@@ -8,6 +8,9 @@ extends CivilianModel
 ## Die Animation läuft nur in animate() (AnimationPlayer im manuellen Modus): Fußgänger, die der
 ## CrowdDirector weit weg schlafen legt, kosten nichts. Idle, Walk und Run folgen dem Tempo, die
 ## Abspielgeschwindigkeit passt sich an, damit die Füße nicht rutschen.
+##
+## Umgeworfen (Auto) und wieder auf: Ragdoll, dann UAL2 LayToIdle aus der Bibliothek "ual" (UalLibrary).
+## Liegt die Figur auf dem Bauch, dreht der Ragdoll sie erst auf den Rücken.
 
 const DIR := "res://assets/characters/quaternius_modular_men/"
 ## König und Astronaut passen nicht auf die Straße.
@@ -19,14 +22,12 @@ const WALK_SPEED := 1.4
 const RUN_SPEED := 4.0
 const BLEND := 0.2
 const ANIM_PREFIX := "CharacterArmature|"
-
 ## Welche Figur (Name aus LOOKS), leer = per Seed.
 var look := ""
 
 var _anim: AnimationPlayer
 var _current := ""
 var _hit_left := 0.0
-var _rise_left := 0.0
 
 static var _scenes := {}
 static var _heights := {}
@@ -56,6 +57,7 @@ func build_civilian(variant_seed: int) -> void:
 	if not players.is_empty():
 		_anim = players[0] as AnimationPlayer
 		_anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+		UalLibrary.attach(_anim)
 		for name: String in ["Idle", "Walk", "Run", "Idle_Neutral", "Idle_Gun_Pointing"]:
 			var a := _anim.get_animation(ANIM_PREFIX + name)
 			if a != null:
@@ -71,14 +73,14 @@ func animate(delta: float) -> void:
 		return
 	flinch = maxf(flinch - delta * 3.5, 0.0)
 	_hit_left = maxf(_hit_left - delta, 0.0)
-	if _rise_left > 0.0:
-		_rise_left -= delta
-		if _rise_left <= 0.0:
-			_dead = false
+	_rise_step(delta, _anim)
 	if not _dead:
-		if flinch > 0.6 and _hit_left <= 0.0:
-			_hit_left = 0.5
-			_play("HitRecieve", 0.05)
+		if flinch > HIT_FLINCH and _hit_left <= 0.0:
+			var reaction := _hit_reaction(_anim)
+			_hit_left = _anim.get_animation(reaction).length if reaction.begins_with(UalLibrary.NAME + "/") else 0.5
+			_current = ""
+			_anim.speed_scale = 1.0
+			_play(reaction, 0.05)
 		elif _hit_left <= 0.0:
 			_choose_loop()
 	_anim.advance(delta)
@@ -108,7 +110,7 @@ func fall(direction: Vector3) -> void:
 		super.fall(direction)
 		return
 	_dead = true
-	_rise_left = 0.0
+	_reset_rise()
 	# Nah an der Kamera: Ragdoll, weit weg: Todesanimation.
 	if _ragdoll_fall(direction):
 		return
@@ -125,18 +127,30 @@ func get_up(time := 0.9) -> void:
 	if _anim == null:
 		super.get_up(time)
 		return
-	# Aus dem Ragdoll zurück zur Animation blenden (bis es die Aufsteh-Animation aus UAL2 gibt).
+	# Steht schon auf oder wartet darauf.
+	if is_rising():
+		return
 	if ragdoll != null and ragdoll.running:
-		ragdoll.blend_out(0.4)
+		_rise(_anim, false)
+		return
+	# Todesanimation (weit weg): zurück zu Idle blenden.
 	rotation.y = 0.0
 	_play("Idle", 0.3)
 	_rise_left = time
 
 
+func _rise_started(name: String) -> void:
+	_current = name
+
+
+func _rise_fallback() -> void:
+	_play("Idle", 0.3)
+
+
 func _play(name: String, blend := BLEND) -> void:
 	if _current == name or _anim == null:
 		return
-	var full := ANIM_PREFIX + name
+	var full := name if name.begins_with(UalLibrary.NAME + "/") else ANIM_PREFIX + name
 	if not _anim.has_animation(full):
 		return
 	_current = name

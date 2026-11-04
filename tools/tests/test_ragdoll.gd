@@ -1,12 +1,16 @@
 extends SceneTree
 ## Prüft die Ragdolls aus Schedule 1, Phase 5 (P5-1, P5-2, P5-4, P5-5) in der Testmap:
-##   - Gerüst: 11 Körper auf Schicht „ragdoll“, 10 Gelenke, CCD an Becken und Kopf,
+##   - Gerüst: 11 Körper auf Schicht „ragdoll“, 10 Gelenke, CCD an Becken und Kopf, Haut der Leiche
+##     höchstens wenige Zentimeter im Boden,
 ##   - Tod nah an der Kamera schaltet auf Physik, die Leiche kommt am Boden zur Ruhe, die Knochen
 ##     folgen den Körpern, Knie knicken nicht nach vorn durch,
 ##   - ein Schuss stößt in Schussrichtung, ein Stoß gegen die Wand geht nicht hindurch (CCD),
 ##   - Leichen blockieren weder Spieler noch Gegner noch Schüsse,
 ##   - Budget: höchstens 8 aktive, ältere frieren ein; weit weg nur Todesanimation; nach 30 s Schlaf,
-##   - Fußgänger: vom Auto umgeworfen als Ragdoll, Aufstehen blendet zurück zur Animation.
+##   - Fußgänger: vom Auto umgeworfen als Ragdoll, stehen mit UAL2 LayToIdle wieder auf (Rücken- und
+##     Bauchlage, an der Wand): erstes Bild auf dem liegenden Körper, Haut nie im Boden, Kapsel frei,
+##   - leichte Treffer: Hit_Head oder Hit_Chest nach Trefferhöhe (P5-6),
+##   - schwerer Treffer wirft lebende Gegner um, im Liegen treffbar, sie stehen auf und kämpfen (P5-2).
 ##
 ## Aufruf (Projektordner), headless reicht:
 ##   godot --headless --path . -s res://tools/tests/test_ragdoll.gd
@@ -69,6 +73,8 @@ func _run() -> void:
 	await _test_budget()
 	await _test_far()
 	await _test_civilian()
+	await _test_hit_zones()
+	await _test_knockdown()
 	_finish()
 
 
@@ -148,6 +154,17 @@ func _test_death() -> void:
 	for b: RigidBody3D in bodies.values():
 		lowest = minf(lowest, b.global_position.y)
 	_check(lowest > floor_y - 0.02, "Kein Teil im Boden (tiefster %.2f m)" % (lowest - floor_y))
+	# Haut der liegenden Leiche (Hand- und Fußkapseln halten Finger und Schuhe über dem Boden).
+	var skel := ((rag as Node).get_parent()) as Skeleton3D
+	var skin_low := [INF]
+	var skin_high := [-INF]
+	skel.connect("skeleton_updated", func() -> void:
+		skin_low[0] = _skin_lowest(skel)
+		skin_high[0] = -_skin_lowest(skel, true), CONNECT_ONE_SHOT)
+	await _frames(3)
+	_check(skin_low[0] > floor_y - 0.06, "Haut der Leiche kaum im Boden (tiefster Punkt %.3f m)" % (skin_low[0] - floor_y))
+	# Alle Hautpunkte folgen dem Körper (keine Fläche bleibt in Standhöhe hängen, z. B. am Knochen Body).
+	_check(skin_high[0] < floor_y + 0.75, "Haut der Leiche liegt flach, nichts hängt in Standhöhe (höchster Punkt %.2f m)" % (skin_high[0] - floor_y))
 	_check(p.z < start_pos.z + 0.1, "Fällt in Schussrichtung (Becken z %.2f, Start %.2f)" % [p.z, start_pos.z])
 	# Knochen folgen den Körpern: Kopfknochen sitzt im Kopfteil.
 	# Die Pose mit Ragdoll gibt es nur während des Skelett-Updates (danach stellt Godot die Knochen
@@ -248,31 +265,194 @@ func _test_far() -> void:
 
 
 func _test_civilian() -> void:
-	print("Fußgänger: umgeworfen und wieder auf")
+	print("Fußgänger: umgeworfen und wieder auf (UAL2 LayToIdle)")
+	# Rücken: Stoß von vorn (Fußgänger schauen nach -Z), Bauch: Stoß von hinten, Wand: Stoß dagegen.
+	await _get_up_case("Rückenlage", ARENA + Vector3(4, 0.05, 2), Vector3(0, 0, 1), 5.0, null)
+	await _get_up_case("Bauchlage", ARENA + Vector3(-6, 0.05, 2), Vector3(0, 0, -1), 5.0, null)
+	var wall := _box(ARENA + Vector3(12.0, 1.5, -6.0), Vector3(0.3, 3.0, 6.0))
+	await _get_up_case("an der Wand", ARENA + Vector3(10.6, 0.05, -6.0), Vector3(1, 0, 0), 6.5, wall)
+	wall.queue_free()
+	await _frames(2)
+
+
+## Umwerfen, liegen lassen, aufstehen. Prüft Ragdoll, Ausrichtung des ersten Animationsbilds auf dem
+## liegenden Körper, Rückenlage beim Aufstehen, Haut nie unter dem Boden, Kapsel frei, Ende stehend.
+func _get_up_case(label: String, at: Vector3, push: Vector3, speed: float, wall: StaticBody3D) -> void:
 	var civ := (load(CIVILIAN) as GDScript).new() as CharacterBody3D
 	civ.set("stay_put", true)
 	civ.set("net_seed", 7)
 	current_scene.add_child(civ)
-	civ.global_position = ARENA + Vector3(4, 0.05, 2)
+	civ.global_position = at
 	await _frames(5)
 	var model: Object = civ.get("model")
-	_check(model.get("ragdoll_skeleton") != null, "Fußgängerfigur bereit für Ragdoll")
-	civ.call("hit_by_car", Vector3(1, 0, 0), 5.0)
+	var anim := (model.get("_anim") as AnimationPlayer)
+	_check(model.get("ragdoll_skeleton") != null and anim != null and anim.has_animation(UalLibrary.GET_UP),
+		"%s: Figur hat Ragdoll-Skelett und %s" % [label, UalLibrary.GET_UP])
+	civ.call("hit_by_car", push, speed)
 	await _frames(2)
-	var rag: Object = model.get("ragdoll")
-	_check(rag != null and bool(rag.get("running")), "Vom Auto umgeworfen: Ragdoll")
+	var rag: Ragdoll = model.get("ragdoll")
+	_check(rag != null and rag.running, "%s: vom Auto umgeworfen, Ragdoll" % label)
 	if rag == null:
+		civ.queue_free()
 		return
-	await _seconds(2.0)
+	var sk := rag.get_skeleton()
+	var hips := sk.find_bone("Hips")
+	for i in 240:
+		if rag.max_speed() < 0.3 and rag.time > 1.0:
+			break
+		await physics_frame
+	var face := rag.facing_up()
 	model.call("get_up")
-	await _seconds(0.7)
-	_check(not bool(rag.get("running")) and (rag as Node).get_children().is_empty(),
-		"Aufstehen blendet zurück zur Animation, Körper abgebaut")
-	var sk := (rag as Node).get_parent() as Skeleton3D
-	var hips := (sk.global_transform * sk.get_bone_global_pose(sk.find_bone("Hips"))).origin
-	_check(absf(hips.y - (ARENA.y + 0.9)) < 0.3, "Steht wieder (Hüfte %.2f m über dem Boden)" % (hips.y - ARENA.y))
+	# Warten, bis das Aufstehen beginnt (Bauchlage: erst umdrehen). Ragdoll-Becken bis dahin mitschreiben.
+	var rag_hips := rag.bone_position(hips)
+	var up_at_rise := face
+	for i in 240:
+		if float(model.get("_rise_left")) > 0.0:
+			break
+		rag_hips = rag.bone_position(hips)
+		up_at_rise = rag.facing_up()
+		await physics_frame
+	var rising := float(model.get("_rise_left")) > 0.0
+	_check(rising, "%s: steht auf (lag mit Brust %s)" % [label, "oben" if face > 0.0 else "unten"])
+	if not rising:
+		civ.queue_free()
+		return
+	_check(up_at_rise > 0.4, "%s: beim Aufstehen auf dem Rücken (Brust nach oben %.2f)" % [label, up_at_rise])
+	var anim_hips := (sk.global_transform * sk.get_bone_global_pose(hips)).origin
+	var off := anim_hips - rag_hips
+	_check(Vector2(off.x, off.z).length() < 0.15,
+		"%s: erstes Bild sitzt auf dem liegenden Körper (Becken %.2f m daneben, %.2f m Höhe)" % [label, Vector2(off.x, off.z).length(), off.y])
+	# Haut während des Aufstehens nie unter dem Boden (Pose samt Ragdoll-Überblendung).
+	var floor_y := ARENA.y
+	var lowest := [INF]
+	var probe := func() -> void:
+		lowest[0] = minf(lowest[0], _skin_lowest(sk))
+	sk.skeleton_updated.connect(probe)
+	# Hineinfahren (RISE_MATCH) + Animation + etwas Luft.
+	var length := anim.get_animation(UalLibrary.GET_UP).length + EnemyModel.RISE_MATCH
+	await _seconds(length + 0.3)
+	sk.skeleton_updated.disconnect(probe)
+	_check(lowest[0] > floor_y - 0.05, "%s: Haut nie im Boden (tiefster Punkt %.3f m)" % [label, lowest[0] - floor_y])
+	_check(not rag.running and (rag as Node).get_children().is_empty(), "%s: Ragdoll abgebaut" % label)
+	_check(not bool(model.call("is_fallen")), "%s: steht wieder" % label)
+	var stand := (sk.global_transform * sk.get_bone_global_pose(hips)).origin
+	_check(absf(stand.y - (floor_y + 0.8)) < 0.15, "%s: Hüfte auf Standhöhe (%.2f m)" % [label, stand.y - floor_y])
+	_check(not _capsule_blocked(civ), "%s: Kapsel steckt in keiner Wand" % label)
+	if wall != null:
+		_check(civ.global_position.x < wall.global_position.x - 0.15, "%s: steht vor der Wand, nicht dahinter (x %.2f, Wand %.2f)" % [label, civ.global_position.x, wall.global_position.x])
 	civ.queue_free()
 	await _frames(2)
+
+
+## P5-6: leichte Treffer spielen je nach Höhe Hit_Head oder Hit_Chest (UAL1, retargetet).
+func _test_hit_zones() -> void:
+	print("Trefferreaktion nach Zone")
+	var enemy := _enemy(ARENA + Vector3(-3, 0.05, -8))
+	await _frames(10)
+	var model: Object = enemy.get("model")
+	var head_y := enemy.global_position.y + 1.72
+	enemy.call("take_hit", 8.0, Vector3(enemy.global_position.x, head_y, enemy.global_position.z), Vector3(0, 0, 1))
+	await _frames(4)
+	_check(str(model.get("_current")) == EnemyModel.HIT_HEAD, "Kopftreffer: %s" % model.get("_current"))
+	await _seconds(1.0)
+	enemy.call("take_hit", 15.0, enemy.global_position + Vector3.UP * 1.15, Vector3(0, 0, 1))
+	await _frames(4)
+	_check(str(model.get("_current")) == EnemyModel.HIT_CHEST, "Brusttreffer: %s" % model.get("_current"))
+	await _seconds(1.0)
+	_check(not bool(model.call("is_fallen")), "Leichte Treffer werfen nicht um")
+	enemy.queue_free()
+	await _frames(2)
+
+
+## P5-2: Schwerer Treffer (ab 25 % der vollen LP) wirft einen lebenden Gegner um, er liegt betäubt,
+## ist im Liegen treffbar, steht auf und kämpft weiter. Im Liegen erschossen: tot.
+func _test_knockdown() -> void:
+	print("Schwerer Treffer: umfallen und wieder auf")
+	var enemy := _enemy(ARENA + Vector3(3, 0.05, -10))
+	await _frames(10)
+	var model: Object = enemy.get("model")
+	var floor_y := ARENA.y
+	var stand_pos := enemy.global_position
+	enemy.call("take_hit", 30.0, enemy.global_position + Vector3.UP * 1.15, Vector3(0, 0, 1))
+	await _frames(3)
+	var rag: Ragdoll = model.get("ragdoll")
+	_check(int(enemy.get("state")) == 6 and bool(model.call("is_fallen")) and rag != null and rag.running,
+		"30 von 70 LP: umgeworfen (betäubt, Ragdoll)")
+	await _seconds(1.2)
+	var chest := rag.part_position("chest") if rag != null else Vector3.INF
+	var space := enemy.get_world_3d().direct_space_state
+	var down := space.intersect_ray(PhysicsRayQueryParameters3D.create(chest + Vector3.UP * 2.0, chest + Vector3.DOWN * 0.5, 1 | 2, [_player.get_rid()]))
+	_check(not down.is_empty() and down.collider == enemy, "Liegt: Schuss auf die Brust trifft ihn (%s)" % [down.get("collider")])
+	var old := space.intersect_ray(PhysicsRayQueryParameters3D.create(stand_pos + Vector3(-2, 1.5, 0), stand_pos + Vector3(2, 1.5, 0), 1 | 2, [_player.get_rid()]))
+	_check(old.is_empty() or old.collider != enemy, "Liegt: an der alten Stelle in Kopfhöhe ist nichts mehr")
+	var lowest := [INF]
+	var sk := rag.get_skeleton() if rag != null else null
+	var probe := func() -> void:
+		lowest[0] = minf(lowest[0], _skin_lowest(sk))
+	if sk != null:
+		sk.skeleton_updated.connect(probe)
+	for i in 600:
+		if int(enemy.get("state")) != 6:
+			break
+		await physics_frame
+	if sk != null:
+		sk.skeleton_updated.disconnect(probe)
+	_check(int(enemy.get("state")) == 3 and not bool(model.call("is_fallen")), "Steht auf und kämpft weiter (Zustand %d)" % int(enemy.get("state")))
+	_check(lowest[0] > floor_y - 0.05, "Beim Aufstehen Haut nie im Boden (tiefster Punkt %.3f m)" % (lowest[0] - floor_y))
+	var shape := enemy.get("_shape") as CollisionShape3D
+	_check(shape != null and shape.transform.is_equal_approx(enemy.get("_shape_rest")), "Kapsel steht wieder")
+	enemy.queue_free()
+	await _frames(2)
+	# Im Liegen erschossen.
+	var other := _enemy(ARENA + Vector3(-3, 0.05, -10))
+	await _frames(10)
+	other.call("take_hit", 30.0, other.global_position + Vector3.UP * 1.15, Vector3(0, 0, 1))
+	await _seconds(1.0)
+	other.call("take_hit", 60.0, (_ragdoll(other) as Ragdoll).part_position("chest"), Vector3.UP)
+	await _frames(3)
+	_check(bool(other.call("is_dead")), "Im Liegen erschossen: tot")
+	other.queue_free()
+	await _frames(2)
+
+
+## Tiefster Punkt der Haut (CPU: Gewichte x Knochen x Bindungspose), jeder zweite Punkt; mit highest
+## der höchste, negativ.
+func _skin_lowest(sk: Skeleton3D, highest := false) -> float:
+	var low := INF
+	for mi: MeshInstance3D in sk.find_children("*", "MeshInstance3D", true, false) + sk.get_parent().find_children("*", "MeshInstance3D", true, false):
+		if mi.skin == null or mi.get_node_or_null(mi.skeleton) != sk:
+			continue
+		var mats: Array[Transform3D] = []
+		for i in mi.skin.get_bind_count():
+			var bn := mi.skin.get_bind_name(i)
+			var bone := sk.find_bone(bn) if bn != "" else mi.skin.get_bind_bone(i)
+			mats.append(sk.global_transform * sk.get_bone_global_pose(bone) * mi.skin.get_bind_pose(i))
+		for s in mi.mesh.get_surface_count():
+			var arr := mi.mesh.surface_get_arrays(s)
+			var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+			var bones: PackedInt32Array = arr[Mesh.ARRAY_BONES]
+			var weights: PackedFloat32Array = arr[Mesh.ARRAY_WEIGHTS]
+			var per := bones.size() / verts.size()
+			for v in range(0, verts.size(), 2):
+				var y := 0.0
+				for j in per:
+					var w := weights[v * per + j]
+					if w > 0.0:
+						y += (mats[bones[v * per + j]] * verts[v]).y * w
+				low = minf(low, -y if highest else y)
+	return low
+
+
+func _capsule_blocked(body: CharacterBody3D) -> bool:
+	for child in body.get_children():
+		if child is CollisionShape3D:
+			var query := PhysicsShapeQueryParameters3D.new()
+			query.shape = (child as CollisionShape3D).shape
+			query.collision_mask = 1
+			query.exclude = [body.get_rid()]
+			query.transform = body.global_transform * (child as CollisionShape3D).transform * Transform3D(Basis(), Vector3.UP * 0.06)
+			return not body.get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty()
+	return false
 
 
 func _finish() -> void:
