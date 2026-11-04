@@ -975,3 +975,12 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Multiplayer: `test_mp_sync` slum 9/0 und 10/0, testmap 17/0 und 19/0 (dreimal); `test_bank_net` 8/0 und 8/0; `test_mp_world` Host 12/1 („Gegner ist tot“, wie auf `main`).
 - `test_shop_net` ist auch auf `main` rot (in eigener Arbeitskopie geprüft): Host 8/3, Client bricht mit „previously freed instance“ ab. Nicht von hier.
 - Nicht im Bild angesehen (kein Fenster): Spielerfigur, Fußgänger beim Sitzen, Telefonieren und Tragen, Gegner beim Zielen. Inventar-Icons der Munition fehlen noch.
+
+### 2026-11-04 · Schedule 1, M3 „Systeme“, Teil 10: Munitions-Icons und Bildkontrolle · Claude (für EnScapeZ) · Branch `enscapez/m3-rest`
+- Ein Fensterlauf mit Erlaubnis (9 s) für Icons und drei Bildbögen.
+- Inventar-Icons der vier Munitionsarten (`assets/icons/items/ammo_*.png`), per `ICONS_APPLY=1` eingetragen. `test_item_icons` 63/0.
+- Bildkontrolle, alles wie gedacht:
+  - Spielerfigur in der Außenansicht: steht mit Pistole, joggt, zielt, läuft zielend seitlich.
+  - Fußgängerin sitzt auf der Bank mit den Füßen am Boden. Einer telefoniert (Hand am Ohr; das Handy ist aus diesem Blickwinkel hinter dem Kopf verdeckt), einer trägt eine Kiste zwischen den Händen, zwei reden und gestikulieren.
+  - Gegner zielt im Stehen und im Laufen, lädt nach, zielt nach oben im passenden Winkel.
+- Getestet (headless): `test_item_icons` 63/0, `test_ammo` 22/0, `test_content_update` 47/0.
