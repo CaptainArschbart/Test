@@ -44,6 +44,11 @@ const STRIDE := 7
 	set(v):
 		collider_offset = v
 		_queue()
+## Wie die Exemplare befestigt sind, für die Placement-Prüfung (test_neon_city):
+## ground = steht mit der Unterkante auf einer Fläche, flat = flach auf dem Boden (Decal, Gully, Papier),
+## wall = Rückseite (−Z) an einer Wand, hang = beide Enden der lokalen X-Achse an Wänden (Kabel),
+## blade = eine Schmalseite (lokal ±X) an einer Wand (Ausleger-Schild).
+@export_enum("ground", "flat", "wall", "hang", "blade") var mount := "ground"
 ## Färbt leuchtende Flächen des Modells (Neonschilder) in dieser Farbe; Alpha 0 = unverändert.
 @export var emission_tint := Color(0, 0, 0, 0):
 	set(v):

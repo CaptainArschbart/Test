@@ -735,3 +735,19 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Getestet (Godot 4.7.2, headless, isoliertes APPDATA): `test_neon_city` CHECKS 23 FAILS 0, `test_options_scroll` 35/0, `test_sector7_city` 44/0 (vor den letzten Generator-Fixes, kein gemeinsamer Code geändert). Screenshots aus 14 Blickwinkeln bei Tag und Nacht. Bildrate ohne VSync: Straßenhöhe 145–192 FPS (Sektor 7: 181–285), Skywalk 171, Luftbild aus 60 m 75 FPS.
 - Nicht getestet: Multiplayer, Spielen über längere Zeit.
 - Offen: Kern-Glastürme haben weiter wenig Fassadendetail; Ausrichtung der Ampelsignale und Spurpfeile nur grob geprüft.
+
+### 2026-11-04 · Schedule 1, Meilenstein M1 „Fundament“: Placement-Regeln als Prüfungen · Claude (für EnScapeZ) · Branch `enscapez/m1-fundament`
+- Auftrag: Meilenstein M1 aus dem Dokument „Schedule 1 – Neon City Entwicklungsplan“ (Phase 0, Aufgaben P0-1 bis P0-6): Regeln gegen schwebende Objekte, Clipping/Z-Fighting, falsches Snapping und zugestellte Wege, geprüft im Generator und im Headless-Test.
+- Regeln: R1 nichts schwebt, R2 kein Clipping, R3 kein Z-Fighting, R4 Snapping (90°-Schritte, Modulraster), R5 Wege, Türen und Theken frei, R6 2,3 m Durchgangshöhe über Wegen.
+- Neu:
+  - `scenes/common/interior_planner.gd` (`InteriorPlanner`): Grundriss-Prüfung für Innenräume (Überschneidung, Schwenkbereiche, Auflageflächen, Erreichbarkeit vom Eingang auf 10-cm-Raster).
+  - `scenes/neon_city/kit/neon_claims_debug.gd` (`NeonClaimsDebug`): reservierte Flächen farbig im Editor (Knoten `ClaimsDebug`, `show_in_editor` anhaken).
+  - `NeonDressing.mount` (ground, flat, wall, hang, blade) für die Prüfung.
+- `tools/tests/test_neon_city.gd`: neue Prüfungen R1 (jedes Detail per Strahl: steht auf einer Fläche bzw. hat eine Wand im Rücken, Kabel an beiden Enden, Schilder an einer Seite), R3 (flache Teile mindestens 4 mm über dem Boden), R6 (alle Fuß- und Streifenwege, 0,5-m-Raster), Ladeninnenräume ohne Planer-Fehler. Gegenprobe: absichtlich verschobenes Papier und Klimagerät werden gemeldet.
+- `tools/gen_neon_city.py`: R4-Prüfung beim Setzen (Generator bricht ab), R5 1,2 m frei vor jedem Ladeneingang.
+- Gefundene und behobene Fehler:
+  - Häuser mit Bauteil-Fassade hatten die Kollision 0,3 m hinter der sichtbaren Wand (man lief in die Fassade). Jetzt bündig. Nebenwirkung: die 6 Navmesh-Kantenwarnungen sind weg (P0-5).
+  - Kabel über niedrigen Häusern bzw. an Tankstellen ohne Halt; Schutt (Bretter, Ziegel) auf Hofwegen; Wäschespinnen ohne gesperrte Fläche.
+  - Waffenladen: Kasse und Ankauf-Pad schwebten 5 cm über der Theke, Handelspunkt ragte halb über die Thekenkante, Munition schwebte in der Vitrine, Bücherregal steckte 4 cm in der Trennwand, ein Karton im Regal. Theke jetzt 1 m tief und 3,8 m breit.
+- Getestet (Godot 4.7.2, headless, isoliertes APPDATA): `test_neon_city` CHECKS 29 FAILS 0, `test_gun_shops` 37/0 (mit Gegenprobe des Planers), `test_sector7_city` 44/0, `test_shop` 43/0, `test_gas_stations` 59/0, `test_content_update` 47/0, `test_npc_robbery` 47/0, `test_sector7_enemies` 15/0. Navmesh-Kantenwarnungen: main 6, jetzt 0.
+- Nicht getestet: Debug-Ansicht im Editor selbst angesehen (nur Skript geprüft); Tankstellen-Innenräume haben noch keinen Planer.

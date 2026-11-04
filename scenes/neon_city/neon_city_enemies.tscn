@@ -52,16 +52,36 @@ loop = true
 wait_time = 3.0
 
 [node name="P1" type="Marker3D" parent="Routes/R_Gang01"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -109.93, 0.15, -35.21)
-
-[node name="P2" type="Marker3D" parent="Routes/R_Gang01"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -100.89, 0.15, -39.82)
 
-[node name="P3" type="Marker3D" parent="Routes/R_Gang01"]
+[node name="P2" type="Marker3D" parent="Routes/R_Gang01"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -106.86, 0.15, -41.79)
 
+[node name="P3" type="Marker3D" parent="Routes/R_Gang01"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -106.26, 0.15, -34.02)
+
 [node name="P4" type="Marker3D" parent="Routes/R_Gang01"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -110.47, 0.15, -47.23)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -106.75, 0.15, -37.25)
+metadata/wait = 0.0
+
+[node name="P5" type="Marker3D" parent="Routes/R_Gang01"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -110.75, 0.15, -40.75)
+metadata/wait = 0.0
+
+[node name="P6" type="Marker3D" parent="Routes/R_Gang01"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -114.75, 0.15, -40.75)
+metadata/wait = 0.0
+
+[node name="P7" type="Marker3D" parent="Routes/R_Gang01"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -115.02, 0.15, -37.85)
+
+[node name="P8" type="Marker3D" parent="Routes/R_Gang01"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -114.75, 0.15, -40.75)
+metadata/wait = 0.0
+
+[node name="P9" type="Marker3D" parent="Routes/R_Gang01"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -102.25, 0.15, -40.25)
+metadata/wait = 0.0
 
 [node name="R_Gang02" type="Node3D" parent="Routes"]
 script = ExtResource("2_route")
@@ -69,24 +89,60 @@ loop = true
 wait_time = 3.0
 
 [node name="P1" type="Marker3D" parent="Routes/R_Gang02"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -98.88, 0.15, 38.7)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -98.85, 0.15, 37.49)
 
 [node name="P2" type="Marker3D" parent="Routes/R_Gang02"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -98.25, 0.15, 35.25)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -101.75, 0.15, 37.75)
 metadata/wait = 0.0
 
 [node name="P3" type="Marker3D" parent="Routes/R_Gang02"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -98.65, 0.15, 26.61)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -107.25, 0.15, 40.75)
+metadata/wait = 0.0
 
 [node name="P4" type="Marker3D" parent="Routes/R_Gang02"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -100.25, 0.15, 32.25)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -107.25, 0.15, 47.75)
 metadata/wait = 0.0
 
 [node name="P5" type="Marker3D" parent="Routes/R_Gang02"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -121.98, 0.15, 37.53)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -104.18, 0.15, 50.09)
 
 [node name="P6" type="Marker3D" parent="Routes/R_Gang02"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -118.56, 0.15, 43.99)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -112.41, 0.15, 47.66)
+
+[node name="P7" type="Marker3D" parent="Routes/R_Gang02"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -105.75, 0.15, 39.25)
+metadata/wait = 0.0
+
+[node name="P8" type="Marker3D" parent="Routes/R_Gang02"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -104.25, 0.15, 39.25)
+metadata/wait = 0.0
+
+[node name="P9" type="Marker3D" parent="Routes/R_Gang02"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -104.25, 0.15, 34.25)
+metadata/wait = 0.0
+
+[node name="P10" type="Marker3D" parent="Routes/R_Gang02"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -113.25, 0.15, 30.75)
+metadata/wait = 0.0
+
+[node name="P11" type="Marker3D" parent="Routes/R_Gang02"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -114.99, 0.15, 27.63)
+
+[node name="P12" type="Marker3D" parent="Routes/R_Gang02"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -112.75, 0.15, 31.25)
+metadata/wait = 0.0
+
+[node name="P13" type="Marker3D" parent="Routes/R_Gang02"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -111.25, 0.15, 31.25)
+metadata/wait = 0.0
+
+[node name="P14" type="Marker3D" parent="Routes/R_Gang02"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -103.75, 0.15, 34.75)
+metadata/wait = 0.0
+
+[node name="P15" type="Marker3D" parent="Routes/R_Gang02"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -101.75, 0.15, 36.75)
+metadata/wait = 0.0
 
 [node name="R_Gang10" type="Node3D" parent="Routes"]
 script = ExtResource("2_route")
@@ -94,28 +150,28 @@ loop = true
 wait_time = 3.0
 
 [node name="P1" type="Marker3D" parent="Routes/R_Gang10"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -34.17, 0.15, -113.33)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -33.25, 0.15, -104.28)
 
 [node name="P2" type="Marker3D" parent="Routes/R_Gang10"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -40.64, 0.15, -111.86)
-
-[node name="P3" type="Marker3D" parent="Routes/R_Gang10"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -33.75, 0.15, -111.75)
 metadata/wait = 0.0
 
+[node name="P3" type="Marker3D" parent="Routes/R_Gang10"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -38.23, 0.15, -111.78)
+
 [node name="P4" type="Marker3D" parent="Routes/R_Gang10"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -33.25, 0.15, -104.28)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -41.75, 0.15, -111.75)
+metadata/wait = 0.0
 
 [node name="P5" type="Marker3D" parent="Routes/R_Gang10"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -39.41, 0.15, -104.73)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -42.16, 0.15, -107.14)
 
 [node name="P6" type="Marker3D" parent="Routes/R_Gang10"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -33.75, 0.15, -105.75)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -41.75, 0.15, -111.75)
 metadata/wait = 0.0
 
 [node name="P7" type="Marker3D" parent="Routes/R_Gang10"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -33.75, 0.15, -112.25)
-metadata/wait = 0.0
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -32.72, 0.15, -114.17)
 
 [node name="R_Kern11" type="Node3D" parent="Routes"]
 script = ExtResource("2_route")
@@ -123,7 +179,7 @@ loop = true
 wait_time = 3.0
 
 [node name="P1" type="Marker3D" parent="Routes/R_Kern11"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -41.48, 0.15, -39.73)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -40.91, 0.15, -41.82)
 
 [node name="P2" type="Marker3D" parent="Routes/R_Kern11"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -40.75, 0.15, -33.75)
@@ -138,14 +194,14 @@ transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -36.75, 0.15, -32.75)
 metadata/wait = 0.0
 
 [node name="P5" type="Marker3D" parent="Routes/R_Kern11"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -32.75, 0.15, -32.75)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -33.25, 0.15, -32.75)
 metadata/wait = 0.0
 
 [node name="P6" type="Marker3D" parent="Routes/R_Kern11"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -31.78, 0.15, -33.5)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -31.99, 0.15, -35.04)
 
 [node name="P7" type="Marker3D" parent="Routes/R_Kern11"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -32.12, 0.15, -41.87)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -32.06, 0.15, -41.15)
 
 [node name="P8" type="Marker3D" parent="Routes/R_Kern11"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -32.75, 0.15, -33.75)
@@ -156,15 +212,15 @@ transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -33.75, 0.15, -32.75)
 metadata/wait = 0.0
 
 [node name="P10" type="Marker3D" parent="Routes/R_Kern11"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -37.75, 0.15, -32.75)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -37.25, 0.15, -32.75)
 metadata/wait = 0.0
 
 [node name="P11" type="Marker3D" parent="Routes/R_Kern11"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -39.25, 0.15, -33.75)
-metadata/wait = 0.0
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -39.06, 0.15, -33.95)
 
 [node name="P12" type="Marker3D" parent="Routes/R_Kern11"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -41.45, 0.15, -33.71)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -40.75, 0.15, -33.75)
+metadata/wait = 0.0
 
 [node name="R_Kern12" type="Node3D" parent="Routes"]
 script = ExtResource("2_route")
@@ -172,47 +228,43 @@ loop = true
 wait_time = 3.0
 
 [node name="P1" type="Marker3D" parent="Routes/R_Kern12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -31.43, 0.15, 40.89)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -42.7, 0.15, 36.19)
 
 [node name="P2" type="Marker3D" parent="Routes/R_Kern12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -31.75, 0.15, 34.25)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -42.75, 0.15, 34.25)
 metadata/wait = 0.0
 
 [node name="P3" type="Marker3D" parent="Routes/R_Kern12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -35.25, 0.15, 33.75)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -33.25, 0.15, 33.75)
 metadata/wait = 0.0
 
 [node name="P4" type="Marker3D" parent="Routes/R_Kern12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -42.75, 0.15, 34.25)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -31.75, 0.15, 34.25)
 metadata/wait = 0.0
 
 [node name="P5" type="Marker3D" parent="Routes/R_Kern12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -43.37, 0.15, 37.8)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -30.52, 0.15, 41.38)
 
 [node name="P6" type="Marker3D" parent="Routes/R_Kern12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -42.75, 0.15, 34.25)
-metadata/wait = 0.0
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -31.4, 0.15, 34.94)
 
 [node name="P7" type="Marker3D" parent="Routes/R_Kern12"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -33.25, 0.15, 33.75)
 metadata/wait = 0.0
 
 [node name="P8" type="Marker3D" parent="Routes/R_Kern12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -32.1, 0.15, 34.3)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -42.75, 0.15, 34.25)
+metadata/wait = 0.0
 
 [node name="P9" type="Marker3D" parent="Routes/R_Kern12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -34.25, 0.15, 33.75)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -42.75, 0.15, 41.25)
 metadata/wait = 0.0
 
 [node name="P10" type="Marker3D" parent="Routes/R_Kern12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -38.44, 0.15, 34.11)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -38.66, 0.15, 41.39)
 
 [node name="P11" type="Marker3D" parent="Routes/R_Kern12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -33.25, 0.15, 33.75)
-metadata/wait = 0.0
-
-[node name="P12" type="Marker3D" parent="Routes/R_Kern12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -31.25, 0.15, 34.75)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -42.75, 0.15, 41.25)
 metadata/wait = 0.0
 
 [node name="R_Gang20" type="Node3D" parent="Routes"]
@@ -221,10 +273,10 @@ loop = true
 wait_time = 3.0
 
 [node name="P1" type="Marker3D" parent="Routes/R_Gang20"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 41.15, 0.15, -108.75)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 37.87, 0.15, -111.77)
 
 [node name="P2" type="Marker3D" parent="Routes/R_Gang20"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 39.25, 0.15, -111.25)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 36.25, 0.15, -111.25)
 metadata/wait = 0.0
 
 [node name="P3" type="Marker3D" parent="Routes/R_Gang20"]
@@ -232,25 +284,22 @@ transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 34.25, 0.15, -111.25)
 metadata/wait = 0.0
 
 [node name="P4" type="Marker3D" parent="Routes/R_Gang20"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 33.32, 0.15, -108.06)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 33.91, 0.15, -106.65)
 
 [node name="P5" type="Marker3D" parent="Routes/R_Gang20"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 34.25, 0.15, -103.25)
 metadata/wait = 0.0
 
 [node name="P6" type="Marker3D" parent="Routes/R_Gang20"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 38.07, 0.15, -103.35)
-
-[node name="P7" type="Marker3D" parent="Routes/R_Gang20"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 39.75, 0.15, -103.25)
 metadata/wait = 0.0
 
-[node name="P8" type="Marker3D" parent="Routes/R_Gang20"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 39.75, 0.15, -112.25)
-metadata/wait = 0.0
+[node name="P7" type="Marker3D" parent="Routes/R_Gang20"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 40.87, 0.15, -106.37)
 
-[node name="P9" type="Marker3D" parent="Routes/R_Gang20"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 38.58, 0.15, -114.41)
+[node name="P8" type="Marker3D" parent="Routes/R_Gang20"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 39.75, 0.15, -111.25)
+metadata/wait = 0.0
 
 [node name="R_Kern21" type="Node3D" parent="Routes"]
 script = ExtResource("2_route")
@@ -258,10 +307,10 @@ loop = true
 wait_time = 3.0
 
 [node name="P1" type="Marker3D" parent="Routes/R_Kern21"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 41.41, 0.15, -41.32)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 32.64, 0.15, -40.0)
 
 [node name="P2" type="Marker3D" parent="Routes/R_Kern21"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 41.25, 0.15, -31.75)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 33.25, 0.15, -31.75)
 metadata/wait = 0.0
 
 [node name="P3" type="Marker3D" parent="Routes/R_Kern21"]
@@ -269,29 +318,45 @@ transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 39.75, 0.15, -31.25)
 metadata/wait = 0.0
 
 [node name="P4" type="Marker3D" parent="Routes/R_Kern21"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 33.25, 0.15, -31.75)
-metadata/wait = 0.0
-
-[node name="P5" type="Marker3D" parent="Routes/R_Kern21"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 32.8, 0.15, -41.45)
-
-[node name="P6" type="Marker3D" parent="Routes/R_Kern21"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 33.15, 0.15, -33.44)
-
-[node name="P7" type="Marker3D" parent="Routes/R_Kern21"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 33.25, 0.15, -31.75)
-metadata/wait = 0.0
-
-[node name="P8" type="Marker3D" parent="Routes/R_Kern21"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 39.75, 0.15, -31.25)
-metadata/wait = 0.0
-
-[node name="P9" type="Marker3D" parent="Routes/R_Kern21"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 41.25, 0.15, -31.75)
 metadata/wait = 0.0
 
+[node name="P5" type="Marker3D" parent="Routes/R_Kern21"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 41.3, 0.15, -38.02)
+
+[node name="P6" type="Marker3D" parent="Routes/R_Kern21"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 41.25, 0.15, -31.75)
+metadata/wait = 0.0
+
+[node name="P7" type="Marker3D" parent="Routes/R_Kern21"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 39.75, 0.15, -31.25)
+metadata/wait = 0.0
+
+[node name="P8" type="Marker3D" parent="Routes/R_Kern21"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 33.25, 0.15, -31.75)
+metadata/wait = 0.0
+
+[node name="P9" type="Marker3D" parent="Routes/R_Kern21"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 32.78, 0.15, -32.6)
+
 [node name="P10" type="Marker3D" parent="Routes/R_Kern21"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 42.43, 0.15, -34.52)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 33.75, 0.15, -31.75)
+metadata/wait = 0.0
+
+[node name="P11" type="Marker3D" parent="Routes/R_Kern21"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 39.25, 0.15, -31.25)
+metadata/wait = 0.0
+
+[node name="P12" type="Marker3D" parent="Routes/R_Kern21"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 41.75, 0.15, -31.53)
+
+[node name="P13" type="Marker3D" parent="Routes/R_Kern21"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 36.25, 0.15, -31.25)
+metadata/wait = 0.0
+
+[node name="P14" type="Marker3D" parent="Routes/R_Kern21"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 33.25, 0.15, -31.75)
+metadata/wait = 0.0
 
 [node name="R_Kern22" type="Node3D" parent="Routes"]
 script = ExtResource("2_route")
@@ -299,13 +364,10 @@ loop = true
 wait_time = 3.0
 
 [node name="P1" type="Marker3D" parent="Routes/R_Kern22"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 34.56, 0.15, 36.66)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 35.28, 0.15, 41.86)
 
 [node name="P2" type="Marker3D" parent="Routes/R_Kern22"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 38.75, 0.15, 41.23)
-
-[node name="P3" type="Marker3D" parent="Routes/R_Kern22"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 40.26, 0.15, 34.5)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 35.96, 0.15, 35.03)
 
 [node name="R_Gang30" type="Node3D" parent="Routes"]
 script = ExtResource("2_route")
@@ -313,31 +375,31 @@ loop = true
 wait_time = 3.0
 
 [node name="P1" type="Marker3D" parent="Routes/R_Gang30"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 104.02, 0.15, -114.42)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 100.67, 0.15, -110.2)
 
 [node name="P2" type="Marker3D" parent="Routes/R_Gang30"]
 transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 101.25, 0.15, -114.25)
 metadata/wait = 0.0
 
 [node name="P3" type="Marker3D" parent="Routes/R_Gang30"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 100.59, 0.15, -104.68)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 112.21, 0.15, -115.4)
 
 [node name="P4" type="Marker3D" parent="Routes/R_Gang30"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 101.25, 0.15, -114.25)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 112.25, 0.15, -106.25)
 metadata/wait = 0.0
 
 [node name="P5" type="Marker3D" parent="Routes/R_Gang30"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 112.19, 0.15, -114.45)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 106.87, 0.15, -105.55)
 
 [node name="P6" type="Marker3D" parent="Routes/R_Gang30"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 113.41, 0.15, -103.49)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 112.41, 0.15, -102.8)
 
 [node name="P7" type="Marker3D" parent="Routes/R_Gang30"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 112.25, 0.15, -111.25)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 103.75, 0.15, -106.75)
 metadata/wait = 0.0
 
 [node name="P8" type="Marker3D" parent="Routes/R_Gang30"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 110.75, 0.15, -114.25)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 100.75, 0.15, -109.75)
 metadata/wait = 0.0
 
 [node name="R_Platz11" type="Node3D" parent="Routes"]
@@ -346,33 +408,29 @@ loop = true
 wait_time = 3.0
 
 [node name="P1" type="Marker3D" parent="Routes/R_Platz11"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -21.36, 0.15, -16.66)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -35.34, 0.15, -15.87)
 
 [node name="P2" type="Marker3D" parent="Routes/R_Platz11"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -27.75, 0.15, -17.75)
-metadata/wait = 0.0
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -33.39, 0.15, -25.41)
 
 [node name="P3" type="Marker3D" parent="Routes/R_Platz11"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -30.25, 0.15, -17.75)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -33.25, 0.15, -20.75)
 metadata/wait = 0.0
 
 [node name="P4" type="Marker3D" parent="Routes/R_Platz11"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -30.47, 0.15, -15.14)
-
-[node name="P5" type="Marker3D" parent="Routes/R_Platz11"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -29.75, 0.15, -19.25)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -25.75, 0.15, -17.25)
 metadata/wait = 0.0
 
+[node name="P5" type="Marker3D" parent="Routes/R_Platz11"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -23.37, 0.15, -14.77)
+
 [node name="P6" type="Marker3D" parent="Routes/R_Platz11"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -28.25, 0.15, -21.25)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -26.75, 0.15, -17.75)
 metadata/wait = 0.0
 
 [node name="P7" type="Marker3D" parent="Routes/R_Platz11"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -28.75, 0.15, -31.25)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -31.25, 0.15, -17.75)
 metadata/wait = 0.0
-
-[node name="P8" type="Marker3D" parent="Routes/R_Platz11"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -29.26, 0.15, -32.13)
 
 [node name="R_Platz21" type="Node3D" parent="Routes"]
 script = ExtResource("2_route")
@@ -380,17 +438,21 @@ loop = true
 wait_time = 3.0
 
 [node name="P1" type="Marker3D" parent="Routes/R_Platz21"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 29.15, 0.15, -14.23)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 35.1, 0.15, -18.99)
 
 [node name="P2" type="Marker3D" parent="Routes/R_Platz21"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 19.57, 0.15, -13.53)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 21.16, 0.15, -17.53)
 
 [node name="P3" type="Marker3D" parent="Routes/R_Platz21"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 28.0, 0.15, -30.5)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 27.75, 0.15, -22.75)
+metadata/wait = 0.0
 
 [node name="P4" type="Marker3D" parent="Routes/R_Platz21"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 27.75, 0.15, -17.25)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 28.25, 0.15, -31.75)
 metadata/wait = 0.0
+
+[node name="P5" type="Marker3D" parent="Routes/R_Platz21"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 29.49, 0.15, -33.78)
 
 [node name="R_Platz12" type="Node3D" parent="Routes"]
 script = ExtResource("2_route")
@@ -398,56 +460,44 @@ loop = true
 wait_time = 3.0
 
 [node name="P1" type="Marker3D" parent="Routes/R_Platz12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -15.11, 0.15, 28.51)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -23.75, 0.15, 23.8)
 
 [node name="P2" type="Marker3D" parent="Routes/R_Platz12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -16.25, 0.15, 34.75)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -27.25, 0.15, 14.75)
 metadata/wait = 0.0
 
 [node name="P3" type="Marker3D" parent="Routes/R_Platz12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -21.75, 0.15, 36.25)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -32.25, 0.15, 14.75)
 metadata/wait = 0.0
 
 [node name="P4" type="Marker3D" parent="Routes/R_Platz12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -25.75, 0.15, 36.25)
-metadata/wait = 0.0
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -34.74, 0.15, 17.09)
 
 [node name="P5" type="Marker3D" parent="Routes/R_Platz12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -25.25, 0.15, 24.75)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -36.25, 0.15, 19.75)
 metadata/wait = 0.0
 
 [node name="P6" type="Marker3D" parent="Routes/R_Platz12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -23.75, 0.15, 21.75)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -36.25, 0.15, 24.25)
 metadata/wait = 0.0
 
 [node name="P7" type="Marker3D" parent="Routes/R_Platz12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -23.75, 0.15, 17.25)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -30.25, 0.15, 26.75)
 metadata/wait = 0.0
 
 [node name="P8" type="Marker3D" parent="Routes/R_Platz12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -26.5, 0.15, 13.93)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -25.75, 0.15, 31.25)
+metadata/wait = 0.0
 
 [node name="P9" type="Marker3D" parent="Routes/R_Platz12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -32.75, 0.15, 21.25)
-metadata/wait = 0.0
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -25.43, 0.15, 31.47)
 
 [node name="P10" type="Marker3D" parent="Routes/R_Platz12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -35.74, 0.15, 22.2)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -22.75, 0.15, 29.25)
+metadata/wait = 0.0
 
 [node name="P11" type="Marker3D" parent="Routes/R_Platz12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -28.75, 0.15, 32.25)
-metadata/wait = 0.0
-
-[node name="P12" type="Marker3D" parent="Routes/R_Platz12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -25.25, 0.15, 36.25)
-metadata/wait = 0.0
-
-[node name="P13" type="Marker3D" parent="Routes/R_Platz12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -20.75, 0.15, 36.25)
-metadata/wait = 0.0
-
-[node name="P14" type="Marker3D" parent="Routes/R_Platz12"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -16.25, 0.15, 34.75)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -22.75, 0.15, 24.75)
 metadata/wait = 0.0
 
 [node name="R_Platz22" type="Node3D" parent="Routes"]
@@ -456,32 +506,32 @@ loop = true
 wait_time = 3.0
 
 [node name="P1" type="Marker3D" parent="Routes/R_Platz22"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 13.97, 0.15, 33.01)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 24.29, 0.15, 19.24)
 
 [node name="P2" type="Marker3D" parent="Routes/R_Platz22"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 16.75, 0.15, 34.75)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 29.25, 0.15, 18.25)
 metadata/wait = 0.0
 
 [node name="P3" type="Marker3D" parent="Routes/R_Platz22"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 28.25, 0.15, 34.25)
-metadata/wait = 0.0
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 34.67, 0.15, 14.33)
 
 [node name="P4" type="Marker3D" parent="Routes/R_Platz22"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 32.23, 0.15, 18.55)
-
-[node name="P5" type="Marker3D" parent="Routes/R_Platz22"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 24.38, 0.15, 24.71)
-
-[node name="P6" type="Marker3D" parent="Routes/R_Platz22"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 28.25, 0.15, 29.75)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 35.75, 0.15, 26.25)
 metadata/wait = 0.0
 
+[node name="P5" type="Marker3D" parent="Routes/R_Platz22"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 35.75, 0.15, 28.25)
+metadata/wait = 0.0
+
+[node name="P6" type="Marker3D" parent="Routes/R_Platz22"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 31.56, 0.15, 30.22)
+
 [node name="P7" type="Marker3D" parent="Routes/R_Platz22"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 28.25, 0.15, 34.25)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 35.75, 0.15, 28.25)
 metadata/wait = 0.0
 
 [node name="P8" type="Marker3D" parent="Routes/R_Platz22"]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 16.25, 0.15, 34.75)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 35.75, 0.15, 23.25)
 metadata/wait = 0.0
 
 [node name="Enemies" type="Node3D" parent="."]
@@ -506,190 +556,190 @@ profile = ExtResource("p_smg")
 variant_seed = 60246
 
 [node name="Gang01_0" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -109.93, 0.15, -35.21)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -100.89, 0.15, -39.82)
 profile = ExtResource("p_gm")
-variant_seed = 76114
+variant_seed = 63027
 route = NodePath("../../Routes/R_Gang01")
 start_point = 0
 
 [node name="Gang01_1" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -106.86, 0.15, -41.79)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -106.26, 0.15, -34.02)
 profile = ExtResource("p_gp")
-variant_seed = 44275
+variant_seed = 92012
 route = NodePath("../../Routes/R_Gang01")
 start_point = 2
 
 [node name="Gang01_Wache" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(-0.94552, 0, 0.32557, 0, 1, 0, -0.32557, 0, -0.94552, -106.01, 0.15, -42.69)
+transform = Transform3D(0.32557, 0, 0.94552, 0, 1, 0, -0.94552, 0, 0.32557, -113.29, 0.15, -42.16)
 profile = ExtResource("p_smg")
-variant_seed = 63027
+variant_seed = 82568
 
 [node name="Gang02_0" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -98.88, 0.15, 38.7)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -98.85, 0.15, 37.49)
 profile = ExtResource("p_gm")
-variant_seed = 30036
+variant_seed = 8370
 route = NodePath("../../Routes/R_Gang02")
 start_point = 0
 
 [node name="Gang02_1" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -121.98, 0.15, 37.53)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -112.41, 0.15, 47.66)
 profile = ExtResource("p_gp")
-variant_seed = 22203
+variant_seed = 51182
 route = NodePath("../../Routes/R_Gang02")
-start_point = 4
+start_point = 5
 
 [node name="Gang02_Wache" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(0.99756, 0, 0.06976, 0, 1, 0, -0.06976, 0, 0.99756, -120.09, 0.15, 33.6)
+transform = Transform3D(-0.98163, 0, -0.19081, 0, 1, 0, 0.19081, 0, -0.98163, -113.07, 0.15, 39.14)
 profile = ExtResource("p_smg")
-variant_seed = 74040
+variant_seed = 92920
 
 [node name="Gang10_0" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -34.17, 0.15, -113.33)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -33.25, 0.15, -104.28)
 profile = ExtResource("p_gp")
-variant_seed = 19108
+variant_seed = 12794
 route = NodePath("../../Routes/R_Gang10")
 start_point = 0
 
 [node name="Gang10_1" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -33.25, 0.15, -104.28)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -42.16, 0.15, -107.14)
 profile = ExtResource("p_gm")
-variant_seed = 91876
+variant_seed = 4862
 route = NodePath("../../Routes/R_Gang10")
-start_point = 3
+start_point = 4
 
 [node name="Kern11_0" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -41.48, 0.15, -39.73)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -40.91, 0.15, -41.82)
 profile = ExtResource("p_sec")
-variant_seed = 92385
+variant_seed = 98510
 route = NodePath("../../Routes/R_Kern11")
 start_point = 0
 
 [node name="Kern11_1" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -32.12, 0.15, -41.87)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -32.06, 0.15, -41.15)
 profile = ExtResource("p_sec")
-variant_seed = 92895
+variant_seed = 16292
 route = NodePath("../../Routes/R_Kern11")
 start_point = 6
 
 [node name="Kern12_0" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -31.43, 0.15, 40.89)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -42.7, 0.15, 36.19)
 profile = ExtResource("p_sec")
-variant_seed = 74220
+variant_seed = 20616
 route = NodePath("../../Routes/R_Kern12")
 start_point = 0
 
 [node name="Kern12_1" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -32.1, 0.15, 34.3)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -31.4, 0.15, 34.94)
 profile = ExtResource("p_sec")
-variant_seed = 78675
+variant_seed = 4169
 route = NodePath("../../Routes/R_Kern12")
-start_point = 7
+start_point = 5
 
 [node name="Gang20_0" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 41.15, 0.15, -108.75)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 37.87, 0.15, -111.77)
 profile = ExtResource("p_gp")
-variant_seed = 4749
+variant_seed = 59976
 route = NodePath("../../Routes/R_Gang20")
 start_point = 0
 
 [node name="Gang20_1" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 38.07, 0.15, -103.35)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 40.87, 0.15, -106.37)
 profile = ExtResource("p_gm")
-variant_seed = 62725
+variant_seed = 94380
 route = NodePath("../../Routes/R_Gang20")
-start_point = 5
+start_point = 6
 
 [node name="Gang20_Wache" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(-0.88295, 0, 0.46947, 0, 1, 0, -0.46947, 0, -0.88295, 33.14, 0.15, -109.81)
+transform = Transform3D(-0.27564, 0, 0.96126, 0, 1, 0, -0.96126, 0, -0.27564, 37.63, 0.15, -111.82)
 profile = ExtResource("p_smg")
-variant_seed = 39086
+variant_seed = 87475
 
 [node name="Kern21_0" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 41.41, 0.15, -41.32)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 32.64, 0.15, -40.0)
 profile = ExtResource("p_sec")
-variant_seed = 20587
+variant_seed = 2209
 route = NodePath("../../Routes/R_Kern21")
 start_point = 0
 
 [node name="Kern21_1" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 33.15, 0.15, -33.44)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 32.78, 0.15, -32.6)
 profile = ExtResource("p_sec")
-variant_seed = 18574
+variant_seed = 55363
 route = NodePath("../../Routes/R_Kern21")
-start_point = 5
+start_point = 8
 
 [node name="Kern22_0" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 34.56, 0.15, 36.66)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 35.28, 0.15, 41.86)
 profile = ExtResource("p_sec")
-variant_seed = 14125
+variant_seed = 58128
 route = NodePath("../../Routes/R_Kern22")
 start_point = 0
 
 [node name="Kern22_1" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 40.26, 0.15, 34.5)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 35.28, 0.15, 41.86)
 profile = ExtResource("p_sec")
-variant_seed = 72208
+variant_seed = 84119
 route = NodePath("../../Routes/R_Kern22")
-start_point = 2
+start_point = 0
 
 [node name="Gang30_0" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 104.02, 0.15, -114.42)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 100.67, 0.15, -110.2)
 profile = ExtResource("p_gp")
-variant_seed = 2209
+variant_seed = 55203
 route = NodePath("../../Routes/R_Gang30")
 start_point = 0
 
 [node name="Gang30_1" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 112.19, 0.15, -114.45)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 106.87, 0.15, -105.55)
 profile = ExtResource("p_gm")
-variant_seed = 55363
+variant_seed = 21288
 route = NodePath("../../Routes/R_Gang30")
 start_point = 4
 
 [node name="Tuer31_W" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 82.0, 0.15, -35.81)
 profile = ExtResource("p_sec")
-variant_seed = 44070
+variant_seed = 64030
 
 [node name="Tuer31_E" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 134.0, 0.15, -35.81)
 profile = ExtResource("p_sec")
-variant_seed = 54571
+variant_seed = 15283
 
 [node name="Tuer32_W" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(0.0, 0, 1.0, 0, 1, 0, -1.0, 0, 0.0, 82.0, 0.15, 38.93)
 profile = ExtResource("p_sec")
-variant_seed = 11558
+variant_seed = 3594
 
 [node name="Tuer32_E" parent="Enemies" instance=ExtResource("3_enemy")]
 transform = Transform3D(0.0, 0, -1.0, 0, 1, 0, 1.0, 0, 0.0, 134.0, 0.15, 38.93)
 profile = ExtResource("p_sec")
-variant_seed = 98100
+variant_seed = 77202
 
 [node name="Platz11" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -21.36, 0.15, -16.66)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -35.34, 0.15, -15.87)
 profile = ExtResource("p_sec")
-variant_seed = 35517
+variant_seed = 75445
 route = NodePath("../../Routes/R_Platz11")
 start_point = 0
 
 [node name="Platz21" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 29.15, 0.15, -14.23)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 35.1, 0.15, -18.99)
 profile = ExtResource("p_sec")
-variant_seed = 31307
+variant_seed = 34251
 route = NodePath("../../Routes/R_Platz21")
 start_point = 0
 
 [node name="Platz12" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -15.11, 0.15, 28.51)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, -23.75, 0.15, 23.8)
 profile = ExtResource("p_sec")
-variant_seed = 14836
+variant_seed = 48113
 route = NodePath("../../Routes/R_Platz12")
 start_point = 0
 
 [node name="Platz22" parent="Enemies" instance=ExtResource("3_enemy")]
-transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 13.97, 0.15, 33.01)
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, 0.0, 0, 1.0, 24.29, 0.15, 19.24)
 profile = ExtResource("p_sec")
-variant_seed = 23423
+variant_seed = 72721
 route = NodePath("../../Routes/R_Platz22")
 start_point = 0

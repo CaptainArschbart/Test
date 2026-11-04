@@ -430,6 +430,12 @@ def frontage(parent: str, district: str, side: str, a0: float, a1: float, edge: 
                     sx, sz = edge + inward * front, mid
                     claim(edge, edge + inward * (front + back), mid - sw / 2, mid + sw / 2, "solid", f"Laden {kind}")
                 shop_places.append({"kind": kind, "at": (round(sx, 2), SIDEWALK_Y, round(sz, 2)), "yaw": yaw})
+                # R5: 1,2 m Gehweg vor dem Eingang bleiben frei (Laternen, Bänke, Zweiräder weichen aus).
+                out = -inward
+                if side in "NS":
+                    claim(mid - sw / 2, mid + sw / 2, edge, edge + out * 1.2, "keep", f"Eingang {kind}")
+                else:
+                    claim(edge, edge + out * 1.2, mid - sw / 2, mid + sw / 2, "keep", f"Eingang {kind}")
                 continue
         # Reststücke: unter 6 m bleibt eine Lücke (Durchgang), kurze Grundstücke werden keine Nadeltürme.
         if l < 6.0 and not closed:
@@ -743,6 +749,13 @@ DRESS = {
     "bricks": (KR + "detail-bricks-type-a.glb", (0.57, 0.2, 0.53), 2.0, 0.0, False, 70.0, False),
     "box": (CP + "Box.glb", (0.2, 0.18, 0.2), 3.2, 0.0, True, 80.0, False),
 }
+# Befestigung je Art (NeonDressing.mount), danach prüft test_neon_city Schweben, Z-Fighting und Halt.
+MOUNT = {"ac": "wall", "balcony": "wall", "fireexit": "wall", "poster": "wall", "walllamp": "wall", "lamp2": "wall",
+         "awning": "wall", "door": "wall", "shopwin": "wall", "brickwin": "wall", "brickdouble": "wall",
+         "cable": "hang", "cable2": "hang", "sign": "blade",
+         "papers": "flat", "manhole": "flat", "drain": "flat", "arrow": "flat"}
+# Arten, die frei gedreht werden dürfen (R4); alles andere nur in 90°-Schritten.
+FREE_YAW = {"papers", "manhole", "planks", "bricks", "washline", "plazaboard"}
 # Leuchtschild in fünf Neonfarben (gleiches Modell, eigene Knoten je Farbe).
 SIGN_TINTS = [(1.0, 0.15, 0.6), (0.0, 0.9, 1.0), (0.65, 0.3, 1.0), (1.0, 0.75, 0.15), (0.95, 0.95, 1.0)]
 for _k, _c in enumerate(SIGN_TINTS):
@@ -764,6 +777,9 @@ def dsize(kind: str, scale: float = 0.0) -> tuple[float, float, float]:
 
 def dress(kind: str, x: float, y: float, z: float, yaw: float, sx: float = 1.0, sy: float = 1.0, sz: float = 1.0,
           scale: float = 0.0) -> None:
+    base = "sign" if kind.startswith("sign") else kind
+    if base not in FREE_YAW and abs(yaw / 90.0 - round(yaw / 90.0)) > 1e-3:
+        raise SystemExit(f"R4 Snapping: {kind} bei {x:.1f},{z:.1f} mit {yaw:.1f}° (nur 90°-Schritte erlaubt)")
     ci, cj = int((x + EDGE + 60) // CHUNK), int((z + EDGE + 60) // CHUNK)
     dress_items.setdefault((kind, ci, cj, scale or DRESS[kind][2]), []).extend(
         [round(x, 3), round(y, 3), round(z, 3), round(yaw % 360.0, 2), round(sx, 3), round(sy, 3), round(sz, 3)])
@@ -824,7 +840,8 @@ def blocked(x: float, z: float, y: float, own: dict) -> bool:
         if r[0] - 0.05 < x < r[1] + 0.05 and r[2] - 0.05 < z < r[3] + 0.05 and o["floors"] * o["fh"] > y - 0.5:
             return True
     for (a0, a1, b0, b1, k, what) in claims:
-        if k == "solid" and what.startswith("Laden") and a0 < x < a1 and b0 < z < b1:
+        # Läden und Tankstellen sind niedrig: darüber hält nichts (kein Kabel, kein Schild).
+        if k == "solid" and what.startswith("Laden") and a0 < x < a1 and b0 < z < b1 and y < 4.5:
             return True
     return False
 
@@ -1095,7 +1112,8 @@ for bi in range(4):
             while x < g1:
                 y = drnd.uniform(4.2, 9.0)
                 za, zb = mz - 2.5, mz + 2.5
-                if blocked(x, za - 0.3, 0.0, None) and blocked(x, zb + 0.3, 0.0, None):
+                # Beide Enden brauchen eine Wand, die über die Aufhängung hinausreicht (R1).
+                if blocked(x, za - 0.3, y + 0.5, None) and blocked(x, zb + 0.3, y + 0.5, None):
                     sy = drnd.uniform(2.0, 4.5)
                     dress(drnd.choice(["cable", "cable2"]), x, y - 0.14 * sy, mz, -90.0, sx=zb - za, sy=sy)
                 x += drnd.uniform(1.5, 3.5)
@@ -1267,10 +1285,15 @@ for (district, x0, x1, z0, z1) in courts:
         for _ in range(10):
             # Flacher Schutt ohne Kollision, nur wo nichts steht.
             x, z = drnd.uniform(x0 + 1, x1 - 1), drnd.uniform(z0 + 1, z1 - 1)
-            if free(x - 0.6, x + 0.6, z - 0.6, z + 0.6, strict=True):
+            if free(x - 0.9, x + 0.9, z - 0.9, z + 0.9, strict=True):
                 dress(drnd.choice(["planks", "bricks"]), x, SIDEWALK_Y, z, drnd.uniform(0, 360))
+                # Stolperkante: Wege führen außen herum (R6).
+                claim(x - 0.8, x + 0.8, z - 0.8, z + 0.8, "raised", "Schutt")
         for _ in range(4):
-            dress_ground("washline", drnd.uniform(x0 + 3, x1 - 3), drnd.uniform(z0 + 3, z1 - 3), drnd.uniform(0, 90), margin=1.2)
+            # Die Arme hängen in Kopfhöhe (R6): ganze Fläche sperren, Wege führen außen herum.
+            wx, wz = drnd.uniform(x0 + 3, x1 - 3), drnd.uniform(z0 + 3, z1 - 3)
+            if free(wx - 1.3, wx + 1.3, wz - 1.3, wz + 1.3) and dress_ground("washline", wx, wz, drnd.uniform(0, 90), margin=1.2):
+                claim(wx - 1.2, wx + 1.2, wz - 1.2, wz + 1.2, "raised", "Wäschespinne")
     if district == "harbor":
         for _ in range(6):
             dress_ground(drnd.choice(["truck", "trailer", "barrier"]), drnd.uniform(x0 + 4, x1 - 4),
@@ -1296,7 +1319,7 @@ for (kind, ci, cj, scale), vals in sorted(dress_items.items()):
         extra["collider_size"] = Raw("Vector3(0.35, 5.6, 0.35)")
         extra["collider_offset"] = Raw(f"Vector3({round(TL_POLE * scale, 3)}, 0, 0)")
     node(uname(f"D_{kind}_"), P_DRESS, "k_dress", cx, 0.0, cz, 0.0, model=model, model_scale=round(scale, 6),
-         yaw_fix=fix, collide=collide, shadows=shadows, visible_range=rng_ + 45.0,
+         mount=MOUNT.get("sign" if kind.startswith("sign") else kind, "ground"), yaw_fix=fix, collide=collide, shadows=shadows, visible_range=rng_ + 45.0,
          items=Raw(f"PackedFloat32Array({', '.join(str(v) for v in rel)})"), **extra)
 DRESS_COUNT = {k: 0 for k in DRESS}
 for (kind, _, _, _), vals in dress_items.items():
@@ -1689,6 +1712,7 @@ HEAD = """[gd_scene format=3]
 [ext_resource type="Script" path="res://scenes/neon_city/kit/neon_stairs.gd" id="k_stairs"]
 [ext_resource type="Script" path="res://scenes/neon_city/kit/neon_stall.gd" id="k_stall"]
 [ext_resource type="Script" path="res://scenes/neon_city/kit/neon_dressing.gd" id="k_dress"]
+[ext_resource type="Script" path="res://scenes/neon_city/kit/neon_claims_debug.gd" id="k_claims"]
 [ext_resource type="PackedScene" path="res://scenes/neon_city/neon_city_enemies.tscn" id="e_enemies"]
 [ext_resource type="PackedScene" path="res://scenes/neon_city/neon_city_life.tscn" id="l_life"]
 
@@ -1795,12 +1819,23 @@ def places_text() -> str:
     return f"Array[Dictionary]([{', '.join(parts)}])"
 
 
+def claims_debug() -> str:
+    """Reservierte Flächen für die Editor-Ansicht (NeonClaimsDebug, P0-6)."""
+    kinds = {"solid": 0, "road": 1, "keep": 2, "raised": 3}
+    vals = []
+    for (x0, x1, z0, z1, k, _) in claims:
+        if k in kinds:
+            vals += [round(x0, 2), round(x1, 2), round(z0, 2), round(z1, 2), kinds[k]]
+    return ('[node name="ClaimsDebug" type="Node3D" parent="."]\nscript = ExtResource("k_claims")\n'
+            f'rects = PackedFloat32Array({", ".join(str(v) for v in vals)})')
+
+
 def main() -> None:
     head = HEAD.replace("BOUND_SIZE", str(int(2 * EDGE + 20))).replace("SHOP_PLACES", places_text())
     tail = TAIL.replace("BOUND", str(int(EDGE))).replace("SPAWN_X", str(SPAWN[0])).replace("SPAWN_Z", str(SPAWN[1]))
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8", newline="\n") as f:
-        f.write(head + "\n" + "\n\n".join(nodes) + "\n" + tail + "\n" + items() + "\n")
+        f.write(head + "\n" + "\n\n".join(nodes) + "\n" + tail + "\n" + items() + "\n\n" + claims_debug() + "\n")
     with open(LIFE_OUT, "w", encoding="utf-8", newline="\n") as f:
         f.write(life_scene())
     with open(ENEMIES_OUT, "w", encoding="utf-8", newline="\n") as f:

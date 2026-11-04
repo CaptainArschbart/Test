@@ -102,8 +102,10 @@ func _build(b: SlumBuilder) -> void:
 		var y1: float = t["y1"]
 		if use_kit and minf(size.x, size.y) > 2.0 * NeonFacade.INSET + 1.0:
 			# Baukörper hinter der Fassadenebene, Ränder und Ecken mit Füllstücken bündig geschlossen.
-			b.box(Vector3(0, (y0 + y1) * 0.5, 0), Vector3(size.x - 2.0 * NeonFacade.INSET, y1 - y0, size.y - 2.0 * NeonFacade.INSET), wall)
+			b.box(Vector3(0, (y0 + y1) * 0.5, 0), Vector3(size.x - 2.0 * NeonFacade.INSET, y1 - y0, size.y - 2.0 * NeonFacade.INSET), wall, false)
 			_kit_fillers(b, size, y0, y1, wall)
+			# Kollision bündig mit der Fassadenebene: sonst läuft man 0,3 m in die Wandstücke hinein (Clipping).
+			b.collider(Vector3(0, (y0 + y1) * 0.5, 0), Vector3(size.x, y1 - y0, size.y))
 		else:
 			b.box(Vector3(0, (y0 + y1) * 0.5, 0), Vector3(size.x, y1 - y0, size.y), wall)
 		if use_kit:
