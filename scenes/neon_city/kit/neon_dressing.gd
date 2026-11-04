@@ -54,6 +54,25 @@ const STRIDE := 7
 	set(v):
 		emission_tint = v
 		_queue()
+## Holo-Werbung: das ganze Modell als durchscheinendes Hologramm in dieser Farbe; Alpha 0 = aus.
+@export var holo_tint := Color(0, 0, 0, 0):
+	set(v):
+		holo_tint = v
+		_queue()
+## Echtes Licht an jedem n-ten Exemplar (0 = keins), z. B. Wandlampen in Gassen.
+@export var light_every := 0:
+	set(v):
+		light_every = v
+		_queue()
+@export var light_color := Color(1.0, 0.75, 0.5):
+	set(v):
+		light_color = v
+		_queue()
+## Lage des Lichts im Exemplar (lokal, Meter, nach der Drehung des Modells).
+@export var light_offset := Vector3(0, 0.8, 0.4):
+	set(v):
+		light_offset = v
+		_queue()
 @export var shadows := false:
 	set(v):
 		shadows = v
@@ -82,8 +101,19 @@ func _queue() -> void:
 		_rebuild()).call_deferred()
 
 
-static func _parts(path: String, tint := Color(0, 0, 0, 0)) -> Dictionary:
-	var key := path + (tint.to_html() if tint.a > 0.0 else "")
+static func _holo(tint: Color, strength: float) -> ShaderMaterial:
+	var key := "holo_%s_%.2f" % [tint.to_html(), strength]
+	if not _cache.has(key):
+		var m := ShaderMaterial.new()
+		m.shader = preload("res://scenes/neon_city/kit/neon_holo.gdshader")
+		m.set_shader_parameter("tint", tint)
+		m.set_shader_parameter("strength", strength)
+		_cache[key] = m
+	return _cache[key]
+
+
+static func _parts(path: String, tint := Color(0, 0, 0, 0), holo := Color(0, 0, 0, 0)) -> Dictionary:
+	var key := path + (tint.to_html() if tint.a > 0.0 else "") + ("holo" + holo.to_html() if holo.a > 0.0 else "")
 	if _cache.has(key):
 		return _cache[key]
 	var out := {"parts": [], "box": AABB()}
@@ -112,6 +142,10 @@ static func _parts(path: String, tint := Color(0, 0, 0, 0)) -> Dictionary:
 				m.emission = tint
 				m.emission_energy_multiplier = 2.6
 				mat = m
+			if holo.a > 0.0:
+				# Hologramm: helle Flächen (Schrift, Rahmen, Bild) leuchten, dunkle nur als Schimmer.
+				var bright := mat is BaseMaterial3D and ((mat as BaseMaterial3D).albedo_color.v > 0.5 						or (mat as BaseMaterial3D).albedo_texture != null)
+				mat = _holo(holo, 1.0 if bright else 0.18)
 			if mat != null:
 				mesh.surface_set_material(s, mat)
 		out["parts"].append({"mesh": mesh, "xform": shift * xf})
@@ -129,7 +163,7 @@ func _rebuild() -> void:
 	var count := items.size() / STRIDE
 	if count == 0:
 		return
-	var data := _parts(model, emission_tint)
+	var data := _parts(model, emission_tint, holo_tint)
 	if data["parts"].is_empty():
 		return
 	var base := Basis(Vector3.UP, deg_to_rad(yaw_fix)) * Basis.from_scale(Vector3.ONE * model_scale)
@@ -159,6 +193,21 @@ func _rebuild() -> void:
 			mmi.visibility_range_end = visible_range
 			mmi.visibility_range_end_margin = 10.0
 		add_child(mmi)
+	if light_every > 0:
+		for i in range(0, count, light_every):
+			var lamp := OmniLight3D.new()
+			lamp.name = "Light"
+			lamp.set_meta(GEN_META, true)
+			var k := i * STRIDE
+			lamp.position = xforms[i].origin + Basis(Vector3.UP, deg_to_rad(items[k + 3])) * light_offset
+			lamp.light_color = light_color
+			lamp.light_energy = 1.3
+			lamp.omni_range = 6.0
+			lamp.shadow_enabled = false
+			lamp.distance_fade_enabled = true
+			lamp.distance_fade_begin = 50.0
+			lamp.distance_fade_length = 10.0
+			add_child(lamp)
 	if collide:
 		var body := StaticBody3D.new()
 		body.name = "Body"

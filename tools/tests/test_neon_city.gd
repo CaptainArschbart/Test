@@ -166,6 +166,16 @@ func _run() -> void:
 			unreachable.append(shop.name)
 	_check(unreachable.is_empty(), "Alle Läden vom Start erreichbar %s" % [unreachable])
 	_check(_reachable(map, from, SKYWALK), "Skywalk über die Treppen erreichbar")
+	# Zweite Ebene: jede Galerie in den Höfen (Neonmeile, Megablöcke) steht auf Deckhöhe und ist zu Fuß erreichbar.
+	var decks := 0
+	var cut_off := PackedStringArray()
+	for n in scene.find_children("Galerie*", "Node3D", true, false):
+		if n is NeonSkywalk and not String(n.name).begins_with("GalerieEcke"):
+			decks += 1
+			var top := (n as Node3D).global_position + Vector3.UP * float(n.get("height"))
+			if absf(_floor(top + Vector3.UP * 0.5) - top.y) > 0.1 or not _reachable(map, from, top):
+				cut_off.append(n.name)
+	_check(decks >= 18 and cut_off.is_empty(), "Zweite Ebene: %d Galerien auf 6 m erreichbar %s" % [decks, cut_off])
 	_check_enemies(scene, map, from, nodes, edges)
 	# Hinter dem Stadtrand (zwischen Häusern und Wand) kommt man nicht hin.
 	var behind := [Vector3(176, 0, 0), Vector3(-176, 0, 40), Vector3(0, 0, 176), Vector3(60, 0, -176)]

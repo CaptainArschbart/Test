@@ -751,3 +751,21 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
   - Waffenladen: Kasse und Ankauf-Pad schwebten 5 cm über der Theke, Handelspunkt ragte halb über die Thekenkante, Munition schwebte in der Vitrine, Bücherregal steckte 4 cm in der Trennwand, ein Karton im Regal. Theke jetzt 1 m tief und 3,8 m breit.
 - Getestet (Godot 4.7.2, headless, isoliertes APPDATA): `test_neon_city` CHECKS 29 FAILS 0, `test_gun_shops` 37/0 (mit Gegenprobe des Planers), `test_sector7_city` 44/0, `test_shop` 43/0, `test_gas_stations` 59/0, `test_content_update` 47/0, `test_npc_robbery` 47/0, `test_sector7_enemies` 15/0. Navmesh-Kantenwarnungen: main 6, jetzt 0.
 - Nicht getestet: Debug-Ansicht im Editor selbst angesehen (nur Skript geprüft); Tankstellen-Innenräume haben noch keinen Planer.
+
+### 2026-11-04 · Schedule 1, Meilenstein M2 „Stadt“: Holo-Werbung, zweite Ebene, Dreck-Layer, Gassen-Neon · Claude (für EnScapeZ) · Branch `enscapez/m2-stadt-holo`
+- Auftrag: Meilenstein M2 aus „Schedule 1“ (Phase 1, P1-1 bis P1-5). EnScapeZ möchte, dass kein Spielfenster mehr ohne Nachfrage geöffnet wird (Screenshots, FPS-Messung): ab hier nur Headless-Tests.
+- Neu:
+  - `scenes/neon_city/kit/neon_holo.gdshader`: Holo-Shader (durchscheinend, Scanlines, wandernder Streifen, Flackern pro Exemplar, Aussetzer, Randleuchten). Über `NeonDressing.holo_tint` auf vorhandene Modelle gelegt: helle Flächen leuchten, dunkle nur als Schimmer.
+  - `NeonDressing`: `holo_tint`, echtes Licht an jedem n-ten Exemplar (`light_every`, `light_color`, `light_offset`).
+- `tools/gen_neon_city.py`:
+  - P1-1: 30 Holo-Schilder (Leuchtschild aus `_incoming`, 12 m hoch) quer an Kern- und Randtürmen ab 15 m, Holo-Werbetafeln an den Plätzen und auf Dächern (Billboard, auf 5 m verkleinert, passt jetzt auf die Dächer).
+  - P1-2: zweite Ebene: U-förmige Galerie auf 6 m in 6 Höfen (Neonmeile, Megablöcke) mit Treppen am Westende, Ecken ohne Geländer zum Durchgehen, keine Stütze über der Ostgasse. Wandteile hinter Galerien ausgespart (sonst Clipping mit dem Deck). Park in den Megablöcken nach innen gerückt, damit der Weg um ihn frei bleibt.
+  - P1-3: Kern-Türme haben seit PR 81 Bauteil-Fassaden; dazu jetzt Klimageräte im Raster der Stücke.
+  - P1-4: Dreck in den Gassen (Müllsäcke, offene Tonnen, Kisten, Ziegel, Papier), Dichte je Bezirk; doppelt so viel Papier auf Gehwegen.
+  - P1-5: Wandlampen in allen Gassen (jede zweite mit Licht), Leuchtschilder über dem Gassenweg ab 3,2 m.
+  - Streifenplanung mit bis zu 8 Versuchen (vorher fiel eine Streife weg, wenn zufällige Haltepunkte ungünstig lagen).
+- `tools/tests/test_neon_city.gd`: neue Prüfung „Zweite Ebene: alle Galerien auf 6 m über das Navmesh erreichbar“. `shot_neon_city.gd`: Blickwinkel `galerie`, `galerie_oben`.
+- Getestet (headless): `test_neon_city` CHECKS 30 FAILS 0 (5.299 Details, 18 Galerie-Decks, R1–R6 grün). Vor der Bitte von EnScapeZ mit Fenster angesehen: Galerien, Holo-Schilder aus der Nähe.
+- Mit Fenster (einmal, mit OK von EnScapeZ): Bildrate ohne VSync auf Straßenhöhe 154–169 FPS, Skywalk 177, Gassen 238–265, Galerie 277 (Gate M2: mindestens 120 FPS, erfüllt). Screenshots Gassen (Neonmeile, Unterstadt), Galerie, Kern, Skywalk angesehen; neue Blickwinkel `gasse_neon`, `gasse_unter`.
+- Nicht getestet: Multiplayer.
+- Offen: P1-6 (Dioramen aus `_incoming` zerlegen, Lizenz unbekannt) und P1-7 (Voxel-Skyline, Bäume) nicht begonnen.
