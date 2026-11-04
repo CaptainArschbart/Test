@@ -766,5 +766,6 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
   - Streifenplanung mit bis zu 8 Versuchen (vorher fiel eine Streife weg, wenn zufällige Haltepunkte ungünstig lagen).
 - `tools/tests/test_neon_city.gd`: neue Prüfung „Zweite Ebene: alle Galerien auf 6 m über das Navmesh erreichbar“. `shot_neon_city.gd`: Blickwinkel `galerie`, `galerie_oben`.
 - Getestet (headless): `test_neon_city` CHECKS 30 FAILS 0 (5.299 Details, 18 Galerie-Decks, R1–R6 grün). Vor der Bitte von EnScapeZ mit Fenster angesehen: Galerien, Holo-Schilder aus der Nähe.
-- Nicht getestet: Bildrate mit den neuen Lichtern und Holos (Gate von M2: mindestens 120 FPS) braucht ein Spielfenster; Screenshots der Gassen.
+- Mit Fenster (einmal, mit OK von EnScapeZ): Bildrate ohne VSync auf Straßenhöhe 154–169 FPS, Skywalk 177, Gassen 238–265, Galerie 277 (Gate M2: mindestens 120 FPS, erfüllt). Screenshots Gassen (Neonmeile, Unterstadt), Galerie, Kern, Skywalk angesehen; neue Blickwinkel `gasse_neon`, `gasse_unter`.
+- Nicht getestet: Multiplayer.
 - Offen: P1-6 (Dioramen aus `_incoming` zerlegen, Lizenz unbekannt) und P1-7 (Voxel-Skyline, Bäume) nicht begonnen.
