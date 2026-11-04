@@ -8,7 +8,8 @@ extends EnemyModel
 ## Scharfschütze Adventurer, Polizei Swat. Die Waffe (EnemyProfile.weapon bzw. Pistole, Gewehr oder
 ## Brechstange nach style) hängt am Handknochen Wrist.R, die Mündung am Lauf. Statusleuchte als Implantat am Kopf, Taschenlampe an der
 ## Brust. Animationen aus der Figur: Idle/Idle_Gun, Walk, Run, Idle_Gun_Pointing und Run_Shoot beim
-## Zielen, Gun_Shoot, Punch/Sword_Slash beim Nahkampf, HitRecieve, Death. Der AnimationPlayer läuft
+## Zielen, Gun_Shoot, Punch/Sword_Slash beim Nahkampf, Trefferreaktion nach Zone (UAL1 Hit_Head,
+## Hit_Chest aus UalLibrary, sonst HitRecieve), Death. Der AnimationPlayer läuft
 ## nur in animate(), die LOD-Stufen des EnemyDirector bleiben wirksam.
 
 const DIR := "res://assets/characters/quaternius_modular_men/"
@@ -64,6 +65,7 @@ func build(profile: EnemyProfile, variant_seed: int) -> void:
 	if not players.is_empty():
 		_anim = players[0] as AnimationPlayer
 		_anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+		UalLibrary.attach(_anim)
 		for name: String in ["Idle", "Idle_Gun", "Walk", "Run", "Run_Shoot", "Idle_Gun_Pointing", "Idle_Neutral"]:
 			var a := _anim.get_animation(ANIM_PREFIX + name)
 			if a != null:
@@ -84,9 +86,11 @@ func animate(delta: float) -> void:
 	flinch = maxf(flinch - delta * 3.5, 0.0)
 	_hit_left = maxf(_hit_left - delta, 0.0)
 	if flinch > 0.6 and _hit_left <= 0.0:
-		_hit_left = 0.45
+		var reaction := _hit_reaction(_anim)
+		_hit_left = _anim.get_animation(reaction).length if reaction.begins_with(UalLibrary.NAME + "/") else 0.45
+		_current = ""
 		_anim.speed_scale = 1.0
-		_play("HitRecieve", 0.05)
+		_play(reaction, 0.05)
 	elif _hit_left <= 0.0:
 		_choose(delta)
 	_anim.advance(delta)
@@ -143,7 +147,7 @@ func _idle_name() -> String:
 func _play(name: String, blend := BLEND) -> void:
 	if _current == name or _anim == null:
 		return
-	var full := ANIM_PREFIX + name
+	var full := name if name.begins_with(UalLibrary.NAME + "/") else ANIM_PREFIX + name
 	if not _anim.has_animation(full):
 		return
 	_current = name

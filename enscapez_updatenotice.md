@@ -851,3 +851,29 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
   - Der umgeworfene Fußgänger steht sauber wieder auf.
 - Getestet (headless): `test_item_icons` 63/0 (vorher 1 Fehler), `test_weapons_m3` 83/0, `test_gun_shops` 37/0, `test_weapons_smg_grenade` 47/0, `test_content_update` 47/0.
 - Nicht gesehen: die Nachlade-Pose. `shot_weapons.gd` lädt mit vollem Magazin nach, deshalb startet das Nachladen nicht.
+
+### 2026-11-04 · Schedule 1, M3 „Systeme“, Teil 4: UAL-Animationen und Aufstehen (P5-3, P5-2, P5-6) · Claude (für EnScapeZ) · Branch `enscapez/m3-aufstehen`
+- Neu: `tools/retarget_ual.gd` (headless) überträgt 32 Animationen aus UAL1 und UAL2 auf das Skelett der Modular-Men-Figuren. Ergebnis: `assets/animations/retargeted/ual_mm.res` (AnimationLibrary, 1,2 MB, entsteht in 2 s).
+  - Referenz: beide Skelette in T-Pose. Bei UAL ist das die Ruhelage, bei MM die Bindungspose der Haut; die MM-Ruhelage ist eine schiefe Zwischenpose und taugt nicht.
+  - Je Knochen gilt `MM_global = UAL_global * (UAL_ref⁻¹ * MM_ref)`. Knochenlängen bleiben die von MM, das Becken folgt der UAL-Hüfte (skaliert mit der Beinlänge). Die Füße (bei MM IK-Knochen am Root) sitzen am Ende des Unterschenkels, die Finger sind mit übertragen.
+  - Bodenausgleich für LayToIdle, Death01 und Hit_Knockback: Das Becken wird je Bild so weit angehoben, dass die Haut nicht unter den Boden kommt. Schon die UAL-Puppe liegt in LayToIdle 8 cm im Boden.
+  - Auswahl nach Schedule: Bewegung (P5-7), Treffer und Aufstehen (P5-2, P5-6), Pistole (P4-6), Sitzen, Essen, Reden, Tragen (P2-5, P2-6, P3-5, P5-8).
+  - Nachgeprüft ohne Fenster: Die Haut wird auf der CPU gerechnet und von vorn und von der Seite gezeichnet, neben dem UAL-Original. Idle, Walk, Zielen, Sitzen, Aufstehen, Treffer und Tod sehen gleich aus.
+- Neu: `scenes/common/ual_library.gd` (`UalLibrary.attach`) hängt die Bibliothek als „ual“ an den AnimationPlayer jeder MM-Figur (Fußgänger, Verkäufer, Gegner). Sie wird einmal geladen und von allen geteilt.
+- Aufstehen aus dem Ragdoll mit UAL2 LayToIdle (P5-2, für das M3-Gate „Ragdoll fällt, steht ohne Clipping auf“), in `EnemyModel._ragdoll_rise`:
+  - Die Figur wird gedreht und versetzt, damit das erste Bild auf dem liegenden Körper sitzt (Becken auf Becken, Becken → Hals in dieselbe Richtung, Füße auf dem Boden darunter). Steckt die Kapsel dort in einer Wand, rückt sie schrittweise zur alten Stelle zurück.
+  - Bauch- oder Seitenlage: `Ragdoll.roll_over()` dreht den Körper kinematisch um die Längsachse, genau so weit, bis die Brust nach oben zeigt. Dabei hebt er ihn so an, dass nichts in den Boden geht. Physik allein hat nicht verlässlich gedreht.
+  - `Ragdoll.rise_into_pose()`: Die Teile fahren 0,35 s mit Physik in das erste Animationsbild, dann blendet der Ragdoll in 0,15 s aus. Die Animation wartet so lange auf Bild 0 und ist an den Physik-Takt gekoppelt.
+  - Neu: `scenes/common/ground_clamp.gd` (`GroundClamp`, ein Modifier nach dem Ragdoll). Er misst beim Aufstehen die tiefste Stelle der Haut (je Knochen die äußersten Punkte in 14 Richtungen, einige hundert Punkte) und hebt das Skelett, wenn sie unter den Boden käme. Ohne ihn zog das Überblenden Arme und Beine zufallsabhängig bis 24 cm durch den Boden.
+- Ragdoll: Hand und Fuß haben eigene Kapseln an Unterarm bzw. Unterschenkel. Finger und Schuhe lagen vorher bis 10 cm im Boden.
+- Trefferreaktion nach Zone (P5-6): Leichte Treffer spielen UAL1 Hit_Head (Treffer auf Kopfhöhe) oder Hit_Chest statt HitRecieve. Das gilt für Gegner und Fußgänger.
+- `tools/tests/test_ragdoll.gd` erweitert, jetzt 53 Prüfungen:
+  - Aufstehen in Rücken- und Bauchlage und an einer Wand: erstes Bild auf dem Körper, beim Aufstehen auf dem Rücken, Haut nie mehr als 5 cm im Boden (gemessen 1–2 cm), Ragdoll abgebaut, steht wieder, Kapsel frei, vor der Wand.
+  - Haut der Leiche höchstens 6 cm im Boden (gemessen 3 cm).
+  - Kopf- und Brusttreffer.
+- Getestet (headless):
+  - `test_ragdoll` 53/0, achtmal hintereinander grün, vor der Hautsicherung war es zufällig rot.
+  - `test_npc_robbery` 47/0, `test_sector7_city` 44/0, `test_neon_city` 30/0, `test_enemy_xp` 29/0, `test_weapons_m3` 83/0, `test_player_melee` 42/0, `test_assets_import` 15/0, `test_gas_stations` 59/0, `test_shop` 43/0, `test_content_update` 47/0, `test_sector7_enemies` 15/0, `test_skills` 72/0, `test_gun_shops` 37/0.
+  - Multiplayer: `test_mp_sync` slum 9/0 und 10/0, testmap 17/0 und 19/0; `test_mp_world` Host 12/1 („Gegner ist tot“, wie auf `main`), Client 14/0.
+- Nicht im Bild angesehen (kein Fenster): das Aufstehen im Spiel. Geprüft ist es nur über Zahlen und die CPU-Zeichnungen.
+- Offen: P5-2 Rest (schwere Treffer, Explosionen und Stürze bei lebenden Gegnern, Betäubung), P5-7 bis P5-9, P4-4 bis P4-6.

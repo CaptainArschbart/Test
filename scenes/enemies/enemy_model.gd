@@ -36,11 +36,30 @@ var laser: MeshInstance3D
 ## Bei der Klötzchenfigur bleibt beides leer.
 var ragdoll: Ragdoll
 var ragdoll_skeleton: Skeleton3D
+## Hält beim Aufstehen die Haut über dem Boden (entsteht beim ersten Aufstehen).
+var ground_clamp: GroundClamp
 ## Letzter Treffer: wo und wie stark (Enemy/Civilian setzen ihn, fall() nimmt ihn für den Impuls).
 var hit_point := Vector3.INF
 var hit_force := 0.0
 
+## Aufstehen aus dem Ragdoll: so lange blendet der Ragdoll aus, ab diesem Tempo (m/s) wartet die
+## Figur noch, in so vielen Schritten rückt sie von einer Wand zurück zur alten Stelle.
+const RISE_BLEND := 0.15
+## So lange fährt der Ragdoll mit Physik in das erste Bild der Aufsteh-Animation (Animation steht still).
+const RISE_MATCH := 0.35
+const RISE_MAX_SPEED := 0.6
+const RISE_SPOT_STEPS := 6
+## Zeigt die Brust weniger nach oben (Bauch- oder Seitenlage), dreht sich die Figur vorher auf den Rücken.
+const RISE_FACE_UP := 0.5
+## Leichte Treffer (P5-6): Reaktion nach Zone aus UAL1. Kopf = Treffer höchstens so weit unter dem
+## Kopfknochen (m), sonst Brust.
+const HIT_HEAD := "ual/Hit_Head"
+const HIT_CHEST := "ual/Hit_Chest"
+const HEAD_ZONE := 0.08
+
 var _status_mat: StandardMaterial3D
+## So oft schon aus Bauch- oder Seitenlage umgedreht (je Aufstehen höchstens zweimal).
+var _rolls := 0
 var _time := randf() * 10.0
 var _walk_phase := 0.0
 var _dead := false
@@ -204,14 +223,121 @@ func _ragdoll_fall(direction: Vector3) -> bool:
 		ragdoll = Ragdoll.attach(ragdoll_skeleton)
 	if ragdoll == null:
 		return false
-	var host: Node = get_parent()
-	while host != null and not host is CharacterBody3D:
-		host = host.get_parent()
-	var velocity := (host as CharacterBody3D).velocity if host != null else Vector3.ZERO
+	var host := _host_body()
+	var velocity := host.velocity if host != null else Vector3.ZERO
 	var ok := ragdoll.knock_down(direction, hit_force, hit_point, velocity)
 	hit_point = Vector3.INF
 	hit_force = 0.0
 	return ok
+
+
+## Aufstehen aus dem Ragdoll mit UAL2 LayToIdle (Schedule 1, P5-2 und P5-3).
+## Die Figur (CharacterBody3D) wird so gedreht und versetzt, dass das erste Bild der Animation auf dem
+## liegenden Körper sitzt: Becken auf Becken, Becken -> Kopf in dieselbe Richtung, Füße auf dem Boden
+## darunter. Dann fährt der Ragdoll RISE_MATCH Sekunden lang mit Physik in dieses Bild (der Boden hält
+## Arme und Beine auf) und blendet in RISE_BLEND Sekunden aus. Die Animation muss so lange auf Bild 0
+## stehen bleiben (Aufrufer). GroundClamp hält dabei die Haut über dem Boden; der Aufrufer gibt ihn
+## nach der Animation frei (ground_clamp.release()). Rückgabe: Dauer der Animation ohne RISE_MATCH,
+## -1 = noch nicht (rutscht noch oder liegt auf dem Bauch und wird erst umgedreht; später erneut rufen,
+## force überspringt das Warten aufs Liegenbleiben, nicht das Umdrehen), 0 = geht nicht (kein Ragdoll oder keine Animation).
+func _ragdoll_rise(player: AnimationPlayer, force := false) -> float:
+	if ragdoll == null or not ragdoll.running or player == null or ragdoll_skeleton == null:
+		return 0.0
+	if not UalLibrary.attach(player) or not player.has_animation(UalLibrary.GET_UP):
+		return 0.0
+	if ragdoll.is_rolling():
+		return -1.0
+	# Nach dem Umdrehen sofort aufstehen (sonst kippt der Körper beim Warten zurück).
+	if not force and _rolls == 0 and ragdoll.max_speed() > RISE_MAX_SPEED:
+		return -1.0
+	if _rolls < 2 and ragdoll.facing_up() < RISE_FACE_UP and ragdoll.roll_over():
+		_rolls += 1
+		return -1.0
+	_rolls = 0
+	var sk := ragdoll_skeleton
+	var hips := sk.find_bone("Hips")
+	var neck := sk.find_bone("Neck")
+	var pelvis := ragdoll.bone_position(hips)
+	var top := ragdoll.bone_position(neck)
+	rotation.y = 0.0
+	player.play(UalLibrary.GET_UP, 0.0)
+	player.seek(0.0, true)
+	var floor_y := _floor_below(pelvis, pelvis.y - 0.15) if pelvis != Vector3.INF else global_position.y
+	var host := _host_body()
+	if host != null and pelvis != Vector3.INF and top != Vector3.INF:
+		# Erstes Bild im Raum der Figur (die Animation stellt das Skelett, der Ragdoll nur das Bild).
+		var to_host := host.global_transform.affine_inverse()
+		var a_p := to_host * (sk.global_transform * sk.get_bone_global_pose(hips)).origin
+		var a_t := to_host * (sk.global_transform * sk.get_bone_global_pose(neck)).origin
+		var d_anim := Vector3(a_t.x - a_p.x, 0.0, a_t.z - a_p.z)
+		var d_rag := Vector3(top.x - pelvis.x, 0.0, top.z - pelvis.z)
+		var yaw := host.rotation.y
+		if d_anim.length() > 0.05 and d_rag.length() > 0.05:
+			yaw = atan2(d_rag.x, d_rag.z) - atan2(d_anim.x, d_anim.z)
+		var turn := Basis(Vector3.UP, yaw)
+		var spot := pelvis - turn * Vector3(a_p.x, 0.0, a_p.z)
+		spot.y = floor_y
+		host.global_transform = Transform3D(turn, _free_spot(host, turn, spot))
+		host.velocity = Vector3.ZERO
+		host.reset_physics_interpolation()
+		player.seek(0.0, true)
+	if ground_clamp == null:
+		ground_clamp = GroundClamp.attach(sk)
+	ground_clamp.hold(floor_y)
+	ragdoll.rise_into_pose(RISE_MATCH, RISE_BLEND)
+	return player.get_animation(UalLibrary.GET_UP).length
+
+
+## Leichter Treffer (Schedule 1, P5-6): Kopf- oder Brustreaktion aus UAL1 nach der Höhe des letzten
+## Treffers, ohne Trefferpunkt (Client) Brust. Ohne Bibliothek die MM-Reaktion "HitRecieve".
+func _hit_reaction(player: AnimationPlayer) -> String:
+	if player == null or not player.has_animation(HIT_CHEST):
+		return "HitRecieve"
+	if hit_point != Vector3.INF and ragdoll_skeleton != null:
+		var sk := ragdoll_skeleton
+		var head := sk.find_bone("Head")
+		if head >= 0 and hit_point.y > (sk.global_transform * sk.get_bone_global_pose(head)).origin.y - HEAD_ZONE:
+			return HIT_HEAD
+	return HIT_CHEST
+
+
+func _host_body() -> CharacterBody3D:
+	var host: Node = get_parent()
+	while host != null and not host is CharacterBody3D:
+		host = host.get_parent()
+	return host as CharacterBody3D
+
+
+## Boden unter `point` (Schicht 1), sonst `fallback`.
+func _floor_below(point: Vector3, fallback: float) -> float:
+	var space := get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(point + Vector3.UP * 0.3, point + Vector3.DOWN * 2.0, 1)
+	var hit := space.intersect_ray(query)
+	return (hit.position as Vector3).y if not hit.is_empty() else fallback
+
+
+## Stelle für die Kapsel der Figur ohne Wand darin: `spot`, sonst schrittweise zurück zur alten Stelle.
+func _free_spot(host: CharacterBody3D, turn: Basis, spot: Vector3) -> Vector3:
+	var shape: CollisionShape3D = null
+	for child in host.get_children():
+		if child is CollisionShape3D and not (child as CollisionShape3D).disabled:
+			shape = child
+			break
+	if shape == null or shape.shape == null:
+		return spot
+	var space := get_world_3d().direct_space_state
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = shape.shape
+	query.collision_mask = 1
+	query.exclude = [host.get_rid()]
+	var from := host.global_position
+	for i in RISE_SPOT_STEPS + 1:
+		var p := spot.lerp(Vector3(from.x, spot.y, from.z), float(i) / RISE_SPOT_STEPS)
+		# Etwas über dem Boden prüfen, sonst zählt der Boden selbst als Hindernis.
+		query.transform = Transform3D(turn, p + Vector3.UP * 0.06) * shape.transform
+		if space.intersect_shape(query, 1).is_empty():
+			return p
+	return Vector3(from.x, spot.y, from.z)
 
 
 # --- Skelett ------------------------------------------------------------------------------
