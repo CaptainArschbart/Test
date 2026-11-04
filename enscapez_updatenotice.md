@@ -877,3 +877,23 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
   - Multiplayer: `test_mp_sync` slum 9/0 und 10/0, testmap 17/0 und 19/0; `test_mp_world` Host 12/1 („Gegner ist tot“, wie auf `main`), Client 14/0.
 - Nicht im Bild angesehen (kein Fenster): das Aufstehen im Spiel. Geprüft ist es nur über Zahlen und die CPU-Zeichnungen.
 - Offen: P5-2 Rest (schwere Treffer, Explosionen und Stürze bei lebenden Gegnern, Betäubung), P5-7 bis P5-9, P4-4 bis P4-6.
+
+### 2026-11-04 · Schedule 1, M3 „Systeme“, Teil 5: Gegner werfen um und stehen auf (P5-2) · Claude (für EnScapeZ) · Branch `enscapez/m3-aufstehen`
+- Schwerer Treffer, mindestens 25 % der vollen LP in einem Treffer (`Enemy.KNOCKDOWN_SHARE`): Der Gegner fällt lebend um.
+  - Nah an der Kamera als Ragdoll, weit weg mit UAL2 Hit_Knockback.
+  - Er liegt 2 s betäubt (`KNOCKDOWN_TIME`), steht mit LayToIdle auf und kämpft weiter.
+  - Hinterhalt-Treffer (bisher nur betäubt) werfen jetzt ebenso um und lassen ihn `stun_time * 2` liegen; das ist die Tabellenzeile „Betäubt (Stealth)“.
+  - Explosionen zählen über ihren Schaden mit.
+- Im Liegen ist er treffbar: Die Kapsel legt sich längs auf den Ragdoll (Füße bis Kopf). An der alten Stelle steht nichts mehr. Wird er im Liegen getötet, bleibt er als Leiche liegen.
+- Multiplayer: Ereignisse „knock“ und „rise“ an die Clients; verpasstes Aufstehen holt der Client beim Zustandswechsel nach.
+- Aufsteh-Ablauf nach `EnemyModel` verschoben (`_rise`, `_rise_step`, `is_rising`): Fußgänger und Gegner nutzen denselben.
+- Ragdoll: Die eigene Kapsel ist per Kollisions-Ausnahme ausgenommen. NPC-Kapseln liegen auf Schicht 1; bei lebend umgeworfenen Figuren starteten die Teile in der eigenen Kapsel und wurden zufällig weggestoßen.
+- Trefferreaktion: Sie spielt jetzt bei jedem Treffer, der nicht umwirft (`HIT_FLINCH` 0,3). Vorher erst ab etwa 20 Schaden, das läge mit dem Umwerfen ab 17,5 (bei 70 LP) praktisch nie.
+- Stürze über 1,5 m haben keinen eigenen Auslöser: Gegner und Fußgänger laufen nie über eine Kante (Bodenprüfung in der Bewegung, auch beim Rückstoß).
+- `test_ragdoll` jetzt 60 Prüfungen: umgeworfen bei 30 von 70 LP, im Liegen von oben auf die Brust treffbar, alte Stelle leer, steht auf und kämpft, Haut dabei höchstens 4 cm im Boden (die liegende Phase mitgerechnet), Kapsel steht wieder, im Liegen erschossen tot.
+- Getestet (headless):
+  - `test_ragdoll` 60/0.
+  - `test_enemy_xp` 29/0, `test_sector7_enemies` 15/0, `test_weapons_m3` 83/0, `test_weapons_smg_grenade` 47/0, `test_player_melee` 42/0, `test_npc_robbery` 47/0, `test_sector7_city` 44/0, `test_neon_city` 30/0, `test_skills` 72/0, `test_apartments` 61/0, `test_consumables` 45/0, `test_money` 25/0, `test_player_move` 7/0, `test_content_update` 47/0.
+  - Multiplayer: `test_mp_sync` grün; `test_mp_world` Host 12/1 („Gegner ist tot“, wie auf `main`), Client 14/0.
+  - Vermutete Ursache für `test_mp_world`: Host und Client nehmen jeweils `enemies[0]` nach Node-Pfad sortiert und meinen dabei vermutlich verschiedene Gegner. Nicht geändert, der Test stammt nicht von mir.
+- Nicht im Bild angesehen (kein Fenster).

@@ -58,6 +58,10 @@ const STATE_COLORS := {
 
 ## Pfeil über dem Kopf (Spitze nach unten) und darüber das Zustandszeichen „?“ / „!“.
 const ARROW_HEIGHT := 2.12
+## Schwerer Treffer (Schedule 1, P5-2): ab diesem Anteil der vollen Lebenspunkte in einem Treffer fällt
+## er um (Ragdoll bzw. weit weg UAL2 Hit_Knockback) und steht nach KNOCKDOWN_TIME wieder auf.
+const KNOCKDOWN_SHARE := 0.25
+const KNOCKDOWN_TIME := 2.0
 const MARK_HEIGHT := 2.5
 const NEUTRAL_COLOR := Color(1.0, 0.85, 0.25)
 const HOSTILE_COLOR := Color(1.0, 0.16, 0.3)
@@ -149,6 +153,11 @@ var _cover_search := 0.0
 var _strafe_point := Vector3.INF
 var _strafe_timer := 0.0
 var _stun_left := 0.0
+## Liegt umgeworfen (P5-2) bzw. steht gerade wieder auf. Die Kapsel liegt dann mit dem Körper.
+var _knocked := false
+var _rising := false
+var _knock_dir := Vector3.ZERO
+var _shape_rest := Transform3D()
 var _stagger := 0.0
 ## Rückstoß durch Faustschläge (m/s, waagerecht), klingt in _move ab.
 var _knock := Vector3.ZERO
@@ -369,11 +378,20 @@ func take_hit(damage: float, point: Vector3, normal: Vector3) -> void:
 	model.flinch = clampf(amount / 30.0, 0.4, 1.0)
 	_flash()
 	WorldSync.npc_event(self, &"hit", [model.flinch])
+	var push := -normal
+	if _player != null:
+		push = global_position - _player.global_position
 	if health <= 0.0:
-		var push := -normal
-		if _player != null:
-			push = global_position - _player.global_position
 		_die(push)
+		return
+	# Schwerer Treffer oder Hinterhalt: umfallen und später aufstehen (Hinterhalt: länger betäubt).
+	var heavy := amount >= profile.max_health * KNOCKDOWN_SHARE
+	if (sneak or heavy) and _knock_down(push, profile.stun_time * 2.0 if sneak else KNOCKDOWN_TIME):
+		if not sneak:
+			_say(&"hurt")
+			if _player != null:
+				target_position = _player.global_position
+			awareness = 1.0
 		return
 	if amount >= 35.0:
 		_stagger = 0.5
@@ -713,6 +731,8 @@ func _look_for_corpses() -> void:
 func _think(delta: float) -> void:
 	if state == State.STUNNED:
 		_stun_left -= delta
+		if _knocked and not _knock_step():
+			return
 		if _stun_left <= 0.0:
 			model.stunned = false
 			_update_flashlight()
@@ -1148,6 +1168,78 @@ func _stun(time: float) -> void:
 	_update_flashlight()
 
 
+## Schwerer Treffer: umfallen (EnemyCharacterModel.knock_down) und `time` Sekunden betäubt liegen.
+## false = die Figur kann das nicht (Klötzchenfigur) oder liegt schon.
+func _knock_down(push: Vector3, time: float) -> bool:
+	if _knocked or not model.has_method("knock_down") or not bool(model.call("knock_down", push)):
+		return false
+	_knocked = true
+	_rising = false
+	_knock_dir = Vector3(push.x, 0.0, push.z).normalized() if Vector3(push.x, 0.0, push.z).length() > 0.01 else global_basis.z
+	_stun(time)
+	_lie_shape(true)
+	WorldSync.npc_event(self, &"knock", [push])
+	return true
+
+
+## Jeden Takt, solange er umgeworfen ist: Kapsel liegt mit, nach Ablauf aufstehen. true = steht wieder.
+func _knock_step() -> bool:
+	_follow_lying_body()
+	if _stun_left > 0.0:
+		return false
+	if model.is_fallen():
+		if not _rising:
+			_rising = true
+			_lie_shape(false)
+			model.call("get_up")
+			WorldSync.npc_event(self, &"rise")
+		return false
+	_knocked = false
+	_rising = false
+	_lie_shape(false)
+	return true
+
+
+## Kapsel hinlegen (Schüsse treffen den liegenden Körper, nicht die Luft an der alten Stelle) bzw.
+## zurück in den Stand.
+func _lie_shape(lying: bool) -> void:
+	if _shape == null:
+		return
+	if not lying:
+		if _shape_rest != Transform3D():
+			_shape.transform = _shape_rest
+		return
+	if _shape_rest == Transform3D():
+		_shape_rest = _shape.transform
+	# Ohne Ragdoll (Hit_Knockback weit weg): längs der Stoßrichtung hinter der alten Stelle.
+	var y := _knock_dir if _knock_dir.length() > 0.1 else Vector3.FORWARD
+	var x := y.cross(Vector3.UP).normalized()
+	_shape.global_transform = Transform3D(Basis(x, y, x.cross(y)), global_position + y * 0.7 + Vector3.UP * 0.25)
+	_follow_lying_body()
+
+
+## Kapsel auf den Ragdoll legen: von den Füßen zum Kopf, knapp über dem Boden.
+func _follow_lying_body() -> void:
+	if _rising or _shape == null:
+		return
+	var rag: Ragdoll = model.get("ragdoll") as Ragdoll
+	if rag == null or not rag.running:
+		return
+	var head := rag.part_position("head")
+	var feet := (rag.part_position("lower_leg_l") + rag.part_position("lower_leg_r")) * 0.5
+	if not head.is_finite() or not feet.is_finite():
+		return
+	var axis := head - feet
+	if axis.length() < 0.3:
+		return
+	var y := axis.normalized()
+	var x := y.cross(Vector3.UP)
+	x = x.normalized() if x.length() > 0.1 else Vector3.RIGHT
+	var mid := (head + feet) * 0.5
+	mid.y = maxf(mid.y, global_position.y + 0.22)
+	_shape.global_transform = Transform3D(Basis(x, y, x.cross(y)), mid)
+
+
 func _die(push: Vector3) -> void:
 	_release_token()
 	_set_state(State.DEAD)
@@ -1513,6 +1605,13 @@ func net_apply_state(data: Array) -> void:
 		_show_death(Vector3.ZERO)
 		return
 	if new_state != state:
+		# Host ist aufgestanden: hat der Client das Aufstehen verpasst, jetzt nachholen.
+		if state == State.STUNNED and _knocked:
+			if not _rising and model.has_method("get_up"):
+				model.call("get_up")
+			_knocked = false
+			_rising = false
+			_lie_shape(false)
 		state = new_state
 		_state_time = 0.0
 		_apply_state_look()
@@ -1551,6 +1650,18 @@ func net_event(event: StringName, args: Array) -> void:
 			_play_zap()
 		&"die":
 			_show_death(args[0] if args.size() >= 1 else Vector3.ZERO)
+		&"knock":
+			var push: Vector3 = args[0] if args.size() >= 1 else -global_basis.z
+			if not _knocked and model.has_method("knock_down") and bool(model.call("knock_down", push)):
+				_knocked = true
+				_rising = false
+				_knock_dir = Vector3(push.x, 0.0, push.z).normalized() if Vector3(push.x, 0.0, push.z).length() > 0.01 else global_basis.z
+				_lie_shape(true)
+		&"rise":
+			if _knocked and not _rising:
+				_rising = true
+				_lie_shape(false)
+				model.call("get_up")
 
 
 ## Client: Anzeige ohne KI. Gleitet zur Position des Hosts, Animation aus dem Tempo.
@@ -1560,6 +1671,8 @@ func _puppet_tick(delta: float) -> void:
 		return
 	if _net_position == Vector3.INF:
 		return
+	if _knocked:
+		_follow_lying_body()
 	var before := global_position
 	if before.distance_to(_net_position) > 4.0:
 		global_position = _net_position

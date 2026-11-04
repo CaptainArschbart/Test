@@ -8,6 +8,8 @@ const PATH := "res://assets/animations/retargeted/ual_mm.res"
 const NAME := "ual"
 ## Aufstehen aus der Rückenlage (UAL2). Startet liegend, Füße nach vorn, endet stehend am Ursprung.
 const GET_UP := "ual/LayToIdle"
+## Rückwärts umgeworfen (UAL2), endet auf dem Rücken liegend wie GET_UP beginnt.
+const KNOCKBACK := "ual/Hit_Knockback"
 
 static var _library: AnimationLibrary
 

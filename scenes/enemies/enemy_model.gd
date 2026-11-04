@@ -49,6 +49,8 @@ const RISE_BLEND := 0.15
 const RISE_MATCH := 0.35
 const RISE_MAX_SPEED := 0.6
 const RISE_SPOT_STEPS := 6
+## So lange wartet das Aufstehen höchstens darauf, dass der Ragdoll still liegt.
+const RISE_WAIT := 1.6
 ## Zeigt die Brust weniger nach oben (Bauch- oder Seitenlage), dreht sich die Figur vorher auf den Rücken.
 const RISE_FACE_UP := 0.5
 ## Leichte Treffer (P5-6): Reaktion nach Zone aus UAL1. Kopf = Treffer höchstens so weit unter dem
@@ -56,10 +58,18 @@ const RISE_FACE_UP := 0.5
 const HIT_HEAD := "ual/Hit_Head"
 const HIT_CHEST := "ual/Hit_Chest"
 const HEAD_ZONE := 0.08
+## Ab diesem Wackeln (jeder Treffer setzt mindestens 0,4) spielt die Trefferreaktion, also bei jedem
+## Treffer, der nicht umwirft.
+const HIT_FLINCH := 0.3
 
 var _status_mat: StandardMaterial3D
 ## So oft schon aus Bauch- oder Seitenlage umgedreht (je Aufstehen höchstens zweimal).
 var _rolls := 0
+## Aufstehen: Restzeit der Animation, Warten auf Ruhe (Ragdoll rutscht noch oder dreht sich um),
+## Animation steht auf Bild 0, bis der Ragdoll hineingefahren ist.
+var _rise_left := 0.0
+var _rise_wait := 0.0
+var _rise_hold := false
 var _time := randf() * 10.0
 var _walk_phase := 0.0
 var _dead := false
@@ -288,6 +298,72 @@ func _ragdoll_rise(player: AnimationPlayer, force := false) -> float:
 	return player.get_animation(UalLibrary.GET_UP).length
 
 
+## Steht gerade auf oder wartet darauf.
+func is_rising() -> bool:
+	return _rise_left > 0.0 or _rise_wait > 0.0 or _rise_hold
+
+
+func _reset_rise() -> void:
+	_rise_left = 0.0
+	_rise_wait = 0.0
+	_rise_hold = false
+	_rolls = 0
+	if ground_clamp != null:
+		ground_clamp.release()
+
+
+## Aus dem Ragdoll aufstehen (LayToIdle) mit `player`. Rutscht er noch oder muss erst umdrehen: warten
+## (_rise_step ruft wieder). Geht es nicht: Ragdoll ausblenden und _rise_fallback().
+func _rise(player: AnimationPlayer, force: bool) -> void:
+	_rise_wait = 0.0
+	var length := _ragdoll_rise(player, force)
+	if length < 0.0:
+		_rise_wait = RISE_WAIT
+		return
+	if length > 0.0:
+		_rise_started(UalLibrary.GET_UP)
+		player.speed_scale = 0.0
+		_rise_hold = true
+		_rise_left = length
+		return
+	if ragdoll != null and ragdoll.running:
+		ragdoll.blend_out(RISE_BLEND)
+	rotation.y = 0.0
+	_rise_fallback()
+	_rise_left = 0.9
+
+
+## Jedes Bild aus animate(): Warten, Halten auf Bild 0, Ablauf. Am Ende steht die Figur (_dead = false).
+func _rise_step(delta: float, player: AnimationPlayer) -> void:
+	if _rise_wait > 0.0:
+		_rise_wait -= delta
+		var rolling := ragdoll != null and ragdoll.running and ragdoll.is_rolling()
+		var calm := ragdoll == null or not ragdoll.running or ragdoll.max_speed() < RISE_MAX_SPEED
+		# Nach dem Umdrehen gleich weiter, sonst erst nach kurzer Ruhe.
+		if not rolling and (_rise_wait <= 0.0 or _rolls > 0 or calm and _rise_wait < RISE_WAIT - 0.5):
+			_rise(player, _rise_wait <= 0.0)
+	if _rise_hold:
+		# Animation steht auf Bild 0, bis der Ragdoll hineingefahren ist (Physik-Takt).
+		_rise_hold = ragdoll != null and ragdoll.is_matching()
+		player.speed_scale = 0.0 if _rise_hold else 1.0
+	if _rise_left > 0.0 and not _rise_hold:
+		_rise_left -= delta
+		if _rise_left <= 0.0:
+			_dead = false
+			if ground_clamp != null:
+				ground_clamp.release()
+
+
+## Unterklassen: Aufsteh-Animation läuft (Name für die eigene Buchführung) bzw. ohne Ragdoll-Aufstehen
+## zurück zur Ruhe-Animation.
+func _rise_started(_name: String) -> void:
+	pass
+
+
+func _rise_fallback() -> void:
+	pass
+
+
 ## Leichter Treffer (Schedule 1, P5-6): Kopf- oder Brustreaktion aus UAL1 nach der Höhe des letzten
 ## Treffers, ohne Trefferpunkt (Client) Brust. Ohne Bibliothek die MM-Reaktion "HitRecieve".
 func _hit_reaction(player: AnimationPlayer) -> String:
@@ -311,7 +387,9 @@ func _host_body() -> CharacterBody3D:
 ## Boden unter `point` (Schicht 1), sonst `fallback`.
 func _floor_below(point: Vector3, fallback: float) -> float:
 	var space := get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(point + Vector3.UP * 0.3, point + Vector3.DOWN * 2.0, 1)
+	var host := _host_body()
+	var query := PhysicsRayQueryParameters3D.create(point + Vector3.UP * 0.3, point + Vector3.DOWN * 2.0, 1,
+		[host.get_rid()] if host != null else [])
 	var hit := space.intersect_ray(query)
 	return (hit.position as Vector3).y if not hit.is_empty() else fallback
 

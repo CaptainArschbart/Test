@@ -79,13 +79,14 @@ func animate(delta: float) -> void:
 		super.animate(delta)
 		return
 	if _dead:
-		# Als Ragdoll stellt die Physik die Knochen, die Animation muss nicht laufen.
-		if ragdoll == null or not ragdoll.running:
+		_rise_step(delta, _anim)
+		# Als Ragdoll stellt die Physik die Knochen, die Animation muss nicht laufen (außer beim Aufstehen).
+		if is_rising() or ragdoll == null or not ragdoll.running:
 			_anim.advance(delta)
 		return
 	flinch = maxf(flinch - delta * 3.5, 0.0)
 	_hit_left = maxf(_hit_left - delta, 0.0)
-	if flinch > 0.6 and _hit_left <= 0.0:
+	if flinch > HIT_FLINCH and _hit_left <= 0.0:
 		var reaction := _hit_reaction(_anim)
 		_hit_left = _anim.get_animation(reaction).length if reaction.begins_with(UalLibrary.NAME + "/") else 0.45
 		_current = ""
@@ -125,6 +126,7 @@ func fall(direction: Vector3) -> void:
 		super.fall(direction)
 		return
 	_dead = true
+	_reset_rise()
 	if laser != null:
 		laser.visible = false
 	if flashlight != null:
@@ -138,6 +140,59 @@ func fall(direction: Vector3) -> void:
 		rotation.y += atan2(-local.x, -local.z)
 	_anim.speed_scale = 1.0
 	_play("Death", 0.05)
+
+
+## Schwerer Treffer, lebt noch (Schedule 1, P5-2): umfallen in `direction`, später get_up().
+## Nah an der Kamera als Ragdoll, weit weg mit UAL2 Hit_Knockback (fällt rückwärts auf den Rücken).
+## false = geht nicht (Klötzchenfigur oder keine Animation), dann bleibt er stehen.
+func knock_down(direction: Vector3) -> bool:
+	if _anim == null:
+		return false
+	_reset_rise()
+	_dead = true
+	if laser != null:
+		laser.visible = false
+	if _ragdoll_fall(direction):
+		return true
+	if not _anim.has_animation(UalLibrary.KNOCKBACK):
+		_dead = false
+		return false
+	# Rücken (+Z der Figur) in Stoßrichtung drehen.
+	var local := global_basis.inverse() * direction
+	local.y = 0.0
+	if local.length() > 0.01:
+		rotation.y += atan2(local.x, local.z)
+	_anim.speed_scale = 1.0
+	_current = ""
+	_play(UalLibrary.KNOCKBACK, 0.05)
+	return true
+
+
+## Nach knock_down wieder aufstehen: aus dem Ragdoll mit LayToIdle (Ausrichtung, Umdrehen, siehe
+## EnemyModel._ragdoll_rise), nach Hit_Knockback direkt weiter mit LayToIdle.
+func get_up() -> void:
+	if _anim == null or not _dead or is_rising():
+		return
+	if ragdoll != null and ragdoll.running:
+		_rise(_anim, false)
+		return
+	_anim.speed_scale = 1.0
+	_current = ""
+	if _anim.has_animation(UalLibrary.GET_UP):
+		_play(UalLibrary.GET_UP, 0.25)
+		_rise_left = _anim.get_animation(UalLibrary.GET_UP).length
+	else:
+		_rise_fallback()
+		_rise_left = 0.5
+
+
+func _rise_started(name: String) -> void:
+	_current = name
+
+
+func _rise_fallback() -> void:
+	rotation.y = 0.0
+	_play(_idle_name(), 0.3)
 
 
 func _idle_name() -> String:

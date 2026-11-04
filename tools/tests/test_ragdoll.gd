@@ -9,7 +9,8 @@ extends SceneTree
 ##   - Budget: höchstens 8 aktive, ältere frieren ein; weit weg nur Todesanimation; nach 30 s Schlaf,
 ##   - Fußgänger: vom Auto umgeworfen als Ragdoll, stehen mit UAL2 LayToIdle wieder auf (Rücken- und
 ##     Bauchlage, an der Wand): erstes Bild auf dem liegenden Körper, Haut nie im Boden, Kapsel frei,
-##   - leichte Treffer: Hit_Head oder Hit_Chest nach Trefferhöhe (P5-6).
+##   - leichte Treffer: Hit_Head oder Hit_Chest nach Trefferhöhe (P5-6),
+##   - schwerer Treffer wirft lebende Gegner um, im Liegen treffbar, sie stehen auf und kämpfen (P5-2).
 ##
 ## Aufruf (Projektordner), headless reicht:
 ##   godot --headless --path . -s res://tools/tests/test_ragdoll.gd
@@ -73,6 +74,7 @@ func _run() -> void:
 	await _test_far()
 	await _test_civilian()
 	await _test_hit_zones()
+	await _test_knockdown()
 	_finish()
 
 
@@ -344,16 +346,67 @@ func _test_hit_zones() -> void:
 	await _frames(10)
 	var model: Object = enemy.get("model")
 	var head_y := enemy.global_position.y + 1.72
-	enemy.call("take_hit", 21.0, Vector3(enemy.global_position.x, head_y, enemy.global_position.z), Vector3(0, 0, 1))
+	enemy.call("take_hit", 8.0, Vector3(enemy.global_position.x, head_y, enemy.global_position.z), Vector3(0, 0, 1))
 	await _frames(4)
 	_check(str(model.get("_current")) == EnemyModel.HIT_HEAD, "Kopftreffer: %s" % model.get("_current"))
 	await _seconds(1.0)
-	enemy.call("take_hit", 21.0, enemy.global_position + Vector3.UP * 1.15, Vector3(0, 0, 1))
+	enemy.call("take_hit", 15.0, enemy.global_position + Vector3.UP * 1.15, Vector3(0, 0, 1))
 	await _frames(4)
 	_check(str(model.get("_current")) == EnemyModel.HIT_CHEST, "Brusttreffer: %s" % model.get("_current"))
 	await _seconds(1.0)
 	_check(not bool(model.call("is_fallen")), "Leichte Treffer werfen nicht um")
 	enemy.queue_free()
+	await _frames(2)
+
+
+## P5-2: Schwerer Treffer (ab 25 % der vollen LP) wirft einen lebenden Gegner um, er liegt betäubt,
+## ist im Liegen treffbar, steht auf und kämpft weiter. Im Liegen erschossen: tot.
+func _test_knockdown() -> void:
+	print("Schwerer Treffer: umfallen und wieder auf")
+	var enemy := _enemy(ARENA + Vector3(3, 0.05, -10))
+	await _frames(10)
+	var model: Object = enemy.get("model")
+	var floor_y := ARENA.y
+	var stand_pos := enemy.global_position
+	enemy.call("take_hit", 30.0, enemy.global_position + Vector3.UP * 1.15, Vector3(0, 0, 1))
+	await _frames(3)
+	var rag: Ragdoll = model.get("ragdoll")
+	_check(int(enemy.get("state")) == 6 and bool(model.call("is_fallen")) and rag != null and rag.running,
+		"30 von 70 LP: umgeworfen (betäubt, Ragdoll)")
+	await _seconds(1.2)
+	var chest := rag.part_position("chest") if rag != null else Vector3.INF
+	var space := enemy.get_world_3d().direct_space_state
+	var down := space.intersect_ray(PhysicsRayQueryParameters3D.create(chest + Vector3.UP * 2.0, chest + Vector3.DOWN * 0.5, 1 | 2, [_player.get_rid()]))
+	_check(not down.is_empty() and down.collider == enemy, "Liegt: Schuss auf die Brust trifft ihn (%s)" % [down.get("collider")])
+	var old := space.intersect_ray(PhysicsRayQueryParameters3D.create(stand_pos + Vector3(-2, 1.5, 0), stand_pos + Vector3(2, 1.5, 0), 1 | 2, [_player.get_rid()]))
+	_check(old.is_empty() or old.collider != enemy, "Liegt: an der alten Stelle in Kopfhöhe ist nichts mehr")
+	var lowest := [INF]
+	var sk := rag.get_skeleton() if rag != null else null
+	var probe := func() -> void:
+		lowest[0] = minf(lowest[0], _skin_lowest(sk))
+	if sk != null:
+		sk.skeleton_updated.connect(probe)
+	for i in 600:
+		if int(enemy.get("state")) != 6:
+			break
+		await physics_frame
+	if sk != null:
+		sk.skeleton_updated.disconnect(probe)
+	_check(int(enemy.get("state")) == 3 and not bool(model.call("is_fallen")), "Steht auf und kämpft weiter (Zustand %d)" % int(enemy.get("state")))
+	_check(lowest[0] > floor_y - 0.05, "Beim Aufstehen Haut nie im Boden (tiefster Punkt %.3f m)" % (lowest[0] - floor_y))
+	var shape := enemy.get("_shape") as CollisionShape3D
+	_check(shape != null and shape.transform.is_equal_approx(enemy.get("_shape_rest")), "Kapsel steht wieder")
+	enemy.queue_free()
+	await _frames(2)
+	# Im Liegen erschossen.
+	var other := _enemy(ARENA + Vector3(-3, 0.05, -10))
+	await _frames(10)
+	other.call("take_hit", 30.0, other.global_position + Vector3.UP * 1.15, Vector3(0, 0, 1))
+	await _seconds(1.0)
+	other.call("take_hit", 60.0, (_ragdoll(other) as Ragdoll).part_position("chest"), Vector3.UP)
+	await _frames(3)
+	_check(bool(other.call("is_dead")), "Im Liegen erschossen: tot")
+	other.queue_free()
 	await _frames(2)
 
 

@@ -13,10 +13,10 @@ extends SkeletonModifier3D
 ## Gelenke: Kegel (Hals, Schultern, Hüften, Wirbelsäule), Scharniere für Knie und Ellbogen mit
 ## Grenzen in der natürlichen Richtung.
 ##
-## Schichten: Physik-Schicht 4 „ragdoll“. Die Teile stoßen nur an die Welt (Schicht 1), nicht
+## Schichten: Physik-Schicht 4 „ragdoll“. Die Teile stoßen nur an Schicht 1, nicht
 ## aneinander (sie überlappen am Start, z. B. Hände am Becken, das würde sie auseinandersprengen),
-## nicht an Spieler und NPCs (deren Kapseln prüfen Schicht 4 nicht) und nicht an Schüsse (Strahlen
-## prüfen 1 und 2). Leichen sind keine statischen Körper, das Navmesh bleibt frei.
+## nicht an Spieler (Schicht 2) und nicht an Schüsse (Strahlen prüfen 1 und 2). NPC-Kapseln liegen
+## auf Schicht 1: fremde schieben Leichen weg, die eigene ist per Ausnahme ausgenommen. Leichen sind keine statischen Körper, das Navmesh bleibt frei.
 ## Alle Teile haben CCD, vor allem Becken und Kopf (gehen nicht durch Wände).
 ##
 ## Budget (P5-5): höchstens MAX_ACTIVE Ragdolls rechnen gleichzeitig, beim nächsten friert der älteste
@@ -199,6 +199,14 @@ func blend_out(seconds := 0.4) -> void:
 func pelvis_position() -> Vector3:
 	var p: RigidBody3D = bodies.get("pelvis")
 	return p.global_position if p != null else Vector3.INF
+
+
+## Die Figur, zu der das Skelett gehört (erster PhysicsBody3D darüber), oder null.
+func host_body() -> PhysicsBody3D:
+	var node: Node = get_parent()
+	while node != null and not node is PhysicsBody3D:
+		node = node.get_parent()
+	return node as PhysicsBody3D
 
 
 ## Knochen in Weltkoordinaten, so wie der Ragdoll ihn gerade stellt (INF, wenn er nicht mitläuft).
@@ -465,6 +473,12 @@ func _build(skeleton: Skeleton3D) -> bool:
 				drives[f] = body
 	for e: Array in EXTRA:
 		_add_extra(skeleton, bodies.get(e[0]), e[1], e[2], float(e[3]))
+	# Die eigene Figur (CharacterBody3D, Schicht 1) steht noch da, wenn sie lebend umfällt: die Teile
+	# starten in ihrer Kapsel und dürfen sie nicht stoßen.
+	var host := host_body()
+	if host != null:
+		for b: RigidBody3D in bodies.values():
+			b.add_collision_exception_with(host)
 	# Versatz Körper → Knochen jetzt festhalten (Pose zum Zeitpunkt des Starts).
 	var order := drives.keys()
 	order.sort()

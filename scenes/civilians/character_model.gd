@@ -22,20 +22,12 @@ const WALK_SPEED := 1.4
 const RUN_SPEED := 4.0
 const BLEND := 0.2
 const ANIM_PREFIX := "CharacterArmature|"
-## So lange wartet das Aufstehen höchstens darauf, dass der Ragdoll still liegt.
-const RISE_WAIT := 1.6
-
 ## Welche Figur (Name aus LOOKS), leer = per Seed.
 var look := ""
 
 var _anim: AnimationPlayer
 var _current := ""
 var _hit_left := 0.0
-var _rise_left := 0.0
-## Wartet aufs Aufstehen (Ragdoll rutscht noch oder dreht sich aus der Bauchlage), höchstens so lange.
-var _rise_wait := 0.0
-## Aufstehen: Animation steht auf Bild 0, bis der Ragdoll hineingefahren ist.
-var _rise_hold := false
 
 static var _scenes := {}
 static var _heights := {}
@@ -81,25 +73,9 @@ func animate(delta: float) -> void:
 		return
 	flinch = maxf(flinch - delta * 3.5, 0.0)
 	_hit_left = maxf(_hit_left - delta, 0.0)
-	if _rise_wait > 0.0:
-		_rise_wait -= delta
-		var rolling := ragdoll != null and ragdoll.running and ragdoll.is_rolling()
-		var calm := ragdoll == null or not ragdoll.running or ragdoll.max_speed() < RISE_MAX_SPEED
-		# Nach dem Umdrehen gleich weiter, sonst erst nach kurzer Ruhe.
-		if not rolling and (_rise_wait <= 0.0 or _rolls > 0 or calm and _rise_wait < RISE_WAIT - 0.5):
-			_rise(_rise_wait <= 0.0)
-	if _rise_hold:
-		# Animation steht auf Bild 0, bis der Ragdoll hineingefahren ist (Physik-Takt).
-		_rise_hold = ragdoll != null and ragdoll.is_matching()
-		_anim.speed_scale = 0.0 if _rise_hold else 1.0
-	if _rise_left > 0.0 and not _rise_hold:
-		_rise_left -= delta
-		if _rise_left <= 0.0:
-			_dead = false
-			if ground_clamp != null:
-				ground_clamp.release()
+	_rise_step(delta, _anim)
 	if not _dead:
-		if flinch > 0.6 and _hit_left <= 0.0:
+		if flinch > HIT_FLINCH and _hit_left <= 0.0:
 			var reaction := _hit_reaction(_anim)
 			_hit_left = _anim.get_animation(reaction).length if reaction.begins_with(UalLibrary.NAME + "/") else 0.5
 			_current = ""
@@ -134,12 +110,7 @@ func fall(direction: Vector3) -> void:
 		super.fall(direction)
 		return
 	_dead = true
-	_rise_left = 0.0
-	_rise_wait = 0.0
-	_rise_hold = false
-	_rolls = 0
-	if ground_clamp != null:
-		ground_clamp.release()
+	_reset_rise()
 	# Nah an der Kamera: Ragdoll, weit weg: Todesanimation.
 	if _ragdoll_fall(direction):
 		return
@@ -157,10 +128,10 @@ func get_up(time := 0.9) -> void:
 		super.get_up(time)
 		return
 	# Steht schon auf oder wartet darauf.
-	if _rise_left > 0.0 or _rise_wait > 0.0:
+	if is_rising():
 		return
 	if ragdoll != null and ragdoll.running:
-		_rise(false)
+		_rise(_anim, false)
 		return
 	# Todesanimation (weit weg): zurück zu Idle blenden.
 	rotation.y = 0.0
@@ -168,25 +139,12 @@ func get_up(time := 0.9) -> void:
 	_rise_left = time
 
 
-## Aus dem Ragdoll aufstehen (LayToIdle). Rutscht er noch oder liegt auf dem Bauch: warten bzw. erst
-## umdrehen (animate() ruft wieder). Ohne Animation: zurück zu Idle blenden.
-func _rise(force: bool) -> void:
-	_rise_wait = 0.0
-	var length := _ragdoll_rise(_anim, force)
-	if length < 0.0:
-		_rise_wait = RISE_WAIT
-		return
-	if length > 0.0:
-		_current = UalLibrary.GET_UP
-		_anim.speed_scale = 0.0
-		_rise_hold = true
-		_rise_left = length
-		return
-	if ragdoll != null and ragdoll.running:
-		ragdoll.blend_out(RISE_BLEND)
-	rotation.y = 0.0
+func _rise_started(name: String) -> void:
+	_current = name
+
+
+func _rise_fallback() -> void:
 	_play("Idle", 0.3)
-	_rise_left = 0.9
 
 
 func _play(name: String, blend := BLEND) -> void:
