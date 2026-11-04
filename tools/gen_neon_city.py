@@ -490,6 +490,8 @@ def block(bi: int, bj: int) -> None:
     # Müllcontainer in jeder Gasse an der Seite.
     for side_x, d in ((x0, dw), (x1, -de)):
         prop(parent, "dumpster", side_x + d / 2, mz - alley / 2 + 0.7, 90.0)
+    if district in ("neon", "blocks"):
+        gallery(parent, *court, bi, bj)
     COURT[district](parent, *court)
     if cut:
         plaza(parent, *cut, bi, bj)
@@ -536,7 +538,9 @@ def court_blocks(parent: str, x0: float, x1: float, z0: float, z1: float) -> Non
     # Westhälfte Park, Osthälfte Parkplatz.
     # Rund um den Park bleibt ein Weg frei (von der Westgasse zum Parkplatz).
     px0 = x0 + ENTRY + 2.0
-    ground(parent, px0, cx - 1, z0 + 3, z1 - 3, (0.15, 0.24, 0.16, 1), height=0.2)
+    # Mit Galerie stehen an Nord- und Südseite Treppen: der Weg um den Park rückt nach innen.
+    m = 5.2 if any(x0 <= g[0] <= x1 and z0 <= g[2] <= z1 for g in GALLERIES) else 3.0
+    ground(parent, px0, cx - 1, z0 + m, z1 - m, (0.15, 0.24, 0.16, 1), height=0.2)
     for _ in range(7):
         prop(parent, rnd.choice(["tree", "pine"]), rnd.uniform(px0 + 2, cx - 3), rnd.uniform(z0 + 5, z1 - 5), 0.0, y=0.2)
     for _ in range(4):
@@ -585,6 +589,67 @@ def court_under(parent: str, x0: float, x1: float, z0: float, z1: float) -> None
         z += 8.0
     for _ in range(6):
         prop(parent, rnd.choice(["bag", "trash", "pallet"]), rnd.uniform(x0 + 1, x1 - 1), rnd.uniform(z0 + 1, z1 - 1), rnd.uniform(0, 360))
+
+
+# --- Zweite Ebene: Galerien in den Höfen (Schedule 1, P1-2) ---------------------------------
+GALLERY_Y = 6.0      # Lauffläche auf Höhe des 2. Stocks (Geschoss 3 m)
+GALLERY_W = 2.5
+GALLERY_PILLARS = 6.0
+GALLERIES: list[tuple[float, float, float, float, float]] = []  # Deckflächen x0, x1, z0, z1, Höhe
+SECOND_LEVEL: list[tuple[float, float, float]] = []  # Prüfpunkte auf den Decks (Erreichbarkeit im Test)
+
+
+def deck(parent: str, name: str, x0: float, x1: float, z0: float, z1: float, along_x: bool, wall_side: int,
+         gap: tuple[float, float] | None = None, pillars: bool = True, accent: int = 1) -> None:
+    """Steg (NeonSkywalk) über dem Rechteck. wall_side: −1/+1 = Wand auf der lokal linken/rechten Seite
+    (dort kein Geländer), 0 = beidseits Wand (Ecke). Stützen werden reserviert (R2/R5)."""
+    length = (x1 - x0) if along_x else (z1 - z0)
+    width = (z1 - z0) if along_x else (x1 - x0)
+    cx, cz = (x0 + x1) / 2, (z0 + z1) / 2
+    spacing = GALLERY_PILLARS if pillars else 0.0
+    if pillars:
+        n = max(1, int(length / spacing))
+        for i in range(n + 1):
+            a = -length / 2 + 0.5 + (length - 1.0) * i / n
+            if gap and gap[0] < a < gap[1]:
+                continue
+            px, pz = (cx + a, cz) if along_x else (cx, cz + a)
+            claim(px - 0.3, px + 0.3, pz - 0.3, pz + 0.3, "solid", f"Galerie-Stütze {px:.0f},{pz:.0f}")
+    GALLERIES.append((x0, x1, z0, z1, GALLERY_Y))
+    SECOND_LEVEL.append((round(cx, 2), GALLERY_Y, round(cz, 2)))
+    # yaw 90: lokal +X zeigt nach Norden (−Z), yaw 0: lokal +X nach Osten.
+    props = dict(length=round(length, 3), width=round(width, 3), height=GALLERY_Y, pillar_spacing=spacing,
+                 rail_left=wall_side not in (-1, 0), rail_right=wall_side not in (1, 0), accent=accent)
+    if gap:
+        props["pillar_gap"] = (round(gap[0], 2), round(gap[1], 2))
+    node(name, parent, "k_skywalk", cx, 0.0, cz, 90.0 if along_x else 0.0, **props)
+
+
+def gallery(parent: str, x0: float, x1: float, z0: float, z1: float, bi: int, bj: int) -> None:
+    """U-förmige Galerie an der Nord-, Ost- und Südseite des Hofs auf 6 m, direkt vor den Rückwänden.
+    Am Westende führt je eine Treppe hinauf. Darunter bleibt der Hof frei (Durchgangshöhe 6 m)."""
+    w, gap_wall = GALLERY_W, 0.1
+    run = math.ceil((GALLERY_Y - SIDEWALK_Y) / 0.2) * 0.3 + 1.5
+    sx0 = x0 + 1.5
+    xs = sx0 + run
+    xe = x1 - gap_wall - w
+    if xe - xs < 4.5 or (z1 - z0) < 4 * w + 8.0:
+        return
+    tag = f"{bi}{bj}"
+    mz = (z0 + z1) / 2
+    accent = 1 if DISTRICT[(bi, bj)] == "neon" else 4
+    nz0, nz1 = z0 + gap_wall, z0 + gap_wall + w
+    sz0, sz1 = z1 - gap_wall - w, z1 - gap_wall
+    for (lz0, lz1, wall, name) in ((nz0, nz1, 1, "Nord"), (sz0, sz1, -1, "Süd")):
+        claim(sx0, xs, lz0 + 0.05, lz1 - 0.05, "solid", f"Galerie-Treppe {name} {tag}")
+        node(f"GalerieTreppe{name}{tag}", parent, "k_stairs", sx0, 0.0, (lz0 + lz1) / 2, 90.0, height=GALLERY_Y,
+             base=SIDEWALK_Y, width=2.4, landing=1.5, accent=accent)
+        deck(parent, f"Galerie{name}{tag}", xs, xe, lz0, lz1, True, wall, accent=accent)
+        deck(parent, f"GalerieEcke{name}{tag}", xe, x1 - gap_wall, lz0, lz1, False, 0, pillars=False, accent=accent)
+    # Ostseite: über der Mündung der Ostgasse keine Stützen.
+    ez0, ez1 = nz1, sz0
+    c = (ez0 + ez1) / 2
+    deck(parent, f"GalerieOst{tag}", xe, x1 - gap_wall, ez0, ez1, False, 1, gap=(mz - c - 3.6, mz - c + 3.6), accent=accent)
 
 
 COURT = {"core": court_core, "harbor": court_harbor, "blocks": court_blocks, "neon": court_neon, "under": court_under}
@@ -738,7 +803,7 @@ DRESS = {
     "papers": (CP + "Debris Papers.glb", (1.24, 0.0, 1.05), 1.0, 0.0, False, 60.0, False),
     "roofexit": (CP + "Roof Exit.glb", (0.62, 0.64, 0.75), 4.0, 0.0, True, 260.0, False),
     "antenna": (KR + "roof-metal-poles.glb", (1.0, 0.7, 1.0), 2.4, 0.0, False, 220.0, False),
-    "billboard": (CP + "Billboard.glb", (242.06, 670.0, 600.0), 7.0 / 600.0, 90.0, False, 260.0, True),
+    "billboard": (CP + "Billboard.glb", (242.06, 670.0, 600.0), 5.0 / 600.0, 90.0, False, 260.0, True),
     "washline": (CP + "Washing Line.glb", (1.43, 2.29, 1.81), 1.0, 0.0, True, 90.0, False, (0.2, 2.3, 0.2)),
     "motorbike": (CP + "Motorcycle.glb", (42.86, 67.18, 127.49), 2.1 / 127.49, 0.0, True, 110.0, False),
     "bicycle": (CP + "Bicycle.glb", (3.61, 2.11, 1.24), 1.75 / 3.61, 0.0, True, 90.0, False),
@@ -748,14 +813,33 @@ DRESS = {
     "planks": (KR + "planks.glb", (1.13, 0.1, 0.57), 2.0, 0.0, False, 70.0, False),
     "bricks": (KR + "detail-bricks-type-a.glb", (0.57, 0.2, 0.53), 2.0, 0.0, False, 70.0, False),
     "box": (CP + "Box.glb", (0.2, 0.18, 0.2), 3.2, 0.0, True, 80.0, False),
+    "trashbag": (CP + "trah bag grey.glb", (0.24, 0.41, 0.25), 1.5, 0.0, False, 70.0, False),
+    "binopen": (KR + "detail-dumpster-open.glb", (0.6, 0.55, 0.48), 1.8, 0.0, True, 90.0, False),
+    "alleylamp": (KR + "detail-light-single.glb", (0.09, 0.96, 0.26), 1.1, 180.0, False, 90.0, False),
 }
 # Befestigung je Art (NeonDressing.mount), danach prüft test_neon_city Schweben, Z-Fighting und Halt.
-MOUNT = {"ac": "wall", "balcony": "wall", "fireexit": "wall", "poster": "wall", "walllamp": "wall", "lamp2": "wall",
+MOUNT = {"alleylamp": "wall", "ac": "wall", "balcony": "wall", "fireexit": "wall", "poster": "wall", "walllamp": "wall", "lamp2": "wall",
          "awning": "wall", "door": "wall", "shopwin": "wall", "brickwin": "wall", "brickdouble": "wall",
          "cable": "hang", "cable2": "hang", "sign": "blade",
          "papers": "flat", "manhole": "flat", "drain": "flat", "arrow": "flat"}
 # Arten, die frei gedreht werden dürfen (R4); alles andere nur in 90°-Schritten.
-FREE_YAW = {"papers", "manhole", "planks", "bricks", "washline", "plazaboard"}
+FREE_YAW = {"papers", "manhole", "planks", "bricks", "washline", "plazaboard", "trashbag"}
+# Holo-Werbung (P1-1): dieselben Modelle mit dem Holo-Shader (NeonDressing.holo_tint), je Farbe eigene Knoten.
+HOLO_TINTS = [(0.0, 0.85, 1.0), (1.0, 0.2, 0.7), (0.6, 0.35, 1.0), (1.0, 0.7, 0.15), (0.3, 1.0, 0.55)]
+DRESS["holosign"] = ("res://assets/props/cyberpunk_sign/vertical_cyberpunk_sign.fbx", (0.85, 2.06, 0.09), 6.0, 0.0, False, 320.0, False)
+DRESS["holoboard"] = DRESS["billboard"]
+DRESS["holoplaza"] = DRESS["plazaboard"]
+MOUNT["holosign"] = "blade"
+FREE_YAW.add("holoplaza")
+for _base in ("holosign", "holoboard", "holoplaza"):
+    for _k in range(len(HOLO_TINTS)):
+        DRESS[f"{_base}{_k}"] = DRESS[_base]
+
+
+def holo(base: str) -> str:
+    return f"{base}{drnd.randrange(len(HOLO_TINTS))}"
+
+
 # Leuchtschild in fünf Neonfarben (gleiches Modell, eigene Knoten je Farbe).
 SIGN_TINTS = [(1.0, 0.15, 0.6), (0.0, 0.9, 1.0), (0.65, 0.3, 1.0), (1.0, 0.75, 0.15), (0.95, 0.95, 1.0)]
 for _k, _c in enumerate(SIGN_TINTS):
@@ -777,7 +861,7 @@ def dsize(kind: str, scale: float = 0.0) -> tuple[float, float, float]:
 
 def dress(kind: str, x: float, y: float, z: float, yaw: float, sx: float = 1.0, sy: float = 1.0, sz: float = 1.0,
           scale: float = 0.0) -> None:
-    base = "sign" if kind.startswith("sign") else kind
+    base = kind.rstrip("0123456789")
     if base not in FREE_YAW and abs(yaw / 90.0 - round(yaw / 90.0)) > 1e-3:
         raise SystemExit(f"R4 Snapping: {kind} bei {x:.1f},{z:.1f} mit {yaw:.1f}° (nur 90°-Schritte erlaubt)")
     ci, cj = int((x + EDGE + 60) // CHUNK), int((z + EDGE + 60) // CHUNK)
@@ -839,6 +923,10 @@ def blocked(x: float, z: float, y: float, own: dict) -> bool:
         r = o["rect"]
         if r[0] - 0.05 < x < r[1] + 0.05 and r[2] - 0.05 < z < r[3] + 0.05 and o["floors"] * o["fh"] > y - 0.5:
             return True
+    for (g0, g1, h0, h1, gy) in GALLERIES:
+        # An der Wand hinter einer Galerie: zwischen Deckunterseite und Kopfhöhe nichts anbringen.
+        if g0 - 0.3 < x < g1 + 0.3 and h0 - 0.3 < z < h1 + 0.3 and gy - 3.2 < y < gy + 2.6:
+            return True
     for (a0, a1, b0, b1, k, what) in claims:
         # Läden und Tankstellen sind niedrig: darüber hält nichts (kein Kabel, kein Schild).
         if k == "solid" and what.startswith("Laden") and a0 < x < a1 and b0 < z < b1 and y < 4.5:
@@ -887,7 +975,7 @@ FACADE_P = {
     "blocks": dict(balcony=0.45, ac=0.12, fire=0.45, sign=0.2, poster=0.3),
     "neon": dict(balcony=0.15, ac=0.2, fire=0.55, sign=0.95, poster=0.6),
     "under": dict(balcony=0.2, ac=0.25, fire=0.75, sign=0.6, poster=0.6),
-    "core": dict(balcony=0.0, ac=0.0, fire=0.0, sign=0.35, poster=0.25),
+    "core": dict(balcony=0.0, ac=0.05, fire=0.0, sign=0.35, poster=0.25),
     "harbor": dict(balcony=0.0, ac=0.15, fire=0.3, sign=0.0, poster=0.4),
 }
 signs_left = 130  # das Leuchtschild ist schwer (94k Ecken): begrenzt
@@ -901,7 +989,7 @@ def facade_details(t: dict) -> None:
     top_floor = min(int(round(y0 / fh)), 14)
     kit = t["kit"]
     # Mit Bauteil-Fassade sitzen die Fenster im Raster der Stücke (auch an Hallen).
-    grid = t["facade"] == FACADE["grid"] or (kit != "" and t["district"] != "core")
+    grid = t["facade"] == FACADE["grid"] or kit != ""
     fire_side = None
     if p["fire"] and grid and top_floor >= 3 and drnd.random() < p["fire"]:
         fire_side = drnd.choice(["back", "left", "right", "front", "front"])
@@ -1058,7 +1146,7 @@ def roof_details(t: dict) -> None:
         place("washline", drnd.uniform(-hx, hx), drnd.uniform(-hz, hz), drnd.uniform(0, 90))
     if (not t["billboard"] and t["district"] in ("neon", "under", "harbor") and height < 16.0
             and ROLE[id(t)] == "front" and drnd.random() < 0.35):
-        place("billboard", 0.0, rd / 2 - 1.8)
+        place(holo("holoboard") if drnd.random() < 0.5 else "billboard", 0.0, rd / 2 - 1.8)
 
 
 def court_ground(t: dict) -> None:
@@ -1087,16 +1175,83 @@ def court_ground(t: dict) -> None:
     for _ in range(drnd.randint(0, 2)):
         a = drnd.uniform(-t["w"] / 2 + 1.0, t["w"] / 2 - 1.0)
         x, _, z = wall(t, side, a, 0, drnd.uniform(1.0, 3.5))
-        if not blocked(x, z, 1.0, t):
+        # Nur auf freiem Boden (nicht auf Treppen, Buden, Stützen).
+        if not blocked(x, z, 1.0, t) and free(x - 0.6, x + 0.6, z - 0.6, z + 0.6, strict=True):
             dress("papers", x, SIDEWALK_Y + 0.01, z, drnd.uniform(0, 360))
 
 
+HOLO_SPOTS: list[tuple[float, float]] = []
+
+
+def holo_blades(t: dict) -> None:
+    """Hohe Holo-Schilder (12 m) quer zur Straße an Kern- und Randtürmen, ab 15 m Höhe (P1-1)."""
+    if t["district"] != "core" or ROLE[id(t)] == "hut" or len(HOLO_SPOTS) >= 30:
+        return
+    y0, height, _, _ = tiers(t)
+    w, h, _ = dsize("holosign")
+    if y0 < 15.0 + h + 2.0 or drnd.random() > 0.55:
+        return
+    a = drnd.choice([-1, 1]) * (t["w"] / 2 - 1.0)
+    base = drnd.uniform(15.0, min(y0 - h - 2.0, 34.0))
+    x, y, z = wall(t, SIDES[0], a, base, 0.15 + w / 2)
+    if any(math.hypot(x - hx, z - hz) < 12.0 for (hx, hz) in HOLO_SPOTS):
+        return
+    if blocked(*wall(t, SIDES[0], a, 0, 0.8)[::2], base + h, t):
+        return
+    HOLO_SPOTS.append((x, z))
+    dress(holo("holosign"), x, y, z, t["yaw"] + 90.0)
+
+
 for t in TOWERS:
+    holo_blades(t)
     facade_details(t)
     ground_floor(t)
     back_door(t)
     roof_details(t)
     court_ground(t)
+
+# Gassen (P1-4, P1-5): Müll in den 1-m-Streifen an den Wänden (der 3-m-Weg in der Mitte bleibt frei),
+# Wandlampen mit echtem Licht an jeder zweiten, Leuchtschilder über dem Weg ab 3,2 m Höhe.
+DIRT = {"under": 0.85, "harbor": 0.6, "neon": 0.6, "blocks": 0.35, "core": 0.2}
+for bi in range(4):
+    for bj in range(4):
+        district = DISTRICT[(bi, bj)]
+        _, cx0, cx1, cz0, cz1 = courts[bi * 4 + bj]
+        bx0, bx1 = LINES[bi] + ext(LINES[bi]), LINES[bi + 1] - ext(LINES[bi + 1])
+        mz = (cz0 + cz1) / 2
+        # An den Gassenmündungen zur Straße stehen in der Neonmeile Türsteher: 3 m frei lassen.
+        for (g0, g1) in ((bx0 + 3.0, cx0 - 1.5), (cx1 + 1.5, bx1 - 3.0)):
+            for wall_z, face in ((mz - 2.5, 1.0), (mz + 2.5, -1.0)):
+                yaw = 0.0 if face > 0 else 180.0
+                x = g0 + drnd.uniform(0.0, 1.0)
+                while x < g1:
+                    if drnd.random() < DIRT[district]:
+                        kind = drnd.choice(["trashbag", "trashbag", "box", "binopen", "bricks", "papers"])
+                        if kind == "papers":
+                            dress("papers", x, SIDEWALK_Y + 0.01, wall_z + face * 0.6, drnd.uniform(0, 360))
+                        elif kind in ("trashbag", "bricks"):
+                            z = wall_z + face * 0.35
+                            if free(x - 0.4, x + 0.4, z - 0.3, z + 0.3):
+                                dress(kind, x, SIDEWALK_Y, z, drnd.uniform(0, 360))
+                                claim(x - 0.35, x + 0.35, z - 0.3, z + 0.3, "raised", "Müll")
+                        else:
+                            d = dsize(kind)[2]
+                            dress_ground(kind, x, wall_z + face * (d / 2 + 0.05), yaw)
+                    x += drnd.uniform(0.9, 1.8)
+                # Lampen und Schilder an der Wand (nur wo die Wand hoch genug ist).
+                x = g0 + drnd.uniform(0.5, 2.5)
+                k = 0
+                while x < g1:
+                    probe = (x, wall_z - face * 0.3)
+                    if blocked(*probe, 3.2, None):
+                        d = dsize("alleylamp")[2]
+                        dress("alleylamp", x, 2.7, wall_z + face * (d / 2 + 0.02), yaw)
+                    sw, sh, _ = dsize("sign")
+                    if k % 2 == 1 and blocked(*probe, 3.2 + sh + 0.5, None):
+                        dress(f"sign{drnd.randrange(len(SIGN_TINTS))}", x + 0.8, 3.2, wall_z + face * (0.15 + sw / 2), yaw + 90.0)
+                    x += drnd.uniform(4.0, 6.0)
+                    k += 1
+
 
 # Kabel quer über die Gassen (alle Bezirke außer Kern) und über die Straßen der Neonmeile und Unterstadt.
 for bi in range(4):
@@ -1214,7 +1369,7 @@ for j, lz in enumerate(LINES):
             dress("drain", x, -0.02, lz + drnd.choice([-1, 1]) * (w / 2 - 0.45), 90.0)
             x += drnd.uniform(9, 16)
 # Papierfetzen auf den Gehwegen (flach, ohne Kollision).
-for _ in range(500):
+for _ in range(900):
     lx = drnd.choice(LINES)
     w, s, _ = road_dims(lx)
     off = drnd.choice([-1, 1]) * (w / 2 + drnd.uniform(0.3, s - 0.3))
@@ -1266,7 +1421,7 @@ for bi, bj in ((1, 1), (2, 1), (1, 2), (2, 2)):
         px, pz = sx * drnd.uniform(ext(0.0) + 3, ext(0.0) + 9), sz * drnd.uniform(ext(0.0) + 3, ext(0.0) + 9)
         yaw = math.degrees(math.atan2(-px, -pz))
         bw, _, bd = dsize("plazaboard")
-        if free(*rect_of(px, pz, bw + 1.0, bd + 1.0, yaw)) and dress_ground("plazaboard", px, pz, yaw, margin=1.5):
+        if free(*rect_of(px, pz, bw + 1.0, bd + 1.0, yaw)) and dress_ground(holo("holoplaza"), px, pz, yaw, margin=1.5):
             # Die Tafel hängt über dem Platz: ganze Fläche für Wege und Streifenpunkte sperren.
             claim(*rect_of(px, pz, bw, bd, yaw), "raised", "Werbetafel")
             break
@@ -1309,17 +1464,24 @@ for (kind, ci, cj, scale), vals in sorted(dress_items.items()):
     extra = {}
     if len(DRESS[kind]) > 7:
         extra["collider_size"] = Raw("Vector3(%s, %s, %s)" % DRESS[kind][7])
-    if kind.startswith("sign") and kind != "sign":
+    base = kind.rstrip("0123456789")
+    if base == "sign" and kind != "sign":
         r_, g_, b_ = SIGN_TINTS[int(kind[4:])]
         extra["emission_tint"] = (r_, g_, b_, 1.0)
-    if kind == "plazaboard":
+    if base.startswith("holo") and kind != base:
+        r_, g_, b_ = HOLO_TINTS[int(kind[len(base):])]
+        extra["holo_tint"] = (r_, g_, b_, 1.0)
+    if kind == "alleylamp":
+        # Jede zweite Lampe leuchtet wirklich (Licht vor dem Lampenkopf).
+        extra.update(light_every=2, light_color=(1.0, 0.72, 0.45, 1.0), light_offset=Raw("Vector3(0, 0.75, 0.45)"))
+    if kind.rstrip("0123456789") in ("plazaboard", "holoplaza"):
         # Mast steht nicht in der Mitte der Hülle (gemessen am Fuß des Modells).
         extra["collider_offset"] = Raw(f"Vector3({round(90 * scale, 3)}, 0, {round(-71 * scale, 3)})")
     if kind == "traffic":
         extra["collider_size"] = Raw("Vector3(0.35, 5.6, 0.35)")
         extra["collider_offset"] = Raw(f"Vector3({round(TL_POLE * scale, 3)}, 0, 0)")
     node(uname(f"D_{kind}_"), P_DRESS, "k_dress", cx, 0.0, cz, 0.0, model=model, model_scale=round(scale, 6),
-         mount=MOUNT.get("sign" if kind.startswith("sign") else kind, "ground"), yaw_fix=fix, collide=collide, shadows=shadows, visible_range=rng_ + 45.0,
+         mount=MOUNT.get(kind.rstrip("0123456789"), "ground"), yaw_fix=fix, collide=collide, shadows=shadows, visible_range=rng_ + 45.0,
          items=Raw(f"PackedFloat32Array({', '.join(str(v) for v in rel)})"), **extra)
 DRESS_COUNT = {k: 0 for k in DRESS}
 for (kind, _, _, _), vals in dress_items.items():
@@ -1579,22 +1741,26 @@ enemies: list[dict] = []
 
 
 def patrol(name: str, box: tuple[float, float, float, float], stops: int) -> str | None:
-    pts: list[tuple[float, float]] = []
-    for _ in range(stops):
-        spot = free_spot(box, 1.0, avoid=pts, gap=6.0)
-        if spot:
-            pts.append(spot)
-    if len(pts) < 2:
-        return None
-    marks: list[tuple[float, float, float]] = []
-    for a, b in zip(pts, pts[1:] + pts[:1]):
-        leg = plan(a, b, box, 1.0)
-        if leg is None:
-            return None
-        marks.append((a[0], a[1], 3.0))
-        marks += [(x, z, 0.0) for (x, z) in leg[1:-1]]
-    routes.append((name, marks))
-    return name
+    # Bis zu 8 Versuche: liegen zufällige Haltepunkte in getrennten Teilen des Hofs, neue würfeln.
+    for _attempt in range(8):
+        pts: list[tuple[float, float]] = []
+        for _ in range(stops):
+            spot = free_spot(box, 1.0, avoid=pts, gap=6.0)
+            if spot:
+                pts.append(spot)
+        if len(pts) < 2:
+            continue
+        marks: list[tuple[float, float, float]] = []
+        for a, b in zip(pts, pts[1:] + pts[:1]):
+            leg = plan(a, b, box, 1.0)
+            if leg is None:
+                break
+            marks.append((a[0], a[1], 3.0))
+            marks += [(x, z, 0.0) for (x, z) in leg[1:-1]]
+        else:
+            routes.append((name, marks))
+            return name
+    return None
 
 
 def enemy(name: str, profile: str, x: float, z: float, yaw: float = 0.0, route: str | None = None, start: int = 0) -> None:

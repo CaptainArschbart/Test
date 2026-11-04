@@ -22,6 +22,8 @@ const VIEWS := {
 	"fassade": [Vector3(40.0, 1.7, 66.0), Vector3(52.0, 14.0, 84.0)],
 	"unterstadt": [Vector3(-80.0, 1.7, -20.0), Vector3(-80.0, 6.0, 20.0)],
 	"dach": [Vector3(100.0, 40.0, 30.0), Vector3(110.0, 10.0, 0.0)],
+	"galerie": [Vector3(100.0, 1.7, -33.0), Vector3(114.0, 6.0, -50.0)],
+	"galerie_oben": [Vector3(112.0, 7.7, -50.0), Vector3(96.0, 5.0, -30.0)],
 }
 
 
