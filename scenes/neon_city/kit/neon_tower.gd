@@ -66,6 +66,12 @@ enum Facade { GRID, BANDS, INDUSTRIAL }
 	set(v):
 		roof_billboard = v
 		queue_rebuild()
+## Fassade aus Bauteilen (NeonFacade.KITS, z. B. dt_brick, dt_metal, kn_brick), leer = einfache Fenster.
+## Mit Kit sollte floor_height 3 m sein (Höhe der Stücke).
+@export var kit := "":
+	set(v):
+		kit = v
+		queue_rebuild()
 ## Lampe vor dem Laden (echtes Licht, nur bei einem Teil der Häuser, kostet Leistung).
 @export var street_light := false:
 	set(v):
@@ -80,31 +86,79 @@ const WINDOW_STEP := 2.7
 
 
 func _build(b: SlumBuilder) -> void:
-	var wall := NeonMats.flat(NeonMats.facade(district, color_index))
+	var use_kit := NeonFacade.has_kit(StringName(kit))
+	var base_color := NeonFacade.fill_color(StringName(kit)) if use_kit else NeonMats.facade(district, color_index)
+	var wall := NeonMats.flat(base_color)
 	var trim := NeonMats.flat(NeonMats.facade(district, color_index).darkened(0.35))
 	var neon := NeonMats.neon(accent)
 	var height := floors * floor_height
 	var tiers := _tiers(height)
+	var near := {}
+	var glow := []
 	for i in tiers.size():
 		var t: Dictionary = tiers[i]
 		var size: Vector2 = t["size"]
 		var y0: float = t["y0"]
 		var y1: float = t["y1"]
-		b.box(Vector3(0, (y0 + y1) * 0.5, 0), Vector3(size.x, y1 - y0, size.y), wall)
-		_windows(b, size, y0, y1, i == 0)
-		_ledges(b, size, y0, y1, trim)
+		if use_kit and minf(size.x, size.y) > 2.0 * NeonFacade.INSET + 1.0:
+			# Baukörper hinter der Fassadenebene, Ränder und Ecken mit Füllstücken bündig geschlossen.
+			b.box(Vector3(0, (y0 + y1) * 0.5, 0), Vector3(size.x - 2.0 * NeonFacade.INSET, y1 - y0, size.y - 2.0 * NeonFacade.INSET), wall)
+			_kit_fillers(b, size, y0, y1, wall)
+		else:
+			b.box(Vector3(0, (y0 + y1) * 0.5, 0), Vector3(size.x, y1 - y0, size.y), wall)
+		if use_kit:
+			NeonFacade.layout(StringName(kit), size, y0, y1, floor_height, i == 0, shop_front,
+					facade == Facade.INDUSTRIAL, lit_ratio, rng, near, glow)
+		else:
+			_windows(b, size, y0, y1, i == 0)
+			_ledges(b, size, y0, y1, trim)
 		_roof(b, size, y1, trim, i == tiers.size() - 1, neon)
 	if shop_front:
-		_shop(b, neon, trim)
+		_shop(b, neon, trim, use_kit)
 	elif facade == Facade.INDUSTRIAL:
-		_roller_doors(b, trim, neon)
+		if not use_kit:
+			_roller_doors(b, trim, neon)
 	else:
-		_entrance(b, trim, neon)
+		_entrance(b, trim, neon, use_kit)
+	if use_kit:
+		NeonFacade.commit(self, near)
+		# Lichtfelder in den Kenney-Fensterrahmen.
+		for g: Array in glow:
+			var xf: Transform3D = g[0]
+			var gs: Vector2 = g[1]
+			var mat: Material = NeonMats.glow(pick(NeonMats.WINDOW_LIGHT), 0.8) if g[2] else NeonMats.flat(NeonMats.WINDOW_DARK, 0.2, 0.4)
+			b.quad_x(xf, gs.x, gs.y, mat)
 	if corner_neon:
 		var top: float = tiers[0]["y1"]
 		for sx: float in [-1.0, 1.0]:
 			b.box(Vector3(sx * (footprint.x * 0.5 + 0.03), top * 0.5 + 0.5, footprint.y * 0.5 + 0.03),
 					Vector3(0.14, top - 1.0, 0.14), NeonMats.glow(neon, 3.0), false, false)
+
+
+## Füllt bei Kit-Fassaden die Streifen neben den Stücken (Rest der Seitenlänge) und die Ecken
+## bündig mit der Fassadenebene, damit der zurückgesetzte Baukörper keine Kerben zeigt.
+func _kit_fillers(b: SlumBuilder, size: Vector2, y0: float, y1: float, wall: Material) -> void:
+	var m := NeonFacade.module(StringName(kit))
+	var d := NeonFacade.INSET
+	var h := y1 - y0
+	var cy := (y0 + y1) * 0.5
+	for side in 4:
+		var along := size.x if side % 2 == 0 else size.y
+		var depth := size.y if side % 2 == 0 else size.x
+		var n := int(along / m + 0.001)
+		var margin := (along - n * m) * 0.5 if n > 0 else along * 0.5
+		if margin < 0.01:
+			continue
+		var normal: Vector3 = [Vector3.BACK, Vector3.RIGHT, Vector3.FORWARD, Vector3.LEFT][side]
+		var tangent := normal.cross(Vector3.UP)
+		for s: float in [-1.0, 1.0]:
+			var center := normal * (depth * 0.5 - d * 0.5) + tangent * s * (along * 0.5 - margin * 0.5) + Vector3.UP * cy
+			var ext := Vector3(margin, h, d) if side % 2 == 0 else Vector3(d, h, margin)
+			b.box(center, ext, wall, false)
+	# Ecksäulen (decken die Stoßfuge der Füllstreifen).
+	for sx: float in [-1.0, 1.0]:
+		for sz: float in [-1.0, 1.0]:
+			b.box(Vector3(sx * (size.x * 0.5 - d * 0.5), cy, sz * (size.y * 0.5 - d * 0.5)), Vector3(d, h, d), wall, false)
 
 
 ## Stufen des Baukörpers: [{size, y0, y1}]. Rücksprünge erst ab dem dritten Stock.
@@ -205,33 +259,39 @@ func _roof(b: SlumBuilder, size: Vector2, top: float, trim: Material, highest: b
 
 
 ## Laden vorn im Erdgeschoss: Schaufenster, Tür, Markise mit Neonkante, Leuchtschild.
-func _shop(b: SlumBuilder, neon: Color, trim: Material) -> void:
+func _shop(b: SlumBuilder, neon: Color, trim: Material, use_kit := false) -> void:
 	var hz := footprint.y * 0.5
 	var w := footprint.x - 1.6
 	var face := Vector3(0, 0, hz + 0.02)
-	b.quad(face + Vector3(0, 1.6, 0), Vector3.BACK, w, 2.8, NeonMats.glass(Color(0.12, 0.16, 0.2)))
-	# Innen leuchtet es warm durch die Scheibe.
-	b.quad(face + Vector3(0, 1.4, -0.01), Vector3.BACK, w - 0.4, 1.6, NeonMats.glow(Color(1.0, 0.8, 0.55), 0.6))
-	b.quad(face + Vector3(w * 0.3, 1.1, 0.01), Vector3.BACK, 1.1, 2.2, NeonMats.flat(Color(0.08, 0.08, 0.1), 0.4, 0.3))
-	for x: float in [-w * 0.5, w * 0.5]:
-		b.box(Vector3(x, 1.6, hz + 0.08), Vector3(0.2, 3.2, 0.16), trim, false)
+	# Mit Kit kommen Schaufenster und Tür aus den Bauteilen, Markise und Schild bleiben.
+	if not use_kit:
+		b.quad(face + Vector3(0, 1.6, 0), Vector3.BACK, w, 2.8, NeonMats.glass(Color(0.12, 0.16, 0.2)))
+		# Innen leuchtet es warm durch die Scheibe.
+		b.quad(face + Vector3(0, 1.4, -0.01), Vector3.BACK, w - 0.4, 1.6, NeonMats.glow(Color(1.0, 0.8, 0.55), 0.6))
+		b.quad(face + Vector3(w * 0.3, 1.1, 0.01), Vector3.BACK, 1.1, 2.2, NeonMats.flat(Color(0.08, 0.08, 0.1), 0.4, 0.3))
+		for x: float in [-w * 0.5, w * 0.5]:
+			b.box(Vector3(x, 1.6, hz + 0.08), Vector3(0.2, 3.2, 0.16), trim, false)
+	var out := 0.25 if use_kit else 0.0
+	# Mit Kit endet das Erdgeschoss bei floor_height, Markise und Schild sitzen darunter bzw. knapp darüber.
+	var top := floor_height + 0.1 if use_kit else SHOP_HEIGHT
 	# Markise.
 	var awn := NeonMats.flat(NeonMats.facade(district, color_index + 1).darkened(0.2))
-	b.box_x(Transform3D(Basis(Vector3.RIGHT, deg_to_rad(12.0)), Vector3(0, SHOP_HEIGHT - 0.6, hz + 0.75)),
+	b.box_x(Transform3D(Basis(Vector3.RIGHT, deg_to_rad(12.0)), Vector3(0, top - 0.6, hz + 0.75)),
 			Vector3(w + 0.4, 0.12, 1.6), awn, false)
-	b.box(Vector3(0, SHOP_HEIGHT - 0.78, hz + 1.55), Vector3(w + 0.4, 0.07, 0.07), NeonMats.glow(neon, 3.0), false, false)
+	b.box(Vector3(0, top - 0.78, hz + 1.55), Vector3(w + 0.4, 0.07, 0.07), NeonMats.glow(neon, 3.0), false, false)
 	# Leuchtschild über der Markise.
 	var sw := minf(w * 0.7, 7.0)
-	b.box(Vector3(0, SHOP_HEIGHT + 0.35, hz + 0.12), Vector3(sw, 0.7, 0.2), NeonMats.flat(Color(0.06, 0.06, 0.08)), false)
-	b.quad(Vector3(0, SHOP_HEIGHT + 0.35, hz + 0.23), Vector3.BACK, sw - 0.3, 0.42, NeonMats.glow(neon, 2.6))
+	b.box(Vector3(0, top + 0.35, hz + 0.12 + out), Vector3(sw, 0.7, 0.2), NeonMats.flat(Color(0.06, 0.06, 0.08)), false)
+	b.quad(Vector3(0, top + 0.35, hz + 0.23 + out), Vector3.BACK, sw - 0.3, 0.42, NeonMats.glow(neon, 2.6))
 	if street_light:
-		add_light(Vector3(0, SHOP_HEIGHT - 1.2, hz + 1.6), neon.lerp(Color.WHITE, 0.4), 1.4, 7.0)
+		add_light(Vector3(0, top - 1.2, hz + 1.6), neon.lerp(Color.WHITE, 0.4), 1.4, 7.0)
 
 
 ## Hauseingang vorn: Vordach, Tür, Nummernlicht.
-func _entrance(b: SlumBuilder, trim: Material, neon: Color) -> void:
+func _entrance(b: SlumBuilder, trim: Material, neon: Color, use_kit := false) -> void:
 	var hz := footprint.y * 0.5
-	b.quad(Vector3(0, 1.15, hz + 0.02), Vector3.BACK, 1.8, 2.3, NeonMats.flat(Color(0.07, 0.07, 0.09), 0.4, 0.3))
+	if not use_kit:
+		b.quad(Vector3(0, 1.15, hz + 0.02), Vector3.BACK, 1.8, 2.3, NeonMats.flat(Color(0.07, 0.07, 0.09), 0.4, 0.3))
 	b.box(Vector3(0, 2.6, hz + 0.6), Vector3(3.0, 0.15, 1.2), trim, false)
 	b.box(Vector3(0, 2.5, hz + 1.18), Vector3(3.0, 0.05, 0.05), NeonMats.glow(neon, 2.5), false, false)
 	if street_light:

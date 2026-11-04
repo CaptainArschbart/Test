@@ -262,7 +262,7 @@ func _add_multiplayer_button() -> void:
 func _create_lobby() -> Control:
 	var scroll := ScrollContainer.new()
 	scroll.name = "Lobby"
-	scroll.custom_minimum_size = Vector2(480, 520)
+	scroll.custom_minimum_size = Vector2(300, 520)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.mouse_filter = Control.MOUSE_FILTER_STOP
 	main_buttons.add_sibling(scroll)
@@ -323,7 +323,7 @@ func _create_lobby() -> Control:
 	_net_box.add_child(join)
 	_net_status = Label.new()
 	_net_status.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_net_status.custom_minimum_size = Vector2(460, 0)
+	_net_status.custom_minimum_size = Vector2(290, 0)
 	_net_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_net_status.add_theme_color_override("font_color", Color(0.0, 0.95, 1.0))
 	_net_status.text = "Bis zu %d Spieler. ngrok braucht einmalig einen Authtoken." % [NetworkManager.MAX_CLIENTS + 1]

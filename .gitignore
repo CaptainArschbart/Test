@@ -15,3 +15,6 @@ override.cfg
 
 # Rohdownloads, nur lokal (einsortierte Assets liegen unter assets/<kategorie>/)
 /assets/_incoming/
+
+# Einstellungen und Protokolle der Testläufe (isoliertes APPDATA)
+/_test_appdata/
