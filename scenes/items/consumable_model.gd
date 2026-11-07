@@ -38,7 +38,8 @@ const KEYCARD := &"keycard"
 ## Munitionsschachtel (Schedule 1, P4-4), Farbe = Munitionsart.
 const AMMO := &"ammo"
 ## Anbau: Erde, Samen, Dünger, Blüten, Tütchen und Gläser (Modelle in GrowModels).
-const GROW_KINDS := [&"soil", &"seeds", &"fertilizer", &"buds", &"baggie", &"baggie_full", &"jar", &"jar_full"]
+const GROW_KINDS := [&"soil", &"seeds", &"fertilizer", &"buds", &"baggie", &"baggie_full", &"jar", &"jar_full",
+	&"watering_can", &"watering_can_full"]
 const GrowModelsScript := preload("res://scenes/grow/grow_models.gd")
 
 ## Nadelspitze des Injektors im Raum des Modells (ohne Kappe).
@@ -192,7 +193,8 @@ const GRIPS := {
 ## Kleine Dinge (Riegel, Handy, Chip, Uhr …) greift die Hand wie den Verband.
 const SMALL_GRIP_KINDS := [&"bar", &"onigiri", &"phone", &"chip", &"watch", &"cigarettes", &"shard",
 	&"jewelry", &"jewels", &"cash", &"cuffs", &"ties", &"keycard", &"tv", &"painting", &"computer", &"ammo",
-	&"soil", &"seeds", &"fertilizer", &"buds", &"baggie", &"baggie_full", &"jar", &"jar_full"]
+	&"soil", &"seeds", &"fertilizer", &"buds", &"baggie", &"baggie_full", &"jar", &"jar_full",
+	&"watering_can", &"watering_can_full"]
 
 
 static var _materials := {}
@@ -238,7 +240,8 @@ static func build(kind: StringName, color: Color, viewmodel := false) -> Node3D:
 			_build_crowbar(root, color)
 		AMMO:
 			_build_ammo(root, color)
-		&"soil", &"seeds", &"fertilizer", &"buds", &"baggie", &"baggie_full", &"jar", &"jar_full":
+		&"soil", &"seeds", &"fertilizer", &"buds", &"baggie", &"baggie_full", &"jar", &"jar_full", \
+				&"watering_can", &"watering_can_full":
 			GrowModelsScript.item(root, kind, color)
 		JEWELRY, JEWELS, CASH, CUFFS, TIES, KEYCARD, TV, PAINTING, COMPUTER:
 			_build_prop(root, kind, color)

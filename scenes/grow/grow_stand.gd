@@ -2,6 +2,7 @@ extends StaticBody3D
 ## Regal „GROWBEDARF“ an jeder Tankstelle: alles für den Anbau zum Kaufen (Samen, Erde, Dünger,
 ## Topf, Growlampe, Trockengestell, Fermentierglas, Verpackungstisch, leere Tütchen und Gläser).
 ## Jeder Platz ist ein StreetShop.SaleCounter (E kauft, Packungen geben mehrere Stück).
+## Links daneben ein Wasserhahn (WaterTap) zum Füllen der Gießkanne.
 ## Regal 2 m breit (lokal x), 0,45 m tief, Front nach +Z.
 
 const SHOP := preload("res://scenes/crime/street_shop.gd")
@@ -11,11 +12,12 @@ const ITEM := "res://scenes/items/data/%s.tres"
 ## [Item, Preis, Stück je Kauf], von oben nach unten, links nach rechts.
 const STOCK := [
 	["cannabis_seed", 75, 3], ["fertilizer", 18, 1], ["potting_soil", 12, 1], ["baggie_empty", 20, 20],
-	["jar_empty", 25, 5], ["curing_jar", 35, 1], ["grow_pot", 40, 1],
+	["jar_empty", 25, 5], ["curing_jar", 35, 1], ["grow_pot", 40, 1], ["watering_can_empty", 15, 1],
 	["grow_lamp", 250, 1], ["drying_rack", 80, 1], ["packing_table", 120, 1],
 ]
 const BOARDS := [1.35, 0.9, 0.45]
-const SLOTS := [[-0.63, -0.21, 0.21, 0.63], [-0.42, 0.0, 0.42], [-0.42, 0.0, 0.42]]
+const SLOTS := [[-0.63, -0.21, 0.21, 0.63], [-0.63, -0.21, 0.21, 0.63], [-0.42, 0.0, 0.42]]
+const WATER_TAP := preload("res://scenes/grow/water_tap.gd")
 
 
 func _ready() -> void:
@@ -40,6 +42,10 @@ func _ready() -> void:
 	sign.modulate = Color(0.4, 1.0, 0.5)
 	sign.position = Vector3(0, 1.95, -0.15)
 	add_child(sign)
+	var tap := WATER_TAP.new() as Node3D
+	tap.name = "WaterTap"
+	tap.position = Vector3(-1.3, 0, -0.1)
+	add_child(tap)
 	var i := 0
 	for row in BOARDS.size():
 		for x: float in SLOTS[row]:

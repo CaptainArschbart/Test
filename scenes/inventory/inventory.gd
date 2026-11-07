@@ -273,6 +273,20 @@ func remove_at(index: int, amount := 1) -> int:
 	return removed
 
 
+## Legt `amount` Stück von `item` genau in Platz `index` (zusammenlegen oder leeren Platz füllen).
+## Gibt zurück, was nicht hineinpasst.
+func add_at(index: int, item: ItemData, amount := 1) -> int:
+	if not has_index(index) or item == null or amount <= 0:
+		return amount
+	if _items[index] != null and _items[index] != item:
+		return amount
+	var left := _merge_into(item, amount, [index])
+	left = _fill_empty(item, left, [index])
+	if left != amount:
+		changed.emit()
+	return left
+
+
 ## Drag & Drop: gleiche stapelbare Items werden zusammengelegt, sonst getauscht.
 func move(from: int, to: int) -> void:
 	if not has_index(from) or not has_index(to):

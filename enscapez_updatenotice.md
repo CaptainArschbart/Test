@@ -1041,3 +1041,15 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Growlampe heller als nötig: Lichtstärke von 1,6 auf 0,9, damit die Blätter unter 12/12 nicht cremeweiß überstrahlen.
 - Zweiter Fensterlauf nach der Farbkorrektur: Icons neu gerendert, Blüten jetzt grün statt mintfarben. Unter 12/12 sind die Blätter grün statt cremeweiß.
 - Getestet (headless): `test_item_icons` 63/0, `test_grow` 46/0, `test_consumables` 45/0, `test_shop` 43/0.
+
+## 2026-11-07 – Hanfanbau: Gießkanne und Wasserhahn (EnScapeZ)
+
+- Neue Items `watering_can_empty` („Gießkanne (leer)“, 15 ¢ am Growbedarf-Regal) und `watering_can` („Gießkanne (Wasser)“). Bei der gefüllten Kanne ist die Zahl im Inventar die Literzahl (bis 5 l), so wie bei den Blüten die Gramm.
+- Gießen am Topf mit E: 1 l je Gabe (+60 % Feuchte, Staunässe-Regel wie bei der Wasserflasche). Nach dem letzten Liter bleibt die leere Kanne im selben Platz. Die Wasserflasche funktioniert weiter.
+- Wasserhahn (`scenes/grow/water_tap.gd`) mit Becken links neben dem Growbedarf-Regal an jeder Tankstelle: E füllt eine leere oder angebrochene Kanne auf 5 l.
+- Regal jetzt mit 11 Plätzen (mittleres Brett 4 statt 3).
+- `Inventory.add_at(index, item, amount)`: legt Items genau in einen Platz, z. B. die leere Kanne in den Platz der gefüllten.
+- Modelle in `GrowModels`: Gießkanne mit Tülle, Brause und Bügel (leer und mit Wasser), Wasserhahn mit Becken.
+- `test_grow` jetzt 56 Prüfungen, alle grün: Kanne füllen, gießen, nachfüllen, leere Kanne nach 5 Gaben, leere Kanne gießt nicht; Regal mit 11 Plätzen und Hahn.
+- Getestet (headless), grün: `test_grow` 56, `test_consumables` 45, `test_shop` 43, `test_gas_stations` 59, `test_content_update` 47, `test_player_melee` 42.
+- Offen: Icons der zwei Kannen-Items (Fensterlauf); bis dahin meldet `test_item_icons` einen Fehler. Die Kanne in der Hand ist noch nicht im Fenster angesehen.
