@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="PlaceableData" format=3]
 
 [ext_resource type="Script" path="res://scenes/grow/placeable_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://assets/icons/items/drying_rack.png" id="icon_item"]
 
 [resource]
 script = ExtResource("1_item")
@@ -12,3 +13,4 @@ glyph = "TR"
 color = Color(0.75, 0.6, 0.35, 1)
 max_stack = 1
 value = 60
+icon = ExtResource("icon_item")

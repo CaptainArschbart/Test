@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="PlaceableData" format=3]
 
 [ext_resource type="Script" path="res://scenes/grow/placeable_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://assets/icons/items/grow_lamp.png" id="icon_item"]
 
 [resource]
 script = ExtResource("1_item")
@@ -12,3 +13,4 @@ glyph = "LED"
 color = Color(0.85, 0.45, 1, 1)
 max_stack = 1
 value = 180
+icon = ExtResource("icon_item")
