@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="ItemData" format=3]
 
 [ext_resource type="Script" path="res://scenes/items/item_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://assets/icons/items/watering_can.png" id="icon_item"]
 
 [resource]
 script = ExtResource("1_item")
@@ -12,3 +13,4 @@ color = Color(0.35, 0.7, 1, 1)
 max_stack = 5
 value = 3
 model = &"watering_can_full"
+icon = ExtResource("icon_item")

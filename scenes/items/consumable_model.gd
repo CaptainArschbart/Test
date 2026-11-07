@@ -108,6 +108,14 @@ const HOLD := {
 	&"cuffs": [Vector3(0.0, 0.0, 0.0), Vector3(0.0, -20.0, 0.0)],
 	&"ties": [Vector3(0.0, 0.0, 0.0), Vector3(0.0, -20.0, 0.0)],
 	&"keycard": [Vector3(0.0, 0.0, 0.0), Vector3(10.0, -25.0, 0.0)],
+	# Gießkanne am Bügel gegriffen, Tülle nach vorn, Körper hängt unter der Hand (Maße mal HOLD_SCALE).
+	&"watering_can": [Vector3(0.0, -0.162, -0.012), Vector3(0.0, 90.0, 0.0)],
+	&"watering_can_full": [Vector3(0.0, -0.162, -0.012), Vector3(0.0, 90.0, 0.0)],
+}
+## Verkleinerung in der Ego-Sicht für große Dinge (sonst verdecken sie das halbe Bild).
+const HOLD_SCALE := {
+	&"watering_can": 0.6,
+	&"watering_can_full": 0.6,
 }
 
 ## Griff der rechten Hand im Raum des Modells (Format wie PlayerHands.POSE_*).
@@ -265,7 +273,7 @@ static func grip_pose(kind: StringName) -> Dictionary:
 ## Lage in der Hand (Raum des %ItemUser).
 static func hold_transform(kind: StringName) -> Transform3D:
 	var hold: Array = HOLD.get(kind, HOLD[CAN])
-	return Transform3D(euler_basis(hold[1]), hold[0])
+	return Transform3D(euler_basis(hold[1]).scaled(Vector3.ONE * float(HOLD_SCALE.get(kind, 1.0))), hold[0])
 
 
 static func pickup_scale(kind: StringName) -> float:
