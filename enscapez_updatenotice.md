@@ -1039,5 +1039,5 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Bildkontrolle im Fenster: Pflanze als Keimling, im Wachstum und in der Blüte unter der Lampe, kranke Pflanze, Trockengestell, Fermentierglas, Verpackungstisch und das Growbedarf-Regal sehen stimmig aus.
 - Korrektur in `GrowModels`: Eckpunkt-Farben werden jetzt als sRGB gelesen (`vertex_color_is_srgb`). Vorher wirkten Blätter und Blüten ausgeblichen, die Blüten-Icons fast mintfarben.
 - Growlampe heller als nötig: Lichtstärke von 1,6 auf 0,9, damit die Blätter unter 12/12 nicht cremeweiß überstrahlen.
-- Die Icons stammen noch aus dem Lauf vor der Farbkorrektur. Die Blüten-Icons sind darum etwas blasser als die Blüten im Spiel; ein weiterer Fensterlauf rendert sie neu.
+- Zweiter Fensterlauf nach der Farbkorrektur: Icons neu gerendert, Blüten jetzt grün statt mintfarben. Unter 12/12 sind die Blätter grün statt cremeweiß.
 - Getestet (headless): `test_item_icons` 63/0, `test_grow` 46/0, `test_consumables` 45/0, `test_shop` 43/0.
