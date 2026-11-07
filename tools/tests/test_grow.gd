@@ -16,7 +16,7 @@ const ARENA := Vector3(-400.0, 300.0, 400.0)
 const ITEMS := ["grow_pot", "grow_lamp", "drying_rack", "curing_jar", "packing_table", "potting_soil",
 	"cannabis_seed", "fertilizer", "weed_wet", "weed_wet_premium", "weed_dry", "weed_dry_premium", "weed_cured",
 	"weed_cured_premium", "baggie_empty", "jar_empty", "weed_baggie", "weed_baggie_premium", "weed_jar",
-	"weed_jar_premium"]
+	"weed_jar_premium", "watering_can_empty", "watering_can"]
 
 var _checks := 0
 var _fails := 0
@@ -66,6 +66,7 @@ func _run() -> void:
 	_test_mistakes()
 	_test_dry_cure_pack()
 	_test_stand()
+	_test_can()
 	await _test_save()
 	_finish()
 
@@ -127,7 +128,7 @@ func _test_items() -> void:
 			no_model.append(id)
 		else:
 			model.free()
-	_check(missing.is_empty(), "Alle 20 Anbau-Items da %s" % [missing])
+	_check(missing.is_empty(), "Alle Anbau-Items da %s" % [missing])
 	_check(no_model.is_empty(), "Jedes hat ein Modell %s" % [no_model])
 	_check(str(_item("grow_lamp").get("station")) == "lamp", "Growlampe ist aufstellbar (Station lamp)")
 
@@ -303,7 +304,52 @@ func _test_stand() -> void:
 		for child in stand.get_children():
 			if child.get("item") != null:
 				sold.append(str(child.get("item").get("id")))
-	_check(stand != null and sold.size() == 10 and sold.has("cannabis_seed") and sold.has("grow_lamp"), "Regal mit 10 Plätzen %s" % [sold])
+	_check(stand != null and sold.size() == 11 and sold.has("cannabis_seed") and sold.has("watering_can_empty"), "Regal mit 11 Plätzen %s" % [sold])
+	_check(stand != null and stand.get_node_or_null("WaterTap") != null, "Wasserhahn neben dem Regal")
+
+
+func _slot_item() -> String:
+	var item: ItemData = _inv.call("get_selected_item")
+	return item.id if item != null else ""
+
+
+func _slot_count() -> int:
+	return int(_inv.call("get_count", _inv.get("selected")))
+
+
+func _test_can() -> void:
+	print("Gießkanne")
+	var stand: Node3D = (load("res://scenes/grow/grow_stand.gd") as GDScript).new()
+	current_scene.add_child(stand)
+	stand.global_position = ARENA + Vector3(-8, 0, 8)
+	var tap: Node = stand.get_node("WaterTap")
+	_hold_nothing()
+	_check(str(tap.call("get_interact_text", _player)).contains("Gießkanne wählen"), "Hahn ohne Kanne: Hinweis")
+	_hold("watering_can_empty")
+	tap.call("interact", _player)
+	_check(_slot_item() == "watering_can" and _slot_count() == 5, "Leere Kanne gefüllt: 5 l (%s ×%d)" % [_slot_item(), _slot_count()])
+	_check(int(_inv.call("count_item", _item("watering_can_empty"))) == 0, "Leere Kanne ist weg")
+	var pot := _station(&"pot", ARENA + Vector3(-6, 0, 6))
+	_use(pot, "potting_soil")
+	_use(pot, "cannabis_seed")
+	var before := float(pot.get("water"))
+	_hold("watering_can")
+	pot.call("interact", _player)
+	_check(float(pot.get("water")) > before + 0.5 and _slot_count() == 4, "Mit der Kanne gegossen: 1 l weniger (%d l)" % _slot_count())
+	tap.call("interact", _player)
+	_check(_slot_count() == 5, "Angebrochene Kanne nachgefüllt (%d l)" % _slot_count())
+	_check(str(tap.call("get_interact_text", _player)).contains("voll"), "Volle Kanne: Hinweis")
+	for i in 5:
+		pot.call("simulate", 60.0)
+		pot.call("interact", _player)
+	_check(_slot_item() == "watering_can_empty" and _slot_count() == 1, "Nach 5 Gaben bleibt die leere Kanne im Platz (%s)" % _slot_item())
+	_check(str(pot.call("get_interact_text", _player)).contains("leer"), "Topf mit leerer Kanne: am Hahn füllen")
+	var water := float(pot.get("water"))
+	pot.call("interact", _player)
+	_check(is_equal_approx(float(pot.get("water")), water), "Leere Kanne gießt nicht")
+	stand.queue_free()
+	pot.queue_free()
+	_inv.call("remove_item", _item("watering_can_empty"), 9)
 
 
 func _test_save() -> void:

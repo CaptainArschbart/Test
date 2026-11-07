@@ -321,11 +321,45 @@ static func item(root: Node3D, kind: StringName, color: Color) -> void:
 			_mesh(root, _box(Vector3(0.061, 0.006, 0.005)), _mat(&"zip", color, false, false, 1.2), Vector3(0, 0.035, 0))
 			if kind == &"baggie_full":
 				_mesh(root, _box(Vector3(0.045, 0.045, 0.012)), _mat(&"bag_content", Color(0.35, 0.42, 0.22)), Vector3(0, -0.012, 0))
+		&"watering_can", &"watering_can_full":
+			watering_can(root, kind == &"watering_can_full")
 		&"jar", &"jar_full":
 			_mesh(root, _tube(0.035, 0.035, 0.09), _glass(), Vector3.ZERO)
 			_mesh(root, _tube(0.036, 0.036, 0.015), _mat(&"small_lid", color, false, false, 0.8, 0.7), Vector3(0, 0.052, 0))
 			if kind == &"jar_full":
 				_mesh(root, _tube(0.031, 0.031, 0.065), _mat(&"jar_content", Color(0.32, 0.38, 0.2)), Vector3(0, -0.01, 0))
+
+
+## Gießkanne (5 l), etwa 24 cm hoch: Körper, Tülle mit Brause nach vorn (+X), Bügel oben.
+static func watering_can(root: Node3D, full: bool) -> void:
+	var body := _mat(&"can_body", Color(0.12, 0.45, 0.3), false, false, 0.0, 0.2)
+	_mesh(root, _tube(0.085, 0.095, 0.2), body, Vector3(0, 0.1, 0))
+	_mesh(root, _tube(0.06, 0.085, 0.03), body, Vector3(0, 0.215, 0))
+	var spout := _mesh(root, _tube(0.012, 0.02, 0.24), body, Vector3(0.15, 0.13, 0))
+	spout.rotation.z = -1.0
+	var rose := _mesh(root, _tube(0.028, 0.014, 0.03), _mat(&"can_rose", Color(0.7, 0.72, 0.7), false, false, 0.0, 0.8),
+		Vector3(0.255, 0.205, 0))
+	rose.rotation.z = -1.0
+	var handle := _mesh(root, _box(Vector3(0.17, 0.018, 0.02)), body, Vector3(-0.02, 0.27, 0))
+	handle.rotation.z = 0.15
+	_mesh(root, _box(Vector3(0.018, 0.08, 0.02)), body, Vector3(-0.1, 0.22, 0))
+	if full:
+		_mesh(root, _tube(0.058, 0.058, 0.004), _mat(&"can_water", Color(0.35, 0.65, 0.95), false, false, 0.6),
+			Vector3(0, 0.226, 0))
+
+
+## Wasserhahn an der Wand mit Becken (Front nach +Z), etwa 1 m hoch.
+static func tap() -> Node3D:
+	var root := Node3D.new()
+	var steel := _mat(&"tap_steel", Color(0.75, 0.77, 0.8), false, false, 0.0, 0.85)
+	_mesh(root, _box(Vector3(0.08, 1.1, 0.06)), _mat(&"tap_pipe", Color(0.3, 0.32, 0.34), false, false, 0.0, 0.5),
+		Vector3(0, 0.55, -0.05))
+	_mesh(root, _box(Vector3(0.4, 0.12, 0.3)), _mat(&"tap_basin", Color(0.82, 0.84, 0.86), false, false, 0.0, 0.3),
+		Vector3(0, 0.6, 0.12))
+	_mesh(root, _tube(0.015, 0.015, 0.16), steel, Vector3(0, 0.9, 0.05)).rotation.x = PI * 0.5
+	_mesh(root, _tube(0.013, 0.013, 0.07), steel, Vector3(0, 0.865, 0.13))
+	_mesh(root, _tube(0.03, 0.03, 0.03), _mat(&"tap_knob", Color(0.2, 0.45, 0.95), false, false, 0.3), Vector3(0, 0.96, 0.02))
+	return root
 
 
 # --- Bausteine ----------------------------------------------------------------------------------

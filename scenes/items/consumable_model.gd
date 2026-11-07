@@ -38,7 +38,8 @@ const KEYCARD := &"keycard"
 ## Munitionsschachtel (Schedule 1, P4-4), Farbe = Munitionsart.
 const AMMO := &"ammo"
 ## Anbau: Erde, Samen, Dünger, Blüten, Tütchen und Gläser (Modelle in GrowModels).
-const GROW_KINDS := [&"soil", &"seeds", &"fertilizer", &"buds", &"baggie", &"baggie_full", &"jar", &"jar_full"]
+const GROW_KINDS := [&"soil", &"seeds", &"fertilizer", &"buds", &"baggie", &"baggie_full", &"jar", &"jar_full",
+	&"watering_can", &"watering_can_full"]
 const GrowModelsScript := preload("res://scenes/grow/grow_models.gd")
 
 ## Nadelspitze des Injektors im Raum des Modells (ohne Kappe).
@@ -107,6 +108,14 @@ const HOLD := {
 	&"cuffs": [Vector3(0.0, 0.0, 0.0), Vector3(0.0, -20.0, 0.0)],
 	&"ties": [Vector3(0.0, 0.0, 0.0), Vector3(0.0, -20.0, 0.0)],
 	&"keycard": [Vector3(0.0, 0.0, 0.0), Vector3(10.0, -25.0, 0.0)],
+	# Gießkanne am Bügel gegriffen, Tülle nach vorn, Körper hängt unter der Hand (Maße mal HOLD_SCALE).
+	&"watering_can": [Vector3(0.0, -0.162, -0.012), Vector3(0.0, 90.0, 0.0)],
+	&"watering_can_full": [Vector3(0.0, -0.162, -0.012), Vector3(0.0, 90.0, 0.0)],
+}
+## Verkleinerung in der Ego-Sicht für große Dinge (sonst verdecken sie das halbe Bild).
+const HOLD_SCALE := {
+	&"watering_can": 0.6,
+	&"watering_can_full": 0.6,
 }
 
 ## Griff der rechten Hand im Raum des Modells (Format wie PlayerHands.POSE_*).
@@ -192,7 +201,8 @@ const GRIPS := {
 ## Kleine Dinge (Riegel, Handy, Chip, Uhr …) greift die Hand wie den Verband.
 const SMALL_GRIP_KINDS := [&"bar", &"onigiri", &"phone", &"chip", &"watch", &"cigarettes", &"shard",
 	&"jewelry", &"jewels", &"cash", &"cuffs", &"ties", &"keycard", &"tv", &"painting", &"computer", &"ammo",
-	&"soil", &"seeds", &"fertilizer", &"buds", &"baggie", &"baggie_full", &"jar", &"jar_full"]
+	&"soil", &"seeds", &"fertilizer", &"buds", &"baggie", &"baggie_full", &"jar", &"jar_full",
+	&"watering_can", &"watering_can_full"]
 
 
 static var _materials := {}
@@ -238,7 +248,8 @@ static func build(kind: StringName, color: Color, viewmodel := false) -> Node3D:
 			_build_crowbar(root, color)
 		AMMO:
 			_build_ammo(root, color)
-		&"soil", &"seeds", &"fertilizer", &"buds", &"baggie", &"baggie_full", &"jar", &"jar_full":
+		&"soil", &"seeds", &"fertilizer", &"buds", &"baggie", &"baggie_full", &"jar", &"jar_full", \
+				&"watering_can", &"watering_can_full":
 			GrowModelsScript.item(root, kind, color)
 		JEWELRY, JEWELS, CASH, CUFFS, TIES, KEYCARD, TV, PAINTING, COMPUTER:
 			_build_prop(root, kind, color)
@@ -262,7 +273,7 @@ static func grip_pose(kind: StringName) -> Dictionary:
 ## Lage in der Hand (Raum des %ItemUser).
 static func hold_transform(kind: StringName) -> Transform3D:
 	var hold: Array = HOLD.get(kind, HOLD[CAN])
-	return Transform3D(euler_basis(hold[1]), hold[0])
+	return Transform3D(euler_basis(hold[1]).scaled(Vector3.ONE * float(HOLD_SCALE.get(kind, 1.0))), hold[0])
 
 
 static func pickup_scale(kind: StringName) -> float:

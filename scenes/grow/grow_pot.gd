@@ -26,6 +26,10 @@ const WATER_DOSE := 0.6
 const NUTRIENT_DOSE := 0.5
 ## Ab dieser Blüte (Anteil) darf geerntet werden.
 const HARVEST_FROM := 0.6
+## Womit gegossen wird: Wasserflasche (verbraucht) oder Gießkanne (Anzahl = Liter, 1 l je Gabe).
+const CAN := "watering_can"
+const CAN_EMPTY := "watering_can_empty"
+const WATER_IDS := ["water_bottle", "watering_can"]
 const PREMIUM := 0.75
 
 var stage: Stage = Stage.EMPTY
@@ -163,13 +167,15 @@ func _text(player: Player) -> String:
 		Stage.SOIL:
 			if id == "cannabis_seed":
 				return "Samen einpflanzen"
-			if id == "water_bottle":
+			if id in WATER_IDS:
 				return "Erde anfeuchten (Feuchte %s)" % pct(water)
 			return "Topf mit Erde – Hanfsamen wählen"
 		Stage.DEAD:
 			return "Pflanze ist eingegangen – entsorgen"
-	if id == "water_bottle":
+	if id in WATER_IDS:
 		return "Gießen (Feuchte %s)" % pct(water)
+	if id == CAN_EMPTY:
+		return "Gießkanne ist leer – am Wasserhahn füllen"
 	if id == "fertilizer" and stage >= Stage.SEEDLING:
 		return "Düngen (Nährstoffe %s)" % pct(nutrients)
 	if stage == Stage.FLOWER and flower >= HARVEST_FROM:
@@ -215,15 +221,19 @@ func _act(player: Player) -> void:
 				_plant()
 				_say(player, "Samen eingepflanzt – feucht halten")
 				return
-			if id == "water_bottle":
+			if id in WATER_IDS:
 				_water(player, item)
+			elif id == CAN_EMPTY:
+				_say(player, "Gießkanne ist leer – am Wasserhahn füllen", false)
 			return
 		Stage.DEAD:
 			_reset()
 			_say(player, "Pflanze entsorgt, Erde verbraucht", false)
 			return
-	if id == "water_bottle":
+	if id in WATER_IDS:
 		_water(player, item)
+	elif id == CAN_EMPTY:
+		_say(player, "Gießkanne ist leer – am Wasserhahn füllen", false)
 	elif id == "fertilizer" and stage >= Stage.SEEDLING:
 		if player.inventory.remove_item(item, 1) == 1:
 			nutrients += NUTRIENT_DOSE
@@ -256,7 +266,15 @@ func _plant() -> void:
 
 
 func _water(player: Player, item: ItemData) -> void:
-	if player.inventory.remove_item(item, 1) != 1:
+	if item.id == CAN:
+		# Gießkanne: 1 Liter aus der gewählten Kanne, die letzte Gabe lässt die leere Kanne zurück.
+		var slot: int = player.inventory.selected
+		if player.inventory.remove_at(slot, 1) != 1:
+			return
+		if player.inventory.get_item(slot) == null:
+			if player.inventory.add_at(slot, load(ITEM % CAN_EMPTY) as ItemData, 1) > 0:
+				_give(player, CAN_EMPTY, 1)
+	elif player.inventory.remove_item(item, 1) != 1:
 		return
 	if water > 0.85 and stage >= Stage.SEEDLING:
 		health = maxf(health - 0.15, 0.0)
