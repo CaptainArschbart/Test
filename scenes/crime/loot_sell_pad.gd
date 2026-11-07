@@ -8,6 +8,9 @@ extends StaticBody3D
 const RATE := 0.5
 const SELLABLE: Array[String] = [
 	"jewelry", "jewels", "cash_wad", "tv_set", "painting", "computer", "smartphone",
+	# Anbau: getrocknete und fermentierte Blüten, verpackte Ware.
+	"weed_dry", "weed_dry_premium", "weed_cured", "weed_cured_premium",
+	"weed_baggie", "weed_baggie_premium", "weed_jar", "weed_jar_premium",
 ]
 
 var _open := false

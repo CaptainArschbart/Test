@@ -984,3 +984,38 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
   - Fußgängerin sitzt auf der Bank mit den Füßen am Boden. Einer telefoniert (Hand am Ohr; das Handy ist aus diesem Blickwinkel hinter dem Kopf verdeckt), einer trägt eine Kiste zwischen den Händen, zwei reden und gestikulieren.
   - Gegner zielt im Stehen und im Laufen, lädt nach, zielt nach oben im passenden Winkel.
 - Getestet (headless): `test_item_icons` 63/0, `test_ammo` 22/0, `test_content_update` 47/0.
+
+### 2026-11-07 · Hanfanbau: Anpflanzen, Wachstum, Ernte, Trocknen, Fermentieren, Verpacken · Claude (für EnScapeZ) · Branch `enscapez/anbau`
+- GitHub vorher geprüft: keine neuen Commits, PRs oder Issues seit PR 86.
+- Neu in `scenes/grow/`:
+  - Stationen: `grow_station.gd` (Grundlage), `grow_pot.gd`, `grow_lamp.gd`, `drying_rack.gd`, `curing_jar.gd`, `packing_table.gd`.
+  - Dazu `grow_models.gd` (alle Modelle prozedural), `grow_placer.gd` (Aufstellen), `placeable_data.gd` (`PlaceableData`) und `grow_stand.gd` (Regal).
+- Aufstellen:
+  - Topf, Lampe, Gestell, Glas und Tisch in der Hotbar wählen, dann zeigt eine Vorschau auf dem Boden grün oder rot, ob die Station passt. Rechtsklick stellt auf.
+  - Geduckt + E baut eine leere Station wieder ab.
+  - Bedient wird mit E, die Aktion hängt vom gewählten Item ab (Erde, Samen, Wasserflasche, Dünger, Blüten …).
+- Pflanze („Neon Kush“, Photoperiode), Ablauf wie beim echten Anbau, nur zeitlich gerafft:
+  - Erde → Samen → Keimung (30 s) → Keimling (90 s) → Wachstum (180 s) → Blüte (360 s), bei vollem Licht.
+  - Gießen mit der Wasserflasche (+60 % Feuchte). Unter 12 % welkt sie; in nasse Erde gegossen gibt es Staunässe (−15 % Gesundheit).
+  - Dünger (+50 % Nährstoffe). Über 120 % gibt es Nährstoffbrand (−20 %), ohne Nährstoffe wächst sie langsamer und bringt weniger Ertrag.
+  - LED-Growlampe: volles Tempo und mehr Ertrag. Mit 18/6 bleibt die Pflanze im Wachstum und wird größer (bis 2,33-fach); 12/12 löst die Blüte aus. Ohne Lampe wächst sie halb so schnell und blüht von selbst.
+  - Erntezeitpunkt an den Trichomen: klar, dann milchig (optimal 100–115 % Blüte), dann bernstein; ab 130 % überreif.
+  - Ertrag 1–90 g frische Blüten nach Gesundheit, Licht, Dünger, Wachstumszeit und Zeitpunkt; Premium ab Qualität 75 %.
+  - Modell: Stamm mit Knoten, gegenständige Fächerblätter mit sieben Fiederblättchen, Seitentriebe, Colas mit Stempeln (weiß, später orange). Welke Pflanzen werden gelb und lassen die Blätter hängen.
+- Trockengestell: bis 120 g, 180 s, −75 % Gewicht. Bleiben die Blüten zu lange hängen (160 %), werden sie brüchig und verlieren Premium.
+- Fermentierglas (Curing): bis 28 g, 240 s. Die Feuchte steigt im Glas, Lüften senkt sie auf 58 %. Über 75 % leidet das Aroma (Premium geht verloren), ab 85 % schimmeln die Blüten nach 20 s.
+- Verpackungstisch mit Feinwaage: fermentierte Blüten in Zip-Tütchen (1 g) oder Einmachgläser (7 g). Standard bzw. Premium bleibt erhalten, E ohne Blüten schaltet den Modus um.
+- 20 neue Items in `scenes/items/data/` (Stationen, Erde, Samen, Dünger, Blüten in drei Stufen je Standard und Premium, leere und volle Tütchen und Gläser), mit Modellen über `ConsumableModel` bzw. `ItemDisplay`.
+- Kaufen: Regal „GROWBEDARF“ an jeder Tankstelle (links neben dem Laden), 10 Plätze. Verkaufen: Der Hehler nimmt getrocknete und fermentierte Blüten und verpackte Ware.
+- `ItemUser` und `ItemDisplay` binden die Grow-Skripte per `preload` ein, nicht über `class_name`. So kompiliert der Spieler auch mit veraltetem Klassen-Cache nach einem Pull.
+- Neuer Test `tools/tests/test_grow.gd`, 33 Prüfungen:
+  - Items und Modelle; Aufstellen, Luft-Prüfung, Abbauen.
+  - Ganzer Anbau mit Lampe: 18/6 hält im Wachstum, 12/12 löst die Blüte aus; Trichome; 58 g Premium.
+  - Austrocknen, Staunässe, Nährstoffbrand.
+  - Trocknen (−75 %), Fermentieren mit Lüften (Premium bleibt) und ohne (Schimmel).
+  - Tütchen und Glas packen; Hehler; Regal.
+- Getestet (headless), alle grün: `test_grow` 33, `test_gas_stations` 59, `test_shop` 43, `test_neon_city` 30, `test_content_update` 47, `test_consumables` 45, `test_ammo` 22, `test_player_melee` 42, `test_player_move` 7, `test_weapons_m3` 89, `test_weapons_smg_grenade` 47, `test_skills` 72. Multiplayer: `test_mp_sync` testmap 17/0 und 19/0.
+- Ohne Fenster nachgeprüft: Pflanze in fünf Stadien, Lampe, Gestell und Tisch als Zeichnung.
+- Offen:
+  - Inventar-Icons der 20 Items (Fensterlauf mit `gen_item_icons.gd`), bis dahin meldet `test_item_icons` einen Fehler.
+  - Stationen sind nur lokal (kein Multiplayer-Abgleich) und werden nicht gespeichert.

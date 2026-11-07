@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PlaceableData" format=3]
+
+[ext_resource type="Script" path="res://scenes/grow/placeable_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+station = &"rack"
+id = "drying_rack"
+display_name = "Trockengestell"
+description = "Holzrahmen mit Leinen. Frische Blüten hängen hier, bis sie trocken sind (−75 % Gewicht)."
+glyph = "TR"
+color = Color(0.75, 0.6, 0.35, 1)
+max_stack = 1
+value = 60
