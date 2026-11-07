@@ -7,7 +7,14 @@ extends RefCounted
 ## zurück, dann bleibt es bei Würfel bzw. Raute.
 
 
+const PLACEABLE := preload("res://scenes/grow/placeable_data.gd")
+const GROW_MODELS := preload("res://scenes/grow/grow_models.gd")
+
+
 static func build(item: ItemData) -> Node3D:
+	# Anbau-Stationen (PlaceableData): Modell der Station in echter Größe.
+	if item != null and item.get_script() == PLACEABLE:
+		return GROW_MODELS.station(item.get("station"))
 	if item is WeaponData:
 		var weapon := item as WeaponData
 		if weapon.view_scene == null:

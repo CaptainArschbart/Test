@@ -9,6 +9,7 @@ extends Node3D
 ## läuft erst die Benutz-Animation (ConsumableUse), der Effekt greift an ihrem Ende.
 ## Verbrauchsitems mit Modell (ConsumableModel) liegen sichtbar in der rechten Hand.
 ## "fire" (Linksklick): GrenadeData wird geworfen, MeleeData schlägt zu.
+## Aufstellbare Items (Anbau, PlaceableData): Vorschau auf dem Boden, Rechtsklick stellt auf (GrowPlacer).
 ## Wurf: Ausholen (THROW_WINDUP), Loslassen, Durchschwingen; die rechte Hand folgt der Granate.
 ## Ist eine Granate gewählt, zeigt unten rechts die Anzeige, wie viele davon im Inventar sind.
 ## Schusswaffen (WeaponData) bleiben beim WeaponHolder; Rechtsklick auf Waffen ist frei fürs Zielen.
@@ -25,6 +26,9 @@ const GRENADE_SCRIPT := preload("res://scenes/items/grenade.gd")
 ## Per preload statt class_name: Nach einem Pull kennt der Klassen-Cache neue Klassen erst nach einem
 ## Editor-Scan, sonst kompiliert der ganze Spieler nicht.
 const PICKPOCKET_BAR := preload("res://scenes/crime/pickpocket_bar.gd")
+## Anbau: aufstellbare Items (Vorschau und Rechtsklick zum Aufstellen).
+const GROW_PLACER := preload("res://scenes/grow/grow_placer.gd")
+const PLACEABLE := preload("res://scenes/grow/placeable_data.gd")
 ## Wurfablauf in Sekunden: Ausholen bis zum Loslassen, danach Durchschwingen.
 const THROW_WINDUP := 0.16
 const THROW_FOLLOW := 0.3
@@ -53,6 +57,7 @@ var _throw_time := -1.0
 var _throw_item: GrenadeData
 ## Inventar hat sich während des Wurfs geändert: danach das Item neu anzeigen.
 var _pending_update := false
+var _placer: Node3D
 
 
 func _ready() -> void:
@@ -71,6 +76,10 @@ func _ready() -> void:
 	add_child(_use)
 	_use.setup(_player, self)
 	_use.finished.connect(_on_use_finished)
+	_placer = GROW_PLACER.new()
+	_placer.name = "GrowPlacer"
+	_placer.player = _player
+	add_child(_placer)
 	_player.inventory.changed.connect(_update_item)
 	_player.inventory.changed.connect(_update_grenade_hud)
 	_player.inventory.selected_changed.connect(_update_item.unbind(1))
@@ -85,6 +94,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("interact"):
 		get_viewport().set_input_as_handled()
 		interact()
+	elif event.is_action_pressed("use_item") and _item is PLACEABLE:
+		get_viewport().set_input_as_handled()
+		_placer.place()
 	elif event.is_action_pressed("use_item") and _item is ConsumableData:
 		get_viewport().set_input_as_handled()
 		if not is_using_consumable():

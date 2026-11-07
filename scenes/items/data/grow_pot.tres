@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PlaceableData" format=3]
+
+[ext_resource type="Script" path="res://scenes/grow/placeable_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+station = &"pot"
+id = "grow_pot"
+display_name = "Pflanztopf (11 l)"
+description = "Schwarzer Kunststofftopf. Aufstellen (Rechtsklick), Blumenerde einfüllen, Samen setzen."
+glyph = "TO"
+color = Color(0.4, 0.9, 0.4, 1)
+max_stack = 5
+value = 30

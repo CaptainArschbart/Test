@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scenes/items/item_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+id = "weed_jar_premium"
+display_name = "Glas Gras Premium (7 g)"
+description = "7 g Premium-Blüten im luftdichten Glas."
+glyph = "7g+"
+color = Color(1, 0.8, 0.3, 1)
+max_stack = 20
+value = 120
+model = &"jar_full"

@@ -34,6 +34,7 @@ const AMMO_PACKS := {
 const BANK := preload("res://scenes/interact/bank_terminal.gd")
 const SELL_PAD := preload("res://scenes/crime/loot_sell_pad.gd")
 const GAS_STATION := preload("res://scenes/crime/gas_station.gd")
+const GROW_STAND := preload("res://scenes/grow/grow_stand.gd")
 const KENNEY := "res://assets/props/kenney_furniture/%s.glb"
 const QUATERNIUS := "res://assets/props/quaternius_furniture/%s.fbx"
 
@@ -366,6 +367,12 @@ func _build_gas() -> void:
 	station.name = "Station"
 	station.set("shop_key", shop_key)
 	add_child(station)
+	# Growbedarf-Regal links neben dem Tankstellen-Laden (freier Streifen x −7,5…−5), Front nach +X.
+	var stand := GROW_STAND.new() as Node3D
+	stand.name = "GrowStand"
+	stand.position = Vector3(-7.0, 0.06, -2.2)
+	stand.rotation.y = PI * 0.5
+	add_child(stand)
 
 
 func _solid(at: Vector3, size: Vector3, color: Color) -> void:
