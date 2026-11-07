@@ -1054,4 +1054,4 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Getestet (headless), grün: `test_grow` 56, `test_consumables` 45, `test_shop` 43, `test_gas_stations` 59, `test_content_update` 47, `test_player_melee` 42.
 - Icons der zwei Kannen-Items im Fensterlauf gerendert und eingetragen; `test_item_icons` wieder grün (63/0).
 - Bildkontrolle: Regal mit Hahn, Hahn mit Kanne und Kanne am Topf passen. In der Ego-Sicht war die Kanne viel zu groß und hing neben der Hand. Jetzt hält die Hand sie am Bügel, die Tülle zeigt nach vorn, und sie ist auf 60 % verkleinert (neu: `ConsumableModel.HOLD_SCALE`).
-- Offen: Die neue Haltung in der Hand ist noch nicht im Fenster angesehen.
+- Im Fenster geprüft (geradeaus, nach unten, nach oben, leere Kanne): Die Kanne hängt unten rechts in der Hand, die Tülle zeigt nach vorn, nichts wird verdeckt.
