@@ -13,6 +13,10 @@ const UNITS := {
 var mode := "bag"
 
 
+func _net_vars() -> Array:
+	return ["mode"]
+
+
 func _text(player: Player) -> String:
 	var unit: Dictionary = UNITS[mode]
 	var buds := _selected(player)

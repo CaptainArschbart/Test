@@ -139,10 +139,19 @@ func _tick(dt: float) -> void:
 
 
 func _update_shape() -> void:
-	var key := "%d|%d|%d|%d" % [stage, int(size() * 20.0), int(flower * 20.0), int(health * 10.0)]
+	var key := _model_key()
 	if key != _shape_key:
 		_shape_key = key
 		_refresh()
+
+
+func _model_key() -> String:
+	return "%d|%d|%d|%d" % [stage, int(size() * 20.0), int(flower * 20.0), int(health * 10.0)]
+
+
+func _net_vars() -> Array:
+	return ["stage", "water", "nutrients", "health", "progress", "veg", "flower", "_grow_time",
+		"_health_time", "_lit_time", "_fed_time", "_flower_time", "_stress"]
 
 
 func _text(player: Player) -> String:

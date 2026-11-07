@@ -5,8 +5,9 @@ extends StaticBody3D
 ## Bedienung über E (ItemUser): Was passiert, hängt vom gewählten Hotbar-Item ab (Erde, Samen,
 ## Wasserflasche, Dünger, Blüten …), ohne passendes Item zeigt der Hinweis den Zustand oder die
 ## nächste Aktion. Geduckt + E baut eine leere Station ab (das Item kommt zurück ins Inventar).
-## Die Zeit läuft in _process; Tests rufen simulate(sekunden).
-## Nur lokal: im Multiplayer sieht und bedient jeder Spieler seine eigenen Stationen.
+## Die Zeit läuft in _process (nur offline und beim Host); Tests rufen simulate(sekunden).
+## Multiplayer und Spielstand: GrowSync. Der Zustand jeder Station sind die Variablen aus
+## _net_vars() (net_state / net_apply).
 
 const Models := preload("res://scenes/grow/grow_models.gd")
 const GROUP := &"grow_station"
@@ -24,6 +25,10 @@ const STEP := 0.5
 var kind := &"pot"
 ## Item, das beim Abbauen zurückkommt.
 var source: ItemData
+
+## Kennung im Netz und im Spielstand (GrowSync.placed), Revision zählt jede Bedienung.
+var net_id := ""
+var net_rev := 0
 
 var _model: Node3D
 
@@ -52,7 +57,8 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	_tick(delta)
+	if GrowSync.simulates():
+		_tick(delta)
 
 
 ## Zeit vorspulen (Tests): in Schritten von höchstens STEP Sekunden.
@@ -75,6 +81,41 @@ func interact(player: Player) -> void:
 		_dismantle(player)
 		return
 	_act(player)
+	if not is_queued_for_deletion():
+		GrowSync.changed(self)
+
+
+# --- Zustand (Netz, Spielstand) ------------------------------------------------------------------
+
+## Namen der Variablen, die den Zustand ausmachen.
+func _net_vars() -> Array:
+	return []
+
+
+func net_state() -> Dictionary:
+	var state := {"rev": net_rev}
+	for key: String in _net_vars():
+		state[key] = get(key)
+	return state
+
+
+## Zustand übernehmen. Ohne `force` nur, wenn die Revision nicht älter ist als die eigene.
+func net_apply(state: Dictionary, force := false) -> void:
+	var rev := int(state.get("rev", net_rev))
+	if not force and rev < net_rev:
+		return
+	var before := _model_key()
+	for key: String in _net_vars():
+		if state.has(key):
+			set(key, state[key])
+	net_rev = rev
+	if _model_key() != before:
+		_refresh()
+
+
+## Ändert sich dieser Schlüssel, wird das Modell neu gebaut.
+func _model_key() -> String:
+	return ""
 
 
 # --- Für die Stationen ---------------------------------------------------------------------------
@@ -146,6 +187,7 @@ func _dismantle(player: Player) -> void:
 			_say(player, player.inventory.full_message(source), false)
 			return
 	_say(player, "%s abgebaut" % (source.display_name if source != null else "Station"))
+	GrowSync.removed(self)
 	queue_free()
 
 

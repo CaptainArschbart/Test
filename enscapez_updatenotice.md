@@ -1019,3 +1019,16 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - Offen:
   - Inventar-Icons der 20 Items (Fensterlauf mit `gen_item_icons.gd`), bis dahin meldet `test_item_icons` einen Fehler.
   - Stationen sind nur lokal (kein Multiplayer-Abgleich) und werden nicht gespeichert.
+
+## 2026-11-07 – Hanfanbau: Multiplayer-Abgleich und Spielstand (EnScapeZ)
+
+- Neuer Autoload `GrowSync` (`autoload/grow_sync.gd`, in `project.godot` eingetragen).
+- Multiplayer:
+  - Der Host rechnet die Zeit aller Anbau-Stationen und schickt jede Sekunde die geänderten Zustände. Clients rechnen nicht selbst.
+  - Aufstellen und Abbauen sehen alle. Bedient ein Client eine Station, schickt er den neuen Zustand mit höherer Revision an den Host; ältere Pakete werden verworfen.
+  - Wer später beitritt, bekommt alle Stationen der Map.
+- Spielstand: Offline und beim Host stehen die Stationen jeder Map in `user://grow_world.cfg`. Gespeichert wird alle 30 s, beim Verlassen der Map und beim Beenden, geladen beim Betreten. Solange das Spiel aus ist, steht die Zeit still. Headless ist das Speichern aus.
+- `GrowStation`: `net_id`, `net_rev`, `net_state()` und `net_apply()`; jede Station nennt ihre Zustandsvariablen in `_net_vars()`.
+- `test_grow` jetzt 46 Prüfungen (neu: Revision, Speichern, Laden, kein doppeltes Laden). Ohne zweiten Prozess; die Multiplayer-Tests sind auf Wunsch weggelassen.
+- Getestet (headless), alle grün: `test_grow` 46, `test_gas_stations` 59, `test_shop` 43, `test_neon_city` 30, `test_content_update` 47, `test_consumables` 45, `test_ammo` 22, `test_player_melee` 42, `test_player_move` 7, `test_weapons_m3` 89, `test_skills` 72.
+- Offen: Die Inventar-Icons der 20 Anbau-Items fehlen weiter (Fensterlauf), deshalb meldet `test_item_icons` einen Fehler.

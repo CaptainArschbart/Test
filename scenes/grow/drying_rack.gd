@@ -26,6 +26,14 @@ func _tick(dt: float) -> void:
 		_refresh()
 
 
+func _net_vars() -> Array:
+	return ["grams", "premium", "dry"]
+
+
+func _model_key() -> String:
+	return "%d|%d" % [grams, int(minf(dry, 1.0) * 10.0)]
+
+
 func dried_grams() -> int:
 	return maxi(int(round(grams * DRY_RATIO)), 1)
 

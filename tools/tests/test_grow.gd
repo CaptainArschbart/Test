@@ -2,7 +2,8 @@ extends SceneTree
 ## Prüft den Hanfanbau in der Testmap: Aufstellen, Pflanze von Erde bis Ernte (Gießen, Düngen,
 ## Growlampe mit 18/6 und 12/12, Trichome), Pflegefehler (Austrocknen, Staunässe, Nährstoffbrand),
 ## Trocknen, Fermentieren (Lüften, Schimmel), Verpacken in Tütchen und Gläser, Growbedarf-Regal an
-## der Tankstelle und Ankauf beim Hehler. Zeit läuft über station.simulate().
+## der Tankstelle, Ankauf beim Hehler, Zustand und Revision (net_state/net_apply) sowie Speichern und
+## Laden über GrowSync (ohne zweiten Prozess). Zeit läuft über station.simulate().
 ##
 ## Aufruf (Projektordner), headless reicht:
 ##   godot --headless --path . -s res://tools/tests/test_grow.gd
@@ -65,6 +66,7 @@ func _run() -> void:
 	_test_mistakes()
 	_test_dry_cure_pack()
 	_test_stand()
+	await _test_save()
 	_finish()
 
 
@@ -302,6 +304,93 @@ func _test_stand() -> void:
 			if child.get("item") != null:
 				sold.append(str(child.get("item").get("id")))
 	_check(stand != null and sold.size() == 10 and sold.has("cannabis_seed") and sold.has("grow_lamp"), "Regal mit 10 Plätzen %s" % [sold])
+
+
+func _test_save() -> void:
+	print("Zustand und Spielstand")
+	var sync: Node = root.get_node_or_null("GrowSync")
+	_check(sync != null, "Autoload GrowSync da")
+	if sync == null:
+		return
+	_check(bool(sync.call("simulates")), "Offline rechnet dieser Rechner die Zeit")
+	var base := ARENA + Vector3(8, 0, 8)
+	var pot := _station(&"pot", base)
+	var lamp := _station(&"lamp", base + Vector3(-0.12, 0, 0))
+	var jar := _station(&"jar", base + Vector3(1.5, 0, 0))
+	lamp.rotation.y = 0.7
+	for station: Node in [pot, lamp, jar]:
+		sync.call("placed", station)
+	_check(str(pot.get("net_id")) != "" and pot.get("net_id") != lamp.get("net_id"), "Eindeutige Kennungen (%s)" % pot.get("net_id"))
+	_use(pot, "potting_soil")
+	_use(pot, "cannabis_seed")
+	_use(pot, "water_bottle")
+	_use(lamp, "")
+	pot.call("simulate", 200.0)
+	_hold("weed_dry", 10)
+	_use(jar, "weed_dry")
+	jar.call("simulate", 30.0)
+	_check(int(pot.get("net_rev")) == 3 and int(lamp.get("net_rev")) == 1, "Jede Bedienung zählt die Revision (%d)" % pot.get("net_rev"))
+	# Revision: ältere Stände werden verworfen, neuere übernommen.
+	var state: Dictionary = pot.call("net_state")
+	var old := state.duplicate()
+	old["rev"] = 1
+	old["water"] = 0.77
+	pot.call("net_apply", old)
+	_check(not is_equal_approx(float(pot.get("water")), 0.77), "Älterer Stand verworfen")
+	var newer := state.duplicate()
+	newer["rev"] = 9
+	newer["health"] = 0.5
+	pot.call("net_apply", newer)
+	_check(is_equal_approx(float(pot.get("health")), 0.5) and int(pot.get("net_rev")) == 9, "Neuerer Stand übernommen")
+	# Speichern, alles abräumen, laden.
+	var before := {}
+	for station: Node3D in [pot, lamp, jar]:
+		before[station.get("net_id")] = [station.call("net_state"), station.global_transform]
+	sync.set("save_enabled", true)
+	sync.set("save_path", "user://test_grow_world.cfg")
+	var err: int = sync.call("save_now")
+	_check(err == OK, "Gespeichert (%s)" % error_string(err))
+	for station: Node in sync.call("stations"):
+		station.queue_free()
+	await _frames(2)
+	_check((sync.call("stations") as Array).is_empty(), "Stationen abgeräumt")
+	var loaded: int = sync.call("load_stations")
+	await _frames(2)
+	_check(loaded == 3, "Drei Stationen geladen (%d)" % loaded)
+	var same := true
+	var bad := []
+	for id: String in before:
+		var station: Node3D = sync.call("find", id)
+		if station == null:
+			same = false
+			bad.append(id)
+			continue
+		var want: Dictionary = before[id][0]
+		var got: Dictionary = station.call("net_state")
+		for key: String in want:
+			var a = want[key]
+			var b = got.get(key)
+			if (a is float and not is_equal_approx(a, float(b))) or (not a is float and a != b):
+				same = false
+				bad.append("%s.%s" % [station.get("kind"), key])
+		if not station.global_transform.is_equal_approx(before[id][1]):
+			same = false
+			bad.append("%s.xform" % station.get("kind"))
+	_check(same, "Zustand und Lage gleich wie vorher %s" % [bad])
+	var pot2: Node = null
+	for station: Node in sync.call("stations"):
+		if station.get("kind") == &"pot":
+			pot2 = station
+	_check(pot2 != null and int(pot2.get("stage")) >= 2 and pot2.get_child_count() >= 2, "Geladene Pflanze mit Modell")
+	_check(int(sync.call("load_stations")) == 0, "Zweites Laden legt nichts doppelt an")
+	# Abbauen speichert sich mit: leere Liste überschreibt den alten Stand.
+	for station: Node in sync.call("stations"):
+		station.queue_free()
+	await _frames(2)
+	sync.call("save_now")
+	_check(int(sync.call("load_stations")) == 0, "Nach Abräumen gespeichert: nichts mehr da")
+	sync.set("save_enabled", false)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_grow_world.cfg"))
 
 
 func _finish() -> void:

@@ -43,6 +43,14 @@ func _tick(dt: float) -> void:
 		_mold_left = MOLD_TIME
 
 
+func _net_vars() -> Array:
+	return ["grams", "premium", "cure", "humidity", "moldy", "_mold_left", "_peak"]
+
+
+func _model_key() -> String:
+	return "%d|%s" % [grams, moldy]
+
+
 func keeps_premium() -> bool:
 	return premium and _peak <= AROMA_LOSS
 

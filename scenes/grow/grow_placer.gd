@@ -58,6 +58,7 @@ func place() -> bool:
 	var station := StationScript.create(item.station, item)
 	get_tree().current_scene.add_child(station)
 	station.global_transform = _spot
+	GrowSync.placed(station)
 	player.item_user.show_message("%s aufgestellt" % item.display_name, Color(0.4, 1.0, 0.6))
 	return true
 

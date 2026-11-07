@@ -31,6 +31,14 @@ func _text(_player: Player) -> String:
 		"18/6" if flower_cycle else "12/12"]
 
 
+func _net_vars() -> Array:
+	return ["flower_cycle"]
+
+
+func _model_key() -> String:
+	return str(flower_cycle)
+
+
 func _act(player: Player) -> void:
 	flower_cycle = not flower_cycle
 	_refresh()
