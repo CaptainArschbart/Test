@@ -50,7 +50,7 @@ func _build_model() -> Node3D:
 	_light = OmniLight3D.new()
 	_light.position = PANEL + Vector3.DOWN * 0.1
 	_light.light_color = Color(1.0, 0.65, 0.45) if flower_cycle else Color(0.8, 0.45, 1.0)
-	_light.light_energy = 1.6
+	_light.light_energy = 0.9
 	_light.omni_range = 2.2
 	model.add_child(_light)
 	return model

@@ -1032,3 +1032,12 @@ Die Einträge bis einschließlich dem zweiten Merge von `origin/main` (PR #8 Noc
 - `test_grow` jetzt 46 Prüfungen (neu: Revision, Speichern, Laden, kein doppeltes Laden). Ohne zweiten Prozess; die Multiplayer-Tests sind auf Wunsch weggelassen.
 - Getestet (headless), alle grün: `test_grow` 46, `test_gas_stations` 59, `test_shop` 43, `test_neon_city` 30, `test_content_update` 47, `test_consumables` 45, `test_ammo` 22, `test_player_melee` 42, `test_player_move` 7, `test_weapons_m3` 89, `test_skills` 72.
 - Offen: Die Inventar-Icons der 20 Anbau-Items fehlen weiter (Fensterlauf), deshalb meldet `test_item_icons` einen Fehler.
+
+## 2026-11-07 – Hanfanbau: Inventar-Icons und Farbkorrektur (EnScapeZ)
+
+- Inventar-Icons der 20 Anbau-Items in `assets/icons/items/`, in einem Fensterlauf gerendert und mit `gen_item_icons.gd` (ICONS_APPLY) eingetragen. `test_item_icons` ist wieder grün (63/0).
+- Bildkontrolle im Fenster: Pflanze als Keimling, im Wachstum und in der Blüte unter der Lampe, kranke Pflanze, Trockengestell, Fermentierglas, Verpackungstisch und das Growbedarf-Regal sehen stimmig aus.
+- Korrektur in `GrowModels`: Eckpunkt-Farben werden jetzt als sRGB gelesen (`vertex_color_is_srgb`). Vorher wirkten Blätter und Blüten ausgeblichen, die Blüten-Icons fast mintfarben.
+- Growlampe heller als nötig: Lichtstärke von 1,6 auf 0,9, damit die Blätter unter 12/12 nicht cremeweiß überstrahlen.
+- Die Icons stammen noch aus dem Lauf vor der Farbkorrektur. Die Blüten-Icons sind darum etwas blasser als die Blüten im Spiel; ein weiterer Fensterlauf rendert sie neu.
+- Getestet (headless): `test_item_icons` 63/0, `test_grow` 46/0, `test_consumables` 45/0, `test_shop` 43/0.

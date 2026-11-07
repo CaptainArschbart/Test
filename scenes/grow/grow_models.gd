@@ -373,6 +373,8 @@ static func _mat(key: StringName, color: Color, vertex := false, two_sided := fa
 	var m := StandardMaterial3D.new()
 	m.albedo_color = color
 	m.vertex_color_use_as_albedo = vertex
+	# Eckpunkt-Farben sind wie alle Farben hier sRGB (sonst wirken Blätter und Blüten ausgeblichen).
+	m.vertex_color_is_srgb = vertex
 	m.roughness = 0.75
 	m.metallic = metal
 	if two_sided:
